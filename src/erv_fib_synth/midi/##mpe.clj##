@@ -1,0 +1,19 @@
+(ns erv-fib-synth.midi.mpe
+(:require [clojure.set :as set]
+            [overtone.midi :as midi]
+            [overtone.sc.node :refer [ctl node?]]
+            [taoensso.timbre :as timbre]))
+
+(defn calculate-bend
+      "Does an upward bend to a note. Has a resolution of ≈ 100/63 cents"
+      [midi-decimals]
+      (println "decimals" midi-decimals)
+      ;; 64 is assumed to be the central note in an 8-bit pitch bend (at least for Reaper)
+      (Math/round (+ 64 (* midi-decimals 63))))
+
+    (defn midi->mpe-note
+      [midi]
+      (let [midi* (float midi)
+            note (int midi*)
+            bend (-> (- midi* note) calculate-bend)]
+        {:note note :bend bend}))
