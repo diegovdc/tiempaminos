@@ -4,11 +4,17 @@
    [overtone.sc.node :refer [ctl node?]]
    [taoensso.timbre :as timbre]))
 
+
+
 ;; If getting the error Device is Busy:
 ;; https://linuxmusicians.com/viewtopic.php?p=133696
 ;; http://www.tedfelix.com/linux/linux-midi.html
 ;; HOWEVER is MUCH BETTER to use `sudo modprobe snd-virmidi` to
 ;; enable virmidi
+
+;; NOTE on virmidi, if overtone starts to crash on load, maybe virmidi was corrupted (has already happend to me once)
+
+
 
 (def ks (try (midi/midi-in "VirMIDI")
              (catch Exception e
@@ -65,7 +71,7 @@
         :else nil))
     (catch Exception e (timbre/error "MIDIError" e))))
 
-(defn midi-event
+(defn midi-in-event
   "`note` events receive a map with the following keys
    `'(:data2 :command :channel :msg :note :status :data1 :device :timestamp :velocity)`"
   [& {:keys [note-on note-off auto-ctl]
@@ -78,8 +84,12 @@
                                :note-off note-off
                                :auto-ctl auto-ctl}))))
 
-
+#_(defn all-notes-off [sink] (midi/midi-control sink 123 0))
+(defn all-notes-off [sink]
+  (doseq [n (range 128) chan (range 16)]
+    (midi/midi-note-off sink n chan)))
 (comment
   (note-on (fn [_] (println (:note _))))
-  (midi-event :note-on (fn [_] (println "on"))
-              :note-off (fn [_] (println "off"))))
+  (all-notes-off)
+  (midi-in-event :note-on (fn [_] (println "on" ((juxt :channel :note) _)))
+                 :note-off (fn [_] (println "off" ((juxt :channel :note) _)))))

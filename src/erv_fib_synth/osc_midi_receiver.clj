@@ -1,6 +1,8 @@
 (ns erv-fib-synth.osc-midi-receiver
   (:require [overtone.osc :as osc]
+            [overtone.music.time :refer [apply-at]]
             [overtone.sc.node :refer [ctl node?]]
+            [time-time.standard :refer [now]]
             [taoensso.timbre :as timbre]))
 
 (defonce synths (atom {}))
@@ -64,6 +66,51 @@
            :auto-ctl? auto-ctl?} ))
 
 (defonce recv (init 7777))
+
+
+(comment)
+
+(defonce midi-send-client (osc/osc-client "localhost" 7778))
+
+(defn send-note-on
+  ([note vel] (send-note-on note vel 0))
+  ([note vel chan]
+   (osc/osc-send midi-send-client "/send-midi" "note-on"
+                 (int note)
+                 (int vel)
+                 (int chan))))
+
+(defn send-note-off
+  ([note vel] (send-note-on note vel 0))
+  ([note vel chan]
+   (osc/osc-send midi-send-client "/send-midi" "note-off"
+                 (int note)
+                 (int vel)
+                 (int chan))))
+
+(defn schedule-note-off
+  ([after-ms note vel] (schedule-note-off note vel 0))
+  ([after-ms note vel chan]
+   (apply-at (+ after-ms (now))
+             #(send-note-off note vel chan))))
+
+(defn send-note*
+  "Will send a `note-on` and a `note-off` `msg` after `dur`"
+  ([dur note vel] (send-note* dur note vel 0))
+  ([dur note vel chan]
+   (send-note-on note vel chan)
+   (schedule-note-off dur note vel chan)))
+
+(defn all-notes-off []
+  (osc/osc-send midi-send-client "/send-midi" "all-notes-off"))
+
+(comment
+  (osc/osc-debug false)
+
+  (send-note* 5000 63 16)
+  (all-notes-off))
+
+
 
 (comment
   (require '[erv-fib-synth.synths :as synths])
