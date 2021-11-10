@@ -77,11 +77,14 @@
 ;;;;;;;;;;;
 ;;; melodic (they have gate)
 
-
 (defsynth low2
   [freq 85
    amp 1
+   mod-amp 1
+   mod-amp-end 0.1
+   mod-dur 1
    mod-freq 8300
+   mod-freq-range 30
    pan 0
    atk 0.01
    dcy 0.7
@@ -89,10 +92,16 @@
    rel 0.5
    gate 1
    out 0]
-  (o/out out (-> (range-lin (pulse mod-freq) (- freq 15) (+ freq 15))
+  (o/out out (-> (range-lin (* (env-gen
+                                (envelope [mod-amp mod-amp-end]
+                                          [mod-dur]))
+                               (pulse mod-freq))
+                            (- freq (/ mod-freq-range 2))
+                            (+ freq (/ mod-freq-range 2)))
                  sin-osc
                  (pan2 pan)
-                 (* (env-gen (env-adsr atk dcy sust rel) :gate gate :action FREE))
+                 (* (env-gen (env-adsr atk dcy sust rel)
+                             :gate gate :action FREE))
                  (* amp))))
 
 (comment
@@ -122,5 +131,7 @@
                             (- freq mod-amp) (+ freq mod-amp))
                  sin-osc
                  (pan2 pan)
-                 (* (env-gen (env-adsr atk dcy sust rel :curve :sin) :gate gate :action FREE))
+                 (* (env-gen
+                     (env-adsr atk dcy sust rel :curve :sin)
+                     :gate gate :action FREE))
                  (* amp))))
