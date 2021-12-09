@@ -1,16 +1,18 @@
- (ns erv-fib-synth.core
+(ns erv-fib-synth.core
   (:require
-   [potemkin :refer [import-vars]]
-   [time-time.dynacan.players.gen-poly]
+   [clojure.string :as str]
+   [time-time.dynacan.players.gen-poly :as gp]
    [overtone.core :as o]
    [overtone.sc.machinery.server.connection :as oc]
-   [taoensso.timbre :as timbre]
-   ))
+   [potemkin :refer [import-vars]]
+   [taoensso.timbre :as timbre]))
 
-(import-vars
- [time-time.dynacan.players.gen-poly stop])
+(defn init-garden-earth! []
+  (in-ns 'erv-fib-synth.compositions.garden-earth.core))
 
-(defn connect [] (o/connect-external-server))
+(def stop gp/stop)
+
+(defn connect [_] (o/connect-external-server))
 (defn test-sound [] (o/demo (* 0.2 (o/sin-osc))))
 
 (defn disconnect [] (oc/shutdown-server))
@@ -19,11 +21,48 @@
   (timbre/set-level! :debug)
   (timbre/set-level! :info))
 
+(def warn-on-debug
+  (memoize
+   (fn [ns-name]
+     (timbre/warn "Trying to log a debug statement an external ns, but debugging external files is disabled. See timbre config.  ns: " ns-name))))
+
+(defn print-debug?
+  [level-name ns-name]
+  (cond  (and (= level-name "debug")
+              (str/includes?  ns-name "erv-fib-synth")) true
+         (= level-name "debug") (warn-on-debug ns-name)
+         :else true))
+
+(timbre/merge-config!
+ {:output-fn
+  #_timbre/default-output-fn
+  (fn [data]
+    (let [{:keys [level ?err #_vargs msg_ ?ns-str ?file #_hostname_
+                  timestamp_ ?line]} data]
+      (when (print-debug? (name level) ?ns-str)
+        (str
+         (-> (force timestamp_) (str/split #" ") second) " "
+         (str/upper-case (first (name level)))  " "
+         "[" (or ?ns-str ?file "?") ":" (or ?line "?") "] - "
+         (force msg_)
+         (when-let [err ?err]
+           (str "\n" (timbre/stacktrace err)))))))})
+
+
+
+(defn ap-synth [synth-var arg-map]
+    (let [ks (->> (meta synth-var) :arglists first (map keyword))
+          synth (var-get synth-var)
+          defaults (->> synth meta :params
+                        (map (fn [{:keys [name default]}] [(keyword name) default]))
+                        (into {}))
+          vs (map #(get arg-map % (defaults %)) ks)]
+      (apply synth vs)))
+
 (comment
-  (connect)
+  (connect 2)
   (test-sound)
-  (disconnect)
-  )
+  (disconnect))
 (comment
   (def scale
     (->> [13 7 11 9 5]

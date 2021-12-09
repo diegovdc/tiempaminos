@@ -1,10 +1,38 @@
 (ns erv-fib-synth.compositions.garden-earth.synths.granular
-  (:require [overtone.core :as o]))
+  (:require
+   [erv-fib-synth.overtone-extensions :as oe]
+   [erv-fib-synth.compositions.garden-earth.base :refer [dur->env]]
+   [erv-fib-synth.compositions.garden-earth.synths.live-signal
+    :refer [lfo]]
+   [overtone.core :as o]
+   [overtone.sc.ugen-collide :as oc]))
+
+(comment
+  ;; load buffers for testing
+  (require '[erv-fib-synth.compositions.garden-earth.synths.recording :as rec]))
 
 ;;;;;;;;;;
 ;;; Synths
-;;;;;;;;;
+;;;;;;;;;;
 
+(comment
+  (o/defsynth x [a 100] (o/out 0 (o/sin-osc a)))
+  (x {:a 200})
+  (o/stop))
+
+
+
+(defmacro granulator-pos [buf speed start end pos-noise-freq pos-noise-amp]
+  `(oc/+
+    (o/lin-lin (o/lf-noise1 ~pos-noise-freq)
+               -1 1
+               (oc/* -1 ~pos-noise-amp)
+               ~pos-noise-amp)
+    (oc// (o/phasor:ar 0
+                       (oc/* ~speed (o/buf-rate-scale:kr ~buf))
+                       (oc/* ~start (oc/- (o/buf-samples:kr ~buf) 1))
+                       (oc/* ~end (oc/- (o/buf-samples:kr ~buf) 1)))
+          (o/buf-samples:kr ~buf))))
 (o/defsynth grain
   ;; NOTE  OPTIMAL duration according to Eli Fieldsteel {:trigger 40 :dur 1/20}
   [buf 0
@@ -12,10 +40,156 @@
    trig-rate 40
    grain-dur 1/20
    rate 1
+   speed 1
    amp 1
-   pan 0
+   min-amp 0.5
+   amp-lfo 0.1
    start 0
    end 1
+   a 0.1
+   r 0.1
+   mix 0.5
+   room 0.5
+   damp 0.3
+   pos-noise-freq 100
+   pos-noise-amp 0.05
+   out 0]
+
+  (o/out out
+         (-> (o/grain-buf
+              :num-channels 2
+              :trigger (o/impulse trig-rate)
+              :dur [grain-dur]
+              :sndbuf buf
+              :rate rate
+              :pos (granulator-pos buf speed start end
+                                   pos-noise-freq pos-noise-amp)
+              :pan (lfo 0.1 -1 1))
+             (* amp
+                (o/env-gen (o/envelope [0 1 1 0] [a (- dur a r) r])
+                           :action o/FREE)))))
+(o/defsynth lines
+  ;; NOTE  OPTIMAL duration according to Eli Fieldsteel {:trigger 40 :dur 1/20}
+  [buf 0
+   dur 1
+   trig-rate 40
+   grain-dur 1/20
+   rate 1
+   speed 1
+   amp 1
+   min-amp 0.5
+   amp-lfo 0.1
+   start 0
+   end 1
+   a 0.1
+   r 0.1
+   mix 0.5
+   room 0.5
+   damp 0.3
+   pos-noise-freq 100
+   pos-noise-amp 0.05
+   out 0]
+
+  (let [sig (o/grain-buf
+             :num-channels 2
+             :trigger (o/impulse trig-rate)
+             :dur [grain-dur 1/10]
+             :sndbuf buf
+             :rate (+ rate #_(lfo 0.1 -0.1 0.1))
+             :pos (o/line start end dur)
+             #_(granulator-pos buf speed start end
+                               pos-noise-freq pos-noise-amp)
+             :pan (lfo 0.1 -1 1))]
+    (o/out out
+           (-> sig
+               (o/hpf (lfo 0.5 2000 5000))
+               (o/rlpf (lfo 0.15 50 10000) 0.2)
+               (+ (* sig (o/sin-osc (lfo 2 16 200)
+                                    :mul (lfo 2.5 0.1 0.3))))
+               (* amp
+                  (o/sin-osc )
+                  (lfo 0.1 0.4 1)
+                  (o/env-gen (o/envelope [0 1 1 0] [a (- dur a r) r])
+                             :action o/FREE))))))
+
+(o/defsynth dot
+  [buf 0
+   dur 1
+   trig-rate 40
+   grain-dur 1/20
+   rate 1
+   speed 1
+   amp 1
+   min-amp 0.5
+   amp-lfo 0.1
+   start 0
+   end 1
+   a 0.1
+   r 0.1
+   mix 0.5
+   room 0.5
+   damp 0.3
+   pos-noise-freq 100
+   pos-noise-amp 0.05
+   out 0]
+
+  (o/out out
+         (-> (o/grain-buf
+              :num-channels 2
+              :trigger (o/impulse trig-rate)
+              :dur [grain-dur]
+              :sndbuf buf
+              :rate rate
+              :pos (granulator-pos buf speed start end
+                                   pos-noise-freq pos-noise-amp)
+              :pan (lfo 0.1 -1 1))
+             (* amp
+                (o/env-gen (o/perc dur r)
+                           :action o/FREE)))))
+
+(comment
+  (def testsound (o/load-sample "/home/diego/Desktop/happy-song-mono.wav"))
+  (-> testsound)
+  (o/stop)
+  (grain {:buf testsound
+          :dur (:duration testsound)
+          :trig-rate 100
+          :grain-dur 1/80
+          :speed 6000
+          :amp 3
+          :mix 1})
+  (let [b (@bufs ["D#+75" :a])]
+    (grain-lfo b
+               (:duration b)
+               40
+               1/20
+               #_ #_ #_ #_ :start 0.3
+               :end 0.31
+               :amp 3
+               :mix 1))
+  (-> @bufs keys)
+  (o/demo 5 (o/play-buf 1 (@bufs ["D#+75" :a]))))
+
+(o/defsynth grain-lfo
+  ;; NOTE  OPTIMAL duration according to Eli Fieldsteel {:trigger 40 :dur 1/20}
+  [buf 0
+   dur 1
+   trig-rate 40
+   grain-dur 1/20
+   rate 1
+   speed 1
+   amp 1
+   min-amp 0.5
+   amp-lfo 0.1
+   start 0
+   end 1
+   a 0.1
+   r 0.1
+   mix 0.5
+   room 0.5
+   damp 0.3
+   pos-noise-freq 100
+   pos-noise-amp 0.05
    out 0]
 
   (o/out out
@@ -25,45 +199,194 @@
               :dur grain-dur
               :sndbuf buf
               :rate rate
-              :pos (o/line start end dur o/FREE)
-              :pan pan)
-             (* amp))))
+              :pos (granulator-pos buf speed start end
+                                   pos-noise-freq pos-noise-amp)
+              :pan (lfo 0.1 -1 1))
+             (o/free-verb mix room damp)
+             (o/lpf (lfo 0.5 20 8000))
+             (* (lfo amp-lfo min-amp amp)
+                (o/env-gen (o/envelope [0 1 1 0] [a (- dur a r) r])
+                           :action o/FREE)))))
+(o/defsynth grain-perc
+  ;; NOTE  OPTIMAL duration according to Eli Fieldsteel {:trigger 40 :dur 1/20}
+  [buf 0
+   dur 1
+   trig-rate 40
+   grain-dur 1/20
+   rate 1
+   speed 1
+   amp 1
+   min-amp 0.5
+   amp-lfo 0.1
+   start 0
+   end 1
+   a 0.1
+   r 0.1
+   mix 0.5
+   room 0.5
+   damp 0.3
+   pos-noise-freq 100
+   pos-noise-amp 0.05
+   out 0]
+
+  (o/out out
+         (-> (o/grain-buf
+              :num-channels 2
+              :trigger (o/impulse trig-rate)
+              :dur [grain-dur]
+              :sndbuf buf
+              :rate rate
+              :pos (granulator-pos buf speed start end
+                                   pos-noise-freq pos-noise-amp)
+              :pan (lfo 0.1 -1 1))
+             (o/free-verb mix room damp)
+             (o/lpf (lfo 0.5 20 8000))
+             (* (lfo amp-lfo min-amp amp)
+                (o/env-gen (o/env-perc a r)
+                           :action o/FREE)))))
+
 (comment
   (def testsound (o/load-sample "/home/diego/Desktop/happy-song-mono.wav"))
+  (o/stop)
   (grain testsound
-         (:duration testsound)
+         10
          40
          1/20
-         :amp 3))
+         #_ #_ #_ #_ :start 0.3
+         :end 0.31
+         :amp 3
+         :mix 1)
+  (let [b (@bufs ["D#+75" :a])]
+    (grain-lfo b
+               (:duration b)
+               40
+               1/20
+               #_ #_ #_ #_ :start 0.3
+               :end 0.31
+               :amp 3
+               :mix 1))
+  (-> @bufs keys)
+  (o/demo 5 (o/play-buf 1 (@bufs ["D#+75" :a]))))
 
-;;;;;;;;;;;;;;
-;;; Recording
-;;;;;;;;;;;;;;
 
-(defonce bufs (atom {}))
+(o/defsynth ocean
+  [buf 0
+   dur 1
+   trig-rate 40
+   grain-dur 1/20
+   rate 1
+   speed 1
+   amp 1
+   min-amp 0.5
+   amp-lfo 0.1
+   start 0
+   end 1
+   a 0.1
+   r 0.1
+   mix 0.5
+   room 0.5
+   damp 0.3
+   panl -1
+   panr 1
+   pan-lfo 0.1
+   pos-noise-freq 100
+   pos-noise-amp 0.05
+   out 0]
 
-(defn alloc [key seconds]
-  (let [buf (o/buffer (* seconds (o/server-sample-rate)))]
-    (swap! bufs assoc key buf)
-    buf))
+  (o/out out
+         (-> (o/grain-buf
+              :num-channels 2
+              :trigger (o/impulse trig-rate)
+              :dur grain-dur
+              :sndbuf buf
+              :rate rate
+              :pos (granulator-pos buf speed start end
+                                   pos-noise-freq pos-noise-amp)
+              :pan (lfo pan-lfo panl panr))
+             (o/lpf 3000)
+             (o/free-verb mix room damp)
+             (* (lfo amp-lfo 0.1 amp)
+                (o/env-gen (o/envelope [0 1 1 0] [a (- dur a r) r])
+                           :action o/FREE)))))
 
 
-(o/defsynth writer [buf 0 seconds 5]
-;; https://depts.washington.edu/dxscdoc/Help/Classes/RecordBuf.html
-  (let [in (o/sound-in 0)
-        env (o/env-gen (o/envelope [0 1 1 0]
-                                   [0.01 (- seconds 0.02) 0.01]))]
-    (o/record-buf:ar (* env in) buf :action o/FREE :loop 0)))
+(o/defsynth ocean-2
+  [buf 0
+   dur 1
+   trig-rate 40
+   grain-dur 1/20
+   rate 1
+   speed 1
+   amp 1
+   min-amp 0.5
+   amp-lfo 0.1
+   start 0
+   end 1
+   a 0.1
+   r 0.1
+   mix 0.5
+   room 0.5
+   damp 0.3
+   panl -1
+   panr 1
+   pan-lfo 0.1
+   pos-noise-freq 100
+   pos-noise-amp 0.05
+   out 0]
 
-(defn rec-buf [buf-key seconds]
-  (let [buf (alloc buf-key seconds)]
-    (writer buf)
-    buf))
+  (o/out out
+         (-> (o/grain-buf
+              :num-channels 2
+              :trigger (o/impulse trig-rate)
+              :dur grain-dur
+              :sndbuf buf
+              :rate rate
+              :pos (granulator-pos buf speed start end
+                                   pos-noise-freq pos-noise-amp)
+              :pan (lfo pan-lfo panl panr))
+             (o/pluck :decaytime 2)
+             (o/distortion2 3)
+             (o/free-verb mix room damp)
+             (* (lfo amp-lfo 0.1 amp)
+                (o/env-gen (o/envelope [0 1 1 0] [a (- dur a r) r])
+                           :action o/FREE)))))
 
-(defn free-buffers []
-  (doseq [b (vals @bufs)]
-    (o/buffer-free b)))
+(oe/defsynth sample&hold
+  [buf 0
+   dur 1
+   trig-rate 100
+   grain-dur 1/10
+   rate 1
+   amp 1
+   min-amp 0.5
+   amp-lfo 0.1
+   start 0.1
+   end 0.3
+   a 0.1
+   d 1
+   d-level 0.3
+   r 3
+   out 0]
+
+  (o/out out
+         (-> (o/grain-buf
+              :num-channels 2
+              :trigger (o/impulse trig-rate)
+              :dur [grain-dur]
+              :sndbuf buf
+              :rate rate
+              :pos (o/line start end (+ a d r))
+              :pan (lfo 0.1 -1 1))
+             (o/rlpf (lfo 0.1 300 5000) 0.3)
+             (* amp
+                (o/env-gen (o/envelope [0 1 d-level 0] [a d r]
+                                       [-1 -5])
+                           :action o/FREE)))))
 
 (comment
-  (rec-buf :hola 10)
-  (o/demo 5 (o/play-buf 1 (@bufs :hola))))
+  (let [[_ b] ((vec @rec/bufs) 8)]
+    (apply sample&hold
+           :buf b :trig-rate 100 :grain-dur 1/10
+           :start 0.5 :end 0.1 :d-level 0.3
+           (merge {:trig-rate 100 :grain-dur 1/10}
+                  (dur->env {:a 1 :d 2 :r 10} 10)))))

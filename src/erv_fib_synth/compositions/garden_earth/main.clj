@@ -1,21 +1,36 @@
 (ns erv-fib-synth.compositions.garden-earth.main
-  (:require [erv.utils.core :as u]
-            [erv-fib-synth.osc.reaper :as reaper]
-            [taoensso.timbre :as timbre]
-            [time-time.dynacan.players.gen-poly :as gp :refer [on-event ref-rain]]
-            [erv-fib-synth.compositions.garden-earth.base :refer [stop log-with-msg log]]
-            [erv-fib-synth.compositions.garden-earth.misterioso
-             :refer [misterioso]]
-            [erv-fib-synth.compositions.garden-earth.claro
-             :refer [claro]]
-            [erv-fib-synth.compositions.garden-earth.oscuro :as oscuro]))
+  (:require
+   [erv-fib-synth.compositions.garden-earth.base
+    :refer [seconds->dur stop]]
+   [erv-fib-synth.compositions.garden-earth.claro :refer [claro]]
+   [erv-fib-synth.compositions.garden-earth.misterioso :refer [misterioso]]
+   [erv-fib-synth.osc.reaper :as reaper]
+   [taoensso.timbre :as timbre]
+   [time-time.dynacan.players.gen-poly :as gp :refer [on-event ref-rain]]))
 
-(declare seconds->dur garden-earth)
+(declare garden-earth)
 
-(def bpm 900)
+
 (def sections
   ;; Extender el principio para que entre la flauta con más calma y pueda desarrollar en esa armonía, luego de manera relativamente apresurada hacer los cambios armónicos de la segunda parte de Claro hacia algo más disonante, luego ir a #{1 3} y luego terminar la sección
-  [[20 #(do #_(reaper/rec)
+  "
+  1 2 3 | 1 2 3
+  1 2 3 | 1 2
+  1 2 3 |   2 3
+  1 2 3 | 1
+  1 2 3 | 1   3
+  1 2 3
+  1 2 3p
+  1 2 3p| 1   3
+    2 3p| 1   3
+  1   3p| 1   3
+    2 3 | 1 2 3
+  1 2 3 | 1m
+  1 2 3p| 1m
+  1 2 3p| 1  a
+
+  "
+  [[60 #(do #_(reaper/rec)
             (claro :set* #{11 7} :moments [:oscuro] :id :claro
                    :vel-amp 1 :offset 3))]
    [10 #(claro :set* #{11 7} :moments [:oscuro] :id :claro
@@ -65,6 +80,16 @@
               :vel-amp 1.1 :offset 3
               :durs [10000 5000])]
    [10 #(do (stop :claro) (timbre/info "Ends Claro"))]
+
+
+   ;; opacar un poco más el sinte, seguir lo que esta en la segunda grabación de la prueba
+   ;; con granular hacer algunos juegos grabando la flauta
+   ;; con synthdefs hacer algunos juegos paneándola
+   ;; más variaciones de misterioso, donde se juege más con el registro y la densidad (menores densidades sobre todo... con el ataque -variación del sinte- estaría muy bien también)
+   ;; tal vez dejar a la flauta sola durante un momento (incrementar el juego con los synthdefs y desarrollar la armonía con la granulación
+   ;; faltan/quiero algunas notas agudas en la flauta, buscarlas
+   ;; desarrollar diagrama de flujo de la señal de la flauta
+   ;;    y a la par definir qué efectos quiero generar con ella
    [40 #(misterioso :id :misterioso)]
    #_[20 #(do (oscuro/sets-3-11-and-3-5 :moments [:claro] :vel-amp 1)
               (stop :misterioso))]
@@ -72,14 +97,14 @@
 
 
 (comment
-  (garden-earth sections :start-index 0)
+  (garden-earth misterioso/sections :start-index 0)
   (stop)
   (reaper/init))
 
 (comment
   (stop)
   ;;; WIP  esquema de secuencia
-  (claro :moment :oscuro
+  (claro :moment [:oscuro]
          :id :claro
          :vel-amp 1
          :offset 3
@@ -118,7 +143,7 @@
          :offset -2
          :set* #{11 7}))
 
-(defn seconds->dur [secs bpm] (* secs (/ bpm 60)))
+
 
 (defn garden-earth [sections & {:keys [start-index] :or {start-index 0}}]
   (let [sections*   (map #(update-in % [0] seconds->dur bpm)
