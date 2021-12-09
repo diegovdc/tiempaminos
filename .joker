@@ -1,0 +1,4 @@
+{:known-macros [overtone.core/defsynth
+                overtone.core/demo
+                time-time.dynacan.players.gen-poly/on-event
+                erv-fib-synth.compositions.garden-earth.base/on-event]}
