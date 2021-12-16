@@ -10,6 +10,12 @@
                  [overtone "0.10.6"]
                  [time-time "0.1.0-SNAPSHOT"]
                  [erv "0.1.0-SNAPSHOT"]
-                 [com.taoensso/timbre "4.10.0"]]
+                 [com.taoensso/timbre "4.10.0"]
+                 [incanter "1.9.3"]
+                 ;; working with intervals
+                 [io.helins/interval "1.0.0-beta0"]
+                 ;; another interesting possibility, may offer other options
+                 #_[com.dean/interval-tree "0.1.2"]]
+  :plugins [[com.github.clojure-lsp/lein-clojure-lsp "1.1.4"]]
   :jvm-opts ^:replace ["-XX:-OmitStackTraceInFastThrow"]
   :repl-options {:init-ns erv-fib-synth.core})
