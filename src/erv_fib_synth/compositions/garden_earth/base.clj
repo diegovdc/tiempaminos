@@ -4,25 +4,25 @@
    [clojure.set :as set]
    [clojure.string :as str]
    [erv-fib-synth.compositions.garden-earth.fingerings :as fingerings]
-   [erv-fib-synth.compositions.garden-earth.synths.general
-    :refer [tuning-monitor]]
    [erv.cps.core :as cps]
    [erv.scale.core :as scale :refer [+names]]
    [erv.utils.core :as utils]
-   [overtone.core :as o]
    [overtone.midi :as midi]
    [potemkin :refer [import-vars]]
    [taoensso.timbre :as timbre]
    [time-time.dynacan.players.gen-poly :as gp]
-   [erv-fib-synth.midi.core]
-   [erv-fib-synth.midi.mpe]
-   [erv-fib-synth.midi.algo-note]
-   [erv.utils.core]
-   [time-time.dynacan.players.gen-poly]
-   [erv-fib-synth.compositions.garden-earth.fingerings]))
+   [erv-fib-synth.math.utils :refer [normalize]]))
 
 (defonce groups (atom {}))
 (defonce fx (atom {}))
+
+;; for the `import-vars` below
+(require '[erv-fib-synth.midi.core]
+         '[erv-fib-synth.midi.mpe]
+         '[erv-fib-synth.midi.algo-note]
+         '[erv.utils.core]
+         '[time-time.dynacan.players.gen-poly]
+         '[erv-fib-synth.compositions.garden-earth.fingerings])
 
 (import-vars
  [erv-fib-synth.midi.core midi-in-event]
@@ -153,9 +153,7 @@
 
 (comment (scale->fingerings (subcps "1)4 of 3)6 1.3-5.7.9.11")))
 
-(defn normalize [ns]
-  (let [sum (apply + ns)]
-    (map #(/ % sum) ns)))
+
 
 
 (defn dur->env
@@ -189,10 +187,10 @@
                       (nth (:scale eik) 0)
                       4))
 
-(do
-  (defn pc-index [scale pitch-class]
-    (.indexOf (map (comp :class :pitch) scale) pitch-class))
-  (pc-index (:scale eik) "C+59"))
+
+(defn pc-index [scale pitch-class]
+  (.indexOf (map (comp :class :pitch) scale) pitch-class))
+(comment (pc-index (:scale eik) "C+59"))
 
 (defn interval-from-pitch-class
   [eik-scale pitch-class deg-interval]

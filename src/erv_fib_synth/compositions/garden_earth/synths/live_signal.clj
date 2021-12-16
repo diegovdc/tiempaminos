@@ -61,3 +61,6 @@
                            (comp (partial take 100) conj)
                            (assoc (ge-base/eiko-round-freq freq)
                                   :timestamp (o/now)))))) ::foo))
+(comment
+  (def signal-pitches (run-get-signal-pitches))
+  (run-receive-pitch))

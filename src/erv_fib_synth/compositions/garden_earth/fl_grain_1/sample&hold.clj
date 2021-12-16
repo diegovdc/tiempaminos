@@ -8,36 +8,40 @@
    [erv-fib-synth.compositions.garden-earth.synths.live-signal
     :refer [freq-history]]
    [erv-fib-synth.compositions.garden-earth.synths.recording :as rec]
+   [erv-fib-synth.math.bezier :as bz]
+   [erv-fib-synth.math.utils :refer [linlin]]
    [overtone.core :as o]))
 
-(do
-  (defn most-frequent-val [coll]
-    (->> coll frequencies
-         (sort-by second >)
-         first
-         first))
-  (defn most-frequent-pitch
-    "Will try to get the most frequent pitch-class in a `freq-history` segment.
+(o/env-gen (o/env-perc))
+
+(defn most-frequent-val [coll]
+  (->> coll frequencies
+       (sort-by second >)
+       first
+       first))
+
+(defn most-frequent-pitch
+  "Will try to get the most frequent pitch-class in a `freq-history` segment.
   Might just return a random frequency if all pitch-classes in a segment appear
   an equal number of times.
   This is a heuristic function and might not be accurate enough.
   `freq-history` comes from `erv-fib-synth.compositions.garden-earth.synths.live-signal`"
-    [freq-history start-time end-time]
-    (let [freq-range  (->> freq-history
-                           (take-while #(>= (:timestamp %) start-time))
-                           (drop-while #(> (:timestamp %)  end-time)))
-          most-frequent-pc (->> freq-range
-                                (map :pitch-class)
-                                most-frequent-val)
-          most-frequent-transp (-> (group-by :pitch-class freq-range)
-                                   (get most-frequent-pc)
-                                   (->> (map :transp))
-                                   most-frequent-val)]
-      {:pitch-class most-frequent-pc
-       :transp most-frequent-transp}))
+  [freq-history start-time end-time]
+  (let [freq-range  (->> freq-history
+                         (take-while #(>= (:timestamp %) start-time))
+                         (drop-while #(> (:timestamp %)  end-time)))
+        most-frequent-pc (->> freq-range
+                              (map :pitch-class)
+                              most-frequent-val)
+        most-frequent-transp (-> (group-by :pitch-class freq-range)
+                                 (get most-frequent-pc)
+                                 (->> (map :transp))
+                                 most-frequent-val)]
+    {:pitch-class most-frequent-pc
+     :transp most-frequent-transp}))
 
-  (->  @freq-history)
-  (most-frequent-pitch @freq-history 1639060141963 (o/now)))
+(->  @freq-history)
+(most-frequent-pitch @freq-history 1639060141963 (o/now))
 
 (defonce s&h-seq (atom nil))
 
@@ -52,12 +56,19 @@
   (apply sample&hold :buf buf :d-level d-level :amp amp :rate rate
          (merge grain-conf adr-env)))
 
+
+
+
 (comment
-  ;; TODO left here -- figure out interpolation curves for durs and amps
+  ;; TODO left here -- generate interpolation curves for durs and amps
+
+  (def durs-1)
+  (bz/plot (linlin 0.2 0.7 (bz/curve 7 [5 1 0.1 0.1 0.1])))
+  (bz/plot (linlin 0.2 0.7 (bz/curve 10 [0 2 10 2 0 ])))
   (let [{:as s&h-data
          :keys [pitch-class]} (->> @s&h-seq
-                                   (filter #(-> % :buf :id (= 71)))
-                                   first)
+         (filter #(-> % :buf :id (= 71)))
+         first)
         scale (:scale eik)
         pc-index* (pc-index scale pitch-class)
         intervals (map #(interval-from-pitch-class scale pitch-class % )

@@ -12,6 +12,7 @@
    [taoensso.timbre :as timbre]))
 
 (comment
+  ;; antes inicializar SuperCollider con `sc-init.scd`
   (startup true))
 
 (defn load-test-samples! []
