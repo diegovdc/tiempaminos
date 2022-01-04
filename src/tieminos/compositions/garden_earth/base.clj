@@ -58,7 +58,7 @@
    (gp/stop refrain-key))
 
   ([]
-   (eval '(reset! erv-fib-synth.compositions.garden-earth.synths.recording/recording?
+   (eval '(reset! tieminos.compositions.garden-earth.synths.recording/recording?
                   false))
    (gp/stop)))
 

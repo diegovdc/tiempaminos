@@ -3,14 +3,25 @@
    [clojure.set :as set]
    [overtone.core :as o]
    [tieminos.compositions.garden-earth.base
-    :refer [dur->env interval-from-pitch-class on-event pc-index ref-rain stop]]
+    :refer [dur->env
+            eik
+            interval-from-pitch-class
+            midi-in-event
+            on-event
+            pc-index
+            ref-rain
+            stop
+            subcps]]
    [tieminos.compositions.garden-earth.synths.granular
     :refer [sample&hold]]
    [tieminos.compositions.garden-earth.synths.live-signal
     :refer [freq-history]]
-   [tieminos.compositions.garden-earth.synths.recording :as rec]
-   [tieminos.math.bezier :as bz]
-   [tieminos.math.utils :refer [linlin]]))
+   [tieminos.compositions.garden-earth.synths.recording :as rec]))
+
+(require '[clojure.string :as str]
+         '[clojure.data.generators :as gen]
+         '[tieminos.math.bezier :as bz]
+         '[tieminos.math.utils :refer [linexp linlin]])
 
 (o/env-gen (o/env-perc))
 
@@ -40,10 +51,30 @@
     {:pitch-class most-frequent-pc
      :transp most-frequent-transp}))
 
-(->  @freq-history)
 (most-frequent-pitch @freq-history 1639060141963 (o/now))
 
 (defonce s&h-seq (atom nil))
+
+(defn fsf
+  ([steps] (fsf steps 0.01 0.1))
+  ([steps min-dur max-dur]
+   (linexp min-dur max-dur
+           (bz/curve steps
+                     [15 1 0.1 (rand-nth [26 20]) 7 0.1]))))
+
+
+
+(defn f
+  ([steps] (f steps  0.03 0.1))
+  ([steps min-dur max-dur]
+   (linexp min-dur max-dur (bz/curve steps [(rand-nth [20 12 5]) 0.1 0.1 6 1]))))
+
+(defn s
+  ([steps] (s steps  0.03 0.1))
+  ([steps min-dur max-dur]
+   (linexp min-dur max-dur (bz/curve steps [0.1 (rand-nth [1 5 10])]))))
+
+(def bz {:fsf fsf :f f :s s})
 
 (defn play-sample
   [{:keys [buf] :as _s&h-data}
@@ -56,35 +87,20 @@
   (apply sample&hold :buf buf :d-level d-level :amp amp :rate rate
          (merge grain-conf adr-env)))
 
+(def envs {:atk-reso1 {:a 0.1 :d 0.5 :r 5}
+           :atk-reso2 {:a 0.1 :d 0.5 :r 0.5}
+           :reso1 {:a 0.1 :d 5 :r 1}
+           :homo {:a 0.5 :d 0.5 :r 0.5}})
 
+(defn rand-val [m] (val (rand-nth (seq m))))
 
 
 (comment
-  ;; TODO left here -- generate interpolation curves for durs and amps
 
-  (def durs-1)
-  (bz/plot (linlin 0.2 0.7 (bz/curve 7 [5 1 0.1 0.1 0.1])))
-  (bz/plot (linlin 0.2 0.7 (bz/curve 10 [0 2 10 2 0 ])))
-  (let [{:as s&h-data
-         :keys [pitch-class]} (->> @s&h-seq
-         (filter #(-> % :buf :id (= 71)))
-         first)
-        scale (:scale eik)
-        pc-index* (pc-index scale pitch-class)
-        intervals (map #(interval-from-pitch-class scale pitch-class % )
-                       (range pc-index* (+ 10 pc-index*) 2))
-        durs (repeat (count intervals) 0.1)]
-    (println pitch-class intervals)
-    (ref-rain :id (keyword "s&h" "hola")
-              :durs durs
-              :loop? false
-              :on-event
-              (on-event
-               (play-sample s&h-data
-                            :rate (at-index intervals)
-                            :d-level 0.1
-                            :adr-env (dur->env {:a 0.1 :d 0.5 :r 5} 5)))))
-  (stop))
+
+  (stop)
+  (o/recording-start "/home/diego/Desktop/razgado2.wav")
+  (o/recording-stop))
 
 
 (do
@@ -102,25 +118,88 @@
                     :transp transp
                     :recording/start-time rec-start-time
                     :recording/end-time now}]
-      (play-fn s&h-data)
-      ;; TODO rename key to include analyzed "dominant" pitch
-      (println s&h-data)
-      (swap! bufs-atom set/rename-keys {buf-key new-buf-key})
-      (swap! s&h-seq conj s&h-data )))
+      (when pitch-class
+        (play-fn s&h-data)
+        ;; TODO rename key to include analyzed "dominant" pitch
+        (println s&h-data)
+        (swap! bufs-atom set/rename-keys {buf-key new-buf-key})
+        (swap! s&h-seq conj s&h-data ))))
   (comment
     (s&h rec/bufs 0.5 1)))
 
 
-(defn s&h [bufs-atom dur index]
+(defn s&h [bufs-atom dur index
+           & {:keys [play-fn]
+              :or {play-fn #(play-sample
+                             %
+                             :amp 2
+                             :adr-env (dur->env {:a 2 :d 2 :r 5} 2))}}]
   (let [start-time (o/now)]
     (rec/start-recording :bufs-atom bufs-atom
                          :buf-key [:sample&hold index]
                          :seconds dur
                          :msg "Rec: Sample&Hold"
                          :on-end (partial on-sample-end
-                                          #(play-sample
-                                            %
-                                            :amp 2
-                                            :adr-env (dur->env {:a 2 :d 2 :r 5} 2))
+                                          play-fn
                                           start-time bufs-atom)
                          :countdown 1)))
+(comment
+  (->> eik :subcps keys (filter #(str/includes? % "2)4")))
+  (subcps "2)4 of 3)6 11-1.5.7.9")
+  (midi-in-event
+   :note-on
+   (fn [ev]
+     (let [{:as s&h-data
+            :keys [pitch-class]} (->> @s&h-seq first)
+           ;; scale (:scale eik)
+           scale (subcps "2)4 of 3)6 1-5.7.9.11")
+           pc-index* (pc-index scale pitch-class)
+           rate (interval-from-pitch-class scale pitch-class
+                                           (- (:note ev) 60))
+           env (envs :atk-reso1)]
+       (println pc-index* (:note ev)
+                rate )
+       (play-sample s&h-data
+                    :rate rate
+                    :amp (* 8 (/ (ev :velocity) 40))
+                    :d-level 0.1
+                    :adr-env (dur->env {:a 0.2 :d 2 :r 2} (gen/weighted {3 10 1 1})))))
+   :note-off (fn [_] #_(println "off" ((juxt :channel :note) _)))))
+
+(do
+  (defn s&h-reponse-1
+    [{:as s&h-data :keys [pitch-class]}]
+    (when pitch-class
+      (let [scale #_(:scale eik) (subcps "2)4 of 3)6 11-1.5.7.9")
+            pc-index* (pc-index scale pitch-class)
+            direction (rand-nth [1 -1])
+            intervals (map #(interval-from-pitch-class scale pitch-class % )
+                           (map #(* % direction)
+                                (range pc-index* (+ 9 (rand-int 7) pc-index*) 2)))
+            durs ((rand-val bz)
+                  (count intervals)
+                  (rand-nth [0.01 0.1 0.3])
+                  (rand-nth [0.17 0.5 0.8]))
+            env-durs ((rand-val bz) (count intervals) 3 5)
+            env (rand-val envs)
+            amps (fsf (count intervals) 1 2)
+            d-level ((rand-val bz) (count intervals) 0.1 0.3)]
+        (ref-rain :id (keyword "s&h" (str "response1-" (rand-int 5000)))
+                  :durs durs
+                  :loop? false
+                  :on-event
+                  (on-event
+                   (play-sample s&h-data
+                                :rate (at-index intervals)
+                                :d-level (at-index d-level)
+                                :amp (at-index amps)
+                                :adr-env (dur->env env (at-index env-durs)))))))))
+
+(comment
+  (stop)
+  (s&h rec/bufs 0.5 1 :play-fn s&h-reponse-1)
+  (ref-rain :id :s&h-rain
+            :durs [5 3 8 2 1 5]
+            :ratio 1/3
+            :on-event (on-event (s&h rec/bufs 0.5 index :play-fn s&h-reponse-1)))
+  )

@@ -28,6 +28,7 @@
     (reset! ge-base/groups {:main main :early early :fx fx})
     (reset! ge-base/fx {:rev-l (fx/rev [:tail fx] 8 :amp 2)
                         :rev-r (fx/rev [:tail fx] 9 1 :amp 2)})))
+
 (defn init-fx! []
   (let [fx (@ge-base/groups :fx)]
     (reset! ge-base/fx {:rev-l (fx/rev [:tail fx] 8 :amp 2)
@@ -51,7 +52,7 @@
   (when dev?
     (load-test-samples!)
     (test-sound)
-    (keys (ns-publics *ns*)))
+    (println "Local functions: " (keys (ns-publics *ns*))))
   :done)
 
 (def stop ge-base/stop)

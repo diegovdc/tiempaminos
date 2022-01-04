@@ -55,7 +55,7 @@
                 (let [[_node-id _ freq freq?*] (-> data :args)
                       freq? (= freq?* 1.0)]
                   (when freq?
-                    (println freq)
+                    #_(println freq "hz")
                     (swap! freq-history
                            (comp (partial take 100) conj)
                            (assoc (ge-base/eiko-round-freq freq)
