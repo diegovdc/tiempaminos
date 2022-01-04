@@ -50,7 +50,7 @@
     :bounded-ratio 32/19,
     :bounding-period 2,
     :cents 902.4869838676968}
-   {:set [7 15 3 19],
+   {:set #{7 15 3 19},
     :ratio 1/9,
     :bounded-ratio 16/9,
     :bounding-period 2,

@@ -1,9 +1,9 @@
 (ns tieminos.afable-diablo.harmonic-form
   (:require
-   [tieminos.afable-diablo.dorian-scales :refer [anti-dorico-1v1]]
-   [tieminos.afable-diablo.scale :refer [+cents polydori]]
    [clojure.string :as str]
-   [erv.cps.core :as cps]))
+   [tieminos.afable-diablo.dorian-scales
+    :refer [anti-dorico-1v1 dorico-1v2]]
+   [tieminos.afable-diablo.scale :refer [+cents polydori polydori-by-sets]]))
 
 (def harmonic-form
   "Momento 0:  antidórico diff ?
@@ -47,9 +47,6 @@
 ;;; Write tunings files
 ;;;;;;;;;;;;;;;;;;;;;;;;
 
-
-
-
 (def tunings-dir
   (let [dir-path (-> (str (ns-name *ns*)) (str/split #"\.")
                      (->> (drop-last 1) (str/join "/"))
@@ -57,9 +54,9 @@
     (-> (java.io.File. (str "src/" dir-path "/sc-tunings"))
         .getAbsolutePath)))
 
-
 (defn +sc-tun-note [scale]
-  (map #(assoc % :sc/tun-note (/ (:cents %) 100))
+  (map #(assoc % :sc/tun-note (/ (:cents %) 100)
+               :degree (:degree (first (polydori-by-sets (:set %)))))
        scale))
 
 (defn get-scale [moment]
@@ -70,15 +67,22 @@
        (-> polydori :subcps (get name*) :scale +cents
            (->> +sc-tun-note)))]))
 
-(defn make-sc-tuning [tuning-name-fn [moment scale]]
-  (let [fmt #(format "Tuning.new(#[%s], \"%s\");"
-                     % (tuning-name-fn moment))]
+(defn make-sc-tuning [var-name tuning-name-fn [moment scale]]
+  (let [fmt #(format "~%s = Tuning.new(#[%s], 2.0,  \"%s\");"
+                     var-name % (tuning-name-fn moment))]
     (->> (mapv :sc/tun-note scale)
          (str/join ", " )
          fmt)))
 
+(defn make-sc-scale [tuning-name-fn [moment scale]]
+  (let [fmt #(format "Scale.new(#[%s], 35, ~polydori, \"%s\");"
+                     % (tuning-name-fn moment))]
+    (->> (mapv :degree scale)
+         (str/join ", " )
+         fmt)))
+
 (defn make-file [file-name sc-tunings]
-  (let [data (format "(\n%s\n);" (str/join "\n" sc-tunings))]
+  (let [data (format "(\n%s\n)" (str/join "\n" sc-tunings))]
     (spit (str tunings-dir "/" file-name) data)))
 
 (defn get-hexanies [moment]
@@ -96,21 +100,54 @@
 
 (defn dek-tun-name [moment]
   (str "DekMoment " (moment :momento)))
+
 (defn hex-tun-name [moment]
   (format "HexMoment %s (%s)" (moment :momento) (moment :hex/name)))
 
-(comment
-  ;; make-dekany-tunings
-  (->> harmonic-form
-       #_  (drop 1)
-       (map get-scale)
-       (map (partial make-sc-tuning dek-tun-name))
-       (make-file "dekany-moments-tunings.scd"))
 
-  ;; make-hexany-tunings
-  (->> harmonic-form
-       (drop 1)
-       (mapcat get-hexanies)
-       (map get-scale)
-       (map (partial make-sc-tuning hex-tun-name))
-       (make-file "hexany-moments-tunings.scd")))
+(comment
+  ;; make-dekany-scales
+)
+
+(->> harmonic-form
+     #_  (drop 1)
+     (map get-scale)
+     (map (partial make-sc-scale dek-tun-name))
+     (make-file "dekany-moments-scales.scd"))
+
+  ;; make-hexany-scales
+
+
+(->> harmonic-form
+     (drop 1)
+     (mapcat get-hexanies)
+     (map get-scale)
+     (map (partial make-sc-scale hex-tun-name))
+     (make-file "hexany-moments-scales.scd"))
+
+
+  ;; make-polydori tuning
+
+(make-file "polydori-tuning.scd"
+           [(make-sc-tuning "polydori" (constantly "polydori") (get-scale polydori))])
+
+(make-file "dorian_scales.scd"
+           [(make-sc-scale (constantly "dorian-1v2")
+                           (get-scale {:scale dorico-1v2}))])
+
+(make-file "tuning-and-scales.scd"
+           [(make-sc-tuning "polydori" (constantly "polydori") (get-scale polydori))
+
+            (make-sc-scale (constantly "dorian-1v2")
+                           (get-scale {:scale dorico-1v2}))
+            (->> harmonic-form
+                 #_  (drop 1)
+                 (mapv get-scale)
+                 (mapv (partial make-sc-scale dek-tun-name))
+                 (str/join "\n"))
+            (->> harmonic-form
+                 (drop 1)
+                 (mapcat get-hexanies)
+                 (mapv get-scale)
+                 (mapv (partial make-sc-scale hex-tun-name))
+                 (str/join "\n"))])
