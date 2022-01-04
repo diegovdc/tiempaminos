@@ -2,6 +2,10 @@
   (:require [erv.cps.core :as cps]
             [erv.scale.core :as scale]))
 
+(defn rrange
+  "Random range"
+  [min max]
+  (+ min (rand (- max min))))
 
 (defn period [seconds durs]
   (let [ratio (/ seconds (apply + durs))]
