@@ -1,14 +1,14 @@
 # erv-fib-synth
 
-A Clojure library designed to ... well, that part is up to you.
+My current music workshop, all my clojure code-music creation since mid-2021 lives here.
+
+Mainly uses `Supercollider` via `Overtone`, my microtonality library [`erv`](https://github.com/diegovdc/erv) and my sequencing library [`time-tiem`](https://github.com/diegovdc/time-tiem).
 
 ## Usage
 
-FIXME
+Different sections need different things, but to connect to Supercollider you will need to connect using the standard [`overtone`](https://github.com/overtone/overtone) procedure. The midi sections require `virmidi` (linux) and the following command must be run in a terminal window to enable it: `sudo modprobe snd-virmidi`
 
 ## License
-
-Copyright © 2020 FIXME
 
 This program and the accompanying materials are made available under the
 terms of the Eclipse Public License 2.0 which is available at
