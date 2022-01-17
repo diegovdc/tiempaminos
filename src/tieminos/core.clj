@@ -51,13 +51,13 @@
 
 
 (defn ap-synth [synth-var arg-map]
-    (let [ks (->> (meta synth-var) :arglists first (map keyword))
-          synth (var-get synth-var)
-          defaults (->> synth meta :params
-                        (map (fn [{:keys [name default]}] [(keyword name) default]))
-                        (into {}))
-          vs (map #(get arg-map % (defaults %)) ks)]
-      (apply synth vs)))
+  (let [ks (->> (meta synth-var) :arglists first (map keyword))
+        synth (var-get synth-var)
+        defaults (->> synth meta :params
+                      (map (fn [{:keys [name default]}] [(keyword name) default]))
+                      (into {}))
+        vs (map #(get arg-map % (defaults %)) ks)]
+    (apply synth vs)))
 
 (comment
   (connect 2)

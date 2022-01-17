@@ -6,8 +6,7 @@
    [overtone.core :as o]
    [taoensso.timbre :as timbre]
    [tieminos.compositions.garden-earth.base
-    :refer [eik interval-from-pitch-class on-event ref-rain stop subcps]]
-   [tieminos.compositions.garden-earth.synths.fx :refer [early-g]]
+    :refer [early-g interval-from-pitch-class on-event ref-rain stop subcps]]
    [tieminos.compositions.garden-earth.synths.granular :as granular]
    [tieminos.compositions.garden-earth.synths.recording :as rec]))
 
@@ -96,7 +95,7 @@
                           rate rates]
                     (granular/ocean
                      {:out 8
-                      :group [:head early-g]
+                      :group (early-g)
                       :bu0.f b :a (* 0.1 dur*) :r (* 0.9 dur*)
                       :trig-rate trig-rate :grain-dur g-dur :dur dur*
                       :rate rate :speed (/ 1 dur*) :panl -1 :panr 1 :pan-lfo 2
@@ -146,7 +145,7 @@
                             rate rates]
                       (granular/ocean-2
                        {:out 8
-                        :group [:head early-g]
+                        :group (early-g)
                         :buf b :a (* a% dur*) :r (* r% dur*)
                         :trig-rate trig-rate :grain-dur g-dur :dur dur*
                         :rate rate :speed 3 :panl -1 :panr 1 :pan-lfo 5

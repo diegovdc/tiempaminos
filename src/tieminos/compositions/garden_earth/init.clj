@@ -1,4 +1,4 @@
-(ns tieminos.compositions.garden-earth.core
+(ns tieminos.compositions.garden-earth.init
   "Use for initializing `garden-earth` and aiding development"
   (:require
    [overtone.core :as o]
@@ -28,7 +28,7 @@
     (reset! ge-base/groups {:main main :early early :fx fx})
     (reset! ge-base/fx {:rev-l (fx/rev [:tail fx] 8 :amp 2)
                         :rev-r (fx/rev [:tail fx] 9 1 :amp 2)})))
-(-> @ge-base/groups)
+
 (defn init-fx! []
   (let [fx (@ge-base/groups :fx)]
     (reset! ge-base/fx {:rev-l (fx/rev [:tail fx] 8 :amp 2)

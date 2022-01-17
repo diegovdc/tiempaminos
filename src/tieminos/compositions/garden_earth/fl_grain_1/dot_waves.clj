@@ -1,13 +1,14 @@
 (ns tieminos.compositions.garden-earth.fl-grain-1.dot-waves
   (:require
    [tieminos.compositions.garden-earth.base
-    :refer [get-pc
+    :refer [early-g
+            get-pc
             interval-from-note
             on-event
             ref-rain
             scale->pr-fingerings
+            stop
             subcps]]
-   [tieminos.compositions.garden-earth.synths.fx :as fx]
    [tieminos.compositions.garden-earth.synths.granular :as granular]
    [tieminos.compositions.garden-earth.synths.recording :as rec]))
 
@@ -35,7 +36,7 @@
                      (for [g-dur (subvec (shuffle [1/10 1/8 1/12 1/20 1/2]) 0 2)
                            dur* (subvec (shuffle [0.3 0.2 0.1 1 2]) 0 2)]
                        (granular/dot
-                        {:group [:head fx/early-g]
+                        {:group (early-g)
                          :out 8
                          :buf b
                          :dur dur*

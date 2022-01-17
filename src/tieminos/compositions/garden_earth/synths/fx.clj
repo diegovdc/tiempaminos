@@ -1,6 +1,7 @@
 (ns tieminos.compositions.garden-earth.synths.fx
   (:require
-   [overtone.core :as o]))
+   [overtone.core :as o]
+   [tieminos.compositions.garden-earth.base :as ge-base]))
 
 (o/defsynth rev [in 0 out 0 mix 0.5 room 0.8 damp 0.5 amp 1]
   (o/out out (* amp (o/free-verb (o/in in) mix room damp))))
@@ -17,6 +18,6 @@
     (rev [:tail 31] 8 :amp 2)
     (rev [:tail 31] 9 1 :amp 2))
 
-  (sini [:head 30] 8)
+  (sini [:head @ge-base/groups] 8)
 
   (o/stop))

@@ -15,6 +15,7 @@
 
 (defonce groups (atom {}))
 (defonce fx (atom {}))
+(defn early-g [] [:head (:early @groups)])
 
 ;; for the `import-vars` below
 (require '[tieminos.midi.core]

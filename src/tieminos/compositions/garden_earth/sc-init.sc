@@ -2,7 +2,7 @@
 (
 Can.init;
 o = Server.default.options;
-o.numOutputBusChannels = 10;
+o.numOutputBusChannels = 14;
 s.waitForBoot({
 	().play;
 	s.makeGui;
