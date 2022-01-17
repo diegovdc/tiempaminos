@@ -12,3 +12,14 @@ Distintos niveles de complejidad timbrica (armonico y presente timbre simple // 
 4 menor
 
 Tónica en Re
+
+# ideas
+
+solo de diego (agudos graves)
+momento silencioso
+fragmentos melódicos descontextualizados a la ives
+
+# TODO
+
+diseñar otros sinchos
+trabajar las ideas de arriba

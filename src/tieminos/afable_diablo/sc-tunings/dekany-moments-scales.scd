@@ -5,4 +5,6 @@ Scale.new(#[3, 5, 9, 13, 17, 21, 23, 25, 26, 28], 35, ~polydori, "DekMoment 2");
 Scale.new(#[0, 4, 7, 8, 12, 14, 19, 24, 27, 31], 35, ~polydori, "DekMoment 3");
 Scale.new(#[0, 5, 9, 13, 14, 19, 21, 22, 26, 28], 35, ~polydori, "DekMoment 4");
 Scale.new(#[1, 5, 7, 9, 14, 20, 21, 27, 29, 33], 35, ~polydori, "DekMoment 5");
+Scale.new(#[0, 5, 9, 14, 20, 27, 29], 35, ~polydori, "DekMoment 6");
+Scale.new(#[0, 5, 9, 14, 20, 27, 29], 35, ~polydori, "DekMoment 7");
 )

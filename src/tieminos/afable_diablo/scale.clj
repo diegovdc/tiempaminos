@@ -3,6 +3,8 @@
    [erv.cps.core :as cps]
    [erv.utils.conversions :as conv]))
 
+(def root 293.66476791741)
+
 (defn +cents [scale]
   (map #(assoc % :cents (conv/ratio->cents (:bounded-ratio %)))
        scale))
