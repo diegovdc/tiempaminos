@@ -1,0 +1,15 @@
+! cps-4_7-1_3_7_9_15_19_21_p2.scl
+!
+A 4)7 CPS scale with factors {1, 3, 7, 9, 15, 19, 21} and period 2. Made with the "erv" library: https://github.com/diegovdc/erv
+ 10
+!
+64/57
+24/19
+224/171
+4/3
+28/19
+14/9
+32/19
+16/9
+112/57
+2/1
