@@ -1,4 +1,4 @@
-(defproject erv-fib-synth "0.1.0-SNAPSHOT"
+(defproject tieminos "0.1.0-SNAPSHOT"
   :description "FIXME: write description"
   :url "http://example.com/FIXME"
   :license {:name "EPL-2.0 OR GPL-2.0-or-later WITH Classpath-exception-2.0"
@@ -18,4 +18,4 @@
                  #_[com.dean/interval-tree "0.1.2"]]
   :plugins [[com.github.clojure-lsp/lein-clojure-lsp "1.1.4"]]
   :jvm-opts ^:replace ["-XX:-OmitStackTraceInFastThrow"]
-  :repl-options {:init-ns erv-fib-synth.core})
+  :repl-options {:init-ns tieminos.core})
