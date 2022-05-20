@@ -5,7 +5,6 @@
    [taoensso.timbre :as timbre]))
 
 
-
 ;; If getting the error Device is Busy:
 ;; https://linuxmusicians.com/viewtopic.php?p=133696
 ;; http://www.tedfelix.com/linux/linux-midi.html
@@ -21,6 +20,7 @@
                (timbre/warn (str "Could not connect to VirMIDI: " (.getMessage e))))))
 
 (comment
+  (midi/midi-out "VirMIDI")
   (midi/midi-in)
   (midi/midi-devices)
   (midi/midi-sources)
