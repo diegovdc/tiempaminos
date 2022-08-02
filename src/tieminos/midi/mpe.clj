@@ -35,13 +35,12 @@
 
 (def config
   "`:bend-range` can be :8-bit (java interface) `:14-bit` (if using the osc to send to supercollider or something)"
-  (atom {:bend-range :8-bit }))
+  (atom {:bend-range :8-bit}))
 
 ;; "It's a map of channel numbers to note-data, and will also contain a
 ;; `:pitch-class` key that is a map of pitch-class to midi-channel
 ;; (used to optimize the number of notes that MPE provides)"
 (defonce midi-state (atom {}))
-
 
 (defn mpe-note-on
   "Sends a note on message with pitch bend data
@@ -57,6 +56,7 @@
                                                     base-freq
                                                     degree)
         note-data (assoc data
+                         :sink sink
                          :input-midi-note midi-note
                          :vel vel
                          :chan chan
@@ -67,7 +67,7 @@
            (select-keys note-data [:input-midi-note :note]))
           note-data)
       (when chan
-        (timbre/debug "note o" note)
+        (timbre/debug "note " note)
         (midi/midi-pitch-bend sink bend chan)
         (midi/midi-note-on sink note vel chan)
         (swap! midi-state add-midi-note
@@ -76,6 +76,9 @@
                pitch-class)
         note-data))))
 
+(comment
+  (def outy (midi/midi-out "VirMIDI"))
+  (midi/midi-note-on outy 1 60 1))
 
 (defn mpe-note-off [sink note-id]
   (let [{:keys [note chan pitch-class input-midi-note]} (@midi-state note-id)]
@@ -87,7 +90,6 @@
              note-id
              input-midi-note
              pitch-class))))
-
 
 (comment
   (algo-note :sink outy
@@ -113,7 +115,6 @@
                       :14-bit 8192
                       :8-bit 64)]
     (Math/round (+ bend-center (* midi-decimals (dec bend-center))))))
-
 
 (defn midi->mpe-note
   [midi]
@@ -145,7 +146,6 @@
       (first (history :list*))
       ;; When some available channels have not been used
       (rand-nth (vec (set/difference available-channels (:set* history)))))))
-
 
 (comment
   (get-oldest-available-used-channel-or-new '(1 2 1 2 3 1 2 1 4 2 1) #{3 4 5})
@@ -187,22 +187,19 @@
                   prev-pitch-class-chan
                   chan-history)))))
 
-
 (defn add-midi-note [midi-state midi-note note-data pitch-class]
   (let [state (assoc midi-state midi-note note-data)]
-    (if pitch-class
+    (when pitch-class
       (-> state
           (assoc-in [:pitch-classes pitch-class :chan] (:chan note-data))
           (update-in [:pitch-classes pitch-class :midi-notes] conj
                      (:input-midi-note note-data))))))
 
-(add-midi-note
- {4 {:note 66, :bend 107, :input-midi-note 4, :vel 20, :chan 8, :pitch-class #{7 1}}, :pitch-classes {#{7 1} {:chan 8, :midi-notes '(4)}}}
- "abcd"
- {:note-data 1}
- #{:pitch-class})
-
-
+#_(add-midi-note
+   {4 {:note 66, :bend 107, :input-midi-note 4, :vel 20, :chan 8, :pitch-class #{7 1}}, :pitch-classes {#{7 1} {:chan 8, :midi-notes '(4)}}}
+   "abcd"
+   {:note-data 1}
+   #{:pitch-class})
 
 (defn- add-prev-used-chan
   "Will add `pitch-class` and `last-chan` to `prev-pitch-classes-map`.
@@ -228,8 +225,7 @@
   (defn remove-first-note [note coll]
     (let [idx (.indexOf coll note)]
       (into (vec (take idx coll))
-            (drop (inc idx) coll)))
-    )
+            (drop (inc idx) coll))))
 
   (remove-first-note #{1} '(0 2 #{1} 1)))
 
@@ -255,7 +251,6 @@
 
 (comment (-> (remove-midi-note @midi-state 0 #{7 5})
              (remove-midi-note 6 #{7 5})))
-
 
 (defn get-cps-pitch-class [cps-scale degree]
   (let [note (utils/wrap-at degree cps-scale)]
