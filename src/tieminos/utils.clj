@@ -2,6 +2,10 @@
   (:require [erv.cps.core :as cps]
             [erv.scale.core :as scale]))
 
+(defn wrap-at [i coll]
+  (let [i* (mod i (count coll))]
+    (nth coll i*)))
+
 (defn rrange
   "Random range"
   [min max]
@@ -14,13 +18,14 @@
 (defn periods [seconds & durs]
   (mapcat (partial period seconds) durs))
 
-
 (defn gen-chord [scale fundamental [gens degs]]
   (let [scale** (->> scale (#(cps/filter-scale % gens)))]
     (map (partial scale/deg->freq scale** fundamental) degs)))
 
 
 ;; Range mapping https://github.com/supercollider/supercollider/blob/18c4aad363c49f29e866f884f5ac5bd35969d828/lang/LangSource/MiscInlineMath.h
+
+
 (defn linexp
   "Maps a value from a linear range to an exponential range"
   [lin-min lin-max exp-min exp-max value]
