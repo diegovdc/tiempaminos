@@ -14,6 +14,7 @@ pom.xml.asc
 /**/##*
 /**/#*
 /**/.#*
+/**/.DS_Store
 .clj-kondo/
 .lsp/
 .cpcache
