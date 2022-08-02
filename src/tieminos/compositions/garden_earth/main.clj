@@ -1,14 +1,13 @@
 (ns tieminos.compositions.garden-earth.main
   (:require
    [taoensso.timbre :as timbre]
-   [tieminos.compositions.garden-earth.base :refer [seconds->dur stop]]
+   [tieminos.compositions.garden-earth.base :refer [bpm seconds->dur stop]]
    [tieminos.compositions.garden-earth.claro :refer [claro]]
    [tieminos.compositions.garden-earth.misterioso :refer [misterioso]]
    [tieminos.osc.reaper :as reaper]
    [time-time.dynacan.players.gen-poly :as gp :refer [on-event ref-rain]]))
 
 (declare garden-earth)
-
 
 (def sections
   ;; Extender el principio para que entre la flauta con más calma y pueda desarrollar en esa armonía, luego de manera relativamente apresurada hacer los cambios armónicos de la segunda parte de Claro hacia algo más disonante, luego ir a #{1 3} y luego terminar la sección
@@ -89,11 +88,12 @@
    ;; faltan/quiero algunas notas agudas en la flauta, buscarlas
    ;; desarrollar diagrama de flujo de la señal de la flauta
    ;;    y a la par definir qué efectos quiero generar con ella
+
+
    [40 #(misterioso :id :misterioso)]
    #_[20 #(do (oscuro/sets-3-11-and-3-5 :moments [:claro] :vel-amp 1)
               (stop :misterioso))]
    [1 #(do (stop) (reaper/stop) (timbre/info "The end"))]])
-
 
 (comment
   (garden-earth misterioso/sections :start-index 0)
@@ -142,8 +142,6 @@
          :offset -2
          :set* #{11 7}))
 
-
-
 (defn garden-earth [sections & {:keys [start-index] :or {start-index 0}}]
   (let [sections*   (map #(update-in % [0] seconds->dur bpm)
                          sections)
@@ -155,3 +153,4 @@
               :on-event (on-event ((-> sections
                                        (nth (+ start-index index))
                                        second))))))
+

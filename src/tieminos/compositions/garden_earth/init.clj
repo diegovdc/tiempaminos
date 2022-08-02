@@ -11,13 +11,19 @@
    [tieminos.compositions.garden-earth.synths.recording :as rec]
    [tieminos.core :refer [connect]]))
 
+(declare startup test-sound load-test-samples! init-groups-and-fx!)
+
 (comment
   ;; antes inicializar SuperCollider con `sc-init.scd`
-  (startup true))
+  (startup true)
+  (test-sound)
+  (load-test-samples!)
+  (init-groups-and-fx!))
 
 (defn load-test-samples! []
   (let [ss (rec/load-own-samples!
-            :buffers-atom rec/bufs :prefixes-set #{:test}
+            :buffers-atom rec/bufs
+            :prefixes-set #{:test}
             :dissoc-prefixes #{})]
     (timbre/info (count @ss) "test samples loaded: " (keys @ss))))
 
@@ -26,8 +32,10 @@
         early (o/group :head main)
         fx (o/group "fx" :after early)]
     (reset! ge-base/groups {:main main :early early :fx fx})
-    (reset! ge-base/fx {:rev-l (fx/rev [:tail fx] 8 :amp 2)
-                        :rev-r (fx/rev [:tail fx] 9 1 :amp 2)})))
+    (reset! ge-base/fx {:rev-l (fx/rev [:tail fx] 8 0 :amp 2)
+                        :rev-r (fx/rev [:tail fx] 9 1 :amp 2)
+                        :rev-3 (fx/rev [:tail fx] 10 2 :amp 2)
+                        :rev-4 (fx/rev [:tail fx] 11 3 :amp 2)})))
 
 (defn init-fx! []
   (let [fx (@ge-base/groups :fx)]
@@ -49,7 +57,7 @@
 (defn startup [dev?]
   (if (o/server-connected?)
     (timbre/info "Server already connected")
-    (timbre/info (connect 2)))
+    (timbre/info (connect)))
   (init-groups-and-fx!)
   (when dev?
     (load-test-samples!)
@@ -65,7 +73,6 @@
           1 50 0.4)
         [220 440 880]))
 (comment (a+53-tuner))
-
 
 (defn start-pitch-tracking []
   (live-signal/run-receive-pitch)

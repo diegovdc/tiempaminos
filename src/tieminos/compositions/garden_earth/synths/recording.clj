@@ -26,7 +26,6 @@
     (swap! bufs-atom assoc key buf)
     buf))
 
-
 (o/defsynth writer [buf 0 seconds 5]
   ;; https://depts.washington.edu/dxscdoc/Help/Classes/RecordBuf.html
   (let [in (o/free-verb (o/sound-in 0) 1)
@@ -38,7 +37,7 @@
   "Use a custom input"
   [in 0 buf 0 seconds 5]
   ;; https://depts.washington.edu/dxscdoc/Help/Classes/RecordBuf.html
-  (let [in (o/in 0)
+  (let [in (o/sound-in in)
         env (o/env-gen (o/envelope [0 1 1 0]
                                    [0.01 (- seconds 0.02) 0.01]))]
     (o/record-buf:ar (* env in) buf :action o/FREE :loop 0)))
@@ -91,7 +90,6 @@
                      (< index (- (count progress-range) 10)) (print "=")
                      :else (print "*"))))))
 
-
 (def recording?
   "For external use only (an outside check if something is being recorded)"
   (atom false))
@@ -103,7 +101,7 @@
            countdown 10}}]
   (ref-rain
    :id (keyword "recording" (str "start-recording"
-                                (name-buf-key buf-key)))
+                                 (name-buf-key buf-key)))
    :tempo bpm
    :loop? false
    :durs (conj (vec (repeat countdown (seconds->dur 1 bpm)))
@@ -113,10 +111,10 @@
               (do
                 (when (zero? index)
                   (do (timbre/info (str msg " \n buf-key: " buf-key))
-                      (println "Countdown:" )))
+                      (println "Countdown:")))
 
                 (cond (> (- countdown index) 0)
-                      (print (str (- countdown index) "... ") )
+                      (print (str (- countdown index) "... "))
 
                       (= countdown index)
                       (do (reset! recording? true)
@@ -138,9 +136,8 @@
            :pos-noise-amp 0
            :amp 3)))
 
-
 (def default-samples-path
-  "/home/diego/tiempaminos/erv-fib-synth/src/tieminos/compositions/garden_earth/samples/")
+  "/Users/diego/Music/code/tieminos/src/tieminos/compositions/garden_earth/samples/")
 
 (defn save-samples*
   "`prefix` is a unique identifier for the sample set"
@@ -173,7 +170,7 @@
   (save-samples* prefix path buffers-atom name-buf-key-fn))
 
 (comment
-  (save-samples :test-2))
+  (save-samples :test))
 
 (defn load-own-samples!
   "`buffers-atom` is an atom like {k overtone.buffer}
@@ -219,8 +216,6 @@
         (reset! samples-atom updated-samples)))
     :done))
 
-
-
 (defn get-any-buffer-for-pitch-class
   ([pc] (get-any-buffer-for-pitch-class pc @bufs))
   ([pc bufs] (->> bufs
@@ -229,8 +224,6 @@
                   second)))
 (comment
   (get-any-buffer-for-pitch-class "A+53" @test-samples))
-
-
 
 (defn rec-flute
   "Plays a reference pitch using `tuning-monitor`
@@ -254,14 +247,12 @@
                   (pitch-class->pr-fingering pitch-class))
      :on-end on-end)))
 
-
 (defn filter*
   "Filters bufs by passing the `bufkey` to `f`"
   [f bufs]
   (filter (fn [[bufkey]] (f bufkey)) bufs))
 
 (comment (filter* (fn [[_ id]] (= :oceanic id)) @bufs))
-
 
 (comment
 
@@ -271,8 +262,6 @@
 
   (->> test-samples)
   (->> prev-samples deref first second meta))
-
-
 
 (comment
   (rec-buf bufs [:oli 5 6] 5)

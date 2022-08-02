@@ -62,8 +62,6 @@
            (bz/curve steps
                      [15 1 0.1 (rand-nth [26 20]) 7 0.1]))))
 
-
-
 (defn f
   ([steps] (f steps  0.03 0.1))
   ([steps min-dur max-dur]
@@ -94,14 +92,11 @@
 
 (defn rand-val [m] (val (rand-nth (seq m))))
 
-
 (comment
-
 
   (stop)
   (o/recording-start "/home/diego/Desktop/razgado2.wav")
   (o/recording-stop))
-
 
 (do
   (defn on-sample-end
@@ -123,10 +118,9 @@
         ;; TODO rename key to include analyzed "dominant" pitch
         (println s&h-data)
         (swap! bufs-atom set/rename-keys {buf-key new-buf-key})
-        (swap! s&h-seq conj s&h-data ))))
+        (swap! s&h-seq conj s&h-data))))
   (comment
     (s&h rec/bufs 0.5 1)))
-
 
 (defn s&h [bufs-atom dur index
            & {:keys [play-fn]
@@ -158,7 +152,7 @@
                                            (- (:note ev) 60))
            env (envs :atk-reso1)]
        (println pc-index* (:note ev)
-                rate )
+                rate)
        (play-sample s&h-data
                     :rate rate
                     :amp (* 8 (/ (ev :velocity) 40))
@@ -173,7 +167,7 @@
       (let [scale #_(:scale eik) (subcps "2)4 of 3)6 11-1.5.7.9")
             pc-index* (pc-index scale pitch-class)
             direction (rand-nth [1 -1])
-            intervals (map #(interval-from-pitch-class scale pitch-class % )
+            intervals (map #(interval-from-pitch-class scale pitch-class %)
                            (map #(* % direction)
                                 (range pc-index* (+ 9 (rand-int 7) pc-index*) 2)))
             durs ((rand-val bz)
@@ -196,10 +190,10 @@
                                 :adr-env (dur->env env (at-index env-durs)))))))))
 
 (comment
+  .1
   (stop)
   (s&h rec/bufs 0.5 1 :play-fn s&h-reponse-1)
   (ref-rain :id :s&h-rain
             :durs [5 3 8 2 1 5]
             :ratio 1/3
-            :on-event (on-event (s&h rec/bufs 0.5 index :play-fn s&h-reponse-1)))
-  )
+            :on-event (on-event (s&h rec/bufs 0.5 index :play-fn s&h-reponse-1))))

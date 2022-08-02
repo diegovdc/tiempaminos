@@ -53,7 +53,6 @@
        (println "\n")
        ~code))
 
-
 (defn stop
   ([refrain-key]
    (gp/stop refrain-key))
@@ -82,7 +81,6 @@
 (defn sub-cps-scale
   [cps-name]
   (-> eik :subcps (get cps-name) :scale))
-
 
 (defn const-log-fn [tabs]
   (fn [_] (str/join "\n" tabs)))
@@ -125,7 +123,6 @@
   (+names base-freq
           (-> eik :subcps (get subcps-name) :scale)))
 
-
 (defn scale->fingerings [scale]
   (->> scale
        (+names base-freq)
@@ -134,7 +131,6 @@
 
 (defn pr-set [set*]
   (-> set* str (str/replace "#" "∈")))
-
 
 (defn pitch-class->pr-fingering [pitch-class]
   (str pitch-class " " (pr-set (:set (get eik-notes pitch-class)))
@@ -153,9 +149,6 @@
        (str/join "\n\n")))
 
 (comment (scale->fingerings (subcps "1)4 of 3)6 1.3-5.7.9.11")))
-
-
-
 
 (defn dur->env
   "`env-points` is a map of ratios of duration between each segment of the envelope
@@ -177,17 +170,16 @@
   with reference to `eik-scale`.
   `eik-scale` should be any subset from the `eik` scale.
   `deg-interval` is a degree in `eik-scale`"
-    ([eik-scale note deg-interval]
+    ([eik-scale note deg-interval & {:keys [ratio] :or {ratio :bounded-ratio}}]
      (let [target (wrap-at deg-interval eik-scale)
            period (scale/get-period 0 (count eik-scale) deg-interval)
            transp (scale/transpose-by (:bounding-period target) period)]
-       (* transp (utils/interval (:bounded-ratio note)
-                                 (:bounded-ratio target))))))
+       (* transp (utils/interval (ratio note)
+                                 (ratio target))))))
   (comment)
   (interval-from-note (subcps "1)4 of 3)6 1.3-5.7.9.11")
                       (nth (:scale eik) 0)
                       4))
-
 
 (defn pc-index [scale pitch-class]
   (.indexOf (map (comp :class :pitch) scale) pitch-class))
@@ -221,13 +213,10 @@
         high-range [high-note (* 2 low-note)]]
     (concat [low-range] ranges [high-range])))
 
-
-
 (defn eiko-round-freq
   "Round `freq` to the nearest pitch class in the `eikosany`"
   [freq]
-  (let [
-        [freq-in-octave transp-period]
+  (let [[freq-in-octave transp-period]
         (loop [f freq octaves 1]
           (cond (> 880 f 440) [f octaves]
                 (> f 880) (recur (/ f 2) (* 2 octaves))
@@ -237,8 +226,7 @@
                                    (filter #(> (second %)
                                                freq-in-octave
                                                (first %)))
-                                   first)
-                              )
+                                   first))
         diff1 (- t-freq1 freq-in-octave)
         diff2 (- t-freq2 freq-in-octave)
         [eik-freq diff-hz] (if (> (Math/abs diff2) (Math/abs diff1))
@@ -252,3 +240,4 @@
      :original-freq freq}))
 
 (comment (eiko-round-freq 454.6221))
+

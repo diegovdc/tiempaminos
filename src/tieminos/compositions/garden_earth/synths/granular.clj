@@ -1,14 +1,16 @@
 (ns tieminos.compositions.garden-earth.synths.granular
   (:require
    [overtone.core :as o]
-   [overtone.sc.ugen-collide :as oc]
+   [overtone.sc.ugen-collide-list :as oc]
    [tieminos.compositions.garden-earth.base :refer [dur->env]]
    [tieminos.compositions.garden-earth.synths.live-signal :refer [lfo]]
    [tieminos.overtone-extensions :as oe]))
 
 (comment
+
   ;; load buffers for testing
-  (require '[erv-fib-synth.compositions.garden-earth.synths.recording :as rec]))
+  (require '[tieminos.compositions.garden-earth.synths.recording :as rec])
+  (def test-samples (rec/load-own-samples!)))
 
 ;;;;;;;;;;
 ;;; Synths
@@ -18,8 +20,6 @@
   (o/defsynth x [a 100] (o/out 0 (o/sin-osc a)))
   (x {:a 200})
   (o/stop))
-
-
 
 (defmacro granulator-pos [buf speed start end pos-noise-freq pos-noise-amp]
   `(oc/+
@@ -106,7 +106,7 @@
                (+ (* sig (o/sin-osc (lfo 2 16 200)
                                     :mul (lfo 2.5 0.1 0.3))))
                (* amp
-                  (o/sin-osc )
+                  (o/sin-osc)
                   (lfo 0.1 0.4 1)
                   (o/env-gen (o/envelope [0 1 1 0] [a (- dur a r) r])
                              :action o/FREE))))))
@@ -162,8 +162,8 @@
                (:duration b)
                40
                1/20
-               #_ #_ #_ #_ :start 0.3
-               :end 0.31
+               #_#_#_#_:start 0.3
+                   :end 0.31
                :amp 3
                :mix 1))
   (-> @bufs keys)
@@ -251,8 +251,8 @@
          10
          40
          1/20
-         #_ #_ #_ #_ :start 0.3
-         :end 0.31
+         #_#_#_#_:start 0.3
+             :end 0.31
          :amp 3
          :mix 1)
   (let [b (@bufs ["D#+75" :a])]
@@ -260,15 +260,14 @@
                (:duration b)
                40
                1/20
-               #_ #_ #_ #_ :start 0.3
-               :end 0.31
+               #_#_#_#_:start 0.3
+                   :end 0.31
                :amp 3
                :mix 1))
   (-> @bufs keys)
   (o/demo 5 (o/play-buf 1 (@bufs ["D#+75" :a]))))
 
-
-(o/defsynth ocean
+(oe/defsynth ocean
   [buf 0
    dur 1
    trig-rate 40
@@ -308,8 +307,7 @@
                 (o/env-gen (o/envelope [0 1 1 0] [a (- dur a r) r])
                            :action o/FREE)))))
 
-
-(o/defsynth ocean-2
+(oe/defsynth ocean-2
   [buf 0
    dur 1
    trig-rate 40
