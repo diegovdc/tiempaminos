@@ -4,7 +4,7 @@
         potemkin/potemkin {:mvn/version "0.4.5"}
         org.clojure/data.generators {:mvn/version "1.0.0"}
         overtone/overtone {:local/root "../overtone" :deps/manifest :deps}
-        org.clojars.videco/time-time {:local/root "../time-time" :deps/manifest :deps}
+        org.clojars.videco/time-time {:local/root "../time-tiem" :deps/manifest :deps}
         org.clojars.videco/erv {:local/root "../erv" :deps/manifest :deps}
         com.taoensso/timbre {:mvn/version "4.10.0"}
         incanter/incanter {:mvn/version "1.9.3"}
