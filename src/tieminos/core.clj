@@ -12,12 +12,13 @@
 
 (def stop gp/stop)
 
-(defn connect [_] (o/connect-external-server))
+(defn connect [] (o/connect-external-server))
 (defn test-sound [] (o/demo (* 0.2 (o/sin-osc))))
 
 (defn disconnect [] (oc/shutdown-server))
 
 (comment
+  (connect)
   (timbre/set-level! :debug)
   (timbre/set-level! :info))
 
@@ -48,8 +49,6 @@
          (when-let [err ?err]
            (str "\n" (timbre/stacktrace err)))))))})
 
-
-
 (defn ap-synth [synth-var arg-map]
   (let [ks (->> (meta synth-var) :arglists first (map keyword))
         synth (var-get synth-var)
@@ -72,8 +71,7 @@
          (cps/maps->data :bounded-ratio)
          :scale
 
-         #_
-         (#(cps/filter-scale % #{7}))
+         #_(#(cps/filter-scale % #{7}))
          #_user/spy
          #_(#(demo! %
                     :periods 1
@@ -122,7 +120,7 @@
                 :s 2}))
 
   (comment
-    (def s2(sqrsin (* 358 2) 6 0.001 0.02 0.11))
+    (def s2 (sqrsin (* 358 2) 6 0.001 0.02 0.11))
 
     (reset! gp/refrains {}))
 
@@ -157,8 +155,7 @@
                                         0
                                         (o/ctl s
                                                :pitch (wrap-at index [5 9 16])
-                                               :a (wrap-at index [0.5 0.7 1 2])
-                                               )
+                                               :a (wrap-at index [0.5 0.7 1 2]))
                                         nil)))
 
     (ref-rain :id ::a2
@@ -181,7 +178,7 @@
                                      1
                                      (o/ctl s2 :pitch (wrap-at index [4 1 6 7]))
                                      0
-                                     (o/ctl s2 :freq(wrap-at index [60 100 90 300]))
+                                     (o/ctl s2 :freq (wrap-at index [60 100 90 300]))
                                      2
                                      (o/ctl s2 :pitch (wrap-at index [2 7 2 6 80]))
                                      3
@@ -197,7 +194,4 @@
               :on-event (on-event (swap! v as2s2oc
                                          :pitch (+ 5 (* 100 (wrap-at (* 2 index) fib-s2cale))))))
 
-
-
-    (o/stop)
-    ))
+    (o/stop)))
