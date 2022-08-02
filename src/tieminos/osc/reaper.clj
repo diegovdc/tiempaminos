@@ -3,7 +3,7 @@
 
 (defonce osc-client (atom nil))
 
-(defn init [] (reset! osc-client (osc/osc-client "192.168.10.105" 8002)))
+(defn init [] (reset! osc-client (osc/osc-client "192.168.0.100" 1618)))
 
 (defn play [] (osc/osc-send @osc-client "/play"))
 (defn stop [] (osc/osc-send @osc-client "/stop"))
