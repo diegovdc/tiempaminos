@@ -34,4 +34,4 @@
                                    (group-by :bounded-ratio)
                                    (map (comp first second))
                                    #_(map :bounded-ratio))))]
-    (spit (str "/Users/diego/Music/tunings/" filename) content )))
+    (spit (str "/Users/diego/Music/tunings/" filename) content)))

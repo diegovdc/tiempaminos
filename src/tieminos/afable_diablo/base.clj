@@ -29,7 +29,6 @@
   (act-level (make-activity-map [[10 0.3] [10 0.7] [10 0.2] [10 0]])
              60))
 
-
 (def outs {:midi-kb 5                   ; y 6
            :arps 7                      ; y 8
            :dq-highs 9                  ; y 10
@@ -37,6 +36,9 @@
            })
 
 (def all-outs->0 (atom false))
+
+(comment
+  (reset! all-outs->0 true))
 
 (defn get-out [k]
   (if @all-outs->0 0 (dec (outs k 0))))

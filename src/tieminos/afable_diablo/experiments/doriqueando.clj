@@ -9,7 +9,9 @@
    [tieminos.afable-diablo.dorian-scales :as ds]
    [tieminos.afable-diablo.harmonic-clock :as hc]
    [tieminos.afable-diablo.scale :refer [polydori root]]
-   [tieminos.synths :refer [low]]
+   [tieminos.afable-diablo.synths :refer [sini]]
+   [tieminos.synths :refer [low sharp-plate]]
+   [tieminos.utils :refer [rrange]]
    [time-time.dynacan.players.gen-poly :refer [on-event ref-rain stop]]))
 
 (def anti-dorico-1v1
@@ -17,9 +19,7 @@
     (->> polydori :scale (remove #(dorico (:set %))))))
 
 (-> anti-dorico-1v1)
-(->> polydori :subcps (filter #(str/includes? % "3)5" )))
-
-
+(->> polydori :subcps (filter #(str/includes? % "3)5")))
 
 (comment
   (do
@@ -31,8 +31,7 @@
                        3 2 2 3 2
                        3 2 2 3 2
                        3 2 2 3 3
-                       2 1 2 2 2 1 2
-                       ]
+                       2 1 2 2 2 1 2]
                 :ratio 1/9
                 :on-event
                 (on-event
@@ -66,7 +65,7 @@
                        freq (scale/deg->freq scale base-freq deg)]
                    (when (> 0.1 (rand))
                      ;; TODO move this to another refrain
-                     #_(low  :freq (/ freq 4)
+                     (low  :freq (/ freq 4)
                            :mod-freq (rand-nth [2000 500 9000])
                            :amp 0.3
                            :dcy 4
@@ -74,20 +73,17 @@
                    (when (> lvl (rand))
                      ;; TODO better that sini? ... maybe both growing in probability
                      (sharp-plate
-                      :freq (* (weighted {
-                                          1/8 10
+                      :freq (* (weighted {1/8 10
                                           1/16 20
                                           1/32 30
                                           ;; 1 1
-                                          }) freq)
+                                          })freq)
                       :mod-freq (rand-nth [2000 5000 9000
                                            ;; after a while
                                            200
-                                           300
-                                           ])
+                                           300])
                       :amp (rrange 0.01 0.3)
-                      :atk (weighted (assoc {
-                                             1 8
+                      :atk (weighted (assoc {1 8
                                              0.1 25 #_150
                                              ;; 0.05 25 #_150
                                              }
@@ -97,8 +93,7 @@
                    (when (> (*  lvl) (rand))
                      (sini :freq freq
                            :pan-speed (* 20 (rand))
-                           :a (weighted (assoc {
-                                                ;; 1 8
+                           :a (weighted (assoc {;; 1 8
                                                 ;; 0.1 10
                                                 ;; 0.05 25 #_150
                                                 }
@@ -111,8 +106,7 @@
                 :durs [3 2 2 3 2
                        3 2 2 3 2
                        2 1 2 1 1 2 1 2
-                       2 1 2 2 2 1 2
-                       ]
+                       2 1 2 2 2 1 2]
                 :ratio 1
                 :on-event
                 (on-event
@@ -129,13 +123,10 @@
                          :amp 0.7
                          :a 3
                          :r dur
-                         :out (get-out :dq-bass))))))
-
-    )
+                         :out (get-out :dq-bass)))))))
 
   (stop :test2)
   (o/stop))
-
 
 (comment
   (o/recording-start "/home/diego/Desktop/piraran-ensayo2.wav")

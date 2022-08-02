@@ -21,7 +21,6 @@
        (map #(assoc (first %) :scale (second %)))
        (mapv +hexanies)))
 
-
 (def momento (atom (first dek-seq)))
 
 (defn get-scale
@@ -36,8 +35,6 @@
 (comment
   ;; total different hexanies
   (->> dek-seq (mapcat :hexanies) set count))
-
-
 
 (defn run [{:keys [moment-events]}]
   (ref-rain :id :harmonic-clock
@@ -61,3 +58,4 @@
 (comment
   (stop)
   (run))
+

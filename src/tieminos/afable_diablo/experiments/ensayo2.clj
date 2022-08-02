@@ -97,13 +97,11 @@
   (main-8v -10)
   (main-8v -11)
   (main-8v -13)
-  (main-8v -16)
-  )
+  (main-8v -16))
 
 (defn chord-durs [events-num total-dur]
   (let [single-dur (/ total-dur events-num)]
     (repeat events-num single-dur)))
-
 
 (defn m3-chord-seq []
   (ref-rain :id m3-chord-seq
@@ -118,7 +116,7 @@
   ;; TODO mover a ns init?
   (do (gp/stop) (reset! base/elapsed-time 0) (o/recording-stop))
   (do
-    (o/recording-start (format "/home/diego/Desktop/piraran-ensayo-%s.wav" (java.util.Date.)))
+    #_(o/recording-start (format "/home/diego/Desktop/piraran-ensayo-%s.wav" (java.util.Date.)))
     (base/count-time)
-    (hc/run
-      {:moment-events {#_ #_3 m3-chord-seq}})))
+    (hc/run {:moment-events {#_#_3 m3-chord-seq}})))
+
