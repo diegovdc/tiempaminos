@@ -1,0 +1,19 @@
+{:deps {org.clojure/clojure {:mvn/version "1.11.1"}
+        org.clojure/core.async {:mvn/version "1.3.618"}
+        org.clojure/tools.namespace {:mvn/version "1.2.0"}
+        potemkin/potemkin {:mvn/version "0.4.5"}
+        org.clojure/data.generators {:mvn/version "1.0.0"}
+        overtone/overtone {:local/root "../overtone" :deps/manifest :deps}
+        org.clojars.videco/time-time {:local/root "../time-time" :deps/manifest :deps}
+        org.clojars.videco/erv {:local/root "../erv" :deps/manifest :deps}
+        com.taoensso/timbre {:mvn/version "4.10.0"}
+        incanter/incanter {:mvn/version "1.9.3"}
+        ;; The next two fix the erroneous call to a the bounccastle dep by incanter
+        com.lowagie/itext {:mvn/version "2.1.7"
+                           :exclusions  [bouncycastle/bctsp-jdk14]}
+        org.bouncycastle/bctsp-jdk14 {:mvn/version "1.38"}
+        ;; working with intervals
+        io.helins/interval {:mvn/version "1.0.0-beta0"}
+        ;; another interesting possibility, may offer other options
+        ;; com.dean/interval-tree {:mvn/version  "0.1.2"}
+        }}
