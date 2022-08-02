@@ -1,6 +1,6 @@
 (ns tieminos.wip-synths
   (:require
-   [overtone.core :as o :refer :all]
+   [overtone.core :as o]
    [tieminos.overtone-extensions :refer [defsynth]]))
 
 (defsynth dbass [freq 440 amp 1 a 0.05 r 0.5 pan-speed 0 out 0]
