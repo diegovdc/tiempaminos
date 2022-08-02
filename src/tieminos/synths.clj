@@ -8,7 +8,7 @@
 
 (defsynth low
   [freq 85
-   amp 1
+   amp 0.5
    mod-freq 8300
    pan 0
    atk 0.01
@@ -18,13 +18,13 @@
                  sin-osc
                  (pan2 pan)
                  (* (env-gen (env-perc atk dcy) :action FREE))
-                 (* amp))))
+                 (* amp (o/amp-comp-a freq)))))
 
 (comment (low))
 
 (defsynth short-plate
   [freq 200
-   amp 1
+   amp 0.5
    mod-freq 1000
    pan 0
    atk 0.01
@@ -34,7 +34,7 @@
                  sin-osc
                  (pan2 pan)
                  (* (env-gen (env-perc atk dcy) :action FREE))
-                 (* amp))))
+                 (* amp (o/amp-comp-a freq)))))
 
 (comment (short-plate))
 
@@ -77,6 +77,7 @@
 ;;;;;;;;;;;
 ;;; melodic (they have gate)
 
+
 (defsynth low2
   [freq 85
    amp 1
@@ -107,8 +108,6 @@
 (comment
   (def l (low2))
   (ctl l :gate 0))
-
-
 
 (defsynth sharp-plate2
   [freq 350
