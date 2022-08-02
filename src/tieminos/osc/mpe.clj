@@ -35,11 +35,11 @@
           (osc/send-note-on :note note :vel vel :bend bend :chan chan))
         (swap! midi-mpe/midi-state
                midi-mpe/add-midi-note
+               "osc"
                midi-note
                note-data
                pitch-class)
         note-data))))
-
 
 (defn mpe-note-off
   [midi-note]

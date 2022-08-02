@@ -51,7 +51,7 @@
            base-freq 440}}]
   (let [degree (+ midi-note deg-offset)
         pitch-class (get-pitch-class scale degree)
-        chan (get-available-channel pitch-class)
+        chan (get-available-channel sink pitch-class)
         {:keys [note bend] :as data} (deg->mpe-note scale
                                                     base-freq
                                                     degree)
@@ -71,6 +71,7 @@
         (midi/midi-pitch-bend sink bend chan)
         (midi/midi-note-on sink note vel chan)
         (swap! midi-state add-midi-note
+               sink
                (or note-id midi-note)
                note-data
                pitch-class)
@@ -78,15 +79,18 @@
 
 (comment
   (def outy (midi/midi-out "VirMIDI"))
-  (midi/midi-note-on outy 1 60 1))
+  (midi/midi-note-on outy 1 60 1)
+  (reset! midi-state {})
+  (-> @midi-state))
 
 (defn mpe-note-off [sink note-id]
-  (let [{:keys [note chan pitch-class input-midi-note]} (@midi-state note-id)]
+  (let [{:keys [note chan pitch-class input-midi-note]} (get-in @midi-state [sink note-id])]
     (when note
       (timbre/debug "note off" note)
       (midi/midi-note-off sink note chan)
       (swap! midi-state
              remove-midi-note
+             sink
              note-id
              input-midi-note
              pitch-class))))
@@ -162,8 +166,8 @@
 (comment
   (get-previously-used-channel-or-new 1 '(1 2 1 2 3) #{4}))
 
-(defn get-available-channel [pitch-class]
-  (let [state @midi-state
+(defn get-available-channel [sink pitch-class]
+  (let [state (get @midi-state sink {})
         pitch-classes (state :pitch-classes {})
         pitch-class-chan  (:chan (pitch-classes pitch-class))
         prev-pitch-class-chan (get-in
@@ -187,12 +191,12 @@
                   prev-pitch-class-chan
                   chan-history)))))
 
-(defn add-midi-note [midi-state midi-note note-data pitch-class]
-  (let [state (assoc midi-state midi-note note-data)]
+(defn add-midi-note [midi-state sink midi-note note-data pitch-class]
+  (let [state (assoc-in midi-state [sink midi-note] note-data)]
     (when pitch-class
       (-> state
-          (assoc-in [:pitch-classes pitch-class :chan] (:chan note-data))
-          (update-in [:pitch-classes pitch-class :midi-notes] conj
+          (assoc-in [sink :pitch-classes pitch-class :chan] (:chan note-data))
+          (update-in [sink :pitch-classes pitch-class :midi-notes] conj
                      (:input-midi-note note-data))))))
 
 #_(add-midi-note
@@ -229,28 +233,25 @@
 
   (remove-first-note #{1} '(0 2 #{1} 1)))
 
-(defn remove-midi-note-from-pitch-class-list [midi-state pitch-class midi-note]
+(defn remove-midi-note-from-pitch-class-list [midi-state sink pitch-class midi-note]
   (let [state (update-in midi-state
-                         [:pitch-classes pitch-class :midi-notes]
+                         [sink :pitch-classes pitch-class :midi-notes]
                          #(remove-first-note midi-note %))]
     (if (-> state :pitch-classes (get pitch-class) :midi-notes seq)
       state
       (let [last-chan (-> state :pitch-classes (get pitch-class) :chan)]
         (-> state
-            (update :pitch-classes dissoc pitch-class)
-            (update-in [:previous-pitch-classes :map]
+            (update-in [sink :pitch-classes] dissoc pitch-class)
+            (update-in [sink :previous-pitch-classes :map]
                        add-prev-used-chan  pitch-class last-chan)
-            (update-in [:previous-pitch-classes :chan-history]
+            (update-in [sink :previous-pitch-classes :chan-history]
                        #(conj (take 200 %) last-chan)))))))
 
 (defn remove-midi-note
-  ([midi-state note-id input-midi-note pitch-class]
+  ([midi-state sink note-id input-midi-note pitch-class]
    (-> midi-state
-       (dissoc note-id)
-       (remove-midi-note-from-pitch-class-list pitch-class input-midi-note))))
-
-(comment (-> (remove-midi-note @midi-state 0 #{7 5})
-             (remove-midi-note 6 #{7 5})))
+       (update sink dissoc note-id)
+       (remove-midi-note-from-pitch-class-list sink pitch-class input-midi-note))))
 
 (defn get-cps-pitch-class [cps-scale degree]
   (let [note (utils/wrap-at degree cps-scale)]
