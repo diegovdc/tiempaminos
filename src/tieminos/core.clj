@@ -17,8 +17,27 @@
 
 (defn disconnect [] (oc/shutdown-server))
 
+(defn rec
+  "
+  Options:
+
+  :n-chans     - Number of channels for the buffer
+                 Default 2
+  :size        - Buffer size
+                 Default 65536
+  :header      - Header format: \"aiff\", \"next\", \"wav\", \"ircam\", \"raw\"
+                 Default \"wav\"
+  :samples     - Sample format: \"int8\", \"int16\", \"int24\", \"int32\",
+                                \"float\", \"double\", \"mulaw\", \"alaw\"
+                 Default \"int16\"
+  Example:  (rec \"prueba-4ch\" :n-chans 4)
+  "
+  [filename & opts]
+  (apply o/recording-start (str "/Users/diego/Music/code/tieminos/recordings/" filename ".wav") opts))
+
 (comment
   (connect)
+  (disconnect)
   (timbre/set-level! :debug)
   (timbre/set-level! :info))
 

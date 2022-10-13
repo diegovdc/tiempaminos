@@ -253,6 +253,7 @@
 (/  7/6 14/9)
 (def archi-sets (cps/archi-subcps-sets 3 6))
 (-> scale)
+
 (comment
   (map :archi-set
        (filter

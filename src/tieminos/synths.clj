@@ -1,6 +1,24 @@
 (ns tieminos.synths
   (:require [overtone.core :refer :all :as o]))
 
+;;;;;;;;;;;
+;; Basic ;;
+;;;;;;;;;;;
+(defsynth soft-saw
+  [freq 200
+   amp 0.5
+   pan 0
+   atk 0.01
+   dcy 1
+   out 0]
+  (o/out out
+         (-> (saw freq)
+             (lpf 2000)
+             (pan2 pan)
+             (* (env-gen (env-perc atk dcy) :action FREE))
+             (* amp (o/amp-comp-a freq)))))
+
+
 ;;;;;;;;;;;;;;;;
 ;; Percussion ;;
 ;;;;;;;;;;;;;;;;
@@ -66,8 +84,9 @@
   (o/out out (-> (range-lin (saw mod-freq) (- freq 350) (+ freq 350))
                  sin-osc
                  (pan2 pan)
+                 (lpf 2000)
                  (* (env-gen (env-perc atk dcy) :action FREE))
-                 (* amp))))
+                 (* amp (o/amp-comp-a freq)))))
 
 (comment (sharp-plate))
 
@@ -133,4 +152,22 @@
                  (* (env-gen
                      (env-adsr atk dcy sust rel :curve :sin)
                      :gate gate :action FREE))
-                 (* amp))))
+                 (* amp (o/amp-comp-a freq)))))
+
+(defsynth noise-tone
+  [freq 200
+   bwr 0.01
+   pan 0
+   out 0
+   amp 1]
+  (o/out out
+         (-> (white-noise)
+             (resonz freq bwr)
+             (lpf (* 1.1 freq))
+             (* 120 amp (env-gen (env-perc) :action FREE))
+             (pan2 pan))))
+
+(comment
+  (noise-tone :amp 1)
+  (stop))
+

@@ -40,3 +40,34 @@
     :else (* exp-min (Math/pow (/ exp-max exp-min)
                                (/ (- value lin-min)
                                   (- lin-max lin-min))))))
+
+;;; xrepeat
+(def xrepeat
+  "Takes a `pattern` (a seq of numbers) and a seq of any value (`xs`)
+  and will produce a seq with the values of `xs` repeated by the `pattern`
+
+  e.g.
+  (mosify [3 3 2] [:a :b]) => '(:a :a :a, :b :b :b, :a :a,
+                                :b :b :b, :a :a :a, :b :b)
+
+  If `infinite?` is true will lazyly produce an infinite sequence.
+  Useful when `xs` is longer than `pattern`. Remember to either get an index or use take.
+
+  `all-xs?` ensures that the pattern cycle is complete and repeats itself correctly,
+  set to false if you only care of one cycle.
+
+  This function is memoized so that it can be performantly used inside a loop."
+  (memoize
+   (fn [pattern xs & {:keys [infinite? all-xs?]
+                      :or {all-xs? true}}]
+     (let [pattern* (cond
+                      infinite? (flatten (repeat pattern))
+
+                      all-xs? (flatten (repeat (count xs) pattern))
+                      :else pattern)]
+       (flatten (map-indexed (fn [i n] (repeat n (wrap-at i xs)))
+                             pattern*))))))
+
+(defn seconds->dur [secs bpm] (* secs (/ bpm 60)))
+
+(defn dur->bpm [dur-ms] (/ 60000 dur-ms))

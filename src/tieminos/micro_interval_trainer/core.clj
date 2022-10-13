@@ -65,17 +65,17 @@
   (convo/ratio->cents 8/7)
   (map convo/ratio->cents (edo/edo-ratios 31)))
 
-#_(def intervals [[1 9/8]
-                  [1 8/7]])
-
 (defn get-cps-diads [cps-scale]
   (->> (combo/combinations cps-scale 2)
        (filter (fn [[a b]]
                  (seq (set/intersection (:archi-set a) (:archi-set b)))))
        (map (fn [[a b]] [(:bounded-ratio a) (:bounded-ratio b)]))))
 
-(def intervals [[5/4 7/4]
-                [21/16 15/8]])
+#_(def intervals [[5/4 7/4]
+                  [21/16 15/8]])
+
+(def intervals [[1 9/8]
+                [1 8/7]])
 
 (comment
   (->> [1 3 5 7]
@@ -101,13 +101,14 @@
    :on-event (on-event
               (let [intervals* (rand-nth intervals)
                     octave (rand-nth [1/4 1/2 1 2 4])]
-                (when (even? index)
-                  (println intervals*
-                           #_octave
-                           (apply interval intervals*)
-                           (convo/ratio->cents (apply interval intervals*)))
-                  ((rand-nth [melody chord])
-                   :base-freq (* octave 440)
-                   :intervals intervals*
-                   :dur dur
-                   :synth (rand-nth [low short-plate #_it-synth])))))))
+
+                (println intervals*
+                         #_octave
+                         (apply interval intervals*)
+                         (convo/ratio->cents (apply interval intervals*)))
+                ((rand-nth [melody chord])
+                 :base-freq (* octave 440)
+                 :intervals intervals*
+                 :dur dur
+                 :synth (rand-nth [low short-plate #_it-synth]))))))
+
