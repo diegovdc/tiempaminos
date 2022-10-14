@@ -31,7 +31,7 @@
 
 (defn init
   [& {:keys [port] :or {port 16180}}]
-  (if-no    t @osc-server
+  (if-not @osc-server
     (reset! osc-server (osc/osc-server port))
     (timbre/warn "OSC Server is already running.")))
 
@@ -46,5 +46,4 @@
   (reset! osc-server nil)
   (-> @osc-server)
   (def client (osc/osc-client (get-local-host) 2666))
-  (osc/osc-send client "/holas" 1,2,3,4)
-  )
+  (osc/osc-send client "/holas" 1,2,3,4))
