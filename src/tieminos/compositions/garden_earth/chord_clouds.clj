@@ -338,9 +338,9 @@ El objetivos es que la flauta pueda tener su rol y no estar peleando por la aten
                    :durs [5 3 2] #_[3 2 2]
                    :offset-weights {4 60, 5 10,}
                    :delay-weights {0 500, 200 30, 300 20})))
-  (tranquilo-agudo))
+  #_(tranquilo-agudo))
 
-(@auto-scales :dekany)
+#_(@auto-scales :dekany)
 (comment
   (stop)
 

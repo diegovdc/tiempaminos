@@ -1,13 +1,13 @@
 (ns tieminos.lc-fam.three
   (:require [clojure.string :as str]
-            [erv-fib-synth.midi :refer [note-on]]
+            [tieminos.midi.core :refer [note-on]]
             [erv.cps.core :as cps]
             [erv.scale.core :as scale]
             [overtone.core :as o :refer :all :exclude [on-event]]
             [time-time.dynacan.players.gen-poly :as gp :refer [on-event ref-rain]]
             [time-time.standard :refer [wrap-at]]))
-
-(def desert-at-night (o/load-sample "~/Downloads/138288__kangaroovindaloo__desert-at-night.aiff"))
+(comment
+  (def desert-at-night (o/load-sample "~/Downloads/138288__kangaroovindaloo__desert-at-night.aiff")))
 
 (do
   (defn hexarhythm
@@ -26,7 +26,7 @@
           (o/rotate offset)
           ((fn [ratios] (map #(wrap-at % ratios) sequence*)))
           (map-indexed #(* %2 (wrap-at %1 mults))))))
-  (println (hexarhythm #{1 3 5 7} [0 2 2 1 2 0 1] 4 [1])))
+  #_(println (hexarhythm #{1 3 5 7} [0 2 2 1 2 0 1] 4 [1])))
 
 (defn period [seconds durs]
   (let [ratio (/ seconds (apply + durs))]

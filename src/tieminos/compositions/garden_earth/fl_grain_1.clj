@@ -70,12 +70,13 @@
   (comment
     (replay ["A+53" :a])))
 
-(println (scale->pr-fingerings (subcps "2)4 of 3)6 11-1.5.7.9"))
-         "\n\n")
-(println (scale->pr-fingerings (subcps "2)4 of 3)6 11-1.5.7.9"))
-         "\n\n")
-(println (scale->pr-fingerings (subcps "3)5 of 3)6 1.5.7.9.11"))
-         "\n\n")
+(comment
+  (println (scale->pr-fingerings (subcps "2)4 of 3)6 11-1.5.7.9"))
+           "\n\n")
+  (println (scale->pr-fingerings (subcps "2)4 of 3)6 11-1.5.7.9"))
+           "\n\n")
+  (println (scale->pr-fingerings (subcps "3)5 of 3)6 1.5.7.9.11"))
+           "\n\n"))
 (comment
   (stop))
 

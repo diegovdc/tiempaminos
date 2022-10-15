@@ -1,8 +1,13 @@
-(ns tieminos.compositions.garden-earth.wip)
+(ns tieminos.compositions.garden-earth.wip
+  (:require
+   [clojure.data.generators :refer [weighted]]
+   [tieminos.compositions.garden-earth.base
+    :refer [interval-from-pitch-class on-event ref-rain subcps]]
+   [tieminos.compositions.garden-earth.synths.recording :as rec]))
 
 ;; fl-grain-1
-
-(defn ex1 []
+(comment
+  (defn ex1 []
     (let [bufs @rec/test-samples
           subcps "1)4 of 3)6 1.11-3.5.7.9"
           scale (-> eik :subcps (get subcps) :scale (->> (+names base-freq)))]
@@ -44,9 +49,11 @@
                          :pos-noise-freq 1000
                          :pos-noise-amp 0.2
                          :a dur*
-                         :r 0.1}))))))))
+                         :r 0.1})))))))))
+
+(comment
 ;;; long ocean
-(defn oceanoises []
+  (defn oceanoises []
     (ref-rain
      :id :oceanic/noises
      :durs [1 1 1 1 1 1 1 1 2 1 1 1 1 1 1 3]
@@ -82,4 +89,4 @@
                       :amp (* 3 (rand-nth [10 5 3]))
                       ;; :amp-lfo 5
                       :mix 1
-                      :room 2}))))))
+                      :room 2})))))))

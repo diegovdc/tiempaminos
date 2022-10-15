@@ -44,21 +44,21 @@
                            count))
            (#(dissoc % 0))
            (map (fn [[k v]]
-                  [k (map (juxt :euclidean-distance :factors :cents) v)]))))
+                  [k (map (juxt :euclidean-distance :factors :cents) v)])))))
 
-  (def dorian-hexanies
-    (-> (combo/combinations [1 3 9 19 15 21 7] 4)
-        (->> (pmap #(->> (cps/make 2 %)
-                         (cpss/+gens %)
-                         cpss/+cents
-                         cpss/+euclidean-distance))
-             (sort-by :euclidean-distance)
-             ;; can use filter to look for scales that fit dorian
-             (filter #(dorico-six-notes
-                       (:closest-12-edo %)))
-             (sort-by :euclidean-distance)
-             (map (juxt :euclidean-distance :factors :cents)))
-        #_  count)))
+(def dorian-hexanies
+  (-> (combo/combinations [1 3 9 19 15 21 7] 4)
+      (->> (pmap #(->> (cps/make 2 %)
+                       (cpss/+gens %)
+                       cpss/+cents
+                       cpss/+euclidean-distance))
+           (sort-by :euclidean-distance)
+           ;; can use filter to look for scales that fit dorian
+           (filter #(dorico-six-notes
+                     (:closest-12-edo %)))
+           (sort-by :euclidean-distance)
+           (map (juxt :euclidean-distance :factors :cents)))
+      #_  count))
 
 
 

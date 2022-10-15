@@ -1,14 +1,14 @@
 (ns tieminos.lc-fam.two
-  (:require [erv-fib-synth.midi :refer [note-on]]
+  (:require [tieminos.midi.core :refer [note-on]]
             [erv.cps.core :as cps]
             [erv.scale.core :as scale]
             [overtone.core :as o :refer :all :exclude [on-event scale]]
             [time-time.dynacan.players.gen-poly :as gp :refer [on-event ref-rain]]
             [time-time.standard :refer [wrap-at]]
             [clojure.string :as str]))
-
-(def ps (o/load-samples "/home/diego/sc/taller-topologias-temporales-2019/Synths/drumKits/IAMM_Kits/**/*.wav"))
-(->> ps (map (juxt :id :name)) #_(filter #(-> % second (str/includes? "CONGA"))) println)
+(comment
+  (def ps (o/load-samples "/home/diego/sc/taller-topologias-temporales-2019/Synths/drumKits/IAMM_Kits/**/*.wav"))
+  (->> ps (map (juxt :id :name)) #_(filter #(-> % second (str/includes? "CONGA"))) println))
 
 
 
@@ -38,7 +38,7 @@
           (o/rotate offset)
           ((fn [ratios] (map #(wrap-at % ratios) sequence*)))
           (map-indexed #(* %2 (wrap-at %1 mults))))))
-  (println (hexarhythm #{1 3 5 7} [0 2 2 1 2 0 1] 4 [1])))
+  #_(println (hexarhythm #{1 3 5 7} [0 2 2 1 2 0 1] 4 [1])))
 
 
 
@@ -62,13 +62,14 @@
                          (* 5)
                          (distort)
                          (* (o/env-gen (o/env-perc 0.1 8) :action o/FREE)))))))
-
-(def e-bd (ps 99))
-(def bd (ps 51))
-(def cabasa (ps 4))
-(def e-cabasa (ps 62))
-(def hi-conga (ps 14))
-(def low-conga (ps 14))                 ;; pass a 0.7 rate
+(comment
+  (def e-bd (ps 99))
+  (def bd (ps 51))
+  (def cabasa (ps 4))
+  (def e-cabasa (ps 62))
+  (def hi-conga (ps 14))
+  (def low-conga (ps 14))                 ;; pass a 0.7 rate
+)
 (comment
   ((o/synth (o/out 0 (-> (o/play-buf 2 (ps 19))
                          (* (o/env-gen (o/env-perc 1 2) :action o/FREE))
@@ -79,7 +80,7 @@
   (let [ratio (/ seconds (apply + durs))]
     (mapv #(* ratio %) durs)))
 
-(defsynth perc* [perc bd
+(defsynth perc* [perc 0
                  rate 1
                  amp 1
                  pan 0
@@ -103,7 +104,7 @@
                 (* amp 1.5 (lf-noise1 0.1) (o/env-gen (o/env-perc atk dcy) :action o/FREE)))]
     (o/out out sig)))
 
-(o/stop)
+#_(o/stop)
 #_(lo 500)
 (defsynth reverb [in 0 room-min 0.3 room-max 3]
   (o/out 0
@@ -111,11 +112,12 @@
              (pan2 (lf-noise1:kr 0.5))
              (free-verb (lf-noise1:kr 0.1)
                         (-> (lf-noise1:kr 0.5) (range-lin:kr room-min room-max))))))
+(comment
+  (do
+    (defonce main-g (group "get-on-the-bus main"))
 
-(defonce main-g (group "get-on-the-bus main"))
-
-(defonce early-g (group "early birds" :head main-g))
-(defonce later-g (group "latecomers" :after early-g))
+    (defonce early-g (group "early birds" :head main-g))
+    (defonce later-g (group "latecomers" :after early-g))))
 
 (map
  #(scale/deg->freq scale 60 (melo (wrap-at % [1 -2 1])))

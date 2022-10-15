@@ -1,10 +1,9 @@
 (ns tieminos.beats.two
   (:require
-   [erv-fib-synth.midi :refer [midi-event note-on]]
    [erv.cps.core :as cps]
    [erv.scale.core :as scale]
-   [overtone.core :as o :refer :all]
-   [tieminos.impros.session1]
+   [overtone.core :as o :refer :all :exclude [on-event]]
+   [tieminos.osc.core :refer [midi-event]]
    [tieminos.synths :as synth]
    [tieminos.utils :as utils :refer [gen-chord linexp periods]]
    [time-time.dynacan.players.gen-poly :as gp :refer [on-event ref-rain]]
@@ -27,26 +26,26 @@
                 :durs [1.333 3 2/3 3/4 2 1.25 1 1 2]}
 
                ])
-
-(midi-event
- :note-on (fn [msg]
-            (let [degree (- (:note msg) 36)
-                  vel (:velocity msg)]
-              (synth/low2 (scale/deg->freq hex1 200  degree)
-                          :atk 0.5
-                          :dcy 0.3
-                          :sust (linexp  1 127 0.8 0.01 vel)
-                          :rel 2
-                          :amp (linexp  1 127 0.01 0.7 vel)))))
-
-
+(comment
+  (midi-event
+   :note-on (fn [msg]
+              (let [degree (- (:note msg) 36)
+                    vel (:velocity msg)]
+                (synth/low2 (scale/deg->freq hex1 200  degree)
+                            :atk 0.5
+                            :dcy 0.3
+                            :sust (linexp  1 127 0.8 0.01 vel)
+                            :rel 2
+                            :amp (linexp  1 127 0.01 0.7 vel)))))
 
 
 
 
 
 
-(o/stop)
+
+
+  (o/stop))
 (comment
   (def s (synth/low 200 :dcy 10))
   (o/ctl s :freq 800 ))

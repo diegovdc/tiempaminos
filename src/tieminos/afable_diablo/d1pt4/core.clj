@@ -5,9 +5,9 @@
    [overtone.core :as o :refer :all]
    [time-time.dynacan.players.gen-poly :as gp :refer [ref-rain]]
    [time-time.standard :refer [rrand]]))
-
-(def multitud1 (load-sample "/Users/diego/Music/code/tieminos/resources/multitudFeminista.wav"))
-(def multitud2 (load-sample "/Users/diego/Music/code/tieminos/resources/multitudFeminista2.wav"))
+(comment
+  (def multitud1 (load-sample "/Users/diego/Music/code/tieminos/resources/multitudFeminista.wav"))
+  (def multitud2 (load-sample "/Users/diego/Music/code/tieminos/resources/multitudFeminista2.wav")))
 
 (do
   (defsynth noise-tone
@@ -29,15 +29,16 @@
                free-verb
                (pan2 pan))))
 
-  (noise-tone))
+  #_(noise-tone))
 
 (defsynth noise-out
   [buf 10
    out 0]
   (o/out out (play-buf 1 buf :loop true)))
 
-(noise-out :buf multitud1 :out 10)
-(noise-out :buf multitud2 :out 10)
+(comment
+  (noise-out :buf multitud1 :out 10)
+  (noise-out :buf multitud2 :out 10))
 
 (comment
   (stop)

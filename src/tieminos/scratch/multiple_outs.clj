@@ -17,12 +17,13 @@
               0.2)
             (o/pink-noise))))
 
-(s1)
-(o/stop)
+
 
 (comment
+  (s1)
+  (o/stop)
   (o/demo 10 (* (o/decay2
-                  (o/impulse 1 0.25)
-                  0.01
-                  0.2)
+                 (o/impulse 1 0.25)
+                 0.01
+                 0.2)
                 (o/pink-noise))))

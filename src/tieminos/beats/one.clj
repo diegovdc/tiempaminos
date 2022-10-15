@@ -1,5 +1,5 @@
 (ns tieminos.beats.one
-  (:require [erv-fib-synth.midi :refer [note-on]]
+  (:require [tieminos.midi.core :refer [note-on]]
             [erv.cps.core :as cps]
             [erv.scale.core :as scale]
             [overtone.core :as o :refer :all :exclude [on-event scale]]
@@ -33,7 +33,7 @@
           (o/rotate offset)
           ((fn [ratios] (map #(wrap-at % ratios) sequence*)))
           (map-indexed #(* %2 (wrap-at %1 mults))))))
-  (println (hexarhythm #{1 3 5 7} [0 2 2 1 2 0 1] 4 [1])))
+  #_(println (hexarhythm #{1 3 5 7} [0 2 2 1 2 0 1] 4 [1])))
 
 
 
@@ -117,10 +117,11 @@
              (free-verb (lf-noise1:kr 0.1)
                         (-> (lf-noise1:kr 0.5) (range-lin:kr room-min room-max))))))
 
-(defonce main-g (group "get-on-the-bus main"))
+(comment
+  (defonce main-g (group "get-on-the-bus main"))
 
-(defonce early-g (group "early birds" :head main-g))
-(defonce later-g (group "latecomers" :after early-g))
+  (defonce early-g (group "early birds" :head main-g))
+  (defonce later-g (group "latecomers" :after early-g)))
 
 (map
  #(scale/deg->freq scale 60 (melo (wrap-at % [1 -2 1])))

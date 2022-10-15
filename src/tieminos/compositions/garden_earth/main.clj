@@ -153,4 +153,3 @@
               :on-event (on-event ((-> sections
                                        (nth (+ start-index index))
                                        second))))))
-

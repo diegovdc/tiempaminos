@@ -1,6 +1,6 @@
 (ns tieminos.harmonies.hex-two
   (:require [clojure.string :as str]
-            [erv-fib-synth.midi :refer [note-on]]
+            [tieminos.midi.core :refer [note-on]]
             [erv.cps.core :as cps]
             [erv.scale.core :as scale]
             [erv.utils.conversions :as conv]
@@ -32,7 +32,7 @@
                (o/lpf 7000)
                (o/pan2)
                (* 1/10 amp (o/env-gen (o/env-perc 0.1 1) :action o/FREE)))))
-  (h1))
+  #_(h1))
 
 (defn degs->freq [scale degs]
   (map #(scale/deg->freq scale 200 %) degs))
@@ -76,27 +76,27 @@
                   :scale)
              [#{:a :b :c} [0 1 2]])]
   (doseq [n notes]
-    (println (conv/cps->name* n))
-    (h1 n)))
+    #_(println (conv/cps->name* n))
+    #_(h1 n)))
 (defn chord
   ([gens scale] (chord gens false scale))
   ([gens sub-harmonic? scale]
    (filter #(-> % :set (set/intersection gens)
                 ((if sub-harmonic? empty? not-empty))
-                ) scale))
-  )
+                ) scale)))
 
-(let [scale**
-      (->> [1 3 5 7]
-           (cps/->cps 2) ;; 2 y 3 funcionan muy bien
-           cps/set->maps
-           (cps/bound-ratio 2)
-           (cps/maps->data :bounded-ratio)
-           :scale
-           (chord #{3} 1))]
-  (clojure.pprint/pprint scale**)
-  (doseq [n [0 1 2]]
-    (h1 (scale/deg->freq scale** 200 n))))
+(comment
+  (let [scale**
+        (->> [1 3 5 7]
+             (cps/->cps 2) ;; 2 y 3 funcionan muy bien
+             cps/set->maps
+             (cps/bound-ratio 2)
+             (cps/maps->data :bounded-ratio)
+             :scale
+             (chord #{3} 1))]
+    #_(clojure.pprint/pprint scale**)
+    (doseq [n [0 1 2]]
+      #_(h1 (scale/deg->freq scale** 200 n)))))
 
 (->> (map (partial gen-chord
                    (->> [1 3 5 7]

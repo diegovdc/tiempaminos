@@ -65,10 +65,9 @@
            :note-off note-off
            :auto-ctl? auto-ctl?} ))
 
-(defonce recv (init 7777))
+(comment
+  (defonce recv (init 7777)))
 
-
-(comment)
 
 (defonce midi-send-client (osc/osc-client "localhost" 7778))
 

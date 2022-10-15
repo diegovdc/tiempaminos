@@ -1,6 +1,6 @@
 (ns tieminos.harmonies.hexany
   (:require [clojure.string :as str]
-            [erv-fib-synth.midi :refer [note-on]]
+            [tieminos.midi.core :refer [note-on]]
             [erv.cps.core :as cps]
             [erv.scale.core :as scale]
             [erv.utils.conversions :as conv]
@@ -31,7 +31,7 @@
                (o/lpf 7000)
                (o/pan2)
                (* 1/10 amp (o/env-gen (o/env-perc 0.1 1) :action o/FREE)))))
-  (h1))
+  #_(h1))
 
 (defn degs->freq [scale degs]
   (map #(scale/deg->freq scale 200 %) degs))

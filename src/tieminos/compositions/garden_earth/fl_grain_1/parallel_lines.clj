@@ -17,7 +17,7 @@
    [tieminos.compositions.garden-earth.synths.granular :as granular]
    [tieminos.compositions.garden-earth.synths.recording :as rec]))
 
-(println (scale->pr-fingerings (subcps "2)4 of 3)6 1-3.5.7.11")))
+#_(println (scale->pr-fingerings (subcps "2)4 of 3)6 1-3.5.7.11")))
 (subcps "2)4 of 3)6 3-5.7.9.11")
 
 (comment

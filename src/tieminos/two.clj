@@ -1,5 +1,5 @@
 (ns tieminos.two
-  (:require [erv-fib-synth.midi :refer [note-on]]
+  (:require [tieminos.midi.core :refer [note-on]]
             [erv.cps.core :as cps]
             [erv.scale.core :as scale]
             [overtone.core :as o]

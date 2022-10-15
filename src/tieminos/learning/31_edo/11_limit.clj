@@ -2,7 +2,8 @@
   (:require
    [erv.edo.core :as edo]
    [erv.utils.core :refer [period-reduce]]
-   [erv.utils.ratios :refer [ratio-proximity-list]]
+   ;; FIXME uncomment when I have the latest version
+   ;; [erv.utils.ratios :refer [ratio-proximity-list]]
    [erv.utils.conversions :as conv]))
 
 (def *31edo
