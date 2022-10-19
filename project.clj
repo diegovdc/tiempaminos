@@ -10,8 +10,8 @@
                  [potemkin "0.4.5"]
                  [org.clojure/data.generators "1.0.0"]
                  [overtone "0.10.6"]
-                 [time-time "0.1.0-SNAPSHOT"]
-                 [erv "0.1.0-SNAPSHOT"]
+                 [org.clojars.videco/time-time "0.1.0-SNAPSHOT"]
+                 [erv/erv "0.1.0-SNAPSHOT"]
                  [com.taoensso/timbre "4.10.0"]
                  [incanter "1.9.3"]
                  ;; working with intervals

@@ -7,7 +7,6 @@
    [tieminos.overtone-extensions :as oe]))
 
 (comment
-
   ;; load buffers for testing
   (require '[tieminos.compositions.garden-earth.synths.recording :as rec])
   (def test-samples (rec/load-own-samples!)))
