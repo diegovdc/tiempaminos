@@ -18,3 +18,5 @@ pom.xml.asc
 .clj-kondo/
 .lsp/
 .cpcache
+recordings/*
+!recordings/.gitkeep
