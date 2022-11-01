@@ -20,3 +20,4 @@ pom.xml.asc
 .cpcache
 recordings/*
 !recordings/.gitkeep
+resources/*.wav
