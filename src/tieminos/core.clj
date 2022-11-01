@@ -8,15 +8,15 @@
    [clojure.tools.namespace.repl :as repl :refer [refresh]]
    [taoensso.timbre :as timbre]))
 
-
-
 (defn init-garden-earth! []
   (in-ns 'erv-fib-synth.compositions.garden-earth.core))
 
 (def stop gp/stop)
 
 (defn connect [] (o/connect-external-server))
-(defn test-sound [] (o/demo (* 0.2 (o/sin-osc))))
+(defn test-sound []
+  (o/demo (* 0.2 (o/sin-osc)))
+  :sounding...?)
 
 (defn disconnect [] (oc/shutdown-server))
 
@@ -36,7 +36,15 @@
   Example:  (rec \"prueba-4ch\" :n-chans 4)
   "
   [filename & opts]
-  (apply o/recording-start (str "/Users/diego/Music/code/tieminos/recordings/" filename ".wav") opts))
+  (apply o/recording-start
+         (str (System/getProperty "user.dir")
+              "/recordings/"
+              filename
+              "-"
+              (.format (java.time.ZonedDateTime/now)
+                       java.time.format.DateTimeFormatter/ISO_INSTANT)
+              ".wav")
+         opts))
 
 (comment
   (connect)
