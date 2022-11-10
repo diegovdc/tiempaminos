@@ -5,7 +5,6 @@
    [overtone.core :as o]
    [taoensso.timbre :as timbre]
    [tieminos.habitat.osc :as habitat-osc]
-   [tieminos.habitat.quad-inputs :refer [args->map]]
    [tieminos.habitat.resonance-panner :as reso-pan]
    [tieminos.overtone-extensions :as oe]
    [tieminos.sc-utils.groups.v1 :as groups]))
@@ -246,4 +245,3 @@
                          (o/saw 400)
                          :pos (o/lf-saw:kr -0.2)
                          :width 1.75))))
-
