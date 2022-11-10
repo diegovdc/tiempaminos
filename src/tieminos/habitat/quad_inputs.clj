@@ -1,8 +1,12 @@
 (ns tieminos.habitat.quad-inputs
   (:require
+   [clojure.edn :as edn]
+   [clojure.math :refer [round]]
    [overtone.core :as o]
    [taoensso.timbre :as timbre]
    [tieminos.habitat.osc :as habitat-osc]
+   [tieminos.habitat.quad-inputs :refer [args->map]]
+   [tieminos.habitat.resonance-panner :as reso-pan]
    [tieminos.overtone-extensions :as oe]
    [tieminos.sc-utils.groups.v1 :as groups]))
 
@@ -42,6 +46,24 @@
           (* (o/env-gen (o/env-adsr 2 1 1 release :curve -0.5)
                         gate
                         :action o/FREE)))))
+(o/defsynth circle-pan
+  ;; For circular motion use `direction` 1 or -1 only
+  [in 0
+   out 0
+   rate 0.2
+   release 2
+   direction 1
+   gate 1]
+  (o/out out
+         (->
+          (o/pan-az
+           4
+           (o/in in)
+           (o/lf-saw rate)
+           :width 0.9)
+          (* (o/env-gen (o/env-adsr 2 1 1 release :curve -0.5)
+                        gate
+                        :action o/FREE)))))
 
 (oe/defsynth sini
   [freq 200 amp 0.5 out 0]
@@ -61,7 +83,9 @@
   (try
     (->> args (partition 2 2)
          (map (fn [[k v]]
-                {(keyword k) (if (string? v) (keyword v) v)}))
+                {(keyword k) (cond (and (= "in" k) (string? v)) (edn/read-string v)
+                                   (string? v) (keyword v)
+                                   :else v)}))
          (apply merge))
     (catch Exception _
       (throw (ex-info "Could not convert args to map"
@@ -81,6 +105,10 @@
     (try (apply o/ctl synth params)
          (catch Exception e (timbre/error e)))))
 
+(def main-pre-out
+  "Out that sends to the reverbs"
+  8)
+
 (defn panner [{:keys [in type] :as _args}]
   (let [current-panner (get @current-panners in)
         in* (input->panner-input in)
@@ -88,16 +116,16 @@
                      :clockwise (circle-pan-4ch
                                  (groups/mid)
                                  :in in*
-                                 :out 8)
-                     :counter-clockwise (circle-pan-4ch
+                                 :out main-pre-out)
+                     :counter-clockwise (circle-pan
                                          (groups/mid)
                                          :in in*
                                          :direction -1
-                                         :out 8)
+                                         :out main-pre-out)
                      :rand (rand-pan4
                             (groups/mid)
                             :in in*
-                            :out 8))]
+                            :out main-pre-out))]
 
     (try (when (:synth current-panner)
            (o/ctl (:synth current-panner) :gate 0))
@@ -109,40 +137,34 @@
   (let [panner (get-in @current-panners [in :synth])]
     (ctl-synth panner :rate rate)))
 
-(comment
-
-  (habitat-osc/init)
-
-  (habitat-osc/responder
-   (fn [{:keys [path args] :as msg}]
-     (let [args-map (args->map args)]
-       (case path
-         "/panner" (panner args-map)
-         "/panner-rate" (panner-rate args-map)
-         "/adios" (println "dicen adios" args)
-         (println "Unknown path for message: " msg)))))
-  (sini-2)
-  (sini :out (input->panner-input 1))
-  (whitey :out 14)
-
-  (into {} [(list :a :b)])
-  (def randy (rand-pan4 :in 14 :lfo-freq-x 1))
-  (o/ctl randy :gate 0 :release 2)
-  (def circly (circle-pan-4ch :in 14 :direction -1))
-
-  (o/ctl circly :rate 0.1)
-  (o/ctl circly :gate 0 :release 2)
-  (o/stop))
+(defn map-value
+  "Maps a `value-key` from an `args-map` between `min*` and `max*`,
+  assuming the input `value-key` refers to a number between `0` and `1`
+  The `value-key` defaults to `:value`"
+  ([args-map min* max*] (map-value :value args-map min* max*))
+  ([value-key args-map min* max*]
+   (update args-map
+           value-key #(->> %
+                           (* max*)
+                           round
+                           (max min*)
+                           ;; ensure it doesn't go beyond stated max, if value is > 1
+                           (min max*)))))
 
 (defonce fx (atom {}))
 
 (defn init-fx! []
   (let [fx-g (groups/fx)]
     (reset! fx
-            {:rev-1 (rev fx-g 8 0 :amp 2)
+            {:rev-1 (rev fx-g 8 0  :amp 2)
              :rev-2 (rev fx-g 9 1 :amp 2)
              :rev-3 (rev fx-g 10 2 :amp 2)
              :rev-4 (rev fx-g 11 3 :amp 2)})))
+
+(comment
+  (doseq [[_ rev] @fx]
+    (o/ctl rev :damp 0)))
+
 (oe/defsynth instrument-in
   [in 0
    amp 1
@@ -150,40 +172,78 @@
   (o/out out (* amp (o/sound-in in))))
 
 (comment
+  #_(osc/osc-debug false)
+  (habitat-osc/init)
+  (habitat-osc/responder
+   (fn [{:keys [path args] :as msg}]
+     (println path args)
+     (let [args-map (args->map args)]
+       (case path
+         "/panner" (panner args-map)
+         "/panner-rate" (panner-rate args-map)
+         "/reso-pan-voices" (reso-pan/update-state :voices (map-value args-map 1 10))
+         "/reso-pan-dur" (reso-pan/update-state :dur (map-value args-map 5 60))
+          ;; TODO add reso-pan-amp
+         "/reso-pan" (reso-pan/trigger (:in args-map) main-pre-out 5 10)
+         (println "Unknown path for message: " msg)))))
+
   (o/stop)
-  (reset! current-panners {})
-  (groups/init-groups!)
-  (init-fx!)
-  #_(tieminos.core/rec "habitat-taller-abierto-24-09-2022")
+  (do :init-sequence
+      (reset! current-panners {})
+      (groups/init-groups!)
+      (init-fx!))
+
+  (tieminos.core/rec "raspados" :n-chans 4)
+  (o/recording-stop)
+
+  (def guitarra (let [bus 14]
+                  (rand-pan4 (groups/mid) bus main-pre-out)
+                  (instrument-in {:group (groups/early)
+                                  :in 0
+                                  :out bus})))
+  (o/ctl guitarra :amp 2.5)
+  (def micro-1 (let [bus 15]
+                 (rand-pan4 (groups/mid) bus main-pre-out)
+                 (instrument-in {:group (groups/early)
+                                 :in 1
+                                 :out bus})))
+  (o/ctl micro-1 :amp 1)
+  (def micro-2 (let [bus 16]
+                 (rand-pan4 (groups/mid) bus main-pre-out)
+                 (instrument-in {:group (groups/early)
+                                 :in 2
+                                 :out bus})))
+  (o/ctl micro-2 :amp 1)
+  (def micro-3 (let [bus 16]
+                 (rand-pan4 (groups/mid) bus main-pre-out)
+                 (instrument-in {:group (groups/early)
+                                 :in 3
+                                 :out bus})))
+  (def micro-4 (let [bus 16]
+                 (rand-pan4 (groups/mid) bus main-pre-out)
+                 (instrument-in {:group (groups/early)
+                                 :in 4
+                                 :out bus}))))
+
+(comment
+    ;; test
+  (o/stop)
   (sini {:group (groups/early) :out (input->panner-input 0)})
   (sini {:group (groups/early) :freq 500 :out (input->panner-input 1)})
   (panner {:in 1 :type :clockwise})
   (panner-rate {:in 0 :rate 2})
-  (o/ctl (:synth (get @current-panners 0)) :gate 0)
-  (rand-pan4 (groups/mid) 14 8)
-  (o/recording-stop)
-  (let [bus 14]
-    (instrument-in {:group (groups/early)
-                    :in 0
-                    :out bus})
-    (rand-pan4 (groups/mid) bus 8))
-  (let [bus 15]
-    (instrument-in {:group (groups/early)
-                    :in 1
-                    :out bus})
-    (rand-pan4 (groups/mid) bus 8))
-  (let [bus 16]
-    (instrument-in {:group (groups/early)
-                    :in 2
-                    :out bus})
-    (rand-pan4 (groups/mid) bus 8)))
+  (o/ctl (:synth (get @current-panners 1)) :gate 0))
 
 (comment
-  (o/demo 20  (-> (o/sound-in 0)
-                  (o/free-verb 1 1)
-                  (* 1.2)
-                  (o/pan4:ar (o/lf-noise1 0.3)
-                             (o/lf-noise1 0.3))))
-  (o/demo (-> (o/sin-osc)
-              (o/distortion2 3)
-              (* 0.001))))
+  ;; remapping pan-az channels
+  (defn circle-az
+    [pan-az-out]
+    (let [[a b c d]
+          pan-az-out]
+      [a b d c]))
+  (o/demo 20 (circle-az (o/pan-az
+                         4
+                         (o/saw 400)
+                         :pos (o/lf-saw:kr -0.2)
+                         :width 1.75))))
+

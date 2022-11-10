@@ -1,10 +1,13 @@
 (ns tieminos.habitat.osc
   (:require
+   [clojure.edn :as edn]
+   [clojure.math :refer [round]]
    [overtone.osc :as osc]
    [taoensso.timbre :as timbre]
    [tieminos.network-utils :refer [get-local-host]])
   (:import
    (java.net InetAddress)))
+
 (.getHostAddress (java.net.InetAddress/getLocalHost))
 
 (declare init responder)
@@ -40,6 +43,32 @@
   See usage example at the top of the file."
   [f]
   (osc/osc-listen @osc-server f ::defaults))
+
+(defn args->map [args]
+  (try
+    (->> args (partition 2 2)
+         (map (fn [[k v]]
+                {(keyword k) (cond (and (= "in" k) (string? v)) (edn/read-string v)
+                                   (string? v) (keyword v)
+                                   :else v)}))
+         (apply merge))
+    (catch Exception _
+      (throw (ex-info "Could not convert args to map"
+                      {:args args})))))
+
+(defn map-val
+  "Maps a `value-key` from an `args-map` between `min*` and `max*`,
+  assuming the input `value-key` refers to a number between `0` and `1`
+  The `value-key` defaults to `:value`"
+  ([args-map min* max*] (map-val :value args-map min* max*))
+  ([value-key args-map min* max*]
+   (update args-map
+           value-key #(->> %
+                           (* max*)
+                           round
+                           (max min*)
+                           ;; ensure it doesn't go beyond stated max, if value is > 1
+                           (min max*)))))
 
 (comment
   (init :port 9129)

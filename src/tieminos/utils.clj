@@ -1,6 +1,8 @@
 (ns tieminos.utils
   (:require [erv.cps.core :as cps]
-            [erv.scale.core :as scale]))
+            [erv.scale.core :as scale]
+            [overtone.core :as o]
+            [taoensso.timbre :as timbre]))
 
 (defn wrap-at [i coll]
   (let [i* (mod i (count coll))]
@@ -71,3 +73,8 @@
 (defn seconds->dur [secs bpm] (* secs (/ bpm 60)))
 
 (defn dur->bpm [dur-ms] (/ 60000 dur-ms))
+
+(defn ctl-synth [synth & params]
+  (when synth
+    (try (apply o/ctl synth params)
+         (catch Exception e (timbre/error e)))))

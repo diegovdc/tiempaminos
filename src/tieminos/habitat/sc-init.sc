@@ -5,8 +5,8 @@ Can.init;
 // Server.default.options.outDevice_("Scarlett 18i20 USB");
 o = Server.default.options;
 s.options.maxLogins = 8;
-o.numInputBusChannels = 6;
-o.numOutputBusChannels = 24;
+o.numInputBusChannels = 30;
+o.numOutputBusChannels = 46;
 s.waitForBoot({
 	().play;
 	s.makeGui; // `l` to show meter https://doc.sccode.org/Classes/Server.html
