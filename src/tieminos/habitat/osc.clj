@@ -4,11 +4,10 @@
    [clojure.math :refer [round]]
    [overtone.osc :as osc]
    [taoensso.timbre :as timbre]
-   [tieminos.network-utils :refer [get-local-host]])
+   [tieminos.network-utils :refer [get-local-host]]
+   [tieminos.osc.core :refer [init-server]])
   (:import
    (java.net InetAddress)))
-
-(.getHostAddress (java.net.InetAddress/getLocalHost))
 
 (declare init responder)
 (comment
@@ -35,7 +34,7 @@
 (defn init
   [& {:keys [port] :or {port 16180}}]
   (if-not @osc-server
-    (reset! osc-server (osc/osc-server port))
+    (reset! osc-server (:server (init-server port)))
     (timbre/warn "OSC Server is already running.")))
 
 (defn responder

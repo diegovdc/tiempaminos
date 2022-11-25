@@ -1,3 +1,4 @@
+;; DEPRECATED
 (ns tieminos.habitat.quad-inputs
   (:require
    [clojure.edn :as edn]
