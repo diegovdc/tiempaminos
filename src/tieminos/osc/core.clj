@@ -11,6 +11,7 @@
 ;;; Receive MIDI ;;;
 ;;;;;;;;;;;;;;;;;;;;
 
+
 (defonce synths (atom {}))
 
 (defn add-synth [ev synth]
@@ -18,9 +19,8 @@
             (and (seq synth) (every? node? synth)))
     (swap! synths assoc (:note ev) synth)))
 
-
 (defn remove-synth [ctl ev]
-  (let [synth (@synths (:note ev)) ]
+  (let [synth (@synths (:note ev))]
     (cond
       (node? synth) (do (ctl synth :gate 0)
                         (swap! synths dissoc (:note ev)))
@@ -38,7 +38,7 @@
                               :auto-ctl? true}))
 
 (defn as-midi-msg [args]
-  (let [[note velocity chan] args] {:note note :vel velocity :chan chan}) )
+  (let [[note velocity chan] args] {:note note :vel velocity :chan chan}))
 
 (do
   (defn midi-event-listener [server]
@@ -52,20 +52,38 @@
            "/note-on" ((gate-ctl :add) msg (note-on msg))
            "/note-off" (do (note-off msg)
                            ((gate-ctl :remove) msg))
-           (timbre/warn "OSC path not defined: " path ))))
+           (timbre/warn "OSC path not defined: " path))))
      :midi-event))
   (comment (midi-event-listener (recv :server))))
 
-(defn init [port]
+(declare init-server)
+(defn init
+  ;; DEPRECATED
+  [port]
+  (timbre/warn #'init "has been DEPRECATED use" #'init-server "instead.")
   (let [server (osc/osc-server port)
         listener (midi-event-listener server)]
     (timbre/info (str "OSC receiver initialized on port: " port))
     {:server server :listener listener :port port}))
 
+(defonce osc-servers (atom {}))
+(comment
+  (-> @osc-servers))
 (defn init-server [port]
-  (let [server (osc/osc-server port)]
-    (timbre/info (str "OSC receiver initialized on port: " port))
-    {:server server :port port}))
+  (if (get @osc-servers port)
+    (timbre/info "OSC server already exists at port:" port)
+    (let [server (osc/osc-server port)]
+      (timbre/info (str "OSC server initialized on port:" port))
+      (let [server-data {:server server :port port}]
+        (swap! osc-servers assoc port server-data)
+        server-data))))
+
+(defn stop-server [port]
+  (if-let [peer (get-in @osc-servers [port :server])]
+    (do (osc/osc-close peer)
+        (swap! osc-servers dissoc port)
+        (timbre/info "OSC server closed on port:" port))
+    (timbre/info "OSC server does not exist on port:" port)))
 
 (defn midi-event
   [& {:keys [note-on note-off auto-ctl?]
@@ -74,7 +92,7 @@
   (reset! midi-event-config
           {:note-on note-on
            :note-off note-off
-           :auto-ctl? auto-ctl?} ))
+           :auto-ctl? auto-ctl?}))
 
 (comment (defonce recv (init 7777)))
 
@@ -82,6 +100,7 @@
 ;;;;;;;;;;;;;;;;;
 ;;; Send MIDI ;;;
 ;;;;;;;;;;;;;;;;;
+
 
 (defonce midi-send-client (osc/osc-client "localhost" 7778))
 
@@ -126,12 +145,11 @@
   (all-notes-off)
   (reset-pitch-bend))
 
-
-
 (comment
   (require '[erv-fib-synth.synths :as synths])
   (midi-event :note-on (fn [msg] (synths/low)))
   (osc/osc-close (recv :server))
   (osc/osc-close)
-  (midi-event :note-on println :note-off println ))
+  (midi-event :note-on println :note-off println))
 (comment (osc/osc-rm-all-listeners server))
+

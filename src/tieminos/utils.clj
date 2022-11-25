@@ -78,3 +78,10 @@
   (when synth
     (try (apply o/ctl synth params)
          (catch Exception e (timbre/error e)))))
+
+(defn ctl-synth2
+  "Does not log any errors"
+  [synth & params]
+  (when synth
+    (try (apply o/ctl synth params)
+         (catch Exception e nil))))

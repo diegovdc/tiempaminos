@@ -14,7 +14,6 @@
 ;; NOTE on virmidi, if overtone starts to crash on load, maybe virmidi was corrupted (has already happend to me once)
 
 
-
 (def ks (try (midi/midi-in "VirMIDI")
              (catch Exception e
                (timbre/warn (str "Could not connect to VirMIDI: " (.getMessage e))))))
@@ -46,7 +45,7 @@
     (swap! synths assoc (:note ev) synth)))
 
 (defn remove-synth [ctl ev]
-  (let [synth (@synths (:note ev)) ]
+  (let [synth (@synths (:note ev))]
     (cond
       (node? synth) (do (ctl synth :gate 0)
                         (swap! synths dissoc (:note ev)))
@@ -80,9 +79,9 @@
   (midi/midi-handle-events
    ks
    (fn [ev] (handle-midi-event ev
-                              {:note-on note-on
-                               :note-off note-off
-                               :auto-ctl auto-ctl}))))
+                               {:note-on note-on
+                                :note-off note-off
+                                :auto-ctl auto-ctl}))))
 
 #_(defn all-notes-off [sink] (midi/midi-control sink 123 0))
 (defn all-notes-off [sink]
@@ -93,3 +92,4 @@
   (all-notes-off)
   (midi-in-event :note-on (fn [_] (println "on" ((juxt :channel :note) _)))
                  :note-off (fn [_] (println "off" ((juxt :channel :note) _)))))
+
