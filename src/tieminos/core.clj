@@ -1,13 +1,22 @@
 (ns tieminos.core
   (:require
    [clojure.string :as str]
-   [time-time.dynacan.players.gen-poly :as gp]
-   [tieminos.overtone-extensions :as oe]
+   [clojure.tools.namespace.repl :refer [refresh set-refresh-dirs]]
    [overtone.core :as o]
+   [overtone.libs.counters :refer [next-id]]
+   [overtone.sc.machinery.allocator :refer [alloc-id]]
    [overtone.sc.machinery.server.connection :as oc]
-   [potemkin :refer [import-vars]]
-   [clojure.tools.namespace.repl :as repl :refer [refresh]]
-   [taoensso.timbre :as timbre]))
+   [taoensso.timbre :as timbre]
+   [tieminos.osc.core :refer [osc-servers stop-server]]
+   [tieminos.overtone-extensions :as oe]
+   [time-time.dynacan.players.gen-poly :as gp]))
+
+(set-refresh-dirs "src")
+
+(defn restart []
+  (doseq [[port _] @osc-servers]
+    (stop-server port))
+  (refresh))
 
 (defn init-garden-earth! []
   (in-ns 'erv-fib-synth.compositions.garden-earth.core))
