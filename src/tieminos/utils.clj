@@ -75,9 +75,10 @@
 (defn dur->bpm [dur-ms] (/ 60000 dur-ms))
 
 (defn ctl-synth [synth & params]
-  (when synth
+  (if synth
     (try (apply o/ctl synth params)
-         (catch Exception e (timbre/error e)))))
+         (catch Exception e (timbre/error e)))
+    (timbre/error "No synth to control")))
 
 (defn ctl-synth2
   "Does not log any errors"
@@ -85,3 +86,4 @@
   (when synth
     (try (apply o/ctl synth params)
          (catch Exception e nil))))
+

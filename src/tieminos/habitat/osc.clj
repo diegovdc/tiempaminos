@@ -56,7 +56,7 @@
                       {:args args})))))
 
 (defn map-val
-  "Maps a `value-key` from an `args-map` between `min*` and `max*`,
+  "Linearly maps a `value-key` from an `args-map` between `min*` and `max*`,
   assuming the input `value-key` refers to a number between `0` and `1`
   The `value-key` defaults to `:value`"
   ([args-map min* max*] (map-val :value args-map min* max*))
@@ -75,3 +75,4 @@
   (-> @osc-server)
   (def client (osc/osc-client (get-local-host) 2666))
   (osc/osc-send client "/holas" 1,2,3,4))
+
