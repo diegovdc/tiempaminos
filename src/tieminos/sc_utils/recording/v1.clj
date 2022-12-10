@@ -9,7 +9,7 @@
    [taoensso.timbre :as timbre]
    [tieminos.compositions.garden-earth.synths.general
     :refer [tuning-monitor]]
-   [tieminos.compositions.garden-earth.synths.granular :refer [grain]]
+   [tieminos.compositions.garden-earth.synths.granular :as gs]
    [tieminos.utils :refer [dur->bpm seconds->dur]]
    [time-time.dynacan.players.gen-poly :refer [on-event ref-rain]]))
 
@@ -19,29 +19,20 @@
     (swap! bufs-atom assoc key buf)
     buf))
 
-(o/defsynth writer [buf 0 seconds 5]
+(o/defsynth writer
+  "Use a custom input, with `o/in`"
+  [in-bus 0 buf 0 seconds 5]
   ;; https://depts.washington.edu/dxscdoc/Help/Classes/RecordBuf.html
-  (let [in (o/free-verb (o/sound-in 0) 1)
-        env (o/env-gen (o/envelope [0 1 1 0]
-                                   [0.01 (- seconds 0.02) 0.01]))]
-    (o/record-buf:ar (* env in) buf :action o/FREE :loop 0)))
-
-(o/defsynth writer2
-  "Use a custom input"
-  [in 0 buf 0 seconds 5]
-  ;; https://depts.washington.edu/dxscdoc/Help/Classes/RecordBuf.html
-  (let [in (o/sound-in in)
+  (let [in (o/in in-bus)
         env (o/env-gen (o/envelope [0 1 1 0]
                                    [0.01 (- seconds 0.02) 0.01]))]
     (o/record-buf:ar (* env in) buf :action o/FREE :loop 0)))
 
 (defn rec-buf
-  ([bufs-atom buf-key seconds] (rec-buf bufs-atom buf-key seconds nil))
-  ([bufs-atom buf-key seconds in]
+  ([{:keys [bufs-atom buf-key seconds input-bus writer-fn]
+     :or {writer-fn writer}}]
    (let [buf (alloc bufs-atom buf-key seconds)]
-     (if in
-       (writer2 in buf seconds)
-       (writer buf seconds))
+     (writer input-bus buf seconds)
      buf)))
 
 (defn free-buffers []
@@ -80,10 +71,13 @@
 (defn run-rec
   "NOTE: `input-bus` may be `nil`. This will use `o/sound-in` 0"
   [bufs-atom buf-key seconds input-bus]
+
   (println (format "Starting!\n\n%s seconds" seconds))
   (let [progress-range "0%                                  100%"
         durs (repeat 40 (/ 1 (count progress-range)))
         progress-bar-fn (make-progress-bar-fn progress-range)]
+    (when-not input-bus
+      (throw (ex-info "No `input-bus` provided for recording." {})))
     (ref-rain :id (keyword "granular" (str "recording"
                                            (name-buf-key buf-key)))
               :tempo (dur->bpm (* seconds 1000))
@@ -92,9 +86,10 @@
               :on-event
               (on-event
                (when (zero? index)
-                 (if input-bus
-                   (rec-buf bufs-atom buf-key seconds input-bus)
-                   (rec-buf bufs-atom buf-key seconds)))
+                 (rec-buf {:bufs-atom bufs-atom
+                           :buf-key buf-key
+                           :seconds seconds
+                           :input-bus input-bus}))
                (progress-bar-fn index)))))
 
 (def recording?
@@ -222,7 +217,8 @@
 
 (comment
 
-  (->> bufs)
+  (->> @bufs keys)
+  (reset! bufs {})
   (def test-samples (load-own-samples! :prefixes-set #{:test}
                                        :dissoc-prefixes #{}))
 
@@ -230,23 +226,41 @@
   (->> prev-samples deref first second meta))
 
 (comment
-  (defn replay [buf-key & {:keys [speed]
-                           :or {speed 1}}]
-    (let [b (@bufs buf-key)]
-      (grain b
-             (/ (:duration b) speed)
-             :speed speed
-             :trig-rate 40
-             :grain-dur 1/20
-             :pos-noise-amp 0
-             :amp 3)))
-  (rec-buf bufs [:oli 5 6] 5)
-  (replay ["A+53" :a])
+  (do
+    (defn replay [buf-key & {:keys [speed]
+                             :or {speed 1}}]
+      (when-let [b (@bufs buf-key)]
+        ((rand-nth [gs/sample&holdo
+                    gs/ocean
+                    gs/lines])
+         b
+         (/ (:duration b) speed)
+         :a 5
+         :r 5
+         :speed speed
+         :trig-rate 40
+         :grain-dur 1/20
+         :rate (rand-nth [1 3 5 7
+                          1/2 2/3
+                          ;; 4/5 5/7
+                          ])
+         :amp (+ 0.3 (rand 2))
+         :amp-lfo (* 3 (rand)))))
+    (replay (->> @bufs keys rand-nth) :speed (+ 0.1 (rand))))
   (save-samples :test)
-  (stop)
+  (o/stop)
+  (require '[tieminos.habitat.routing :refer [guitar-bus
+                                              mic-1-bus
+                                              mic-2-bus
+                                              mic-3-bus]]))
+(comment
   (start-recording
    :bufs-atom bufs
-   :buf-key :olips
+   :buf-key (keyword "olips" (str "x" (rand-int 5000)))
+   :input-bus (rand-nth [guitar-bus
+                         mic-1-bus
+                         mic-2-bus
+                         mic-3-bus])
    :seconds 5
-   :msg "Will record G#5+45"
+   :msg "Test recording"
    :on-end replay))
