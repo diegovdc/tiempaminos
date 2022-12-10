@@ -1,8 +1,10 @@
 (ns tieminos.utils
-  (:require [erv.cps.core :as cps]
-            [erv.scale.core :as scale]
-            [overtone.core :as o]
-            [taoensso.timbre :as timbre]))
+  (:require
+   [erv.cps.core :as cps]
+   [erv.scale.core :as scale]
+   [erv.utils.conversions :as conv]
+   [overtone.core :as o]
+   [taoensso.timbre :as timbre]))
 
 (defn wrap-at [i coll]
   (let [i* (mod i (count coll))]
@@ -87,3 +89,11 @@
     (try (apply o/ctl synth params)
          (catch Exception e nil))))
 
+(defn cps->tidal-scale
+  "Probably only works for scales of period 2"
+  [cps]
+  (->> cps :scale
+       (map #(-> %
+                 :bounded-ratio
+                 conv/ratio->cents
+                 (/ 100)))))
