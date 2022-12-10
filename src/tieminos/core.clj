@@ -107,7 +107,7 @@
   "`sound` #{:saw :white}"
   [& {:keys [freq dur amp sound]
       :or {freq 200
-           dur 20
+           dur 10
            amp 0.2
            sound :white}}]
   ((o/synth []
