@@ -75,6 +75,7 @@
 
 (comment
   ;; WIP
+  (defonce dyna-synths (atom {}))
   (defmacro synthdef
     [name params body]
     (let [args [{:keys (into [] (keys params))
