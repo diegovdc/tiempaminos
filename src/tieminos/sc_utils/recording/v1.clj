@@ -40,39 +40,36 @@
     (o/buffer-free b)))
 
 (defn- name-buf-key [buf-key]
-  (cond (some true? ((juxt list? vector? seq? set?) buf-key))
-        (str/join "-" (map name-buf-key buf-key))
+  (cond (some true? ((juxt list? vector? seq? set?) buf-key)) (str/join "-" (map name-buf-key buf-key))
         (int? buf-key) (str buf-key)
         (boolean? buf-key) (str buf-key)
-        :else (name buf-key)))
-
-(comment (name-buf-key :oli))
+        (keyword? buf-key) (name buf-key)
+        :else (str buf-key)))
 
 (defn make-progress-bar-fn
   [progress-range]
-  (let [progress-bar (atom "")]
-    (fn
-      [index]
-      (println
-       (case index
-         0 (do (println progress-range)
-               (swap! progress-bar str "|0"))
-         9 (swap! progress-bar str "2")
-         10 (swap! progress-bar str "5")
-         19 (swap! progress-bar str "5")
-         20 (swap! progress-bar str "0")
-         29 (swap! progress-bar str "7")
-         30 (swap! progress-bar str "5")
-         37 (swap! progress-bar str "1")
-         38 (swap! progress-bar str "0")
-         39 (swap! progress-bar str "0|")
-         (swap! progress-bar str "*"))))))
+  (fn [index]
+    (when (zero? index)
+      (println progress-range))
+    (print (case index
+             0 "0"
+             9 "2"
+             10 "5"
+             19 "5"
+             20 "0"
+             29 "7"
+             30 "5"
+             37 "1"
+             38 "0"
+             39 "0\n"
+             "*"))
+    (flush)))
 
 (defn run-rec
   "NOTE: `input-bus` may be `nil`. This will use `o/sound-in` 0"
   [bufs-atom buf-key seconds input-bus]
 
-  (println (format "Starting!\n\n%s seconds" seconds))
+  (println (format "\nStarting!\n\n%s seconds" seconds))
   (let [progress-range "0%                                  100%"
         durs (repeat 40 (/ 1 (count progress-range)))
         progress-bar-fn (make-progress-bar-fn progress-range)]
@@ -117,7 +114,8 @@
                       (println "Countdown:")))
 
                 (cond (> (- countdown index) 0)
-                      (println (str (- countdown index) "... "))
+                      (do (print (str (- countdown index) "... "))
+                          (flush))
 
                       (= countdown index)
                       (do (reset! recording? true)
@@ -129,7 +127,8 @@
                           (on-end buf-key)))))))
 
 (def default-samples-path
-  "/Users/diego/Music/code/tieminos/src/tieminos/samples/recorded_samples/")
+  (str (System/getProperty "user.dir")
+       "/samples/recorded_samples/"))
 
 (defn save-samples*
   "`prefix` is a unique identifier for the sample set"
@@ -137,7 +136,7 @@
   (let [date (java.util.Date.)
         bufs* @buffers-atom
         db (atom (edn/read-string (slurp (str path "db.edn"))))]
-    (timbre/info (format "Writing %s buffers to %s" (count bufs*) path))
+    (timbre/info (format "Writing %s buffers to %s with prefix %s" (count bufs*) path prefix))
     (a/go
       (doseq [[k b] bufs*]
         (let [filename (str (name prefix) "-" (name-buf-key-fn k))
@@ -227,12 +226,16 @@
 
 (comment
   (do
-    (defn replay [buf-key & {:keys [speed]
-                             :or {speed 1}}]
+    (o/defsynth play-buf*
+      [buf 0]
+      (o/out 0 (o/play-buf 1 buf)))
+    (defn replay [buf-key & {:keys [synth speed]
+                             :or {synth (rand-nth [gs/sample&holdo
+                                                   gs/ocean
+                                                   gs/lines])
+                                  speed 1}}]
       (when-let [b (@bufs buf-key)]
-        ((rand-nth [gs/sample&holdo
-                    gs/ocean
-                    gs/lines])
+        (synth
          b
          (/ (:duration b) speed)
          :a 5
@@ -242,25 +245,40 @@
          :grain-dur 1/20
          :rate (rand-nth [1 3 5 7
                           1/2 2/3
-                          ;; 4/5 5/7
+                           ;; 4/5 5/7
                           ])
          :amp (+ 0.3 (rand 2))
          :amp-lfo (* 3 (rand)))))
-    (replay (->> @bufs keys rand-nth) :speed (+ 0.1 (rand))))
+
+    (->> @bufs keys)
+
+    (replay #_(->> @bufs keys rand-nth)
+            :guitar-bus-1670702407392
+            ;; :guitar-bus-1670701982972
+            ;; :guitar-bus-1670701991874
+            ;; :guitar-bus-1670702000967
+            :synth gs/sample&hold
+            :speed (+ 0.1 (rand))))
+  (play-buf* (->> @bufs :guitar-bus-1670702407392))
+  (->> @bufs keys)
   (save-samples :test)
   (o/stop)
   (require '[tieminos.habitat.routing :refer [guitar-bus
                                               mic-1-bus
                                               mic-2-bus
-                                              mic-3-bus]]))
-(comment
-  (start-recording
-   :bufs-atom bufs
-   :buf-key (keyword "olips" (str "x" (rand-int 5000)))
-   :input-bus (rand-nth [guitar-bus
-                         mic-1-bus
-                         mic-2-bus
-                         mic-3-bus])
-   :seconds 5
-   :msg "Test recording"
-   :on-end replay))
+                                              mic-3-bus]])
+  (defn rec-input
+    ;; FIXME make something easier to test without needing habitat routing
+    ;; NOTE uses habitat routing
+    [input-bus]
+    (let [name* (:name input-bus)]
+      (start-recording
+       :bufs-atom bufs
+       :buf-key (keyword name* (str  "-" (o/now)))
+       :input-bus input-bus
+       :seconds 5
+       :msg "Test recording"
+       :on-end replay)))
+
+  (rec-input guitar-bus)
+  (rec-input mic-2-bus))
