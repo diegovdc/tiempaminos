@@ -1,4 +1,4 @@
-(ns tieminos.afable-diablo.synths
+(ns tieminos.piraran.synths
   (:require
    [overtone.core :as o]
    [tieminos.overtone-extensions :refer [defsynth]]))

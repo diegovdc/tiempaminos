@@ -1,4 +1,4 @@
-(ns tieminos.afable-diablo.base
+(ns tieminos.piraran.base
   (:require
    [helins.interval.map :as imap]
    [time-time.dynacan.players.gen-poly :refer [on-event ref-rain]]))

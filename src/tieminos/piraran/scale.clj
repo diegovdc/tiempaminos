@@ -1,4 +1,4 @@
-(ns tieminos.afable-diablo.scale
+(ns tieminos.piraran.scale
   (:require
    [erv.cps.core :as cps]
    [erv.utils.conversions :as conv]

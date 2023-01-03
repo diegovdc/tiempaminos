@@ -1,13 +1,13 @@
-(ns tieminos.afable-diablo.arps
+(ns tieminos.piraran.arps
   (:require
    [erv.scale.core :refer [deg->freq]]
    [erv.utils.core :refer [wrap-at]]
    [overtone.core :as o]
-   [tieminos.afable-diablo.base :refer [get-out]]
-   [tieminos.afable-diablo.harmonic-clock :refer [dek-seq momento]]
-   [tieminos.afable-diablo.scale :refer [root]]
    [tieminos.math.bezier :as bz]
    [tieminos.math.utils :refer [linexp]]
+   [tieminos.piraran.base :refer [get-out]]
+   [tieminos.piraran.harmonic-clock :refer [dek-seq momento]]
+   [tieminos.piraran.scale :refer [root]]
    [time-time.dynacan.players.gen-poly :refer [on-event ref-rain]]))
 
 (defn scale-durs [total-dur durs]

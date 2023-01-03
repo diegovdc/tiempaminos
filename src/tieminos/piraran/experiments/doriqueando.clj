@@ -1,15 +1,15 @@
-(ns tieminos.afable-diablo.experiments.doriqueando
+(ns tieminos.piraran.experiments.doriqueando
   (:require
    [clojure.data.generators :refer [weighted]]
    [clojure.string :as str]
    [erv.scale.core :as scale]
    [overtone.core :as o]
-   [tieminos.afable-diablo.base
+   [tieminos.piraran.base
     :refer [act-level elapsed-time get-out make-activity-map]]
-   [tieminos.afable-diablo.dorian-scales :as ds]
-   [tieminos.afable-diablo.harmonic-clock :as hc]
-   [tieminos.afable-diablo.scale :refer [polydori root]]
-   [tieminos.afable-diablo.synths :refer [sini]]
+   [tieminos.piraran.dorian-scales :as ds]
+   [tieminos.piraran.harmonic-clock :as hc]
+   [tieminos.piraran.scale :refer [polydori root]]
+   [tieminos.piraran.synths :refer [sini]]
    [tieminos.synths :refer [low sharp-plate]]
    [tieminos.utils :refer [rrange]]
    [time-time.dynacan.players.gen-poly :refer [on-event ref-rain stop]]))

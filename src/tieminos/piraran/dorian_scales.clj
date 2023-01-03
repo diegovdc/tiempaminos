@@ -1,11 +1,10 @@
-(ns tieminos.afable-diablo.dorian-scales
+(ns tieminos.piraran.dorian-scales
   (:require
    [erv.scale.core :as scale]
-   [tieminos.afable-diablo.scale :refer [polydori]]
-   [time-time.dynacan.players.gen-poly :as gp :refer [on-event ref-rain]]
-   [time-time.standard :refer [rrand]]
    [erv.utils.conversions :as conv]
-   [tieminos.afable-diablo.scale :refer [polydori-v2]]))
+   [tieminos.piraran.scale :refer [polydori polydori-v2]]
+   [time-time.dynacan.players.gen-poly :as gp :refer [on-event ref-rain]]
+   [time-time.standard :refer [rrand]]))
 
 (def dorico-1v1
   "dorico 1 -  2)4 of 4)7 7.15-1.3.9.19 with added 3th.

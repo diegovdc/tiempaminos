@@ -1,10 +1,9 @@
-(ns tieminos.afable-diablo.harmonic-form
+(ns tieminos.piraran.harmonic-form
   (:require
    [clojure.string :as str]
    [erv.scale.scl :refer [make-scl-file]]
-   [tieminos.afable-diablo.dorian-scales
-    :refer [anti-dorico-1v1 dorico-1v2]]
-   [tieminos.afable-diablo.scale :refer [+cents polydori polydori-by-sets]]))
+   [tieminos.piraran.dorian-scales :refer [anti-dorico-1v1 dorico-1v2]]
+   [tieminos.piraran.scale :refer [+cents polydori polydori-by-sets]]))
 
 (def harmonic-form
   "Momento 0:  antidórico diff ?

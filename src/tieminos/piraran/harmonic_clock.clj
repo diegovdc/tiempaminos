@@ -1,9 +1,9 @@
-(ns tieminos.afable-diablo.harmonic-clock
+(ns tieminos.piraran.harmonic-clock
   (:require
    [erv.utils.core :refer [wrap-at]]
    [taoensso.timbre :as timbre]
-   [tieminos.afable-diablo.harmonic-form :as form]
-   [tieminos.afable-diablo.scale :refer [polydori]]
+   [tieminos.piraran.harmonic-form :as form]
+   [tieminos.piraran.scale :refer [polydori]]
    [time-time.dynacan.players.gen-poly :refer [on-event ref-rain stop]]))
 
 (defn +hexanies [moment]

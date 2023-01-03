@@ -1,4 +1,4 @@
-(ns tieminos.afable-diablo.d1pt4.core
+(ns tieminos.piraran.d1pt4.core
   (:require
    [erv.cps.core :as cps]
    [erv.scale.core :as scale]

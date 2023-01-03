@@ -1,14 +1,14 @@
-(ns tieminos.afable-diablo.experiments.ensayo2
+(ns tieminos.piraran.experiments.ensayo2
   (:require
    [clojure.data.generators :refer [weighted]]
    [erv.scale.core :refer [deg->freq]]
    [overtone.core :as o]
-   [tieminos.afable-diablo.base :as base :refer [get-out]]
-   [tieminos.afable-diablo.harmonic-clock :as hc]
-   [tieminos.afable-diablo.harmonic-form :as form]
-   [tieminos.afable-diablo.scale :refer [root]]
    [tieminos.math.utils :refer [linexp]]
    [tieminos.midi.core :refer [midi-in-event]]
+   [tieminos.piraran.base :as base :refer [get-out]]
+   [tieminos.piraran.harmonic-clock :as hc]
+   [tieminos.piraran.harmonic-form :as form]
+   [tieminos.piraran.scale :refer [root]]
    [tieminos.utils :refer [rrange]]
    [time-time.dynacan.players.gen-poly :as gp :refer [on-event ref-rain]]))
 

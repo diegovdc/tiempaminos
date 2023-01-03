@@ -1,12 +1,12 @@
-(ns tieminos.afable-diablo.analysis
+(ns tieminos.piraran.analysis
   (:require
    [clojure.math.combinatorics :as combo]
    [clojure.set :as set]
    [clojure.string :as str]
    [erv.cps.core :as cps]
    [erv.cps.similarity :as cpss]
-   [tieminos.afable-diablo.dorian-scales :as ds]
-   [tieminos.afable-diablo.scale
+   [tieminos.piraran.dorian-scales :as ds]
+   [tieminos.piraran.scale
     :refer
     [+cents polydori polydori-set->deg polydori-v2]]))
 

@@ -1,11 +1,11 @@
-(ns tieminos.afable-diablo.MAA.parte3.exploracion
+(ns tieminos.piraran.maa.parte3.exploracion
   (:require
    [clojure.string :as str]
    [erv.scale.core :as scale]
    [overtone.midi :as midi]
-   [tieminos.afable-diablo.scale :refer [polydori]]
    [tieminos.core]
    [tieminos.midi.plain-algo-note :as pa :refer [algo-note malgo-note]]
+   [tieminos.piraran.scale :refer [polydori]]
    [tieminos.synths :as s]
    [tieminos.utils :refer [cps->tidal-scale]]
    [time-time.dynacan.players.gen-poly :as gp :refer [on-event ref-rain]]))
