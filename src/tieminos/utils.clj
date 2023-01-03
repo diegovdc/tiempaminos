@@ -97,3 +97,28 @@
                  :bounded-ratio
                  conv/ratio->cents
                  (/ 100)))))
+
+(defn hz->ms
+  [hz]
+  (/ 1000 hz))
+
+(defn avg [xs]
+  (/ (apply + xs)
+     (count xs)))
+
+(defn map-subscale-degs
+  "Use `scale-size` and `subscale-degs` to calculate a degree
+  from the subscale in the parent scale to allow for playing with the degrees in different periods."
+  [scale-size subscale-degs deg]
+  (let [deg-class (wrap-at deg subscale-degs)]
+    (+ (*  scale-size (+ (if (and (not (zero? deg-class))
+                                  (> 0 deg))
+                           -1 0)
+                         (quot deg (count subscale-degs))))
+       (* (wrap-at deg subscale-degs)))))
+
+(comment
+  (map-subscale-degs
+   20
+   [0 5 8 9]
+   -8))

@@ -21,3 +21,7 @@
              :mid mid
              :late late
              :fx fx})))
+
+(comment
+  (init-groups!))
+

@@ -5,7 +5,7 @@
   For MPE supported preprogrammed messages use `tieminos.midi.algo-note`"
   (:require
    [overtone.midi :as midi]
-   [tieminos.utils :refer [wrap-at]]
+   [tieminos.utils :refer [map-subscale-degs]]
    [time-time.dynacan.players.gen-poly :refer [on-event ref-rain]]))
 
 (comment
@@ -75,19 +75,6 @@
                (+ base-midi-chan octave))]
     {:note note
      :chan chan}))
-
-(do
-  (defn map-subscale-degs [scale-size subscale-degs deg]
-    (let [deg-class (wrap-at deg subscale-degs)]
-      (+ (*  scale-size (+ (if (and (not (zero? deg-class))
-                                    (> 0 deg))
-                             -1 0)
-                           (quot deg (count subscale-degs))))
-         (* (wrap-at deg subscale-degs)))))
-  (map-subscale-degs
-   20
-   [0 5 8 9]
-   -8))
 
 (defn malgo-note
   "`algo-note` with `midi-mapper`.
