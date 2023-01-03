@@ -6,12 +6,15 @@
    [erv.cps.core :as cps]
    [erv.cps.similarity :as cpss]
    [tieminos.afable-diablo.dorian-scales :as ds]
-   [tieminos.afable-diablo.scale :refer [+cents polydori]]))
-
+   [tieminos.afable-diablo.scale
+    :refer
+    [+cents polydori polydori-set->deg polydori-v2]]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;; Finding dorian scales
 ;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
 (do
   (defn all-rotations
     "Zero based rotations. `scale` is in cents"
@@ -58,15 +61,47 @@
                      (:closest-12-edo %)))
            (sort-by :euclidean-distance)
            (map (juxt :euclidean-distance :factors :cents)))
-      #_  count))
+      #_count))
 
+(def dorian-hexanies-in-polydori
+  "A vector of maps each with the hexany `:sets` and the `:degrees` of the notes in `polydori-v2`
+  NOTE: do use `polydori-v2` as it's degrees differ from `polydori`"
+  (mapcat (fn [[_ factors]]
 
+            (let [f-set (set factors)
+                  poly-factors #{1 3 9 19 15 21 7}
+                  factors-not-on-f-set (set/difference poly-factors f-set)
+                  hexany (cps/make 2 factors)
+                  hexany-note-factors (->> hexany
+                                           :scale
+                                           (map :set))]
+              (->> (combo/combinations factors-not-on-f-set 2)
+                   (map (fn [common-factors]
+                          (let [sets (map #(into % common-factors)
+                                          hexany-note-factors)]
+                            {:hexany (:scale hexany)
+                             :hexany-note-factors hexany-note-factors
+                             :unique-factors f-set
+                             :common-factors (set common-factors)
+                             :sets sets
+                             :degrees (map polydori-set->deg sets)}))))))
+          dorian-hexanies))
+
+(->> dorian-hexanies-in-polydori)
+(polydori-set->deg #{1 15 21 9})
+(-> dorian-hexanies-in-polydori
+    (nth 2))
+(-> (:scale polydori-v2)
+    (->> (filter #(-> % :sets (contains? #{1 15 21 9}))))
+    #_(nth 22))
+
+(def polydori-degrees-of-dorian-hexanies)
+(-> dorian-hexanies)
 
 (:scale (cps/make 4 [1 3 9 19 15 21 7]))
 (->> (cps/make 4 [1 3 9 19 15 21 7])
      cps/+all-subcps
-     :subcps
-     )
+     :subcps)
 
 (-> (cps/make 4 [1 3 9 19 15 21 7] :norm-fac 315 #_(* 49/3 513))
     cps/+all-subcps
@@ -88,6 +123,8 @@
 
 ;; dorian cents: [0 200 300 500 700 900 1000]
 ;; use this to find the dorian mode
+
+
 (-> polydori :subcps (get "2)4 of 4)7 1.15-3.7.19.21") :scale +cents)
 (def anti-dorico-1v1
   (let [dorico (set (map :set ds/dorico-1v1))]
@@ -109,7 +146,7 @@
                             dorico
                             (set (map :set (:scale %))))))
          #_(sort-by first))))
-
+(-> dorico-1v2-interdeks)
 (-> ds/dorico-1v2)
 
 
@@ -118,12 +155,14 @@
 ;;;;;;;;;;;;;;;;;
 
 ;; [[intersection-count total-dekanies]]
+
+
 (->> dorico-1v2-interdeks
      (sort-by first)
      (map (juxt first (comp count second))))
 ;; NOTE moments from intedeks: '([0 14] [1 16] [2 15] [3 13] [4 2] [5 3])
 
-(->> dorian-hexanies )
+(->> dorian-hexanies)
 '([6.782329983125268 (1 3 9 19) (0 201 404 498 903 996)]
   [19.77371993328519 (1 3 9 15) (0 204 387 591 702 1089)]
   [42.790185790669334 (3 19 21 7) (0 297 529 702 796 969)]

@@ -13,11 +13,21 @@
 (defn +degree [scale]
   (map-indexed (fn [i n] (assoc n :degree i)) scale))
 
-(defn dedupe-scale [scale]
-  (->> scale
-       (group-by :bounded-ratio)
-       (map (comp first second))
-       (sort-by :bounded-ratio)))
+(do
+  (defn dedupe-scale [scale]
+    (->>  scale
+          (group-by :bounded-ratio)
+          (map (fn [[_ notes]]
+                 (let [sets (map :set notes)
+                       archi-sets (map :archi-set notes)]
+                   (-> notes first
+                       (dissoc :set :archi-set)
+                       (assoc :sets (set sets)
+                              :archi-sets (set archi-sets))))))
+          (sort-by :bounded-ratio)
+          (into [])))
+  #_(-> polydori :scale
+        dedupe-scale))
 
 (def polydori
   (-> (cps/make 4 [1 3 9 19 15 21 7]
@@ -27,7 +37,25 @@
       cps/+all-subcps
       (update :scale (comp +cents +degree))))
 
-(comment (-> polydori :scale))
+(def polydori-v2
+  "Deduplicated version of polydori has `:sets` and `:archi-sets` keys"
+  (-> polydori
+      (update :scale dedupe-scale)
+      (update :scale (comp +cents +degree))))
+
+(def polydori-set->deg
+  (->> polydori-v2
+       :scale
+       (group-by :sets)
+       (mapcat (fn [[sets [note]]]
+                 (map (fn [s] {s (:degree note)})
+                      sets)))
+       (apply merge)))
+
+(comment
+  (-> polydori-set->deg)
+  (polydori-set->deg #{1 15 21 9})
+  (-> polydori-v2))
 
 (def polydori-by-sets (->> polydori :scale (group-by :set)))
 #_(-> polydori-by-sets)
@@ -40,4 +68,3 @@
                                                               (sort-by :bounded-ratio)
                                                               #_(map :bounded-ratio))))]
     (spit (str "/Users/diego/Music/tunings/" filename) content)))
-

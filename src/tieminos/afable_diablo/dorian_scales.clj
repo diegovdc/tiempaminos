@@ -1,5 +1,11 @@
 (ns tieminos.afable-diablo.dorian-scales
-  (:require [tieminos.afable-diablo.scale :refer [polydori]]))
+  (:require
+   [erv.scale.core :as scale]
+   [tieminos.afable-diablo.scale :refer [polydori]]
+   [time-time.dynacan.players.gen-poly :as gp :refer [on-event ref-rain]]
+   [time-time.standard :refer [rrand]]
+   [erv.utils.conversions :as conv]
+   [tieminos.afable-diablo.scale :refer [polydori-v2]]))
 
 (def dorico-1v1
   "dorico 1 -  2)4 of 4)7 7.15-1.3.9.19 with added 3th.
@@ -50,13 +56,71 @@
     :bounded-ratio 32/19
     :bounding-period 2
     :cents 902.4869838676968}
-   {:set #{7 15 3 19}
-    :ratio 1/9
-    :bounded-ratio 16/9
-    :bounding-period 2
-    :cents 996.0899982692252}])
+   :ratio 1/9
+   :bounded-ratio 16/9
+   :bounding-period 2
+   :cents 996.0899982692252])
 
-(def dorico-1v3
+(comment
+  (require '[tieminos.synths :as s]
+           '[tieminos.afable-diablo.analysis :refer [dorian-hexanies-in-polydori]]
+           '[tieminos.utils :refer [map-subscale-degs]])
+
+  (gp/stop)
+
+  (defn- deg->freq [base-freq diatonic-scale-idx degree]
+    (scale/deg->freq (:scale polydori-v2)
+                     base-freq
+                     (map-subscale-degs (count (:scale polydori-v2))
+                                        (:degrees
+                                         (nth
+                                          dorian-hexanies-in-polydori
+                                          diatonic-scale-idx))
+                                        degree)))
+  (ref-rain
+   :id ::scale-tester-1
+   :durs [3 2 2]
+   :ratio 1/9
+   :on-event (on-event
+              (let [deg (at-i [(at-i [0 1 12 0 6 7])
+                               2
+                               (at-i [-1 -7 -8])
+                               4
+                               (at-i [5 6])
+                               8
+                               (at-i [7 11 6])
+                               (at-i [7 14 13])])]
+                ((rand-nth [s/low s/short-plate])
+                 (deg->freq (rand-nth [50 100]) (at-i [0 0 0 0 0 9 9 9 9]) deg)
+                 :atk (rand-nth [0.1])
+                 :mod-freq (rrand 300 10000))
+                #_((rand-nth [s/low s/short-plate])
+                   (deg->freq 400 (at-i [2 2 2 2 2 11 11 11  11]) deg)
+                   :dcy 1
+                   :amp (at-i [0.5 0.3 0.8])
+                   :mod-freq (rrand 300 10000)))))
+  (gp/stop)
+  (ref-rain
+   :id ::scale-tester-2
+   :durs [5 5 3]
+   :ratio 1/9
+   :on-event (on-event
+              (case (mod index 2)
+                0 ((rand-nth [s/low s/short-plate])
+                   (deg->freq 100 2 (at-i [0 -4 2 5 8 7 11]))
+                   :atk 3
+                   :dcy 3
+                   :amp (rand 0.7)
+                   :mod-freq (rrand 600 10000))
+                1 ((rand-nth [s/low s/short-plate])
+                   (deg->freq 100 0 (rand-nth [11 16 12 13 17 19]))
+                   :atk (rand 0.3)
+                   :dcy (rrand 2 8)
+                   :amp (rand 0.7)
+                   :mod-freq (rrand 6000 10000))
+                nil))))
+
+(def dorico-1v3*
   "dorico 1 \"2)4 of 4)7 7.15-1.3.9.19\" with added sharp 1st degree"
   [{:set #{1 15 3 19}
     :ratio 1/63
@@ -97,13 +161,7 @@
 
 (def dorico-1v3
   "dorico 1 \"2)4 of 4)7 7.15-1.3.9.19\" with added flat 1st degree"
-  [{:set #{7 15 21 3}
-    :ratio 7/57
-    :bounded-ratio 112/57
-    :bounding-period 2
-    :degree 34
-    :cents 1169.3578894714346}
-   {:set #{7 1 15 9}
+  [{:set #{7 1 15 9}
     :ratio 1/57
     :bounded-ratio 64/57
     :bounding-period 2
@@ -132,7 +190,13 @@
     :ratio 1/9
     :bounded-ratio 16/9
     :bounding-period 2
-    :cents 996.0899982692252}])
+    :cents 996.0899982692252}
+   {:set #{7 15 21 3}
+    :ratio 7/57
+    :bounded-ratio 112/57
+    :bounding-period 2
+    :degree 34
+    :cents 1169.3578894714346}])
 
 (def dorico-2v1
   "2)4 of 4)7 7.21-1.3.9.19 with missing 1st. 1st degree is sharp"
