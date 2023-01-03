@@ -33,8 +33,9 @@
          "/panner-rate" (TEMPORARY-multichan-wrapper panner-rate args-map)
          "/reso-pan-voices" (reso-pan/update-state :voices (map-val args-map 1 10))
          "/reso-pan-dur" (reso-pan/update-state :dur (map-val args-map 5 60))
-          ;; TODO add reso-pan-amp
+         ;; TODO add reso-pan-amp
          "/reso-pan" (reso-pan/trigger (:in args-map) 0 5 10)
+         "/rec" (rec/rec-controller args-map)
          (println "Unknown path for message: " msg)))))
 
   ;; amanecer

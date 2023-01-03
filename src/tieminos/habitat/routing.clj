@@ -1,5 +1,6 @@
 (ns tieminos.habitat.routing
   (:require
+   [clojure.string :as str]
    [overtone.core :as o]
    [tieminos.overtone-extensions :refer [defsynth]]
    [tieminos.sc-utils.groups.v1 :as groups]
@@ -25,8 +26,9 @@
                            n-chans)]
     (into {} (map-indexed (fn [i out] [(inc i) out]) return-outs))))
 
-
-
+(def processes-return-1
+  "Return for buffers and sounds processed by SC"
+  (reaper-returns 3))
 ;;;;;;;;;;;
 ;; Buses ;;
 ;;;;;;;;;;;
@@ -57,9 +59,6 @@
    :mic-4  24
    :mic-5  25})
 
-;; TODO fix this, refactor into atom
-
-
 (def inputs
   {:guitar {:in (:guitar ins)
             :bus guitar-bus}
@@ -87,6 +86,8 @@
     n
     (get input-number->bus* n n)))
 
+(defn bus->bus-name [bus]
+  (-> bus :name (str/replace #"-bus" "")))
 
 ;;;;;;;;;;;;;;
 ;; preouts ;;;
@@ -134,7 +135,7 @@
 (comment
   (o/stop)
   (init-preouts! inputs)
-  (-> preouts :guitar :bus)
+  (-> @preouts :guitar :bus)
   (defsynth sini [out 0]
     (o/out out (* 0.2 (o/sin-osc [200 210 220 230]))))
   (def busy (o/audio-bus 4 "busy"))
