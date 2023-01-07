@@ -60,65 +60,6 @@
    :bounding-period 2
    :cents 996.0899982692252])
 
-(comment
-  (require '[tieminos.synths :as s]
-           '[tieminos.afable-diablo.analysis :refer [dorian-hexanies-in-polydori]]
-           '[tieminos.utils :refer [map-subscale-degs]])
-
-  (gp/stop)
-
-  (defn- deg->freq [base-freq diatonic-scale-idx degree]
-    (scale/deg->freq (:scale polydori-v2)
-                     base-freq
-                     (map-subscale-degs (count (:scale polydori-v2))
-                                        (:degrees
-                                         (nth
-                                          dorian-hexanies-in-polydori
-                                          diatonic-scale-idx))
-                                        degree)))
-  (ref-rain
-   :id ::scale-tester-1
-   :durs [3 2 2]
-   :ratio 1/9
-   :on-event (on-event
-              (let [deg (at-i [(at-i [0 1 12 0 6 7])
-                               2
-                               (at-i [-1 -7 -8])
-                               4
-                               (at-i [5 6])
-                               8
-                               (at-i [7 11 6])
-                               (at-i [7 14 13])])]
-                ((rand-nth [s/low s/short-plate])
-                 (deg->freq (rand-nth [50 100]) (at-i [0 0 0 0 0 9 9 9 9]) deg)
-                 :atk (rand-nth [0.1])
-                 :mod-freq (rrand 300 10000))
-                #_((rand-nth [s/low s/short-plate])
-                   (deg->freq 400 (at-i [2 2 2 2 2 11 11 11  11]) deg)
-                   :dcy 1
-                   :amp (at-i [0.5 0.3 0.8])
-                   :mod-freq (rrand 300 10000)))))
-  (gp/stop)
-  (ref-rain
-   :id ::scale-tester-2
-   :durs [5 5 3]
-   :ratio 1/9
-   :on-event (on-event
-              (case (mod index 2)
-                0 ((rand-nth [s/low s/short-plate])
-                   (deg->freq 100 2 (at-i [0 -4 2 5 8 7 11]))
-                   :atk 3
-                   :dcy 3
-                   :amp (rand 0.7)
-                   :mod-freq (rrand 600 10000))
-                1 ((rand-nth [s/low s/short-plate])
-                   (deg->freq 100 0 (rand-nth [11 16 12 13 17 19]))
-                   :atk (rand 0.3)
-                   :dcy (rrand 2 8)
-                   :amp (rand 0.7)
-                   :mod-freq (rrand 6000 10000))
-                nil))))
-
 (def dorico-1v3*
   "dorico 1 \"2)4 of 4)7 7.15-1.3.9.19\" with added sharp 1st degree"
   [{:set #{1 15 3 19}
