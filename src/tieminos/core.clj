@@ -9,7 +9,8 @@
    [taoensso.timbre :as timbre]
    [tieminos.osc.core :refer [osc-servers stop-server]]
    [tieminos.overtone-extensions :as oe]
-   [time-time.dynacan.players.gen-poly :as gp]))
+   [time-time.dynacan.players.gen-poly :as gp]
+   [erv.utils.conversions :as conv]))
 
 (set-refresh-dirs "src")
 
