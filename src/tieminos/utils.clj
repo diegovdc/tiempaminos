@@ -103,8 +103,9 @@
   (/ 1000 hz))
 
 (defn avg [xs]
-  (/ (apply + xs)
-     (count xs)))
+  (if (seq xs)
+    (/ (apply + xs) (count xs))
+    0))
 
 (defn map-subscale-degs
   "Use `scale-size` and `subscale-degs` to calculate a degree
@@ -122,3 +123,12 @@
    20
    [0 5 8 9]
    -8))
+
+(defn normalize-amp
+  "When passed the peak-amp of a buffer, returns the value of the amp to normalize the buffer"
+  ([peak-amp] (normalize-amp peak-amp 1))
+  ([peak-amp target-peak]
+     ;; prevent infinite amp
+   (if-not (zero? peak-amp)
+     (/ target-peak peak-amp)
+     target-peak)))

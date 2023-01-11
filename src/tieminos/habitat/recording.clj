@@ -1,31 +1,41 @@
 (ns tieminos.habitat.recording
   (:require
-   [clojure.math :refer [round]]
    [clojure.string :as str]
    [overtone.core :as o]
+   [taoensso.timbre :as timbre]
    [tieminos.habitat.routing :refer [bus->bus-name input-number->bus*]]
    [tieminos.sc-utils.recording.v1 :as rec :refer [start-recording]]
-   [tieminos.utils :refer [avg hz->ms]]))
+   [tieminos.utils :refer [avg hz->ms normalize-amp]]))
 
 (declare make-buf-key! add-analysis)
 
 (defonce bufs (atom {}))
+
+(defonce recording?
+  ;;  {:input-name-kw boolean?}
+  (atom {}))
 
 (defn rec-input
   [{:keys [section subsection input-name input-bus dur-s on-end msg countdown]
     :or {on-end (fn [& args])
          msg "Recording"
          countdown 0}}]
-  (start-recording
-   :bufs-atom bufs
-   :buf-key (make-buf-key! section subsection input-name)
-   :input-bus input-bus
-   :seconds dur-s
-   :msg msg
-   :on-end (fn [buf-key]
-             (add-analysis dur-s buf-key input-bus)
-             (on-end buf-key))
-   :countdown countdown))
+  (let [input-kw (-> input-bus :name keyword)]
+    (if (get @recording? input-kw)
+      (timbre/warn "Input bus already recording: " input-kw)
+      (do
+        (swap! recording? assoc input-kw true)
+        (start-recording
+         :bufs-atom bufs
+         :buf-key (make-buf-key! section subsection input-name)
+         :input-bus input-bus
+         :seconds dur-s
+         :msg msg
+         :on-end (fn [buf-key]
+                   (swap! recording? assoc input-kw false)
+                   (add-analysis dur-s buf-key input-bus)
+                   (on-end buf-key))
+         :countdown countdown)))))
 
 (defn save-samples [& {:keys [description full-keyword]}]
   (let [prefix  (or full-keyword
@@ -80,39 +90,42 @@
 
 (defonce analysis-history (atom {}))
 
+(def analyzer-freq 60)
+
 (defn run-get-signal-analysis
   [& {:keys [freq input-bus analysis-path]
-      :or {freq 5}}]
-  ((o/synth (let [signal (o/in:kr input-bus)]
-              (o/send-reply:kr (o/impulse:kr freq) analysis-path
-                               [(o/amplitude:kr signal) (o/pitch:kr signal)]
-                               signal)))))
-(round (/ (* 60 1000) 5))
+      :or {freq 60}}]
+  (timbre/info "Initializing signal analyzer on bus:" input-bus)
+  ((o/synth
+    (let [input (o/in input-bus)]
+      (o/send-reply (o/impulse freq) analysis-path
+                    [(o/amplitude:kr input) (o/pitch:kr input)]
+                    1)))))
+
 (defn run-receive-analysis
   "Gets analysis from `in` 0 in almost real time
   and `conj`es the data into`analysis-history.
   NOTE: `run-get-signal-pitches` must be running`"
   [& {:keys [freq input-bus-name-keyword analysis-path]}]
   (let [handler-name (keyword (str (str/replace analysis-path #"/" "")
-                                   "-handler"))
-        one-minute-of-data (round (/ (* 60 1000) freq))
-        sample-rate (hz->ms freq)]
+                                   "-handler"))]
     (o/on-event analysis-path
                 (fn [data]
-                  (let [[_node-id input-bus amp freq freq?*] (-> data :args)
-                        freq? (= freq?* 1.0)]
-                    (swap! analysis-history
-                           update
-                           input-bus-name-keyword
-                           (comp (partial take one-minute-of-data) conj)
-                           {:amp amp
-                            :timestamp (o/now)
-                            :freq freq
-                            :freq? freq?})))
+                  (when (get @recording? input-bus-name-keyword)
+                    (let [[_node-id input-bus amp freq freq?*] (-> data :args)
+                          freq? (= freq?* 1.0)]
+                      #_(when (> amp 0.7))
+                      (println input-bus-name-keyword "amp" amp)
+                      (swap! analysis-history
+                             update
+                             input-bus-name-keyword
+                             conj
+                             {:amp amp
+                              :timestamp (o/now)
+                              :freq freq
+                              :freq? freq?}))))
                 handler-name)
     handler-name))
-
-(def analyzer-freq 5)
 
 (defn start-signal-analyzer
   [& {:keys [input-bus]}]
@@ -126,21 +139,7 @@
                 :input-bus input-bus
                 :analysis-path analysis-path)}))
 
-(comment
-  (require '[tieminos.habitat.routing :refer [guitar-bus
-                                              mic-1-bus
-                                              mic-2-bus
-                                              mic-3-bus
-                                              mic-4-bus
-                                              preouts]])
-  (o/stop)
-  (-> @analysis-history :mic-2-bus)
-  (reset! analysis-history {})
-  (-> mic-2-bus :name)
-  (start-signal-analyzer :input-bus mic-2-bus))
-
 (defn add-analysis [dur-s buf-key input-bus]
-  #_(swap! bufs buf-key assoc :analysis)
   (let [now (o/now)
         sample-start (- now (* 1000 dur-s)
                         ;; ensure samples window corresponds to dur-s
@@ -151,29 +150,55 @@
                       (reduce (fn [acc {:keys [amp]}]
                                 (-> acc
                                     (update :min-amp min amp)
-                                    (update :max-amp min amp)
+                                    (update :max-amp max amp)
                                     (update :amps conj amp)))
-
                               {:min-amp 0
                                :max-amp 0
                                :amps ()}))
-        buf (@bufs buf-key)]
+        buf (@bufs buf-key)
+        avg-amp (avg (:amps analysis))
+        amp-norm-mult (normalize-amp (:max-amp analysis))]
     (swap! bufs update buf-key
-           assoc :analysis (-> analysis
-                               (assoc :avg-amp (avg (:amps analysis)))
-                               (dissoc :amps)))))
-(comment
-  ;; TODO left here
-  (add-analysis 2 :amanecer-subsection-mic-2-2 mic-2-bus))
+           assoc
+           :analysis (-> analysis
+                         (assoc :avg-amp avg-amp)
+                         (dissoc :amps))
+           :amp-norm-mult amp-norm-mult)))
+
+(defn norm-amp
+  [buf]
+  (:amp-norm-mult buf 1))
 
 (comment
+  (require '[tieminos.habitat.routing :refer [guitar-bus
+                                              mic-1-bus
+                                              mic-2-bus
+                                              mic-3-bus
+                                              mic-4-bus
+                                              preouts]])
+  (reset! analysis-history {})
+  (o/stop)
+  (->> @analysis-history
+       :mic-1-bus
+       (map :amp)
+       sort
+       reverse)
+  (-> mic-1-bus)
+  (swap! recording? assoc :mic-1-bus true) ;; manually turn on run-receive-analysis
+  (swap! recording? assoc :mic-1-bus false)
+  (def receiver-analyzer (start-signal-analyzer :input-bus mic-1-bus))
+  (o/kill (:analyzer receiver-analyzer)))
+
+(comment
+  (let [buf-key :amanecer-subsection-mic-1-2]
+    (o/demo
+     (* (norm-amp (-> @bufs buf-key))
+        (o/play-buf 1 (-> @bufs buf-key)))))
+
+  (normalize-amp 0.5)
+  (-> @bufs :amanecer-subsection-mic-1-1)
   (rec-input {:section "amanecer"
               :subsection "subsection"
-              :input-name "mic-2"
-              :input-bus mic-2-bus
+              :input-name "mic-1"
+              :input-bus mic-1-bus
               :dur-s 2}))
-
-
-
-
-
