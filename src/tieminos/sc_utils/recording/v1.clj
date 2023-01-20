@@ -132,7 +132,7 @@
 
 (defn save-samples*
   "`prefix` is a unique identifier for the sample set"
-  [prefix path buffers-atom name-buf-key-fn]
+  [prefix path buffers-atom name-buf-key-fn preserve-keys]
   (let [date (java.util.Date.)
         bufs* @buffers-atom
         db (atom (edn/read-string (slurp (str path "db.edn"))))]
@@ -148,17 +148,23 @@
                                          (:n-channels b))
           (swap! db assoc-in
                  [prefix k]
-                 {:path path* :key k :date date :prefix prefix})))
+                 {:path path*
+                  :key k
+                  :date date
+                  :prefix prefix
+                  :buf-map-data (if preserve-keys (select-keys b preserve-keys) {})})))
       (spit (str path "db.edn") @db)
       (timbre/info "All done!"))))
 
 (defn save-samples
+  "`preserve-keys` additional keys in the buffer map that should be saved to the db"
   [prefix
-   & {:keys [path buffers-atom name-buf-key-fn]
+   & {:keys [path buffers-atom name-buf-key-fn preserve-keys]
       :or {path default-samples-path
            buffers-atom bufs
-           name-buf-key-fn name-buf-key}}]
-  (save-samples* prefix path buffers-atom name-buf-key-fn))
+           name-buf-key-fn name-buf-key
+           preserve-keys []}}]
+  (save-samples* prefix path buffers-atom name-buf-key-fn preserve-keys))
 
 (comment
   (save-samples :test))
@@ -178,7 +184,8 @@
                    shuffle
                    (into {})
                    (map (fn [[_ data]]
-                          [(:key data) (with-meta (o/load-sample (:path data))
+                          [(:key data) (with-meta (merge (o/load-sample (:path data))
+                                                         (:buf-map-data data {}))
                                          data)]))
                    (into {}))]
     (reset! buffers-atom (with-meta files {:samples-path samples-path}))

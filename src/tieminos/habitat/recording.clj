@@ -37,6 +37,9 @@
                    (on-end buf-key))
          :countdown countdown)))))
 
+(def habitat-samples-path (str (System/getProperty "user.dir")
+                               "/samples/habitat_samples/"))
+
 (defn save-samples [& {:keys [description full-keyword]}]
   (let [prefix  (or full-keyword
                     (keyword "habitat"
@@ -45,9 +48,9 @@
                                                java.time.format.DateTimeFormatter/ISO_INSTANT))
                                   (when description (str "*" (str/replace description #" " "-"))))))]
     (rec/save-samples prefix
-                      :path (str (System/getProperty "user.dir")
-                                 "/samples/habitat_samples/")
-                      :buffers-atom bufs)))
+                      :path habitat-samples-path
+                      :buffers-atom bufs
+                      :preserve-keys [:analysis :amp-norm-mult])))
 
 (defonce buf-keys-count (atom {}))
 
@@ -189,6 +192,14 @@
   (def receiver-analyzer (start-signal-analyzer :input-bus mic-1-bus))
   (o/kill (:analyzer receiver-analyzer)))
 
+(def test-samples (atom {}))
+
+(comment
+  (rec/load-own-samples!
+   :buffers-atom test-samples
+   :prefixes-set #{:habitat/test-samples-v1}
+   :samples-path habitat-samples-path))
+
 (comment
   (let [buf-key :amanecer-subsection-mic-1-2]
     (o/demo
@@ -196,9 +207,14 @@
         (o/play-buf 1 (-> @bufs buf-key)))))
 
   (normalize-amp 0.5)
-  (-> @bufs :amanecer-subsection-mic-1-1)
+  (-> @bufs)
   (rec-input {:section "amanecer"
               :subsection "subsection"
               :input-name "mic-1"
               :input-bus mic-1-bus
-              :dur-s 2}))
+              :dur-s 5})
+  (rec-input {:section "amanecer"
+              :subsection "subsection"
+              :input-name "mic-3"
+              :input-bus mic-3-bus
+              :dur-s 5}))
