@@ -5,6 +5,7 @@
    [overtone.midi :as midi]
    [tieminos.core]
    [tieminos.midi.plain-algo-note :as pa :refer [algo-note malgo-note]]
+   [tieminos.piraran.analysis :refer [dorian-hexanies-in-polydori]]
    [tieminos.piraran.scale :refer [polydori]]
    [tieminos.synths :as s]
    [tieminos.utils :refer [cps->tidal-scale]]
@@ -19,28 +20,37 @@
             (str/replace #"-"  "t")))
       (rename-cps-name "1)2 1.9.15-7.19"))
   (do
-    (defn subcps-map->tidal-scale-record-string
-      [subcps-map]
-      (->> subcps-map
-           (mapv
-            (fn [[k v]]
-              (format "(\"%s\", %s)"
-                      (rename-cps-name (str/join " "
-                                                 ((juxt #(nth % 0) #(nth % 3))
-                                                  (str/split k #" "))))
-                      (-> v
-                          cps->tidal-scale
-                          vec
-                          str
-                          (str/replace #" "  ",")))))
+    #dbg
+     (defn subcps-map->tidal-scale-record-string
+       [subcps-map]
+       (->> subcps-map
+            (mapv
+             (fn [[k v]]
+               (format "(\"%s\", %s)"
+                       (rename-cps-name (str/join " "
+                                                  ((juxt #(nth % 0) #(nth % 3))
+                                                   (str/split k #" "))))
+                       (-> v
+                           cps->tidal-scale
+                           vec
+                           str
+                           (str/replace #" "  ",")))))
 
-           (str/join ",")
-           (format "[%s]")
-           (spit "resources/polidori.txt")))
+            (str/join ",")
+            (format "[%s]")
+            (spit "resources/polidori.txt")))
 
-    (subcps-map->tidal-scale-record-string (-> polydori :subcps)))
+    #_(subcps-map->tidal-scale-record-string (-> polydori :subcps)))
+  (subcps-map->tidal-scale-record-string (->> polydori-v2 :subcps (take 2)))
+  (->> dorian-hexanies-in-polydori
+       (map #(->> % ((juxt (comp (fn [fs] (str/join "." fs)) sort :common-factors)
+                           (comp (fn [fs] (str/join "." fs)) sort :unique-factors)))
+                  (apply format "2)4 of 4)7 %s-%s")
+                  rename-cps-name))
 
-  (-> polydori :subcps keys sort)
+       (map-indexed (fn [i v]
+                      (list v, (format "dorian%sv%s" (quot i 3) (inc (mod i 3)))))))
+
   (-> polydori :subcps (get "4)6 of 4)7 1.3.7.15.19.21") :scale
       (->> (map :bounded-ratio)))
   (gp/stop)
@@ -98,6 +108,4 @@
                :base-midi-deg 69
                :base-midi-chan 6
                :deg -64}))
-
-
 
