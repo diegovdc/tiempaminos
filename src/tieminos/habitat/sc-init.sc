@@ -10,5 +10,7 @@ o.numOutputBusChannels = 46;
 s.waitForBoot({
 	().play;
 	s.makeGui; // `l` to show meter https://doc.sccode.org/Classes/Server.html
+    // TODO figure out a way to mix in all outs for the spectrogram... or something
+    {In.ar(0)}.spectrogram;
 });
 )
