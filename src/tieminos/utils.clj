@@ -132,3 +132,5 @@
    (if-not (zero? peak-amp)
      (/ target-peak peak-amp)
      target-peak)))
+
+(defn indexes-of [el coll] (keep-indexed #(when (= el %2) %1) coll))
