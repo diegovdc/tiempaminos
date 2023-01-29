@@ -12,7 +12,7 @@
    [time-time.dynacan.players.gen-poly :as gp]
    [erv.utils.conversions :as conv]))
 
-(set-refresh-dirs "src")
+(set-refresh-dirs "src" "test")
 
 (defn restart []
   (doseq [[port _] @osc-servers]
