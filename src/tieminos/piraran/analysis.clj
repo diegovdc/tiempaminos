@@ -95,7 +95,6 @@
     (->> (filter #(-> % :sets (contains? #{1 15 21 9}))))
     #_(nth 22))
 
-(def polydori-degrees-of-dorian-hexanies)
 (-> dorian-hexanies)
 
 (:scale (cps/make 4 [1 3 9 19 15 21 7]))
@@ -216,3 +215,4 @@
 (-> polydori :subcps (get "3)5 of 4)7 9-3.7.15.19.21") :scale)
 
 (->> (cps/make 3  [3 7 15 19 21]))
+
