@@ -18,6 +18,15 @@
              (catch Exception e
                (timbre/warn (str "Could not connect to VirMIDI: " (.getMessage e))))))
 
+(def oxygen (try (midi/midi-in "USB MIDI")
+                 (catch Exception e
+                   (timbre/warn (str "Could not connect to USB MIDI: " (.getMessage e))))))
+(comment
+  ;; basic USAGE
+  (midi-in-event
+   :midi-input oxygen
+   :note-on (fn [_] (println "pepe"))))
+
 (comment
   (midi/midi-out "VirMIDI")
   (midi/midi-in)
@@ -25,17 +34,20 @@
   (midi/midi-sources)
   (midi/midi-sinks))
 
-(defn note-on [f]
+(defn note-on
   "`f` receives a map with the following keys
    `'(:data2 :command :channel :msg :note :status :data1 :device :timestamp :velocity)`"
-  (midi/midi-handle-events
-   ks
-   (fn [ev]
-     (try
-       (cond
-         (-> ev :command (= :note-on)) (f ev)
-         :else nil)
-       (catch Exception e (timbre/error "MIDIError" e))))))
+  ([f] (note-on ks f))
+  ([midi-input f]
+   (println midi-input f)
+   (midi/midi-handle-events
+    midi-input
+    (fn [ev]
+      (try
+        (cond
+          (-> ev :command (= :note-on)) (f ev)
+          :else nil)
+        (catch Exception e (timbre/error "MIDIError" e)))))))
 
 (defonce synths (atom {}))
 
@@ -73,11 +85,12 @@
 (defn midi-in-event
   "`note` events receive a map with the following keys
    `'(:data2 :command :channel :msg :note :status :data1 :device :timestamp :velocity)`"
-  [& {:keys [note-on note-off auto-ctl]
-      :or {auto-ctl true
+  [& {:keys [midi-input note-on note-off auto-ctl]
+      :or {midi-input ks
+           auto-ctl true
            note-off (fn [_] nil)}}]
   (midi/midi-handle-events
-   ks
+   midi-input
    (fn [ev] (handle-midi-event ev
                                {:note-on note-on
                                 :note-off note-off
@@ -92,4 +105,3 @@
   (all-notes-off)
   (midi-in-event :note-on (fn [_] (println "on" ((juxt :channel :note) _)))
                  :note-off (fn [_] (println "off" ((juxt :channel :note) _)))))
-
