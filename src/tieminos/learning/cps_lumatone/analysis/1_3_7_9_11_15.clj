@@ -63,7 +63,10 @@
                                 concat)
                         added-tones)))
 
-(-> eik-22 :scale)
+(-> eik-22 :subcps (get "3)5 of 3)6 1.3.7.9.11")
+    :scale
+    (->> (mapv (juxt :bounded-ratio (comp #(str/join "." %) sort :set)))))
+
 (def eik-22-by-set (reduce #(assoc %1 (:set %2) %2) {} (:scale eik-22)))
 (-> eik-22-by-set)
 
@@ -334,3 +337,4 @@
           (make-ltn (update-ltn (partial color-fn pred) parsed-ltn))))
   (spit "/Users/diego/Music/diego/lumatone/wilson-22-et-eikosany-mul-dek-3-5-a.b.c.d.e.ltn"
         (make-ltn (update-ltn (partial color-fn dek-3-5-a-b-c-d-e) parsed-ltn))))
+
