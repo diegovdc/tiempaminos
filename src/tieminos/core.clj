@@ -10,7 +10,8 @@
    [tieminos.osc.core :refer [osc-servers stop-server]]
    [tieminos.overtone-extensions :as oe]
    [time-time.dynacan.players.gen-poly :as gp]
-   [erv.utils.conversions :as conv]))
+   [erv.utils.conversions :as conv]
+   [erv.utils.ratios :as ratios]))
 
 (set-refresh-dirs "src" "test")
 
@@ -263,3 +264,4 @@
                                          :pitch (+ 5 (* 100 (wrap-at (* 2 index) fib-s2cale))))))
 
     (o/stop)))
+
