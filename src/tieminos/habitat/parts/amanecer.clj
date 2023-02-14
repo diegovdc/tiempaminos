@@ -2,25 +2,256 @@
   (:require
    [clojure.string :as str]
    [erv.cps.core :as cps]
+   [overtone.core :as o]
+   [taoensso.timbre :as timbre]
    [tieminos.habitat.panners :refer [panner panner-rate]]
-   [tieminos.habitat.routing :refer [inputs processes-return-1]]
+   [tieminos.habitat.panners.trayectory-panner
+    :refer [random-trayectories
+            simple-perc-trayectory-4ch
+            trayectory-noise
+            trayectory-pan-4ch]]
+   [tieminos.habitat.routing
+    :refer [clean-return
+            input-number->bus*
+            inputs
+            processes-return-1
+            reaper-returns
+            reverb-return]]
    [tieminos.habitat.synths.granular :as hgs]
    [tieminos.math.bezier-samples :refer [f fsf s]]
    [tieminos.math.random-walk :refer [rand-walk1]]
-   [tieminos.utils :refer [rrange]]
-   [time-time.dynacan.players.gen-poly :as gp :refer [on-event ref-rain]]))
+   [tieminos.sc-utils.groups.v1 :as groups]
+   [tieminos.utils :refer [ctl-synth rrange]]
+   [time-time.dynacan.players.gen-poly
+    :as
+    gp
+    :refer
+    [on-event ref-rain update-refrain]]))
+
+(do
+  (def initial-trayectory-begining
+    [{:pos 0 :dur 30 :width 1.2}
+     {:pos 0 :dur 15 :width 1.2}
+     {:pos 0.5 :dur 15 :width 1.6}
+     {:pos 1 :dur 15 :width 2}
+     {:pos 1.5 :dur 20 :width 2.5}
+     {:pos 3 :dur 10 :width 4}
+     {:pos 2 :dur 10 :width 4}
+     {:pos 3.75 :dur 10 :width 4}
+     {:pos 2.5 :dur 12 :width 2}
+     {:pos 2 :dur 10 :width 3.5}
+     {:pos 2 :dur 10 :width 2.2}])
+
+  (defn make-initial-trayectory-data
+    "Should make a panning trayectory spanning around 5.3 minutes"
+    []
+    (->> (let [trayectory-start (trayectory-noise
+                                 {:max-pos-change 0.3
+                                  :max-width-change 0.7
+                                  :max-dur-change 4
+                                  :trayectory initial-trayectory-begining})]
+           (into
+            trayectory-start
+            (random-trayectories
+             {:num-steps 30
+              :total-dur 150
+              :max-pos-change 1
+              :initial-pos (:pos (last trayectory-start))}))))))
 
 (defn init-section-1 [inputs base-preouts]
   (doseq [[k {:keys [bus]}] inputs]
     (let [out (:bus (k base-preouts))
+          trayectory (make-initial-trayectory-data)
           config {:in bus
-                  :type (rand-nth [:clockwise :counter-clockwise :rand])
-                  :out out}]
-      (when-not (or out bus)
-        (throw (ex-info "Can not init section 1, data panner data missing"
-                        config)))
-      (panner config)
-      (panner-rate {:in bus :rate (* 0.15 (rand))}))))
+                  :type :trayectory
+                  :out out
+                  :trayectory trayectory}]
+      (timbre/info "Initializing section 1 on bus:" bus config)
+      (panner config))))
+
+(defn- rayos-y-reflejos
+  [total-dur input]
+  (let [[k {:keys [bus]}] input
+        elapsed-time (atom 0)
+        last-synth (atom nil)
+        id (keyword (str "rayos-y-reflejos-" (name k)))]
+    (timbre/info "Starting" id)
+    (when-not bus
+      (throw (ex-info "No input bus" {:input input})))
+    (ref-rain
+     :id id
+     :durs (map (fn [_] (rrange 0.2 1.5)) (range 100))
+     :tempo 60
+     :on-stop (fn [_]
+                (timbre/info "Stopping" id)
+                (ctl-synth @last-synth :gate 0))
+     :on-event
+     (on-event
+      (let [pt-1-dur (rand dur-s)
+            pt-2-dur (- dur-s pt-1-dur)
+            start-pos (rand 2)
+            end-pos (+ start-pos (rrange -1 1))]
+        (if (> @elapsed-time total-dur)
+          (do
+            (timbre/info "Stopping" id)
+            (ctl-synth @last-synth :gate 0)
+            (update-refrain id :before-update (fn [r] (assoc r :playing? false))))
+          (do
+            (when-not (zero? index)
+              (ctl-synth @last-synth :gate 0))
+            (reset! last-synth
+                    (trayectory-pan-4ch {:in bus
+                                         :out (rand-nth [clean-return reverb-return])
+                                         :amp (rrange 1 2)
+                                         :a (* (rrange 0.05 0.15) dur-s)
+                                         :d (* (rrange 0.1 0.2) dur-s)
+                                         :s (rrange 0.7 1)
+                                         :trayectory (shuffle [{:pos start-pos
+                                                                :dur pt-1-dur
+                                                                :width 1.3}
+                                                               {:pos end-pos
+                                                                :dur pt-2-dur
+                                                                :width (rrange 1.3 2)}])
+                                         :release (rrange 0.5 1.3)}))
+            (swap! elapsed-time + dur-s)))
+        (swap! elapsed-time + dur-s))))))
+
+(defn sol-y-luminosidad [event-dur inputs base-preouts]
+  (let [guitar (:guitar inputs)
+        guitar-trayectory [{:pos -0.5 :dur 15 :width 4}
+                           {:pos -0.5 :dur 45 :width 1.3}
+                           {:pos -0.5 :dur 70 :width 1.3}]
+        perc-inputs (dissoc inputs :guitar)]
+    (timbre/info "Salida del sol")
+    ;; guitar
+    (timbre/info "Starting sol-y-luminosidad (guitar main)"
+                 (:bus (:guitar base-preouts)))
+    (panner {:in (:bus guitar)
+             :type :trayectory
+             :out (:bus (:guitar base-preouts))
+             :amp 1.5
+             :trayectory guitar-trayectory})
+    ;; perc
+    (doseq [input perc-inputs]
+      (rayos-y-reflejos event-dur input)
+      (let [[k {:keys [bus]}] input]
+        (panner {:in bus
+                 :type :rand
+                 :out (:bus (k base-preouts))
+                 :amp 0.5})
+        (panner-rate {:in bus
+                      :rate (rrange 0.1 0.5)
+                      :max 0.5})))))
+
+(defn intercambios-de-energia [inputs base-preouts]
+  (doseq [[k {:keys [bus]}] inputs]
+    (let [out (:bus (k base-preouts))
+          trayectory (make-initial-trayectory-data)
+          config {:in bus
+                  :type :trayectory
+                  :out out
+                  :trayectory trayectory}]
+      (timbre/warn "Not implemented yet"))))
+
+(defn descomposicion-hacia-la-tierraosicion [inputs base-preouts]
+  (doseq [[k {:keys [bus]}] inputs]
+    (let [out (:bus (k base-preouts))
+          trayectory (make-initial-trayectory-data)
+          config {:in bus
+                  :type :trayectory
+                  :out out
+                  :trayectory trayectory}]
+      (timbre/warn "Not implemented yet"))))
+
+(defn descomposicion [inputs base-preouts]
+  (doseq [[k {:keys [bus]}] inputs]
+    (let [out (:bus (k base-preouts))
+          trayectory (make-initial-trayectory-data)
+          config {:in bus
+                  :type :trayectory
+                  :out out
+                  :trayectory trayectory}]
+      (timbre/warn "Not implemented yet"))))
+
+(defn coro-de-la-manana-interacciones-cuanticas [inputs base-preouts]
+  (doseq [[k {:keys [bus]}] inputs]
+    (let [out (:bus (k base-preouts))
+          trayectory (make-initial-trayectory-data)
+          config {:in bus
+                  :type :trayectory
+                  :out out
+                  :trayectory trayectory}]
+      (timbre/warn "Not implemented yet"))))
+
+(defn coro-de-la-manana-distancia-de-la-escucha [inputs base-preouts]
+  (doseq [[k {:keys [bus]}] inputs]
+    (let [out (:bus (k base-preouts))
+          trayectory (make-initial-trayectory-data)
+          config {:in bus
+                  :type :trayectory
+                  :out out
+                  :trayectory trayectory}]
+      (timbre/warn "Not implemented yet"))))
+
+(defn solo-de-milo [inputs base-preouts]
+  (doseq [[k {:keys [bus]}] inputs]
+    (let [out (:bus (k base-preouts))
+          trayectory (make-initial-trayectory-data)
+          config {:in bus
+                  :type :trayectory
+                  :out out
+                  :trayectory trayectory}]
+      (timbre/warn "Not implemented yet"))))
+
+(comment
+  (def test-bus (o/audio-bus 1 "test-bus"))
+  (def s1 ((o/synth (o/out test-bus
+                           (* 0.2 (o/lpf (o/saw 300) 1500))))
+           (groups/early)))
+  (o/kill s1)
+  (o/stop)
+  (def st (simple-perc-trayectory-4ch
+           {:in test-bus
+            :out (reaper-returns 1)
+            :start-pos 0
+            :end-pos 0.5
+            :curve 1.2
+             ;; :start-width 2
+            }))
+  (gp/stop)
+  (-> @gp/refrains keys)
+  (doseq [id [:hola :hola-1 :hola-2 :hola-3]]
+    (ref-rain
+     :id id
+      ;; TODO use durations beziers or something nicer
+     :durs (map (fn [_] (+ 1 (rand))) (range 20))
+     :loop? true
+     :ratio 1
+     :on-event (on-event
+                (let [start-pos (rand 2)
+                      end-pos (+ start-pos (* (rand-nth [1 -1])
+                                              (rand)))
+                      start-width (+ 1.2 (rand 3))
+                      end-width (-> (+ start-width (* (rand-nth [1 -1])
+                                                      (rand 2)))
+                                    (max 1.2)
+                                    (min 2))
+                      [a r] (rand-nth [[1 1]
+                                       [2 3]
+                                       [2 5]
+                                       [3 5]])]
+                  (simple-perc-trayectory-4ch
+                   {:in (input-number->bus* (rand-int 6))
+                    :out (reaper-returns (rand-nth [1 2]))
+                    :start-pos start-pos
+                    :end-pos end-pos
+                    :start-width start-width
+                    :end-width end-width
+                    :curve (rrange 0.1 0.3)
+                    :a a
+                    :r r
+                    :dur (* (rrange 1.5 4) dur-s)
+                    :amp 4}))))))
 
 (comment
   (require '[tieminos.habitat.routing :refer [guitar-bus

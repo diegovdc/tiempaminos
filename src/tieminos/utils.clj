@@ -134,3 +134,7 @@
      target-peak)))
 
 (defn indexes-of [el coll] (keep-indexed #(when (= el %2) %1) coll))
+
+(defn seconds->dur [secs bpm] (* secs (/ bpm 60)))
+
+(defn dur->bpm [dur-ms] (/ 60000 dur-ms))
