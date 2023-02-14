@@ -26,6 +26,10 @@
                            n-chans)]
     (into {} (map-indexed (fn [i out] [(inc i) out]) return-outs))))
 
+(def clean-return (reaper-returns 1))
+
+(def reverb-return (reaper-returns 2))
+
 (def processes-return-1
   "Return for buffers and sounds processed by SC"
   (reaper-returns 3))
