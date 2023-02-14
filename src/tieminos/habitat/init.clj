@@ -52,6 +52,8 @@
                  inputs))))
 
 (defn init! []
+  (when (o/server-disconnected?)
+    (tieminos.core/connect))
   (habitat-osc/init)
   (reset! current-panners {})
   (groups/init-groups!)
