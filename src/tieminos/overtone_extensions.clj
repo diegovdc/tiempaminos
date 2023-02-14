@@ -31,8 +31,19 @@
         pan-az-out]
     [a b d c]))
 
-(defn circle-az [& {:keys [num-channels in pos level width orientation]
-                    :as pan-az-args}]
+(defn circle-az
+  "4-channel circular az panning.
+  Using `:orientation` `0` as default is a good idea:
+  that way single channels will lie at:
+  `-1`: back right
+  `-0.5`: back left
+  `0`: front left
+  `0.5`: front right
+
+  A minimum `:width` of around `1.3` is good for panning from single channel to single channel.
+  Maximum `:width` should be `4` otherwise artifacts may be produced."
+  [& {:keys [num-channels in pos level width orientation]
+      :as pan-az-args}]
   (circle-az* (apply o/pan-az (flatten (seq pan-az-args)))))
 
 (comment
