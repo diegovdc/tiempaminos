@@ -58,7 +58,7 @@
               :max-pos-change 1
               :initial-pos (:pos (last trayectory-start))}))))))
 
-(defn init-section-1 [inputs base-preouts]
+(defn init-section-1 [_dur-s inputs base-preouts]
   (doseq [[k {:keys [bus]}] inputs]
     (let [out (:bus (k base-preouts))
           trayectory (make-initial-trayectory-data)
@@ -116,7 +116,7 @@
             (swap! elapsed-time + dur-s)))
         (swap! elapsed-time + dur-s))))))
 
-(defn sol-y-luminosidad [event-dur inputs base-preouts]
+(defn sol-y-luminosidad [dur-s inputs base-preouts]
   (let [guitar (:guitar inputs)
         guitar-trayectory [{:pos -0.5 :dur 15 :width 4}
                            {:pos -0.5 :dur 45 :width 1.3}
@@ -133,7 +133,7 @@
              :trayectory guitar-trayectory})
     ;; perc
     (doseq [input perc-inputs]
-      (rayos-y-reflejos event-dur input)
+      (rayos-y-reflejos dur-s input)
       (let [[k {:keys [bus]}] input]
         (panner {:in bus
                  :type :rand

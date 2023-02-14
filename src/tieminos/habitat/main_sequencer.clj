@@ -5,7 +5,9 @@
 
 (def bpm 60)
 
-(defn sequencer [sections & {:keys [starting-section-index] :or {starting-section-index 0}}]
+(defn sequencer
+  "Sections are a vector of [dur side-fx-fn]"
+  [sections & {:keys [starting-section-index] :or {starting-section-index 0}}]
   (let [sections*   (map #(update-in % [0] seconds->dur bpm)
                          sections)
         durs (map first sections*)]
@@ -15,7 +17,8 @@
               :tempo bpm
               :on-event (on-event ((-> sections
                                        (nth (+ starting-section-index index))
-                                       second))))))
+                                       second)
+                                   dur-s)))))
 
 (defn timestamps->dur-intervals*
   "Transforms a vector of shape [[minutes seconds]] to a vector of durations [dur].
@@ -40,9 +43,10 @@
 
 (comment
   (sequencer
-   (timestamps->dur-intervals [[[0 0] #(println "hola")]
-                               [[0 5] #(println "adios")]
-                               [[0 10] #(println ".")]]))
+   (timestamps->dur-intervals
+    [[[0 0] #(println "hola")]
+     [[0 5] #(println "adios")]
+     [[0 10] #(println ".")]]))
 
   (timestamps->dur-intervals [[[0 0] #(println "hola")]
                               [[0 5] #(println "adios")]

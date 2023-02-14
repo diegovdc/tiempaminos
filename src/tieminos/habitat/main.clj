@@ -48,20 +48,20 @@
    (hseq/timestamps->dur-intervals
     [;; amanecer
        ;; TODO revisar timestamps vs texto sonoro
-     [[0 0] #(amanecer/init-section-1 inputs @preouts)]
-     [[5 20] #(amanecer/sol-y-luminosidad inputs @preouts)]
-     [[7 30] #(amanecer/intercambios-de-energia inputs @preouts)]
-     [[9 0] #(amanecer/inicio-descomposicion inputs @preouts)]
-     [[10 20] #(amanecer/descomposicion-hacia-la-tierra inputs @preouts)]
-     [[12 24] #(amanecer/coro-de-la-manana-interacciones-cuanticas inputs @preouts)]
-     [[14 9] #(amanecer/coro-de-la-manana-distancia-de-la-escucha inputs @preouts)]
-     [[20 25] #(amanecer/solo-de-milo inputs @preouts)]
+     [[0 0] #(amanecer/init-section-1 % inputs @preouts)]
+     [[5 20] #(amanecer/sol-y-luminosidad % inputs @preouts)]
+     [[7 30] #(amanecer/intercambios-de-energia % inputs @preouts)]
+     [[9 0] #(amanecer/inicio-descomposicion % inputs @preouts)]
+     [[10 20] #(amanecer/descomposicion-hacia-la-tierra % inputs @preouts)]
+     [[12 24] #(amanecer/coro-de-la-manana-interacciones-cuanticas % inputs @preouts)]
+     [[14 9] #(amanecer/coro-de-la-manana-distancia-de-la-escucha % inputs @preouts)]
+     [[20 25] #(amanecer/solo-de-milo % inputs @preouts)]
        ;; día
-     [[22 48] #(dia/dueto-con-polinizadores inputs @preouts)]
-     [[28 19] #(dia/escucha-de-aves inputs @preouts)]
+     [[22 48] #(dia/dueto-con-polinizadores % inputs @preouts)]
+     [[28 19] #(dia/escucha-de-aves % inputs @preouts)]
        ;; noche
-     [[39 56] #(noche/de-la-montana-al-fuego inputs @preouts)]
-     [[45 21] #(noche/fuego inputs @preouts)]
-     [[50 0] #(noche/alejamiento-del-fuego inputs @preouts)]
-     [[52 22] #(noche/polinizadores-nocturnos inputs @preouts)]
-     [[59 0] #(noche/hacia-un-nuevo-universo inputs @preouts)]])))
+     [[39 56] #(noche/de-la-montana-al-fuego % inputs @preouts)]
+     [[45 21] #(noche/fuego % inputs @preouts)]
+     [[50 0] #(noche/alejamiento-del-fuego % inputs @preouts)]
+     [[52 22] #(noche/polinizadores-nocturnos % inputs @preouts)]
+     [[59 0] #(noche/hacia-un-nuevo-universo % inputs @preouts)]])))
