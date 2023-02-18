@@ -61,10 +61,7 @@
 #_(-> polydori-by-sets)
 
 (comment
-  (let [{:keys [filename content]} (make-scl-file (assoc polydori :scale
-                                                         (->> polydori :scale
-                                                              (group-by :bounded-ratio)
-                                                              (map (comp first second))
-                                                              (sort-by :bounded-ratio)
-                                                              #_(map :bounded-ratio))))]
+  (let [{:keys [filename content]} (make-scl-file polydori-v2)]
+    (println filename)
     (spit (str "/Users/diego/Music/tunings/" filename) content)))
+

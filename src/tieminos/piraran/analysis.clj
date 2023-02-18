@@ -216,3 +216,48 @@
 
 (->> (cps/make 3  [3 7 15 19 21]))
 
+
+;;;
+;;;
+;;;looking for where to transpose the scale so that one of the diatonic scales lands as close to 12edo as possible
+
+
+(->> dorian-hexanies-in-polydori
+     first
+     :sets)
+;;
+;; diatonic 1
+(->> polydori-v2
+     :scale
+     (filter (fn [n] (seq (set/intersection (:sets n)
+                                            (-> dorian-hexanies-in-polydori
+                                                (nth 0)
+                                                :sets
+                                                set))))))
+;;=> 2 3 5 7 9 10 and we add the first degree to get a diatonic scale
+
+;; diatonic 2
+(->> polydori-v2
+     :scale
+     (filter (fn [n]
+               (seq (set/intersection (:sets n)
+                                      (-> dorian-hexanies-in-polydori
+                                          (nth 2)
+                                          :sets
+                                          set))))))
+;;=> 0 2 4 5 9 10
+;;
+;; We can join both of the above to get a dorian or a mixolydian
+
+;;
+;; It is also possible to get a decent tritone (9 cents off) and a mayor 7th (7 cents off)
+(->> polydori-v2
+     :scale
+     (map (juxt :sets :cents)))
+
+[[#{#{7 1 19 9} #{1 21 3 19}} 609.7762844043901]
+ [#{#{7 1 3 19}} 1107.8212835390027]]
+(-> dorian-hexanies-in-polydori
+    (nth 0)
+    :sets
+    set)
