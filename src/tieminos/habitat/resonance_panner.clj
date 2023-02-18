@@ -3,7 +3,7 @@
    [clojure.math :refer [round]]
    [overtone.core :as o]
    [tieminos.overtone-extensions :as oe]
-   [tieminos.sc-utils.groups.v1 :as groups]
+   [tieminos.habitat.groups :as groups]
    [tieminos.sc-utils.synths.v1 :refer [lfo-kr]]))
 
 (comment
@@ -63,7 +63,7 @@
         dur (get-in @state [in :dur] default-dur)]
     (println "reso-pan" in voices dur)
     (doseq [_ (range voices)]
-      (rezopan1 :group (groups/mid)
+      (rezopan1 :group (groups/panners)
                 :in in
                 :amp 0.5
                 :dur dur

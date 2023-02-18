@@ -1,5 +1,6 @@
 (ns tieminos.habitat.parts.amanecer
   (:require
+   [clojure.data.generators :refer [weighted]]
    [clojure.string :as str]
    [erv.cps.core :as cps]
    [overtone.core :as o]
@@ -16,49 +17,51 @@
             inputs
             processes-return-1
             reaper-returns
-            reverb-return]]
+            reverb-return
+            texto-sonoro-rand-mixer-bus]]
+   [tieminos.habitat.scratch.convolution :refer [live-convolver]]
    [tieminos.habitat.synths.granular :as hgs]
    [tieminos.math.bezier-samples :refer [f fsf s]]
    [tieminos.math.random-walk :refer [rand-walk1]]
-   [tieminos.sc-utils.groups.v1 :as groups]
-   [tieminos.utils :refer [ctl-synth rrange]]
+   [tieminos.habitat.groups :as groups]
+   [tieminos.utils :refer [ctl-synth ctl-synth2 rrange]]
    [time-time.dynacan.players.gen-poly
     :as
     gp
     :refer
     [on-event ref-rain update-refrain]]))
 
-(do
-  (def initial-trayectory-begining
-    [{:pos 0 :dur 30 :width 1.2}
-     {:pos 0 :dur 15 :width 1.2}
-     {:pos 0.5 :dur 15 :width 1.6}
-     {:pos 1 :dur 15 :width 2}
-     {:pos 1.5 :dur 20 :width 2.5}
-     {:pos 3 :dur 10 :width 4}
-     {:pos 2 :dur 10 :width 4}
-     {:pos 3.75 :dur 10 :width 4}
-     {:pos 2.5 :dur 12 :width 2}
-     {:pos 2 :dur 10 :width 3.5}
-     {:pos 2 :dur 10 :width 2.2}])
+(def ^:private initial-trayectory-begining
+  [{:pos 0 :dur 30 :width 1.2}
+   {:pos 0 :dur 15 :width 1.2}
+   {:pos 0.5 :dur 15 :width 1.6}
+   {:pos 1 :dur 15 :width 2}
+   {:pos 1.5 :dur 20 :width 2.5}
+   {:pos 3 :dur 10 :width 4}
+   {:pos 2 :dur 10 :width 4}
+   {:pos 3.75 :dur 10 :width 4}
+   {:pos 2.5 :dur 12 :width 2}
+   {:pos 2 :dur 10 :width 3.5}
+   {:pos 2 :dur 10 :width 2.2}])
 
-  (defn make-initial-trayectory-data
-    "Should make a panning trayectory spanning around 5.3 minutes"
-    []
-    (->> (let [trayectory-start (trayectory-noise
-                                 {:max-pos-change 0.3
-                                  :max-width-change 0.7
-                                  :max-dur-change 4
-                                  :trayectory initial-trayectory-begining})]
-           (into
-            trayectory-start
-            (random-trayectories
-             {:num-steps 30
-              :total-dur 150
-              :max-pos-change 1
-              :initial-pos (:pos (last trayectory-start))}))))))
+(defn- make-initial-trayectory-data
+  "Should make a panning trayectory spanning around 5.3 minutes"
+  []
+  (->> (let [trayectory-start (trayectory-noise
+                               {:max-pos-change 0.3
+                                :max-width-change 0.7
+                                :max-dur-change 4
+                                :trayectory initial-trayectory-begining})]
+         (into
+          trayectory-start
+          (random-trayectories
+           {:num-steps 30
+            :total-dur 150
+            :max-pos-change 1
+            :initial-pos (:pos (last trayectory-start))})))))
 
-(defn init-section-1 [_dur-s inputs base-preouts]
+(defn init-section-1 [inputs base-preouts _context]
+  (println "IS1")
   (doseq [[k {:keys [bus]}] inputs]
     (let [out (:bus (k base-preouts))
           trayectory (make-initial-trayectory-data)
@@ -84,7 +87,7 @@
      :tempo 60
      :on-stop (fn [_]
                 (timbre/info "Stopping" id)
-                (ctl-synth @last-synth :gate 0))
+                (ctl-synth2 @last-synth :gate 0))
      :on-event
      (on-event
       (let [pt-1-dur (rand dur-s)
@@ -94,7 +97,7 @@
         (if (> @elapsed-time total-dur)
           (do
             (timbre/info "Stopping" id)
-            (ctl-synth @last-synth :gate 0)
+            (ctl-synth2 @last-synth :gate 0)
             (update-refrain id :before-update (fn [r] (assoc r :playing? false))))
           (do
             (when-not (zero? index)
@@ -116,8 +119,9 @@
             (swap! elapsed-time + dur-s)))
         (swap! elapsed-time + dur-s))))))
 
-(defn sol-y-luminosidad [dur-s inputs base-preouts]
-  (let [guitar (:guitar inputs)
+(defn sol-y-luminosidad [inputs base-preouts context]
+  (let [{:keys [dur-s]} @context
+        guitar (:guitar inputs)
         guitar-trayectory [{:pos -0.5 :dur 15 :width 4}
                            {:pos -0.5 :dur 45 :width 1.3}
                            {:pos -0.5 :dur 70 :width 1.3}]
@@ -143,7 +147,103 @@
                       :rate (rrange 0.1 0.5)
                       :max 0.5})))))
 
-(defn intercambios-de-energia [inputs base-preouts]
+(defn intercambios-de-energia [inputs base-preouts _context]
+  (timbre/warn "Not implemented yet: intercambios-de-energia"))
+
+(defn before-section-end
+  [section-dur s-before-end f]
+  (ref-rain
+   :id (keyword (str "before-section-end-" (rand-int 10000)))
+   :durs [(- section-dur s-before-end) s-before-end]
+   :on-event (on-event (when (= index 1) (f)))))
+
+(defn inicio-descomposicion [inputs base-preouts context]
+  (timbre/info "inicio-descomposicion")
+  (let [convolvers (mapv (fn [[k {:keys [bus]}]]
+                           (let [convolver-out (o/audio-bus 1 (str "convolver-out-" (name k)))]
+
+                             {:synth (live-convolver {:group (groups/mid)
+                                                      :in1 bus
+                                                      :in2 texto-sonoro-rand-mixer-bus
+                                                      :out convolver-out})
+                              :panner (panner {:group (groups/panners)
+                                               :in convolver-out
+                                               :type :rand
+                                               :out (:bus (k base-preouts))})
+                              :out-bus convolver-out}))
+                         inputs)]
+    (swap! context assoc :amanecer/inicio-descomposicion
+           {:convolver-synths convolvers})))
+
+(defn descomposicion-hacia-la-tierra [inputs base-preouts context]
+  (timbre/info "descomposicion-hacia-la-tierra")
+  (let [{:keys [dur-s amanecer/inicio-descomposicion]} @context
+        {:keys [convolver-synths]} inicio-descomposicion]
+    (before-section-end
+     dur-s 5
+     (fn [] (doseq [s convolver-synths]
+              (ctl-synth s :gate 0))))))
+
+(do
+  (defn quick-jump-trayectories
+    "Quick jumps from one place to another"
+    [total-dur dur-weights]
+    (let [positions (loop [positions []]
+                      (let [elapsed-time (:elapsed-time (last positions) 0)
+                            dur (weighted dur-weights)]
+                        (if  (> elapsed-time total-dur)
+                          positions
+                          (recur (conj positions
+                                       {:pos (+ (rand-nth [0 0.5 1 1.5]) (rand 0.25))
+                                        :width (rrange 1.3 1.5)
+                                        :dur dur
+                                        :elapsed-time (+ elapsed-time dur)})))))]
+      (->> positions
+           (mapcat (fn [p] [p (-> p
+                                  (assoc :dur (rrange 0.1 0.3)
+                                         :transition? true)
+                                  (dissoc :elapsed-time))]))))))
+
+(defn coro-de-la-manana-cantos-iniciales
+  [inputs base-preouts main-fx context]
+  (let [{:keys [dur-s]} @context
+        guitar (:guitar inputs)
+        perc-inputs (dissoc inputs :guitar)]
+    (let [trayectory (quick-jump-trayectories
+                      (+ dur-s 10)
+                      {#(rrange 0.5 1) 4
+                       #(rrange 1 2) 3
+                       #(rrange 2 3) 2
+                       #(rrange 3 4) 1})]
+      ;; guitar
+      ;; TODO add ref-rain with tiny delays and other earcandy
+      (panner {:in (:bus guitar)
+               :type :trayectory
+               :out (:bus (:heavy-reverb main-fx))
+               :trayectory trayectory
+               :amp 3})
+
+      ;; TODO review and improve perc
+      (doseq [input perc-inputs]
+        (let [[k {:keys [bus]}] input]
+          (panner {:in bus
+                   :type :rand
+                   :out (:bus (k base-preouts))
+                   :amp 1})
+          (panner-rate {:in bus
+                        :rate (rrange 0.1 0.5)
+                        :max 0.5}))))))
+
+(defn coro-de-la-manana-interacciones-cuanticas [inputs base-preouts _context]
+  (let [guitar (:guitar inputs)]
+    (panner {:in (:bus guitar)
+             :type :trayectory
+             :out (:bus (:guitar base-preouts))
+             :amp 0.5})
+
+    (timbre/warn "Not implemented yet")))
+
+(defn coro-de-la-manana-distancia-de-la-escucha [inputs base-preouts _context]
   (doseq [[k {:keys [bus]}] inputs]
     (let [out (:bus (k base-preouts))
           trayectory (make-initial-trayectory-data)
@@ -153,55 +253,12 @@
                   :trayectory trayectory}]
       (timbre/warn "Not implemented yet"))))
 
-(defn descomposicion-hacia-la-tierraosicion [inputs base-preouts]
-  (doseq [[k {:keys [bus]}] inputs]
-    (let [out (:bus (k base-preouts))
-          trayectory (make-initial-trayectory-data)
-          config {:in bus
-                  :type :trayectory
-                  :out out
-                  :trayectory trayectory}]
-      (timbre/warn "Not implemented yet"))))
-
-(defn descomposicion [inputs base-preouts]
-  (doseq [[k {:keys [bus]}] inputs]
-    (let [out (:bus (k base-preouts))
-          trayectory (make-initial-trayectory-data)
-          config {:in bus
-                  :type :trayectory
-                  :out out
-                  :trayectory trayectory}]
-      (timbre/warn "Not implemented yet"))))
-
-(defn coro-de-la-manana-interacciones-cuanticas [inputs base-preouts]
-  (doseq [[k {:keys [bus]}] inputs]
-    (let [out (:bus (k base-preouts))
-          trayectory (make-initial-trayectory-data)
-          config {:in bus
-                  :type :trayectory
-                  :out out
-                  :trayectory trayectory}]
-      (timbre/warn "Not implemented yet"))))
-
-(defn coro-de-la-manana-distancia-de-la-escucha [inputs base-preouts]
-  (doseq [[k {:keys [bus]}] inputs]
-    (let [out (:bus (k base-preouts))
-          trayectory (make-initial-trayectory-data)
-          config {:in bus
-                  :type :trayectory
-                  :out out
-                  :trayectory trayectory}]
-      (timbre/warn "Not implemented yet"))))
-
-(defn solo-de-milo [inputs base-preouts]
-  (doseq [[k {:keys [bus]}] inputs]
-    (let [out (:bus (k base-preouts))
-          trayectory (make-initial-trayectory-data)
-          config {:in bus
-                  :type :trayectory
-                  :out out
-                  :trayectory trayectory}]
-      (timbre/warn "Not implemented yet"))))
+(defn solo-de-milo [inputs base-preouts context]
+  (let [{:keys [dur-s]} @context
+        perc-inputs (dissoc inputs :guitar)]
+    (timbre/info "Solo de Milo")
+    (doseq [input perc-inputs]
+      (rayos-y-reflejos dur-s input))))
 
 (comment
   (def test-bus (o/audio-bus 1 "test-bus"))

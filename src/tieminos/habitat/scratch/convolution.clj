@@ -1,9 +1,93 @@
 (ns tieminos.habitat.scratch.convolution
   (:require
    [overtone.core :as o]
+   [tieminos.habitat.groups :as groups]
+   [tieminos.habitat.panners :refer [panner stop-panner!]]
    [tieminos.habitat.recording :as rec :refer [norm-amp]]
+   [tieminos.habitat.routing
+    :refer [inputs special-inputs texto-sonoro-rand-mixer-bus]]
    [tieminos.overtone-extensions :as oe]
-   [tieminos.sc-utils.synths.v1 :refer [lfo]]))
+   [tieminos.sc-utils.synths.v1 :refer [lfo]]
+   [tieminos.habitat.panners :refer [current-panners]]))
+
+(oe/defsynth live-convolver
+  [in1 0
+   in1-amp 1
+   in2 0
+   in2-amp 1
+   amp 1
+   release 5
+   gate 1
+   out 0]
+  (o/out out (-> (+ (o/convolution (* in1-amp (o/in in1))
+                                   (* in2-amp (o/in in2))
+                                   4096))
+                 #_(o/rhpf 500 0.5)
+                 (o/free-verb 1 0.2)
+                 (#(+ %
+                      (let [bpf-sig (o/bpf % (lfo 1 100 3400) (lfo 0.3 0.03 0.5))]
+                        (+ (* 0.8 bpf-sig)
+                           (* 1.2 (o/free-verb bpf-sig 0.8 1))))))
+                 (* 2 amp (o/env-gen (o/env-adsr 5 1 1 release :curve -0.5)
+                                     gate
+                                     :action o/FREE))
+                 (o/limiter 0.9 0.005)
+                 #_(o/lpf 5000))))
+
+(comment
+  (def texto-sonoro-rand-mixer-bus (o/audio-bus 1 "texto-sonoro-rand-mixer-bus"))
+  (oe/defsynth texto-sonoro-rand-mixer
+    [in 0
+     out 0]
+    (o/out out
+           (o/select (lfo 1 0 3)
+                     (o/sound-in (map #(+ % in) (range 4))))))
+  (def ts (texto-sonoro-rand-mixer
+           {:in (-> special-inputs :texto-sonoro :in)
+            :out texto-sonoro-rand-mixer-bus}))
+  (o/kill ts)
+
+  ;;  TODO left here, need to send to the live-convolver and test mixing with some other signals
+  (o/demo (o/in texto-sonoro-rand-mixer-bus 1))
+  (o/demo (o/in (-> inputs :guitar :bus)  1))
+  (o/kill texto-sonoro)
+
+  (def lc-out-bus (o/audio-bus 1 "lc-out-bus"))
+  (def lc (live-convolver {:group (groups/mid)
+                           :in1 (-> inputs :guitar :bus)
+                           :in1-amp 2
+                           :in2 texto-sonoro-rand-mixer-bus
+                           :in2-amp 1
+                           :out lc-out-bus}))
+  (o/kill lc)
+  (o/ctl lc :gate 0)
+  (o/ctl lc :amp 2)
+  (o/ctl lc :in1-amp 1)
+  (o/ctl lc :in2-amp 2)
+  (o/ctl lc
+         :in1 texto-sonoro-rand-mixer-bus
+         :in2 (-> inputs :guitar :bus))
+
+  (oe/defsynth input*
+    [in 0 out 0]
+    (o/out out (o/in in 1)))
+  (def g (input* {:out lc-out-bus
+                  :in (-> inputs :guitar :bus)}))
+  (o/ctl g :out 0)
+  (o/kill g)
+
+  (def lc-out (input* {:in lc-out-bus}))
+  (o/kill lc-out)
+  (def lc-panner (panner {:in #_texto-sonoro-rand-mixer-bus
+                          lc-out-bus #_(-> inputs :guitar :bus)
+                          :type :rand
+                          :out 0}))
+  (stop-panner! lc-out-bus)
+  (current-panners)
+  (stop-panner! texto-sonoro-rand-mixer-bus)
+  (stop-panner! (-> inputs :guitar :bus))
+  (o/kill lc-panner)
+  (-> special-inputs :texto-sonoro))
 
 (comment
   (require '[tieminos.habitat.routing :refer [guitar-bus
@@ -14,24 +98,9 @@
                                               preouts]]))
 
 (comment
-  (-> @rec/test-samples keys sort)
-  (let [buf-key :amanecer-pt1-mic-2-1
-        buf-key2 :amanecer-pt2-mic-3-2
-        b1 (-> @rec/test-samples buf-key)
-        b2 (-> @rec/test-samples buf-key2)]
-    (o/demo
-     5
-     (o/pan2 (* 0.5 (o/convolution (* (norm-amp b2) (o/play-buf 1 b2))
-                                   (* (norm-amp b1) (o/play-buf 1 b1))
-                                   4096)))))
-  (let [buf-key :amanecer-pt1-mic-2-1
-        buf-key2 :amanecer-pt1-mic-3-2
-        b1 (-> @rec/test-samples buf-key)
-        b2 (-> @rec/test-samples buf-key2)]
-    (o/demo
-     5
-     (o/pan2 (* (norm-amp b2) (o/play-buf 1 b2)))))
+  ;; WIP and model for other convolvers
   (do
+    (declare c)
     (try (o/kill c) (catch Exception _ nil))
     (oe/defsynth convolver
       [buf-1 0

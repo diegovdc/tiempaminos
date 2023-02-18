@@ -8,7 +8,7 @@
    [tieminos.habitat.osc :as habitat-osc]
    [tieminos.habitat.resonance-panner :as reso-pan]
    [tieminos.overtone-extensions :as oe]
-   [tieminos.sc-utils.groups.v1 :as groups]))
+   [tieminos.habitat.groups :as groups]))
 
 (o/defsynth rev [in 0 out 0 mix 0.5 room 0.8 damp 0.5 amp 1]
   (o/out out (* amp (o/free-verb (o/in in) mix room damp))))
@@ -114,16 +114,16 @@
         in* (input->panner-input in)
         new-panner (case type
                      :clockwise (circle-pan-4ch
-                                 (groups/mid)
+                                 (groups/panners)
                                  :in in*
                                  :out main-pre-out)
                      :counter-clockwise (circle-pan
-                                         (groups/mid)
+                                         (groups/panners)
                                          :in in*
                                          :direction -1
                                          :out main-pre-out)
                      :rand (rand-pan4
-                            (groups/mid)
+                            (groups/panners)
                             :in in*
                             :out main-pre-out))]
 
@@ -197,30 +197,30 @@
   (o/recording-stop)
 
   (def guitarra (let [bus 14]
-                  (rand-pan4 (groups/mid) bus main-pre-out)
+                  (rand-pan4 (groups/panners) bus main-pre-out)
                   (instrument-in {:group (groups/early)
                                   :in 0
                                   :out bus})))
   (o/ctl guitarra :amp 2.5)
   (def micro-1 (let [bus 15]
-                 (rand-pan4 (groups/mid) bus main-pre-out)
+                 (rand-pan4 (groups/panners) bus main-pre-out)
                  (instrument-in {:group (groups/early)
                                  :in 1
                                  :out bus})))
   (o/ctl micro-1 :amp 1)
   (def micro-2 (let [bus 16]
-                 (rand-pan4 (groups/mid) bus main-pre-out)
+                 (rand-pan4 (groups/panners) bus main-pre-out)
                  (instrument-in {:group (groups/early)
                                  :in 2
                                  :out bus})))
   (o/ctl micro-2 :amp 1)
   (def micro-3 (let [bus 16]
-                 (rand-pan4 (groups/mid) bus main-pre-out)
+                 (rand-pan4 (groups/panners) bus main-pre-out)
                  (instrument-in {:group (groups/early)
                                  :in 3
                                  :out bus})))
   (def micro-4 (let [bus 16]
-                 (rand-pan4 (groups/mid) bus main-pre-out)
+                 (rand-pan4 (groups/panners) bus main-pre-out)
                  (instrument-in {:group (groups/early)
                                  :in 4
                                  :out bus}))))

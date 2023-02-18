@@ -7,7 +7,9 @@
    [tieminos.habitat.recording :refer [start-signal-analyzer]]
    [tieminos.habitat.routing
     :refer [guitar-bus
+            init-buses-and-input-vars!
             init-preouts!
+            init-texto-sonoro-rand-mixer-synth!
             input
             inputs
             mic-1-bus
@@ -16,7 +18,8 @@
             mic-4-bus
             preouts
             set-preout-in!]]
-   [tieminos.sc-utils.groups.v1 :as groups]))
+   [tieminos.habitat.synths.main-fx :refer [init-main-fx!]]
+   [tieminos.habitat.groups :as groups]))
 
 (defonce inputs-registry (atom {}))
 (defonce analyzers-registry (atom {}))
@@ -27,15 +30,14 @@
       (try (o/kill synth)
            (catch Exception _
              (timbre/warn "Synth does not exist anymore")))))
-  (reset! inputs-registry
-          (into {}
-                (map
-                 (fn [[input-name {:keys [in bus]}]]
-                   {input-name {:out-bus bus
-                                :synth (input {:group (groups/early)
-                                               :in in
-                                               :out bus})}})
-                 inputs))))
+  (->> inputs
+       (map (fn [[input-name {:keys [in bus]}]]
+              {input-name {:out-bus bus
+                           :synth (input {:group (groups/early)
+                                          :in in
+                                          :out bus})}}))
+       (into {})
+       (reset! inputs-registry)))
 
 (defn- init-analyzers! [inputs]
   (doseq [[_ {:keys [analyzer]}] @analyzers-registry]
@@ -57,9 +59,12 @@
   (habitat-osc/init)
   (reset! current-panners {})
   (groups/init-groups!)
+  (init-buses-and-input-vars!)
   (init-preouts! inputs)
+  (init-main-fx!)
   (init-analyzers! inputs)
   (init-inputs! inputs)
+  (init-texto-sonoro-rand-mixer-synth!)
   {:inputs (keys inputs)})
 
 (-> @preouts :guitar :bus)

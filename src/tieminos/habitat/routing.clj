@@ -2,8 +2,9 @@
   (:require
    [clojure.string :as str]
    [overtone.core :as o]
-   [tieminos.overtone-extensions :refer [defsynth]]
-   [tieminos.sc-utils.groups.v1 :as groups]
+   [tieminos.overtone-extensions :as oe :refer [defsynth]]
+   [tieminos.habitat.groups :as groups]
+   [tieminos.sc-utils.synths.v1 :refer [lfo]]
    [tieminos.utils :refer [ctl-synth ctl-synth2]]))
 
 (comment
@@ -17,7 +18,7 @@
 
 (def reaper-returns
   "Returns map, numbered after the returns in reaper i.e. 1 based numbers"
-  (let [starting-chan 29
+  (let [starting-chan 33
         n-chans 4
         total-returns 4
         return-outs (range starting-chan
@@ -33,26 +34,29 @@
 (def processes-return-1
   "Return for buffers and sounds processed by SC"
   (reaper-returns 3))
-;;;;;;;;;;;
-;; Buses ;;
-;;;;;;;;;;;
 
-
-(defonce guitar-bus (o/audio-bus 1 "guitar-bus"))
-(defonce mic-1-bus (o/audio-bus 1 "mic-1-bus"))
-(defonce mic-2-bus (o/audio-bus 1 "mic-2-bus"))
-(defonce mic-3-bus (o/audio-bus 1 "mic-3-bus"))
-(defonce mic-4-bus (o/audio-bus 1 "mic-4-bus"))
-(defonce mic-5-bus (o/audio-bus 1 "mic-5-bus"))
-
-;;;;;;;;;;;;
-;; inputs ;;
-;;;;;;;;;;;;
-
-
+(comment
+  (o/stop)
+  (def s ((o/synth (o/out (reaper-returns 1)
+                          (* 0.2 (o/lpf (o/saw 300) 1500))))
+          (groups/early))))
+;;;;;;;;;;;;;;;;;;;;;;
+;; inputs and input buses ;;
+;;;;;;;;;;;;;;;;;;;;;
 (defsynth input
   [in 0 out 0]
   (o/out out (o/sound-in in)))
+
+(comment
+  (-> inputs)
+  (def test-bus (o/audio-bus 1 "test-bus"))
+  (-> test-bus)
+  (def s ((o/synth (o/out test-bus
+                          (* 0.2 (o/lpf (o/saw 300) 1500))))))
+  (input {:group (groups/early)
+          :in (:in (:texto-sonoro inputs))
+          :out (:bus (:texto-sonoro inputs))})
+  (o/stop))
 
 (def ins
   "Input name to blackhole channels map"
@@ -61,29 +65,54 @@
    :mic-2  22
    :mic-3  23
    :mic-4  24
-   :mic-5  25})
+   :mic-5  25
+   :mic-6  26
+   :mic-7  27
+   :texto-sonoro 28})
 
-(def inputs
-  {:guitar {:in (:guitar ins)
-            :bus guitar-bus}
-   :mic-1 {:in (:mic-1 ins)
-           :bus mic-1-bus}
-   :mic-2 {:in (:mic-2 ins)
-           :bus mic-2-bus}
-   :mic-3 {:in (:mic-3 ins)
-           :bus mic-3-bus}
-   :mic-4 {:in (:mic-4 ins)
-           :bus mic-4-bus}
-   :mic-5 {:in (:mic-5 ins)
-           :bus mic-5-bus}})
+(defn init-buses-and-input-vars! []
+  (defonce guitar-bus (o/audio-bus 1 "guitar-bus"))
+  (defonce mic-1-bus (o/audio-bus 1 "mic-1-bus"))
+  (defonce mic-2-bus (o/audio-bus 1 "mic-2-bus"))
+  (defonce mic-3-bus (o/audio-bus 1 "mic-3-bus"))
+  (defonce mic-4-bus (o/audio-bus 1 "mic-4-bus"))
+  (defonce mic-5-bus (o/audio-bus 1 "mic-5-bus"))
+  (defonce mic-6-bus (o/audio-bus 1 "mic-6-bus"))
+  (defonce mic-7-bus (o/audio-bus 1 "mic-7-bus"))
+  (defonce texto-sonoro-bus (o/audio-bus 4 "texto-sonoro-bus"))
 
-(def input-number->bus*
-  {0 guitar-bus
-   1 mic-1-bus
-   2 mic-2-bus
-   3 mic-3-bus
-   4 mic-4-bus
-   5 mic-5-bus})
+  (def inputs
+    {:guitar {:in (:guitar ins)
+              :bus guitar-bus}
+     :mic-1 {:in (:mic-1 ins)
+             :bus mic-1-bus}
+     :mic-2 {:in (:mic-2 ins)
+             :bus mic-2-bus}
+     :mic-3 {:in (:mic-3 ins)
+             :bus mic-3-bus}
+     :mic-4 {:in (:mic-4 ins)
+             :bus mic-4-bus}
+     :mic-5 {:in (:mic-5 ins)
+             :bus mic-5-bus}
+     :mic-6 {:in (:mic-6 ins)
+             :bus mic-6-bus}
+     :mic-7 {:in (:mic-7 ins)
+             :bus mic-7-bus}})
+
+  (def special-inputs
+    {:texto-sonoro {:in (:texto-sonoro ins)
+                    :bus texto-sonoro-bus}})
+
+  (def input-number->bus*
+    {0 guitar-bus
+     1 mic-1-bus
+     2 mic-2-bus
+     3 mic-3-bus
+     4 mic-4-bus
+     5 mic-5-bus
+     6 mic-6-bus
+     7 mic-7-bus
+     8 texto-sonoro-bus}))
 
 (defn input-number->bus [n]
   (if-not (number? n)
@@ -92,6 +121,42 @@
 
 (defn bus->bus-name [bus]
   (-> bus :name (str/replace #"-bus" "")))
+
+;;;;;;;;;;;;;;;;
+;;; Texto Sonoro
+
+(oe/defsynth texto-sonoro-rand-mixer
+  [in 0
+   out 0]
+  (o/out out
+         (o/select (lfo 1 0 3)
+                   (o/sound-in (map #(+ % in) (range 4))))))
+
+(defn init-texto-sonoro-rand-mixer-synth!
+  []
+  (defonce texto-sonoro-rand-mixer-bus
+    (o/audio-bus 1 "texto-sonoro-rand-mixer-bus"))
+  (texto-sonoro-rand-mixer
+   {:group (groups/early)
+    :in (-> special-inputs :texto-sonoro :in)
+    :out texto-sonoro-rand-mixer-bus}))
+
+(comment
+
+  (def ts (texto-sonoro-rand-mixer
+           {:group (groups/early)
+            :in (-> special-inputs :texto-sonoro :in)
+            :out texto-sonoro-rand-mixer-bus}))
+
+  (o/kill ts)
+  (o/demo (o/in texto-sonoro-rand-mixer-bus 1))
+  (o/kill texto-sonoro))
+
+(comment
+  (def texto-sonoro (input {:in (-> special-inputs :texto-sonoro :in)
+                            :out (reaper-returns 1)}))
+  (o/kill texto-sonoro)
+  (-> special-inputs :texto-sonoro))
 
 ;;;;;;;;;;;;;;
 ;; preouts ;;;
@@ -112,7 +177,7 @@
     (o/out (reaper-returns 1)
            (* env clean-return-amp (o/in in 4)))
     (o/out (reaper-returns 2)
-           (* env clean-return-amp (o/in in 4)))))
+           (* env rev-return-amp (o/in in 4)))))
 
 (defonce preouts (atom {}))
 
@@ -123,8 +188,9 @@
                       (update-in [input-name :synth] ctl-synth :in in-bus))))
 
 (defn init-preouts!
+  "Note that no preout is initialized for the `:texto-sonoro`"
   [inputs]
-  (doseq [[_ {:keys [bus synth]}] @preouts]
+  (doseq [[k {:keys [bus synth]}] @preouts]
     (o/free-bus bus)
     (ctl-synth2 synth :gate 0))
   (reset! preouts
@@ -132,7 +198,7 @@
                (map (fn [[input-name _]]
                       (let [preout-bus (o/audio-bus 4 (str "preout-" (name input-name)))]
                         [input-name {:bus preout-bus
-                                     :synth (preout {:group (groups/late)
+                                     :synth (preout {:group (groups/preouts)
                                                      :in preout-bus})}])))
                (into {}))))
 

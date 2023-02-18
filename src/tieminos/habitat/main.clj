@@ -7,6 +7,7 @@
    [tieminos.habitat.panners :refer [panner panner-rate]]
    [tieminos.habitat.parts.amanecer :as amanecer]
    [tieminos.habitat.parts.dia :as dia]
+   [tieminos.habitat.parts.noche :as noche]
    [tieminos.habitat.resonance-panner :as reso-pan]
    [tieminos.habitat.routing :refer [inputs preouts]]
    [time-time.dynacan.players.gen-poly :as gp]))
@@ -25,8 +26,14 @@
       (f am))))
 
 (comment
-  (o/stop)
+  (do (o/stop) (gp/stop))
   (init!)
+  ;; for testing
+  (def test-context (atom {:dur-s 300}))
+  #_(amanecer/init-section-1 300 inputs @preouts)
+  #_(amanecer/inicio-descomposicion inputs @preouts test-context)
+  #_(amanecer/coro-de-la-manana-cantos-iniciales inputs @preouts @main-fx test-context)
+
   (habitat-osc/responder
    (fn [{:keys [path args] :as msg}]
      (println path args)
@@ -41,27 +48,27 @@
          "/rec" (rec/rec-controller args-map)
          (println "Unknown path for message: " msg)))))
 
-  (amanecer/sol-y-luminosidad 20 inputs @preouts)
-  (gp/stop)
-  (o/stop)
+  #_(o/stop)
   (hseq/sequencer
+    ;; TODO move inputs, preouts, main'fx etc to context and pass them here as a context initializer
    (hseq/timestamps->dur-intervals
     [;; amanecer
        ;; TODO revisar timestamps vs texto sonoro
-     [[0 0] #(amanecer/init-section-1 % inputs @preouts)]
-     [[5 20] #(amanecer/sol-y-luminosidad % inputs @preouts)]
-     [[7 30] #(amanecer/intercambios-de-energia % inputs @preouts)]
-     [[9 0] #(amanecer/inicio-descomposicion % inputs @preouts)]
-     [[10 20] #(amanecer/descomposicion-hacia-la-tierra % inputs @preouts)]
-     [[12 24] #(amanecer/coro-de-la-manana-interacciones-cuanticas % inputs @preouts)]
-     [[14 9] #(amanecer/coro-de-la-manana-distancia-de-la-escucha % inputs @preouts)]
-     [[20 25] #(amanecer/solo-de-milo % inputs @preouts)]
+     [[0 0] (partial amanecer/init-section-1 inputs @preouts)]
+     [#_[5 20] [0 5] (partial amanecer/sol-y-luminosidad inputs @preouts)]
+     [#_[7 30] [0 10] (partial amanecer/intercambios-de-energia inputs @preouts)]
+     [#_[9 0] [0 15] (partial amanecer/inicio-descomposicion inputs @preouts)]
+     [#_[10 20] [0 20] (partial amanecer/descomposicion-hacia-la-tierra inputs @preouts)
+      [[12 24] (partial amanecer/coro-de-la-manana-cantos-iniciales inputs @preouts)]]
+     [[14 30] (partial amanecer/coro-de-la-manana-interacciones-cuanticas inputs @preouts)]
+     [[17 0] (partial amanecer/coro-de-la-manana-distancia-de-la-escucha inputs @preouts)]
+     [[20 25] (partial amanecer/solo-de-milo inputs @preouts)]
        ;; día
-     [[22 48] #(dia/dueto-con-polinizadores % inputs @preouts)]
-     [[28 19] #(dia/escucha-de-aves % inputs @preouts)]
+     [[22 48] (partial dia/dueto-con-polinizadores inputs @preouts)]
+     [[28 19] (partial dia/escucha-de-aves inputs @preouts)]
        ;; noche
-     [[39 56] #(noche/de-la-montana-al-fuego % inputs @preouts)]
-     [[45 21] #(noche/fuego % inputs @preouts)]
-     [[50 0] #(noche/alejamiento-del-fuego % inputs @preouts)]
-     [[52 22] #(noche/polinizadores-nocturnos % inputs @preouts)]
-     [[59 0] #(noche/hacia-un-nuevo-universo % inputs @preouts)]])))
+     [[39 56] (partial noche/de-la-montana-al-fuego inputs @preouts)]
+     [[45 21] (partial noche/fuego inputs @preouts)]
+     [[50 0] (partial noche/alejamiento-del-fuego inputs @preouts)]
+     [[52 22] (partial noche/polinizadores-nocturnos inputs @preouts)]
+     [[59 0] (partial noche/hacia-un-nuevo-universo inputs @preouts)]])))

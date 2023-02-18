@@ -6,7 +6,7 @@
    [tieminos.math.random-walk :refer [rand-walk1]]
    [tieminos.math.utils :refer [normalize]]
    [tieminos.overtone-extensions :as oe]
-   [tieminos.sc-utils.groups.v1 :as groups]))
+   [tieminos.habitat.groups :as groups]))
 
 (defn trayectory-pan-4ch
   "`trayectories` is [{:pos 0 :dur 5 :width 1.2}]. The `:dur` is the transition duration (in seconds) between the current node and the next,
@@ -21,7 +21,7 @@
          a 1
          d 1
          s 1
-         group (groups/mid)}}]
+         group (groups/panners)}}]
   (when-not trayectory
     (timbre/warn "No `:trayectory` key present"))
   (let [pos-levels (map :pos trayectory)

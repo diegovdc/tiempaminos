@@ -5,7 +5,7 @@
    [tieminos.habitat.panners.trayectory-panner :refer [trayectory-pan-4ch]]
    [tieminos.habitat.routing :refer [input-number->bus]]
    [tieminos.overtone-extensions :as oe :refer [defsynth]]
-   [tieminos.sc-utils.groups.v1 :as groups]
+   [tieminos.habitat.groups :as groups]
    [tieminos.utils :refer [ctl-synth]]))
 
 (defsynth rand-pan4
@@ -63,7 +63,9 @@
     (swap! current-panners dissoc in*)))
 
 (comment
-  (stop-panner! 5))
+  (stop-panner! 5)
+  (stop-panner! 5)
+  (-> @current-panners))
 
 (defn panner [{:keys [in type out amp trayectory]
                :or {amp 1} :as args}]
@@ -79,23 +81,23 @@
                                           ::current-panners @current-panners})))
         new-panner (case type
                      :clockwise (circle-pan-4ch
-                                 {:group (groups/mid)
+                                 {:group (groups/panners)
                                   :in in*
                                   :out out*
                                   :amp amp})
                      :counter-clockwise (circle-pan-4ch
-                                         {:group (groups/mid)
+                                         {:group (groups/panners)
                                           :in in*
                                           :direction -1
                                           :out out*
                                           :amp amp})
                      :rand (rand-pan4
-                            {:group (groups/mid)
+                            {:group (groups/panners)
                              :in in*
                              :out out*
                              :amp amp})
                      :trayectory (trayectory-pan-4ch
-                                  {:group (groups/mid)
+                                  {:group (groups/panners)
                                    :in in*
                                    :out out*
                                    :trayectory trayectory
