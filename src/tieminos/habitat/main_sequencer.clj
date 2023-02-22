@@ -7,9 +7,10 @@
 (def bpm 60)
 
 (defn sequencer
-  "Sections are a vector of [dur side-fx-fn]"
-  [sections & {:keys [starting-section-index] :or {starting-section-index 0}}]
-  (let [context (atom {})
+  "Sections are a vector of [dur side-fx-fn]
+  `initial-context-data` should include `inputs` `preouts` and `main-fx`"
+  [initial-context-data sections & {:keys [starting-section-index] :or {starting-section-index 0}}]
+  (let [context (atom initial-context-data)
         sections*   (map #(update-in % [0] seconds->dur bpm)
                          sections)
         durs (map first sections*)]

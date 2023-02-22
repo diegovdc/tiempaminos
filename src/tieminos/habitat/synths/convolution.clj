@@ -1,14 +1,13 @@
-(ns tieminos.habitat.scratch.convolution
+(ns tieminos.habitat.synths.convolution
   (:require
    [overtone.core :as o]
    [tieminos.habitat.groups :as groups]
-   [tieminos.habitat.panners :refer [panner stop-panner!]]
+   [tieminos.habitat.panners :refer [current-panners panner stop-panner!]]
    [tieminos.habitat.recording :as rec :refer [norm-amp]]
    [tieminos.habitat.routing
     :refer [inputs special-inputs texto-sonoro-rand-mixer-bus]]
    [tieminos.overtone-extensions :as oe]
-   [tieminos.sc-utils.synths.v1 :refer [lfo]]
-   [tieminos.habitat.panners :refer [current-panners]]))
+   [tieminos.sc-utils.synths.v1 :refer [lfo]]))
 
 (oe/defsynth live-convolver
   [in1 0
@@ -18,21 +17,59 @@
    amp 1
    release 5
    gate 1
+   rev-mix 1
+   rev-room 0.2
    out 0]
   (o/out out (-> (+ (o/convolution (* in1-amp (o/in in1))
                                    (* in2-amp (o/in in2))
                                    4096))
                  #_(o/rhpf 500 0.5)
-                 (o/free-verb 1 0.2)
+                 (o/free-verb rev-mix rev-room)
                  (#(+ %
                       (let [bpf-sig (o/bpf % (lfo 1 100 3400) (lfo 0.3 0.03 0.5))]
                         (+ (* 0.8 bpf-sig)
                            (* 1.2 (o/free-verb bpf-sig 0.8 1))))))
-                 (* 2 amp (o/env-gen (o/env-adsr 5 1 1 release :curve -0.5)
+                 (* 2 amp (o/env-gen (o/env-adsr 5 1 1 release :curve [1 -0.5 -0.5])
                                      gate
                                      :action o/FREE))
                  (o/limiter 0.9 0.005)
                  #_(o/lpf 5000))))
+
+(oe/defsynth live-convolver-perc
+  ;; `perc` instead of `asr`
+  [in1 0
+   in1-amp 1
+   in2 0
+   in2-amp 1
+   amp 1
+   amp-lfo-freq 0.1
+   amp-lfo-min 1
+   amp-lfo-max 1
+   a 5
+   r 5
+   curve -4.0
+   max-amp 0.9
+   bpf-amp 0.8
+   bpf-rev-amp 1.5
+   hpf-freq 500
+   lpf-freq 20000
+   rev-mix 1
+   out 0]
+  (o/out out (-> (+ (o/convolution (* in1-amp (o/in in1))
+                                   (* in2-amp (o/in in2))
+                                   4096))
+                 (o/hpf hpf-freq)
+                 (o/free-verb rev-mix 0.2)
+                 (#(+ %
+                      (let [bpf-sig (o/bpf % (lfo 1 100 3400) (lfo 0.3 0.03 0.5))]
+                        (+ (* bpf-amp bpf-sig)
+                           (* bpf-rev-amp (o/free-verb bpf-sig 0.8 1))))))
+                 (o/lpf lpf-freq)
+                 (* 2 amp
+                    (lfo amp-lfo-freq amp-lfo-min amp-lfo-max)
+                    (o/env-gen (o/env-perc a r 1 curve)
+                               :action o/FREE))
+                 (o/limiter max-amp 0.01))))
 
 (comment
   (def texto-sonoro-rand-mixer-bus (o/audio-bus 1 "texto-sonoro-rand-mixer-bus"))
@@ -61,7 +98,7 @@
                            :out lc-out-bus}))
   (o/kill lc)
   (o/ctl lc :gate 0)
-  (o/ctl lc :amp 2)
+  (o/ctl lc :amp 0.8)
   (o/ctl lc :in1-amp 1)
   (o/ctl lc :in2-amp 2)
   (o/ctl lc
@@ -83,7 +120,7 @@
                           :type :rand
                           :out 0}))
   (stop-panner! lc-out-bus)
-  (current-panners)
+  (-> @current-panners)
   (stop-panner! texto-sonoro-rand-mixer-bus)
   (stop-panner! (-> inputs :guitar :bus))
   (o/kill lc-panner)

@@ -1,5 +1,6 @@
 (ns tieminos.utils
   (:require
+   [clojure.core.async :as a]
    [erv.cps.core :as cps]
    [erv.scale.core :as scale]
    [erv.utils.conversions :as conv]
@@ -138,3 +139,25 @@
 (defn seconds->dur [secs bpm] (* secs (/ bpm 60)))
 
 (defn dur->bpm [dur-ms] (/ 60000 dur-ms))
+
+(defn iter-async-call
+  "Iterative async call. Will pass the index of the call to the fn.
+  Useful for sequencing `o/ctl` calls."
+  ([f] (iter-async-call 200 f))
+  ([interval-ms f]
+   (let [stop-chan-fn (a/chan)]
+     (a/go-loop [i 0]
+       (a/alt!
+         (a/timeout interval-ms) (do (a/thread (f i))
+                                     (recur (inc i)))
+         stop-chan-fn (timbre/info "Stopping iter-async-call...")))
+     ;; memoize to prevent a subsequent call from stopping the thread
+     (memoize #(a/>!! stop-chan-fn true)))))
+
+(comment
+  (def stop-me (iter-async-call 1000 #(do (println "hola" %)
+                                          (flush))))
+  (def stop-me2 (iter-async-call 500 #(do (println "adios" %)
+                                          (flush))))
+  (stop-me)
+  (stop-me2))

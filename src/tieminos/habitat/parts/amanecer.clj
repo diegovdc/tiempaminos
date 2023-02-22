@@ -5,7 +5,10 @@
    [erv.cps.core :as cps]
    [overtone.core :as o]
    [taoensso.timbre :as timbre]
-   [tieminos.habitat.panners :refer [panner panner-rate]]
+   [tieminos.attractors.lorentz :as lorentz]
+   [tieminos.habitat.attractors :refer [lor1]]
+   [tieminos.habitat.groups :as groups]
+   [tieminos.habitat.panners :refer [panner panner-rate stop-panner!]]
    [tieminos.habitat.panners.trayectory-panner
     :refer [random-trayectories
             simple-perc-trayectory-4ch
@@ -19,12 +22,14 @@
             reaper-returns
             reverb-return
             texto-sonoro-rand-mixer-bus]]
-   [tieminos.habitat.scratch.convolution :refer [live-convolver]]
+   [tieminos.habitat.synths.convolution
+    :refer [live-convolver live-convolver-perc]]
    [tieminos.habitat.synths.granular :as hgs]
+   [tieminos.habitat.utils
+    :refer [before-dur-end free-synth-panner-and-bus]]
    [tieminos.math.bezier-samples :refer [f fsf s]]
    [tieminos.math.random-walk :refer [rand-walk1]]
-   [tieminos.habitat.groups :as groups]
-   [tieminos.utils :refer [ctl-synth ctl-synth2 rrange]]
+   [tieminos.utils :refer [ctl-synth ctl-synth2 iter-async-call rrange]]
    [time-time.dynacan.players.gen-poly
     :as
     gp
@@ -60,17 +65,17 @@
             :max-pos-change 1
             :initial-pos (:pos (last trayectory-start))})))))
 
-(defn init-section-1 [inputs base-preouts _context]
-  (println "IS1")
-  (doseq [[k {:keys [bus]}] inputs]
-    (let [out (:bus (k base-preouts))
-          trayectory (make-initial-trayectory-data)
-          config {:in bus
-                  :type :trayectory
-                  :out out
-                  :trayectory trayectory}]
-      (timbre/info "Initializing section 1 on bus:" bus config)
-      (panner config))))
+(defn init-section-1 [context]
+  (let [{:keys [inputs preouts]} @context]
+    (doseq [[k {:keys [bus]}] inputs]
+      (let [out (:bus (k @preouts))
+            trayectory (make-initial-trayectory-data)
+            config {:in bus
+                    :type :trayectory
+                    :out out
+                    :trayectory trayectory}]
+        (timbre/info "Initializing section 1 on bus:" bus config)
+        (panner config)))))
 
 (defn- rayos-y-reflejos
   [total-dur input]
@@ -119,8 +124,8 @@
             (swap! elapsed-time + dur-s)))
         (swap! elapsed-time + dur-s))))))
 
-(defn sol-y-luminosidad [inputs base-preouts context]
-  (let [{:keys [dur-s]} @context
+(defn sol-y-luminosidad [context]
+  (let [{:keys [inputs preouts dur-s]} @context
         guitar (:guitar inputs)
         guitar-trayectory [{:pos -0.5 :dur 15 :width 4}
                            {:pos -0.5 :dur 45 :width 1.3}
@@ -129,10 +134,10 @@
     (timbre/info "Salida del sol")
     ;; guitar
     (timbre/info "Starting sol-y-luminosidad (guitar main)"
-                 (:bus (:guitar base-preouts)))
+                 (:bus (:guitar @preouts)))
     (panner {:in (:bus guitar)
              :type :trayectory
-             :out (:bus (:guitar base-preouts))
+             :out (:bus (:guitar @preouts))
              :amp 1.5
              :trayectory guitar-trayectory})
     ;; perc
@@ -141,53 +146,18 @@
       (let [[k {:keys [bus]}] input]
         (panner {:in bus
                  :type :rand
-                 :out (:bus (k base-preouts))
+                 :out (:bus (k @preouts))
                  :amp 0.5})
         (panner-rate {:in bus
                       :rate (rrange 0.1 0.5)
                       :max 0.5})))))
 
-(defn intercambios-de-energia [inputs base-preouts _context]
-  (timbre/warn "Not implemented yet: intercambios-de-energia"))
-
-(defn before-section-end
-  [section-dur s-before-end f]
-  (ref-rain
-   :id (keyword (str "before-section-end-" (rand-int 10000)))
-   :durs [(- section-dur s-before-end) s-before-end]
-   :on-event (on-event (when (= index 1) (f)))))
-
-(defn inicio-descomposicion [inputs base-preouts context]
-  (timbre/info "inicio-descomposicion")
-  (let [convolvers (mapv (fn [[k {:keys [bus]}]]
-                           (let [convolver-out (o/audio-bus 1 (str "convolver-out-" (name k)))]
-
-                             {:synth (live-convolver {:group (groups/mid)
-                                                      :in1 bus
-                                                      :in2 texto-sonoro-rand-mixer-bus
-                                                      :out convolver-out})
-                              :panner (panner {:group (groups/panners)
-                                               :in convolver-out
-                                               :type :rand
-                                               :out (:bus (k base-preouts))})
-                              :out-bus convolver-out}))
-                         inputs)]
-    (swap! context assoc :amanecer/inicio-descomposicion
-           {:convolver-synths convolvers})))
-
-(defn descomposicion-hacia-la-tierra [inputs base-preouts context]
-  (timbre/info "descomposicion-hacia-la-tierra")
-  (let [{:keys [dur-s amanecer/inicio-descomposicion]} @context
-        {:keys [convolver-synths]} inicio-descomposicion]
-    (before-section-end
-     dur-s 5
-     (fn [] (doseq [s convolver-synths]
-              (ctl-synth s :gate 0))))))
-
 (do
   (defn quick-jump-trayectories
     "Quick jumps from one place to another"
-    [total-dur dur-weights]
+    [total-dur dur-weights & {:keys [min-width max-width]
+                              :or {max-width 1.5
+                                   min-width 1.3}}]
     (let [positions (loop [positions []]
                       (let [elapsed-time (:elapsed-time (last positions) 0)
                             dur (weighted dur-weights)]
@@ -195,7 +165,7 @@
                           positions
                           (recur (conj positions
                                        {:pos (+ (rand-nth [0 0.5 1 1.5]) (rand 0.25))
-                                        :width (rrange 1.3 1.5)
+                                        :width (rrange min-width max-width)
                                         :dur dur
                                         :elapsed-time (+ elapsed-time dur)})))))]
       (->> positions
@@ -203,10 +173,145 @@
                                   (assoc :dur (rrange 0.1 0.3)
                                          :transition? true)
                                   (dissoc :elapsed-time))]))))))
+(do
+  (defn make-convolver-1
+    "Shuffles inputs and has random ranged defaults for most args.
+  NOTE that ins is [{:bus bus} {:bus bus}]"
+    [ins out & {:as live-convolver-args
+                :or {}}]
+    (live-convolver-perc
+     (let [dur (rrange 1 15)
+           a (* dur (rrange 0.01 0.5))
+           [in1 in2] (shuffle ins)
+           amp-lfo-min (rrange 0.4 1)]
+       (merge {:group (groups/mid)
+               :in1 (:bus in1)
+               :in1-amp 2
+               :in2 (:bus in2)
+               :in2-amp 2
+               :amp-lfo-freq (rrange 0.01 0.8)
+               :amp-lfo-min amp-lfo-min
+               :amp-lfo-max (rrange amp-lfo-min 1.2)
+               :amp (rrange 1 2)
+               :a a
+               :r (- dur a)
+               :curve (rrange -4 4)
+               :max-amp (rrange 0.4 0.8)
+               :hpf-freq (rrange 300 800)
+               :lpf-freq (rrange 2000 10000)
+               :bpf-amp (rrange 0.5 0.8)
+               :bpf-rev-amp (rrange 1 1.5)
+               :rev-mix (rrange 0 1)
+               :out out}
+              live-convolver-args))))
+
+  ;; TODO left here, need to test
+  (defn intercambios-de-energia [context]
+    (let [{:keys [inputs dur-s]} @context
+          input-pairs [[(:guitar inputs) (:mic-1 inputs)]
+                       [(:guitar inputs) (:mic-2 inputs)]
+                       [(:guitar inputs) (:mic-4 inputs)]
+                       [(:mic-3 inputs) (:mic-5 inputs)]
+                       [(:mic-6 inputs) (:mic-7 inputs)]]
+          total-synths (count input-pairs)
+          trayectories (mapv (fn [_]
+                               (into (quick-jump-trayectories (/ dur-s 2)
+                                                              {#(rrange 4 8) 3
+                                                               #(rrange 8 12) 1}
+                                                              :min-width 1.3
+                                                              :max-width 4)
+                                     (quick-jump-trayectories (/ dur-s 2)
+                                                              {#(rrange 4 8) 3
+                                                               #(rrange 1 4) 1}
+                                                              :min-width 1.3
+                                                              :max-width 4)))
+                             (range total-synths))
+          convolver-outs (mapv (fn [i] (o/audio-bus 1 (str "intercambios-de-energia-convolver-out-" i)))
+                               (range total-synths))
+          panners (mapv (fn [convolver-out trayectory]
+                          (panner {:in convolver-out
+                                   :type :trayectory
+                                   :out (reaper-returns 3)
+                                   :trayectory trayectory
+                                   :amp 3}))
+                        convolver-outs
+                        trayectories)
+          sequencer-ids (mapv (fn [i]
+                                (keyword "amanecer" (str "intercambios-de-energia-" i)))
+                              (range total-synths))]
+      (doall (map-indexed
+              (fn [i sequencer-id]
+                (ref-rain
+                 :id sequencer-id
+                 :durs (map :dur (nth trayectories i))
+                 :loop? false
+                 :on-event (on-event
+                            (println
+                             "event"
+                             (cond
+                               (zero? index) nil
+                               (< dur 1) nil
+                               (> (rand) 0.0) (make-convolver-1
+                                               (rand-nth input-pairs)
+                                               (rand-nth convolver-outs))
+                               :else nil)))))
+              sequencer-ids))
+      (swap! context assoc
+             :amanecer/intercambios-de-energia
+             {:sequencer-ids sequencer-ids
+              :convolver-outs convolver-outs}))))
+
+(defn- free-intercambios-de-energia
+  [context]
+  (let [{:keys [amanecer/intercambios-de-energia]} @context
+        {:keys [convolver-outs sequencer-ids]} intercambios-de-energia]
+    (ref-rain
+     :id :amanecer/free-intercambios-de-energia
+     :durs [10 10 5]
+     :loop? false
+     :on-event (on-event
+                (case index
+                  0 (doseq [sequencer-id sequencer-ids]
+                      (gp/stop sequencer-id))
+                  1 (doseq [out convolver-outs]
+                      (stop-panner! out))
+                  2 (doseq [out convolver-outs]
+                      (o/free-bus out))
+                  (timbre/warn "free-intercambios-de-energia should have stopped by now"))))))
+
+(defn inicio-descomposicion [context]
+  (timbre/info "inicio-descomposicion")
+  (free-intercambios-de-energia context)
+  (let [{:keys [inputs preouts]} @context
+        convolvers (mapv (fn [[k {:keys [bus]}]]
+                           (let [convolver-out (o/audio-bus 1 (str "convolver-out-" (name k)))
+                                 synth (live-convolver {:group (groups/mid)
+                                                        :in1 bus
+                                                        :in2 texto-sonoro-rand-mixer-bus
+                                                        :out convolver-out})]
+                             (panner {:group (groups/panners)
+                                      :in convolver-out
+                                      :type :rand
+                                      :out (:bus (k @preouts))})
+                             {:synth synth
+                              ;; use `out-bus` to release the panner
+                              :out-bus convolver-out}))
+                         inputs)]
+    (swap! context assoc :amanecer/inicio-descomposicion
+           {:convolver-synths convolvers})))
+
+(defn descomposicion-hacia-la-tierra [context]
+  (timbre/info "descomposicion-hacia-la-tierra")
+  (let [{:keys [dur-s amanecer/inicio-descomposicion]} @context
+        {:keys [convolver-synths]} inicio-descomposicion]
+    (before-dur-end
+     dur-s 0.5
+     (fn [] (doseq [{:keys [synth out-bus]} convolver-synths]
+              (free-synth-panner-and-bus synth out-bus))))))
 
 (defn coro-de-la-manana-cantos-iniciales
-  [inputs base-preouts main-fx context]
-  (let [{:keys [dur-s]} @context
+  [context]
+  (let [{:keys [dur-s inputs preouts main-fx]} @context
         guitar (:guitar inputs)
         perc-inputs (dissoc inputs :guitar)]
     (let [trayectory (quick-jump-trayectories
@@ -219,7 +324,7 @@
       ;; TODO add ref-rain with tiny delays and other earcandy
       (panner {:in (:bus guitar)
                :type :trayectory
-               :out (:bus (:heavy-reverb main-fx))
+               :out (:bus (:heavy-reverb @main-fx))
                :trayectory trayectory
                :amp 3})
 
@@ -228,33 +333,96 @@
         (let [[k {:keys [bus]}] input]
           (panner {:in bus
                    :type :rand
-                   :out (:bus (k base-preouts))
+                   :out (:bus (k @preouts))
                    :amp 1})
           (panner-rate {:in bus
                         :rate (rrange 0.1 0.5)
                         :max 0.5}))))))
 
-(defn coro-de-la-manana-interacciones-cuanticas [inputs base-preouts _context]
-  (let [guitar (:guitar inputs)]
+(defn coro-de-la-manana-interacciones-cuanticas [context]
+  (let [{:keys [inputs preouts dur-s]} @context
+        guitar (:guitar inputs)
+        perc-inputs (dissoc inputs :guitar)
+        make-trayectory (fn [] (quick-jump-trayectories
+                                (+ dur-s 10)
+                                {#(rrange 0.5 1) 4
+                                 #(rrange 0.2 0.5) 3
+                                 #(rrange 1 3) 2
+                                 #(rrange 3 4) 1.5
+                                 #(rrange 5 10) 1}))]
+    ;; TODO improve, it just a quick thing
     (panner {:in (:bus guitar)
              :type :trayectory
-             :out (:bus (:guitar base-preouts))
-             :amp 0.5})
+             :out (:bus (:guitar @preouts))
+             :trayectory (make-trayectory)
+             :amp 1})
 
-    (timbre/warn "Not implemented yet")))
+    (doseq [input perc-inputs]
+      (let [[k {:keys [bus]}] input]
+        (panner {:in bus
+                 :type :trayectory
+                 :trayectory (make-trayectory)
+                 :out (:bus (k @preouts))
+                 :amp 1})))))
 
-(defn coro-de-la-manana-distancia-de-la-escucha [inputs base-preouts _context]
-  (doseq [[k {:keys [bus]}] inputs]
-    (let [out (:bus (k base-preouts))
-          trayectory (make-initial-trayectory-data)
-          config {:in bus
-                  :type :trayectory
-                  :out out
-                  :trayectory trayectory}]
-      (timbre/warn "Not implemented yet"))))
+(defn coro-de-la-manana-distancia-de-la-escucha [context]
+  (let [{:keys [inputs preouts]} @context
+        convolvers (mapv
+                    (fn [[k {:keys [bus]}]]
+                      (let [convolver-out (o/audio-bus 1 (str "coro-de-la-mañana-distancia-convolver-out-" (name k)))
+                            synth (live-convolver {:group (groups/mid)
+                                                   :in1 bus
+                                                   :in2 texto-sonoro-rand-mixer-bus
+                                                   :out convolver-out})
+                            starting-point (+ 500 (rand-int 300))
+                            ctl-stop-fn (iter-async-call
+                                         100
+                                         (fn [i]
+                                           (let [point (lor1 (+ starting-point (* 5 i)))]
+                                             (ctl-synth
+                                              synth
+                                              :in1-amp (lorentz/bound point :x 1 2)
+                                              :in2-amp (lorentz/bound point :y 0.5 1)
+                                              :rev-mix (lorentz/bound point :x 0.3 1)
+                                              :rev-room (lorentz/bound point :y 0 0.5)
+                                              :amp (lorentz/bound point :z 0 0.9)))))]
 
-(defn solo-de-milo [inputs base-preouts context]
-  (let [{:keys [dur-s]} @context
+                        (panner {:group (groups/panners)
+                                 :in convolver-out
+                                 :type :rand
+                                 :out (reaper-returns 3)})
+                        (panner-rate {:in bus
+                                      :rate (rrange 0.1 0.5)
+                                      :max 0.5})
+                        {:synth synth
+                         :ctl-stop-fn ctl-stop-fn
+                         ;; use `out-bus` to release the panner
+                         :out-bus convolver-out}))
+                    inputs)]
+    (swap! context assoc :amanecer/coro-de-la-manana-distancia-de-la-escucha
+           {:convolver-synths convolvers})))
+
+(defn coro-de-la-manana-distancia-de-la-escucha-stop
+  [context]
+  (let [{:keys [convolver-synths]} (:amanecer/coro-de-la-manana-distancia-de-la-escucha
+                                    @context)]
+    (ref-rain
+     :id :amanecer/coro-de-la-manana-distancia-de-la-escucha-stop
+     :durs [5 10 5]
+     :loop? false
+     :on-event (on-event
+                (case index
+                  0 (doseq [{:keys [ctl-stop-fn synth]} convolver-synths]
+                      (ctl-stop-fn)
+                      (ctl-synth2 synth :gate 0))
+                  1 (doseq [{:keys [out-bus]} convolver-synths]
+                      (stop-panner! out-bus))
+                  2 (doseq [{:keys [out-bus]} convolver-synths]
+                      (o/free-bus out-bus))
+                  (timbre/warn "coro-de-la-manana-distancia-de-la-escucha-stop should have stopped by now"))))))
+
+(defn solo-de-milo [context]
+  (let [{:keys [inputs preouts dur-s]} @context
         perc-inputs (dissoc inputs :guitar)]
     (timbre/info "Solo de Milo")
     (doseq [input perc-inputs]

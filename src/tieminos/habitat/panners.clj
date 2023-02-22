@@ -56,7 +56,6 @@
   [in]
   (let [in* (input-number->bus in)
         current-panner (get @current-panners in*)]
-    (println current-panner)
     (try (when (:synth current-panner)
            (o/ctl (:synth current-panner) :gate 0))
          (catch Exception e (timbre/error e)))
@@ -65,7 +64,8 @@
 (comment
   (stop-panner! 5)
   (stop-panner! 5)
-  (-> @current-panners))
+  (->> @current-panners
+       keys))
 
 (defn panner [{:keys [in type out amp trayectory]
                :or {amp 1} :as args}]
@@ -116,3 +116,4 @@
                     :or {max 1.5} :as _args}]
   (let [panner (get-in @current-panners [(input-number->bus in) :synth])]
     (ctl-synth panner :rate (* max rate))))
+
