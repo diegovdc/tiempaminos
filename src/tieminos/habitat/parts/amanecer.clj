@@ -65,7 +65,7 @@
             :max-pos-change 1
             :initial-pos (:pos (last trayectory-start))})))))
 
-(defn init-section-1 [context]
+(defn humedad [context]
   (let [{:keys [inputs preouts]} @context]
     (doseq [[k {:keys [bus]}] inputs]
       (let [out (:bus (k @preouts))
@@ -78,20 +78,20 @@
         (panner config)))))
 
 (defn- rayos-y-reflejos
-  [total-dur input]
+  [id total-dur input]
   (let [[k {:keys [bus]}] input
         elapsed-time (atom 0)
         last-synth (atom nil)
-        id (keyword (str "rayos-y-reflejos-" (name k)))]
-    (timbre/info "Starting" id)
+        id* (keyword (str "rayos-y-reflejos-" id "-" (name k)))]
+    (timbre/info "Starting" id*)
     (when-not bus
       (throw (ex-info "No input bus" {:input input})))
     (ref-rain
-     :id id
+     :id id*
      :durs (map (fn [_] (rrange 0.2 1.5)) (range 100))
      :tempo 60
      :on-stop (fn [_]
-                (timbre/info "Stopping" id)
+                (timbre/info "Stopping" id*)
                 (ctl-synth2 @last-synth :gate 0))
      :on-event
      (on-event
@@ -101,9 +101,9 @@
             end-pos (+ start-pos (rrange -1 1))]
         (if (> @elapsed-time total-dur)
           (do
-            (timbre/info "Stopping" id)
+            (timbre/info "Stopping" id*)
             (ctl-synth2 @last-synth :gate 0)
-            (update-refrain id :before-update (fn [r] (assoc r :playing? false))))
+            (update-refrain id* :before-update (fn [r] (assoc r :playing? false))))
           (do
             (when-not (zero? index)
               (ctl-synth @last-synth :gate 0))
@@ -125,6 +125,7 @@
         (swap! elapsed-time + dur-s))))))
 
 (defn sol-y-luminosidad [context]
+  (timbre/info "sol-y-luminosidad")
   (let [{:keys [inputs preouts dur-s]} @context
         guitar (:guitar inputs)
         guitar-trayectory [{:pos -0.5 :dur 15 :width 4}
@@ -142,7 +143,7 @@
              :trayectory guitar-trayectory})
     ;; perc
     (doseq [input perc-inputs]
-      (rayos-y-reflejos dur-s input)
+      (rayos-y-reflejos "sol-y-luminosidad" dur-s input)
       (let [[k {:keys [bus]}] input]
         (panner {:in bus
                  :type :rand
@@ -207,6 +208,7 @@
 
   ;; TODO left here, need to test
   (defn intercambios-de-energia [context]
+    (timbre/info "intercambios-de-energia")
     (let [{:keys [inputs dur-s]} @context
           input-pairs [[(:guitar inputs) (:mic-1 inputs)]
                        [(:guitar inputs) (:mic-2 inputs)]
@@ -261,8 +263,9 @@
              {:sequencer-ids sequencer-ids
               :convolver-outs convolver-outs}))))
 
-(defn- free-intercambios-de-energia
+(defn free-intercambios-de-energia
   [context]
+  (timbre/info "free-intercambios-de-energia")
   (let [{:keys [amanecer/intercambios-de-energia]} @context
         {:keys [convolver-outs sequencer-ids]} intercambios-de-energia]
     (ref-rain
@@ -301,6 +304,7 @@
            {:convolver-synths convolvers})))
 
 (defn descomposicion-hacia-la-tierra [context]
+  ;; TODO revisar
   (timbre/info "descomposicion-hacia-la-tierra")
   (let [{:keys [dur-s amanecer/inicio-descomposicion]} @context
         {:keys [convolver-synths]} inicio-descomposicion]
@@ -311,6 +315,7 @@
 
 (defn coro-de-la-manana-cantos-iniciales
   [context]
+  (timbre/info  "coro-de-la-manana-cantos-iniciales")
   (let [{:keys [dur-s inputs preouts main-fx]} @context
         guitar (:guitar inputs)
         perc-inputs (dissoc inputs :guitar)]
@@ -340,6 +345,7 @@
                         :max 0.5}))))))
 
 (defn coro-de-la-manana-interacciones-cuanticas [context]
+  (timbre/info "coro-de-la-manana-interacciones-cuanticas")
   (let [{:keys [inputs preouts dur-s]} @context
         guitar (:guitar inputs)
         perc-inputs (dissoc inputs :guitar)
@@ -366,6 +372,7 @@
                  :amp 1})))))
 
 (defn coro-de-la-manana-distancia-de-la-escucha [context]
+  (timbre/info "coro-de-la-manana-distancia-de-la-escucha")
   (let [{:keys [inputs preouts]} @context
         convolvers (mapv
                     (fn [[k {:keys [bus]}]]
@@ -396,7 +403,7 @@
                                       :max 0.5})
                         {:synth synth
                          :ctl-stop-fn ctl-stop-fn
-                         ;; use `out-bus` to release the panner
+                          ;; use `out-bus` to release the panner
                          :out-bus convolver-out}))
                     inputs)]
     (swap! context assoc :amanecer/coro-de-la-manana-distancia-de-la-escucha
@@ -404,6 +411,7 @@
 
 (defn coro-de-la-manana-distancia-de-la-escucha-stop
   [context]
+  (timbre/info "coro-de-la-manana-distancia-de-la-escucha-stop")
   (let [{:keys [convolver-synths]} (:amanecer/coro-de-la-manana-distancia-de-la-escucha
                                     @context)]
     (ref-rain
@@ -422,11 +430,12 @@
                   (timbre/warn "coro-de-la-manana-distancia-de-la-escucha-stop should have stopped by now"))))))
 
 (defn solo-de-milo [context]
+  (timbre/info "Solo de Milo")
+  (coro-de-la-manana-distancia-de-la-escucha-stop)
   (let [{:keys [inputs preouts dur-s]} @context
         perc-inputs (dissoc inputs :guitar)]
-    (timbre/info "Solo de Milo")
     (doseq [input perc-inputs]
-      (rayos-y-reflejos dur-s input))))
+      (rayos-y-reflejos "solo-de-milo" dur-s input))))
 
 (comment
   (def test-bus (o/audio-bus 1 "test-bus"))
