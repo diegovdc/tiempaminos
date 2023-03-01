@@ -1,17 +1,15 @@
 (ns tieminos.habitat.main
   (:require
    [overtone.core :as o]
-   [tieminos.habitat.init :refer [init!]]
+   [tieminos.habitat.init :refer [habitat-initialized? init!]]
    [tieminos.habitat.main-sequencer :as hseq]
    [tieminos.habitat.osc :as habitat-osc :refer [args->map map-val]]
    [tieminos.habitat.panners :refer [panner panner-rate]]
    [tieminos.habitat.parts.amanecer :as amanecer]
    [tieminos.habitat.parts.dia :as dia]
-   [tieminos.habitat.parts.noche :as noche]
    [tieminos.habitat.resonance-panner :as reso-pan]
    [tieminos.habitat.routing :refer [inputs preouts]]
    [tieminos.habitat.synths.main-fx :refer [main-fx]]
-   [tieminos.habitat.utils :refer [free-synth-panner-and-bus]]
    [time-time.dynacan.players.gen-poly :as gp]))
 
 (defn TEMPORARY-multichan-wrapper
@@ -28,7 +26,12 @@
       (f am))))
 
 (comment
-  (do (o/stop) (gp/stop))
+  (do
+    (amanecer/free-intercambios-de-energia hseq/context)
+    (amanecer/coro-de-la-manana-distancia-de-la-escucha-stop hseq/context)
+    (o/stop)
+    (gp/stop)
+    (reset! habitat-initialized? false))
   (init!)
   ;; for testing
   (def test-context (atom {:dur-s 300
@@ -36,6 +39,8 @@
                            :preouts preouts
                            :main-fx main-fx}))
   (-> @test-context)
+  #_(amanecer/coro-de-la-manana-distancia-de-la-escucha test-context)
+  #_(amanecer/coro-de-la-manana-distancia-de-la-escucha-stop test-context)
   #_(amanecer/intercambios-de-energia test-context)
   #_(amanecer/init-section-1 test-context)
   #_(def idc (amanecer/inicio-descomposicion test-context))
@@ -56,27 +61,33 @@
    {:inputs inputs
     :preouts preouts
     :main-fx main-fx}
-   (hseq/timestamps->dur-intervals
-    [;; amanecer
-       ;; TODO revisar timestamps vs texto sonoro
-     [[0 0] amanecer/init-section-1]
-     [#_[5 20] [0 5] amanecer/sol-y-luminosidad]
-     [#_[7 30] [0 10] amanecer/intercambios-de-energia]
-     [#_[9 0] [1 15] amanecer/inicio-descomposicion]
-     [#_[10 20] [0 20] amanecer/descomposicion-hacia-la-tierra]
-     [[12 24] amanecer/coro-de-la-manana-cantos-iniciales]
-     [[14 30] amanecer/coro-de-la-manana-interacciones-cuanticas]
-     [[17 0] amanecer/coro-de-la-manana-distancia-de-la-escucha]
-     [[20 25] amanecer/solo-de-milo]
-       ;; día
-     [[22 48] (partial dia/dueto-con-polinizadores inputs @preouts)]
-     [[28 19] (partial dia/escucha-de-aves inputs @preouts)]
-       ;; noche
-     [[39 56] (partial noche/de-la-montana-al-fuego inputs @preouts)]
-     [[45 21] (partial noche/fuego inputs @preouts)]
-     [[50 0] (partial noche/alejamiento-del-fuego inputs @preouts)]
-     [[52 22] (partial noche/polinizadores-nocturnos inputs @preouts)]
-     [[59 0] (partial noche/hacia-un-nuevo-universo inputs @preouts)]]))
+   [;; amanecer
+    ;; TODO revisar timestamps vs texto sonoro
+    [[0 0] amanecer/humedad]
+    [[5 20] #_[0 5] amanecer/sol-y-luminosidad]
+    [[7 30] #_[0 10] amanecer/intercambios-de-energia]
+    [[9 0] #_[0 15] amanecer/inicio-descomposicion]
+    [[10 20] #_[0 20] amanecer/descomposicion-hacia-la-tierra]
+    [[12 24] #_[0 25]  amanecer/coro-de-la-manana-cantos-iniciales]
+    [[14 30] #_[0 30] amanecer/coro-de-la-manana-interacciones-cuanticas]
+    [[17 0] #_[0 35] amanecer/coro-de-la-manana-distancia-de-la-escucha]
+    [[20 25] #_[0 45] amanecer/solo-de-milo]
+    ;; día
+    [[22 48] dia/dueto-con-polinizadores=pt1-emisión-de-señal-intercambio-de-energía]
+    [[24 30] dia/dueto-con-polinizadores=pt2-percepción-de-señal-danza-desarrollo-de-energía]
+    [[25 47] dia/dueto-con-polinizadores=pt3-polen-electromagnetismo-agitación]
+    [[27 51] dia/dueto-con-polinizadores=pt4-multiplicación-atracción-orbitales]
+    ;; NOTE cambio en marca de tiempo respecto de la partitura
+    [[28 30] dia/dueto-con-polinizadores=pt5-movimiento-energía-alejamiento->viento]
+    #_[[29 55] tacet]
+    #_[[31 11] (partial dia/escucha-de-aves inputs @preouts)]
+    ;; noche
+    #_[[39 56] (partial noche/de-la-montana-al-fuego inputs @preouts)]
+    #_[[45 21] (partial noche/fuego inputs @preouts)]
+    #_[[50 0] (partial noche/alejamiento-del-fuego inputs @preouts)]
+    #_[[52 22] (partial noche/polinizadores-nocturnos inputs @preouts)]
+    #_[[59 0] (partial noche/hacia-un-nuevo-universo inputs @preouts)
+       [68 0] end]])
 
   (habitat-osc/responder
    (fn [{:keys [path args] :as msg}]
@@ -91,4 +102,3 @@
          "/reso-pan" (reso-pan/trigger (:in args-map) 0 5 10)
          "/rec" (rec/rec-controller args-map)
          (println "Unknown path for message: " msg))))))
-

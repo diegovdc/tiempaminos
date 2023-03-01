@@ -53,6 +53,8 @@
                    {input-name (start-signal-analyzer :input-bus bus)})
                  inputs))))
 
+(defonce habitat-initialized? (atom false))
+
 (defn init! []
   (when (o/server-disconnected?)
     (tieminos.core/connect))
@@ -65,6 +67,7 @@
   (init-analyzers! inputs)
   (init-inputs! inputs)
   (init-texto-sonoro-rand-mixer-synth!)
+  (reset! habitat-initialized? true)
   {:inputs (keys inputs)})
 
 (-> @preouts :guitar :bus)
