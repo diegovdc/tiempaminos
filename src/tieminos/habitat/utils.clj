@@ -1,5 +1,6 @@
 (ns tieminos.habitat.utils
   (:require
+   [clojure.data.generators :refer [weighted]]
    [overtone.core :as o]
    [taoensso.timbre :as timbre]
    [tieminos.habitat.panners :refer [stop-panner!]]
@@ -33,3 +34,9 @@
    :id (keyword (str "before-dur-end-" (rand-int 10000)))
    :durs [(- dur s-before-end) s-before-end]
    :on-event (on-event (when (= index 1) (f)))))
+
+(defn rand-time-segments [dur dur-weights]
+  (loop [durs []]
+    (if (>= (apply + durs) dur)
+      durs
+      (recur (conj durs (weighted dur-weights))))))
