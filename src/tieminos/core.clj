@@ -77,7 +77,7 @@
 (defn print-debug?
   [level-name ns-name]
   (cond  (and (= level-name "debug")
-              (str/includes?  ns-name "erv-fib-synth")) true
+              (str/includes?  ns-name "tieminos")) true
          (= level-name "debug") (warn-on-debug ns-name)
          :else true))
 
@@ -264,4 +264,3 @@
                                          :pitch (+ 5 (* 100 (wrap-at (* 2 index) fib-s2cale))))))
 
     (o/stop)))
-
