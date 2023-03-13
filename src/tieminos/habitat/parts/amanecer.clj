@@ -179,9 +179,10 @@
     "Shuffles inputs and has random ranged defaults for most args.
   NOTE that ins is [{:bus bus} {:bus bus}]"
     [ins out & {:as live-convolver-args
-                :or {}}]
+                :keys [min-dur max-dur]
+                :or {min-dur 1 max-dur 15}}]
     (live-convolver-perc
-     (let [dur (rrange 1 15)
+     (let [dur (rrange min-dur max-dur)
            a (* dur (rrange 0.01 0.5))
            [in1 in2] (shuffle ins)
            amp-lfo-min (rrange 0.4 1)]
@@ -204,7 +205,9 @@
                :bpf-rev-amp (rrange 1 1.5)
                :rev-mix (rrange 0 1)
                :out out}
-              live-convolver-args))))
+              (dissoc live-convolver-args
+                      :min-dur
+                      :max-dur)))))
 
   ;; TODO left here, need to test
   (defn intercambios-de-energia [context]
@@ -248,15 +251,13 @@
                  :durs (map :dur (nth trayectories i))
                  :loop? false
                  :on-event (on-event
-                            (println
-                             "event"
-                             (cond
-                               (zero? index) nil
-                               (< dur 1) nil
-                               (> (rand) 0.0) (make-convolver-1
-                                               (rand-nth input-pairs)
-                                               (rand-nth convolver-outs))
-                               :else nil)))))
+                            (cond
+                              (zero? index) nil
+                              (< dur 1) nil
+                              (> (rand) 0.0) (make-convolver-1
+                                              (rand-nth input-pairs)
+                                              (rand-nth convolver-outs))
+                              :else nil))))
               sequencer-ids))
       (swap! context assoc
              :amanecer/intercambios-de-energia
@@ -431,7 +432,7 @@
 
 (defn solo-de-milo [context]
   (timbre/info "Solo de Milo")
-  (coro-de-la-manana-distancia-de-la-escucha-stop)
+  (coro-de-la-manana-distancia-de-la-escucha-stop context)
   (let [{:keys [inputs preouts dur-s]} @context
         perc-inputs (dissoc inputs :guitar)]
     (doseq [input perc-inputs]
