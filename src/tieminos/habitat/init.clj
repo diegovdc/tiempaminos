@@ -2,6 +2,7 @@
   (:require
    [overtone.core :as o]
    [taoensso.timbre :as timbre]
+   [tieminos.habitat.groups :as groups]
    [tieminos.habitat.osc :as habitat-osc]
    [tieminos.habitat.panners :refer [circle-pan-4ch current-panners]]
    [tieminos.habitat.recording :refer [start-signal-analyzer]]
@@ -19,7 +20,7 @@
             preouts
             set-preout-in!]]
    [tieminos.habitat.synths.main-fx :refer [init-main-fx!]]
-   [tieminos.habitat.groups :as groups]))
+   [tieminos.osc.reaper :as reaper]))
 
 (defonce inputs-registry (atom {}))
 (defonce analyzers-registry (atom {}))
@@ -58,6 +59,7 @@
 (defn init! []
   (when (o/server-disconnected?)
     (tieminos.core/connect))
+  (reaper/init)
   (habitat-osc/init)
   (reset! current-panners {})
   (groups/init-groups!)
