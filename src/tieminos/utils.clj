@@ -145,6 +145,7 @@
   Useful for sequencing `o/ctl` calls."
   ([f] (iter-async-call 200 f))
   ([interval-ms f]
+   (timbre/warn "iter-async-call has been deprecated use iter-async-call2")
    (let [stop-chan-fn (a/chan)]
      (a/go-loop [i 0]
        (a/alt!
@@ -153,6 +154,29 @@
          stop-chan-fn (timbre/info "Stopping iter-async-call...")))
      ;; memoize to prevent a subsequent call from stopping the thread
      (memoize #(a/>!! stop-chan-fn true)))))
+
+(defn iter-async-call2
+  "Iterative async call. Will pass `index` and `stop-chan-fn` to `f`.
+  Also automatically stops if there is an uncaught error when calling `f`.
+
+  Useful for sequencing `o/ctl` calls."
+  ([f] (iter-async-call 200 f))
+  ([interval-ms f]
+   (let [stop-chan (a/chan)
+         stop-chan-fn (memoize #(a/>!! stop-chan true))]
+     (a/go-loop [i 0]
+       (a/alt!
+         (a/timeout interval-ms) (do (a/thread
+                                       (try
+                                         (f {:index i :stop-chan-fn stop-chan-fn})
+                                         (catch Exception e
+                                           (do (timbre/error "Stopping iter-async-call2 because of error in function"
+                                                             e)
+                                               (stop-chan-fn)))))
+                                     (recur (inc i)))
+         stop-chan (timbre/info "Stopping iter-async-call2...")))
+     ;; memoize to prevent a subsequent call from stopping the thread
+     stop-chan-fn)))
 
 (comment
   (def stop-me (iter-async-call 1000 #(do (println "hola" %)
