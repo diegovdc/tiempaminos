@@ -15,6 +15,7 @@
    rate 0.1
    release 2
    width 2
+   a 2
    orientation 0.5
    gate 1]
   (o/out out
@@ -23,7 +24,7 @@
                            :pos (o/lf-noise1 rate)
                            :width width
                            :orientation orientation)
-             (* amp (o/env-gen (o/env-adsr 2 1 1 release :curve -0.5)
+             (* amp (o/env-gen (o/env-adsr a 1 1 release :curve -0.5)
                                gate
                                :action o/FREE)))))
 
@@ -34,6 +35,7 @@
    amp 1
    rate 0.1
    direction 1
+   a 2
    release 2
    width 2
    orientation 0.5
@@ -44,13 +46,17 @@
                            :pos (o/lf-saw (* direction rate))
                            :width width
                            :orientation orientation)
-             (* amp (o/env-gen (o/env-adsr 2 1 1 release :curve -0.5)
+             (* amp (o/env-gen (o/env-adsr a 1 1 release :curve -0.5)
                                gate
                                :action o/FREE)))))
 
 (defonce current-panners
   ;; "A map of input (int) to {synth, type}"
   (atom {}))
+
+(defn get-current-panner [in]
+  (let [in* (input-number->bus in)]
+    (get @current-panners in*)))
 
 (defn stop-panner!
   [in]
@@ -67,7 +73,7 @@
   (->> @current-panners
        keys))
 
-(defn panner [{:keys [in type out amp trayectory]
+(defn panner [{:keys [in type out]
                :or {amp 1} :as args}]
   (when-not (or in out)
     (throw (ex-info "Can not modify panner, data missing"
@@ -79,29 +85,29 @@
                                          {:input-args args
                                           :current-panner current-panner
                                           ::current-panners @current-panners})))
+        args* (dissoc args :in :type :out :group)
         new-panner (case type
                      :clockwise (circle-pan-4ch
-                                 {:group (groups/panners)
-                                  :in in*
-                                  :out out*
-                                  :amp amp})
+                                 (merge {:group (groups/panners)
+                                         :in in*
+                                         :out out*}
+                                        args*))
                      :counter-clockwise (circle-pan-4ch
-                                         {:group (groups/panners)
-                                          :in in*
-                                          :direction -1
-                                          :out out*
-                                          :amp amp})
+                                         (merge {:group (groups/panners)
+                                                 :in in*
+                                                 :direction -1
+                                                 :out out*}
+                                                args*))
                      :rand (rand-pan4
-                            {:group (groups/panners)
-                             :in in*
-                             :out out*
-                             :amp amp})
+                            (merge {:group (groups/panners)
+                                    :in in*
+                                    :out out*}
+                                   args*))
                      :trayectory (trayectory-pan-4ch
-                                  {:group (groups/panners)
-                                   :in in*
-                                   :out out*
-                                   :trayectory trayectory
-                                   :amp amp}))]
+                                  (merge {:group (groups/panners)
+                                          :in in*
+                                          :out out*}
+                                         args*)))]
 
     (try (when (:synth current-panner)
            (o/ctl (:synth current-panner) :gate 0))
@@ -116,4 +122,3 @@
                     :or {max 1.5} :as _args}]
   (let [panner (get-in @current-panners [(input-number->bus in) :synth])]
     (ctl-synth panner :rate (* max rate))))
-
