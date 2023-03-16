@@ -1,5 +1,6 @@
 (ns tieminos.habitat.main
   (:require
+   [clojure.string :as str]
    [overtone.core :as o]
    [tieminos.habitat.init :refer [habitat-initialized? init!]]
    [tieminos.habitat.main-sequencer :as hseq]
@@ -13,7 +14,8 @@
     :refer [inputs preouts reaper-returns special-inputs]]
    [tieminos.habitat.synths.main-fx :refer [main-fx]]
    [tieminos.osc.reaper :as reaper]
-   [time-time.dynacan.players.gen-poly :as gp]))
+   [time-time.dynacan.players.gen-poly :as gp]
+   [taoensso.timbre :as timbre]))
 
 (defn TEMPORARY-multichan-wrapper
   "use to control multiple inputs with a single TouchOSC slider or button"
@@ -74,17 +76,21 @@
    :sections sections
    :rec? true})
 
+(defn- fn-name [f]
+  (first (str/split (str f) #"@")))
+
 (defn start-sequencer!
   [{:keys [context sections initial-section rec?]}]
   (let [sections** (drop-while (fn [sect]
                                  (println initial-section (second sect))
-                                 (not= initial-section (second sect))) sections)
+                                 (not= (fn-name initial-section) (fn-name (second sect)))) sections)
         sections* (if (seq sections**) sections** sections)
         starting-time (->> sections* first first
                            ((fn [[m s]] (+ (* 60 m) s))))]
     (hseq/sequencer context sections*)
-    (reaper/time starting-time)
-    (reaper/stop) ;; in case it's already playing
+    (timbre/debug "starting-time" starting-time (count sections*) "/" (count sections))
+    (reaper/time starting-time) ;; in case it's already playing
+    ;; TODO add reaper/rec
     (reaper/play)))
 
 (comment
@@ -99,13 +105,13 @@
     (reset! habitat-initialized? false))
   (init!)
   ;; for testing
-  (def test-context (atom (merge {:dur-s (* 5 60)
-                                  :stop-rate 1/5}
-                                 context)))
   (start-sequencer!
    {:context context
     :sections sections
     :initial-section dia/dueto-con-polinizadores=pt1-emisión-de-señal-intercambio-de-energía})
+  (def test-context (atom (merge {:dur-s (* 5 60)
+                                  :stop-rate 1/5}
+                                 context)))
 
   (dia/dueto-con-polinizadores=pt1-emisión-de-señal-intercambio-de-energía test-context)
   (dia/dueto-con-polinizadores=pt2-percepción-de-señal-danza-desarrollo-de-energía test-context)

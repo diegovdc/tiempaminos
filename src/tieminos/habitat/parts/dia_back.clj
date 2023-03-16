@@ -184,7 +184,7 @@
 (defn make-alejamientos-señal-refrain
   [{:keys [dur-s in out delay-fn refrain-id should-play-alejamiento?-fn make-synth-config]
     :or {make-synth-config (fn [_] {})}}]
-  (timbre/info "make-alejamientos-señal-refrain")
+  (timbre/debug "make-alejamientos-señal-refrain")
   (ref-rain
    :id refrain-id
    :loop? false
@@ -195,7 +195,6 @@
    :on-event (on-event
               (when (should-play-alejamiento?-fn {:index index})
                 (let [delay* (delay-fn)]
-                  (println "alejamiento" refrain-id delay*)
                   (make-alejamientos-señal-synth
                    (merge {:in in
                            :out out
@@ -292,6 +291,7 @@
       :main-out main-out
       :multiplier-out multiplier-out
       :emision-refrain-configs emision-refrain-configs
+      :make-fuente-flor-señal-synth-params (fn [_] {:conv-amp 1})
       :assoc-refrain-to-context assoc-refrain-to-context
       :context context})
     (assoc-refrain-to-context context (conj wave-refrain-ids main-refrain-id))))
@@ -307,8 +307,8 @@
                                                      (let [dur (* time-scale (wrap-at i oposition-mos))
                                                            dur-spot (* dur 0.618)
                                                            dur-movement (* dur 0.382)]
-                                                       [{:pos pos :dur dur-spot :width 1.3}
-                                                        {:pos pos :dur dur-movement :width 1.3}]))
+                                                       [{:pos pos :dur dur-spot :width 2}
+                                                        {:pos pos :dur dur-movement :width 2}]))
                                                    (range)
                                                    positions)]
                                    [one
@@ -326,21 +326,21 @@
                                                   (if (= im-L mos-point)
                                                     ;; if `rest*` is L then do a width cresc-dim, else keep width as is
                                                     [{:pos pos* :dur dur* :width 1.3 :im/L? true}
-                                                     {:pos pos* :dur (* 0.382 0.5 rest*) :width 1.3}
-                                                     {:pos pos* :dur (* 0.618 rest*) :width 3}
-                                                     {:pos pos* :dur (* 0.382 0.5 rest*) :width 1.3}]
-                                                    [{:pos pos* :dur dur* :width 1.3 :im/L? true}
-                                                     {:pos pos* :dur rest* :width 1.3}])))]
+                                                     {:pos pos* :dur (* 0.382 0.5 rest*) :width 2}
+                                                     {:pos pos* :dur (* 0.618 rest*) :width 3.5}
+                                                     {:pos pos* :dur (* 0.382 0.5 rest*) :width 2}]
+                                                    [{:pos pos* :dur dur* :width 2 :im/L? true}
+                                                     {:pos pos* :dur rest* :width 2}])))]
                                [(mapcat (partial dance-move 0 weaving-pattern)
                                         (range)
                                         positions)
                                 (mapcat (partial dance-move 3 (reverse weaving-pattern))
                                         (range)
                                         positions)])
-          oposition-dance-1 (->> (rand-walk1 0.618 26)
-                                 (make-oposition-dance (* time-scale 1.618)))
-          oposition-dance-2 (->> (rand-walk1 1.618 26)
-                                 (make-oposition-dance (* time-scale (* 0.618 1.618))))]
+          oposition-dance-1 (->> (map (fn [_] (rand 2)) (range 26)) #_(rand-walk1 0.618 26)
+                                 (make-oposition-dance (* time-scale 1.618 1/2)))
+          oposition-dance-2 (->> (map (fn [_] (rand 2)) (range 26)) #_(rand-walk1 1.618 26)
+                                 (make-oposition-dance (* time-scale (* 0.618 1.618 1/2))))]
 
       [(mapcat first
                [oposition-dance-1
@@ -358,15 +358,18 @@
        (map :dur)
        #_(apply +)))
 
+(comment
+  (->> trayectorias**
+       first
+       (map :pos)))
 (defn dueto-con-polinizadores=pt2-percepción-de-señal-danza-desarrollo-de-energía
   "Aquí entra Milo.
-
   danza-de-trayectorias"
   [context]
   (timbre/info "dueto-con-polinizadores=pt2-percepción-de-señal-danza-desarrollo-de-energía")
   (let [{:keys [dur-s inputs special-inputs preouts]} @context
         [t1 t2] (danza-de-trayectorias)]
-
+    (def trayectorias** [t1 t2])
     (doseq [[k {:keys [bus]}] inputs]
       (panner
        {:in (:bus (k inputs))
@@ -379,7 +382,7 @@
         polens (+ 8 (rand-int 20))
         avg-dur (/ dur-s polens)
         min-dur (* 0.7 avg-dur)
-        max-dur (* 1.3 avg-dur)
+        max-dur (* 3 avg-dur)
         ;; TODO improve durs with bezier curves
         durs* (->> polens
                    (range)
@@ -389,15 +392,17 @@
      :durs durs*
      :loop? false
      :on-event (on-event
-                  ;; TODO perhaps substitute with a grain synth (using `dust`) and some cps melodicish movement
+                 ;; TODO perhaps substitute with a grain synth (using `dust`) and some cps melodicish movement
+                (println "polen" index)
                 (make-convolver-1
                  input-buses
                  (:bus (rand-nth panner-configs))
-                 (let [a (rrange 0.3 0.7)]
-                   {:delay (rrange 0 (* 10 max-dur))
+                 (let [a (rrange 0.3 1)]
+                   (println max-dur)
+                   {:delay (rrange 0 (* 30 max-dur))
                     :min-dur 0.2
-                    :max-dur 0.5
-                    :hpf-freq (rrange 800 1800)
+                    :max-dur 1
+                    :hpf-freq (rrange 200 1800)
                     :lpf-freq (rrange 2000 10000)
                     :amp (rrange 0.7 1.2)
                     :max-amp 1
@@ -428,13 +433,21 @@
                                         #(rrange 2 3) 1})
         polen-bursts-refrain :dia/polen-bursts]
 
+    (doseq [[_k {:keys [bus]}] inputs]
+      (panner
+       {:in bus
+        :type (rand-nth [:clockwise :counter-clockwise])
+        :out (:bus (:osc-reverb @main-fx))
+        :width 3.5})
+      (panner-rate {:in bus
+                    :rate (rrange 0.2 0.4)}))
     (doseq [{:keys [bus type out]} panner-configs]
       (panner
        {:in bus
         :type type
         :out (:bus (:osc-reverb @main-fx))})
       (panner-rate {:in bus
-                    :rate (rrange 0.02 0.4)}))
+                    :rate (rrange 0.2 0.4)}))
     (ref-rain
      :id polen-bursts-refrain
      :durs durs
@@ -566,7 +579,7 @@
                                (panner-rate {:in bus
                                              :rate rate})
                                (let [interval-ms 200
-                                     end-rate (rrange 1.2 2.5)
+                                     end-rate 2.5
                                      rate-increment (/ (- end-rate rate)
                                                        (/ (* dur-s 1000)
                                                           interval-ms))
@@ -651,7 +664,7 @@
                   width 1.2
                   panner (:synth (get @current-panners bus))]
               (let [interval-ms 200
-                    rate (rrange 1.2 2.5) ;; not sure which one is it
+                    rate 2.5
                     end-rate 0.02
                     rate-increment (/ (- end-rate rate)
                                       (/ (* dur* 1000)
@@ -728,6 +741,7 @@
                                       (dueto-con-polinizadores=pt4-multiplicación-atracción-orbitales-stop context)))))))))))
 
 (defn escucha-de-aves
+  "Pannea random a muy baja velocidad con crecimientos y decreceimientos del área que ocupan los sonidos de cada fuente."
   [context]
   (let [{:keys [dur-s preouts inputs current-panners reaper-returns]} @context]
     (doseq [[k {:keys [bus]}] inputs]
