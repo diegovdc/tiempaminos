@@ -741,7 +741,7 @@
                                       (dueto-con-polinizadores=pt4-multiplicación-atracción-orbitales-stop context)))))))))))
 
 (defn escucha-de-aves
-  "Pannea random a muy baja velocidad con crecimientos y decreceimientos del área que ocupan los sonidos de cada fuente."
+  "Panneo random a muy baja velocidad con crecimientos y decreceimientos del área que ocupan los sonidos de cada fuente."
   [context]
   (let [{:keys [dur-s preouts inputs current-panners reaper-returns]} @context]
     (doseq [[k {:keys [bus]}] inputs]

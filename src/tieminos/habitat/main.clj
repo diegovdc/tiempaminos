@@ -2,6 +2,7 @@
   (:require
    [clojure.string :as str]
    [overtone.core :as o]
+   [taoensso.timbre :as timbre]
    [tieminos.habitat.init :refer [habitat-initialized? init!]]
    [tieminos.habitat.main-sequencer :as hseq]
    [tieminos.habitat.osc :as habitat-osc :refer [args->map map-val]]
@@ -14,8 +15,7 @@
     :refer [inputs preouts reaper-returns special-inputs]]
    [tieminos.habitat.synths.main-fx :refer [main-fx]]
    [tieminos.osc.reaper :as reaper]
-   [time-time.dynacan.players.gen-poly :as gp]
-   [taoensso.timbre :as timbre]))
+   [time-time.dynacan.players.gen-poly :as gp]))
 
 (defn TEMPORARY-multichan-wrapper
   "use to control multiple inputs with a single TouchOSC slider or button"
@@ -60,8 +60,8 @@
    #_[[45 21] (partial noche/fuego inputs @preouts)]
    #_[[50 0] (partial noche/alejamiento-del-fuego inputs @preouts)]
    [[52 22] noche/polinizadores-nocturnos]
-   #_[[59 0] (partial noche/hacia-un-nuevo-universo inputs @preouts)
-      [68 0] end]])
+   [[59 0] noche/hacia-un-nuevo-universo]
+   [[68 0] noche/hacia-un-nuevo-universo-stop]])
 
 (def context
   {:inputs inputs

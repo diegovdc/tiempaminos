@@ -79,7 +79,7 @@
 
 (defn ctl-synth [synth & params]
   (if synth
-    (try (apply o/ctl synth params)
+    (try (apply o/ctl synth (flatten params))
          (catch Exception e (timbre/error e)))
     (timbre/error "No synth to control")))
 
@@ -87,7 +87,7 @@
   "Does not log any errors"
   [synth & params]
   (when synth
-    (try (apply o/ctl synth params)
+    (try (apply o/ctl synth (flatten params))
          (catch Exception e nil))))
 
 (defn cps->tidal-scale
