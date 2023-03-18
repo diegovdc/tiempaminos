@@ -10,7 +10,7 @@
    [tieminos.habitat.parts.dia-back :refer [make-wave-emisions-refrain]]
    [tieminos.habitat.routing :refer [texto-sonoro-rand-mixer-bus]]
    [tieminos.habitat.synths.convolution
-    :refer [live-convolver live-convolver-perc live-convolver-perc2]]
+    :refer [live-convolver live-convolver-perc]]
    [tieminos.sc-utils.ctl.v1 :refer [ctl-interpolation]]
    [tieminos.utils :refer [rrange]]
    [time-time.dynacan.players.gen-poly :as gp :refer [on-event ref-rain]]))
@@ -39,7 +39,6 @@
     (timbre/debug "fuego-conv-synth" {:in1 (:name in1)
                                       :amp amp
                                       :dur (float dur)})
-    live-convolver-perc2
     (live-convolver-perc
      {:group (groups/mid)
       :in1 in1
@@ -158,7 +157,8 @@
       (a/<! (a/timeout 10000))
       (doseq [bus panner-buses]
         (o/free-bus bus)))))
-
+(comment
+  (-> gp/refrains deref keys))
 (defn polinizadores-nocturnos
   "Resonancias que se esparcen por el espacio. Dura aprox 6.5 minutos
 
@@ -191,9 +191,12 @@
                                                           true
                                                           #_(zero? (mod index 2)))
                            :make-synth-config (fn [_]
-                                                {:a 0.01
-                                                 :amp 0.4
-                                                 :dur (rrange 0.4 2)})})
+                                                (let [dur (rrange 2 5)]
+                                                  {:a (* dur (rrange 0.2 0.35))
+                                                   :amp (rrange 0.05 0.2)
+                                                   :dur dur
+                                                   :rev-mix 1
+                                                   :max-amp 0.7}))})
          emision-refrain-configs [nil
                                   (emision-config :noche/polinizadores-alejamientos-señal-1
                                                   #(rrange (* 0.1 dur*) (* 0.8 dur*)))
@@ -205,7 +208,6 @@
                                (map :refrain-id)
                                (remove nil?))]
     (assoc-refrain-to-context context wave-refrain-ids)
-    ;; TODO left here, not sure everything is sounding as expected
     (doseq [[k {:keys [bus]}] (select-keys inputs [:guitar :mic-1 :mic-2])]
       (let [refrain-id (main-refrain-id-fn (name k))]
         (make-wave-emisions-refrain
@@ -215,7 +217,7 @@
           :multiplier-refrain-id-fn (fn [index]
                                       (keyword "noche" (format "polinizadores-emision-de-señal-wave-multiplier-%s%s" (name k) index)))
           :input bus
-          :texto-sonoro-input (:bus (:texto-sonoro special-inputs))
+          :texto-sonoro-input texto-sonoro-rand-mixer-bus
           :main-out main-out
           :multiplier-out multiplier-out
            ;; To prevent creating too many emisions, we just use the `:guitar` ones, but because they all use the `multiplier-out`,
@@ -236,14 +238,13 @@
   (timbre/info "hacia-un-nuevo-universo")
   (let [{:keys [dur-s inputs preouts reaper-returns special-inputs]} @context
         convolver-synths (mapv (fn [pos [k {:keys [bus]}]]
-                                 (panner
-                                  :in bus
-                                  :type :trayectory
-                                  :out (:bus (k @preouts))
-                                  :trayectory [{:pos pos :width 1.3 :dur (/ dur-s 3)}
-                                               {:pos (+ pos 1/2) :width 3.5 :dur (/ dur-s 3)}
-                                               {:pos (+ pos 1) :width 4 :dur (/ dur-s 3)}]
-                                  :a 7)
+                                 (panner {:in bus
+                                          :type :trayectory
+                                          :out (:bus (k @preouts))
+                                          :trayectory [{:pos pos :width 1.3 :dur (/ dur-s 3)}
+                                                       {:pos (+ pos 1/2) :width 3.5 :dur (/ dur-s 3)}
+                                                       {:pos (+ pos 1) :width 4 :dur (/ dur-s 3)}]
+                                          :a 7})
 
                                  (let [convolver (live-convolver
                                                   {:in1 0

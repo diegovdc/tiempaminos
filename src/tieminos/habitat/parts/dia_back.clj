@@ -34,10 +34,9 @@
                                seg-dur3
                                seg-dur4])
 
-        pos-env (o/envelope (let [initial-pos (rand)]
+        pos-env (o/envelope (let [initial-pos (rand 2)]
                               (->> (range 5)
                                    (map (fn [_] (+ (rrange -0.7 0.7) initial-pos)))
-                                   (take 5)
                                    (into [])))
                             [seg-dur1
                              seg-dur2
@@ -52,15 +51,18 @@
                                   (/ seg-dur4 2)])
         main-reverb-mix-env (o/envelope [0.4 1] [seg-dur1 seg-dur2])
         main-reverb-room-env (o/envelope [0.4 1 2 1] [seg-dur1 seg-dur2 seg-dur3 seg-dur4])
-        conv-amp-env (o/envelope [0 1 1 1 0.8 0] #_[0 0 1 1 0.8 0]
+        conv-amp-env (o/envelope #_[0 1 1 1 0.8 0] [0 0 1 1 0.8 0]
                                  [seg-dur1
                                   seg-dur2
                                   seg-dur3
                                   (/ seg-dur4 2)
                                   (/ seg-dur4 2)])
         synth (o/synth
+               [{:name :in
+                 :default (clojure.core/float (overtone.sc.node/to-id 0))
+                 :rate :ar}]
                (let [main-synth (-> (oe/circle-az :num-channels 4
-                                                  :in (o/in input)
+                                                  :in (o/in in)
                                                   :pos (o/env-gen pos-env)
                                                   :width (o/env-gen width-env)
                                                   :orientation 0)
@@ -74,6 +76,7 @@
                                          (o/free-verb 0.5 0.2)
                                          (* conv-amp (o/env-gen conv-amp-env)))
                      full-synth (-> (+ convolver-synth
+                                       (o/in input)
                                        (* main-synth (o/env-gen main-amp-env)))
                                     (* amp (o/env-gen (o/envelope [0 1 1 0]
                                                                   [0.5 dur 0.5])
@@ -81,7 +84,7 @@
                                     (o/limiter amp-limit 0.05))]
                  (o/out main-out full-synth)
                  (o/out multiplier-out (o/mix full-synth))))]
-    (synth (groups/mid))))
+    (synth (groups/mid) :in input)))
 
 (oe/defsynth alejamientos-senal-synth
   [in 0
@@ -98,15 +101,17 @@
    lp-freq-lfo-max 5
    a 0.1
    d 2
-   delay 0]
+   delay 0
+   rev-mix 0.5
+   max-amp 1]
   (o/out out
          (let [filter-rq-lfo (lfo (o/rand 0.2 4) 0.1 0.7)
                sig           (-> (o/in in)
                                  (* amp
                                     (lfo (o/rand 0.3 2) 0.3 1)
-                                    (o/env-gen (o/envelope [0 1 0] [a dur])))
+                                    (o/env-gen (o/envelope [0 1 0] [a (+ d dur)])))
                                  (o/delay-n delay delay)
-                                 (o/free-verb (o/rand 0.5 1) (o/rand 0.8 1.5) (o/rand 0.2 0.8))
+                                 (o/free-verb rev-mix (o/rand 0.8 1.5) (o/rand 0.2 0.8))
                                  (o/rhpf (+ hp-freq
                                             (lfo (o/rand 0.1 0.8) hp-freq-lfo-min hp-freq-lfo-max))
                                          filter-rq-lfo)
@@ -115,8 +120,9 @@
                                          filter-rq-lfo)
                                  (* 20
                                     (o/amp-comp-a (/ (+ hp-freq lp-freq) 2))
-                                    (o/env-gen (o/envelope [0 1 1 0] [0.001 (+ a dur d delay) 0.001])
-                                               :action o/FREE)))]
+                                    (o/env-gen (o/envelope [0 1 1 0] [0.001 (+ a dur d delay) 5])
+                                               :action o/FREE))
+                                 (o/limiter max-amp 0.1))]
            (oe/circle-az :num-channels 4
                          :in sig
                          :pos pos
@@ -148,7 +154,8 @@
                :dur dur
                :delay delay
                :amp (rrange 0.4 (if (> a 1.3) 0.7 0.55))
-               :width (rrange 1.2 2.5)}
+               :width (rrange 1.2 2.5)
+               :rev-mix (rrange 0.5 1)}
               config)))))
 
 (comment
@@ -228,6 +235,7 @@
    :loop? false
    :on-event (on-event
               (let [multiplier-refrain-id (multiplier-refrain-id-fn index)]
+                (timbre/debug refrain-id index input main-out)
                 (make-fuente-flor-señal-synth
                  (merge {:dur wave-dur
                          :input input

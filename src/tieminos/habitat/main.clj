@@ -62,8 +62,9 @@
    [[39 56] noche/de-la-montana-al-fuego]
    [[45 21] noche/fuego]
    [[52 22] noche/polinizadores-nocturnos]
-   [[59 0] noche/hacia-un-nuevo-universo]
-   [[68 0] noche/hacia-un-nuevo-universo-stop]])
+   ;; FIXME parece que hay un error en la transición de estas dos secciones
+   [[62 0] noche/hacia-un-nuevo-universo]
+   [[68 20] noche/hacia-un-nuevo-universo-stop]])
 
 (def context
   {:inputs inputs
@@ -86,7 +87,6 @@
 (defn start-sequencer!
   [{:keys [context sections initial-section rec?]}]
   (let [sections** (drop-while (fn [sect]
-                                 (println initial-section (second sect))
                                  (not= (fn-name initial-section) (fn-name (second sect)))) sections)
         sections* (if (seq sections**) sections** sections)
         starting-time (->> sections* first first
@@ -108,11 +108,13 @@
     (reaper/stop)
     (reset! habitat-initialized? false))
   (init!)
+
   ;; for testing
   (start-sequencer!
    {:context context
     :sections sections
-    :initial-section noche/fuego})
+    :initial-section noche/polinizadores-nocturnos})
+  #_(amanecer/humedad test-context)
   (def test-context (atom (merge {:dur-s (* 5 60)
                                   :stop-rate 1/5}
                                  context)))
@@ -124,12 +126,11 @@
   (dia/dueto-con-polinizadores=pt4-multiplicación-atracción-orbitales test-context)
   (dia/dueto-con-polinizadores=pt5-movimiento-energía-alejamiento->viento test-context)
   (dia/dueto-con-polinizadores=pt4-multiplicación-atracción-orbitales-stop test-context)
-  (dia/escucha-de-aves test-context)
 
+  (dia/escucha-de-aves test-context)
   #_(amanecer/coro-de-la-manana-distancia-de-la-escucha test-context)
   #_(amanecer/coro-de-la-manana-distancia-de-la-escucha-stop test-context)
   #_(amanecer/intercambios-de-energia test-context)
-  #_(amanecer/humedad test-context)
   #_(def idc (amanecer/inicio-descomposicion test-context))
 
   #_(do
