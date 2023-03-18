@@ -12,7 +12,11 @@
    [tieminos.habitat.parts.noche :as noche]
    [tieminos.habitat.resonance-panner :as reso-pan]
    [tieminos.habitat.routing
-    :refer [inputs preouts reaper-returns special-inputs]]
+    :refer [inputs
+            preouts
+            reaper-returns
+            special-inputs
+            texto-sonoro-rand-mixer-bus]]
    [tieminos.habitat.synths.main-fx :refer [main-fx]]
    [tieminos.osc.reaper :as reaper]
    [time-time.dynacan.players.gen-poly :as gp]))
@@ -32,33 +36,31 @@
 
 (def sections
   [;; amanecer
-     ;; TODO revisar timestamps vs texto sonoro
+   ;; TODO revisar timestamps vs texto sonoro
    [[0 0] amanecer/humedad]
-   [[5 20] #_[0 5] amanecer/sol-y-luminosidad]
-     ;;  bajarle a la conv
-   [[7 30] #_[0 10] amanecer/intercambios-de-energia]
-   [[9 0] #_[0 15] amanecer/inicio-descomposicion]
-   [[10 20] #_[0 20] amanecer/descomposicion-hacia-la-tierra]
-     ;; TODO cascabeles giratorios
-   [[12 24] #_[0 25]  amanecer/coro-de-la-manana-cantos-iniciales]
-   [[14 30] #_[0 30] amanecer/coro-de-la-manana-interacciones-cuanticas]
-   [[17 0] #_[0 35] amanecer/coro-de-la-manana-distancia-de-la-escucha]
-     ;; TODO revisar continuidad de los paneos
-   [[20 25] #_[0 45] amanecer/solo-de-milo]
-     ;; día
-     ;; mover a 23:14
-   [[22 48] #_[0 50] dia/dueto-con-polinizadores=pt1-emisión-de-señal-intercambio-de-energía]
-   [[24 30] #_[0 55] dia/dueto-con-polinizadores=pt2-percepción-de-señal-danza-desarrollo-de-energía]
-   [[25 47] #_[1 0] dia/dueto-con-polinizadores=pt3-polen-electromagnetismo-agitación]
-   [[27 51] #_[1 5] dia/dueto-con-polinizadores=pt4-multiplicación-atracción-orbitales]
-     ;; NOTE cambio en marca de tiempo respecto de la partitura
+   [[5 20] amanecer/sol-y-luminosidad]
+   ;;  bajarle a la conv
+   [[7 30] amanecer/intercambios-de-energia]
+   [[9 0] amanecer/inicio-descomposicion]
+   [[10 20] amanecer/descomposicion-hacia-la-tierra]
+   ;; TODO cascabeles giratorios
+   [[12 24] amanecer/coro-de-la-manana-cantos-iniciales]
+   [[14 30] amanecer/coro-de-la-manana-interacciones-cuanticas]
+   [[17 0] amanecer/coro-de-la-manana-distancia-de-la-escucha]
+   [[20 25] amanecer/solo-de-milo]
+   ;; día
+   ;; mover a 23:14
+   [[22 48] dia/dueto-con-polinizadores=pt1-emisión-de-señal-intercambio-de-energía]
+   [[24 30] dia/dueto-con-polinizadores=pt2-percepción-de-señal-danza-desarrollo-de-energía]
+   [[25 47] dia/dueto-con-polinizadores=pt3-polen-electromagnetismo-agitación]
+   [[27 51] dia/dueto-con-polinizadores=pt4-multiplicación-atracción-orbitales]
+   ;; NOTE cambio en marca de tiempo respecto de la partitura
    [[28 30] dia/dueto-con-polinizadores=pt5-movimiento-energía-alejamiento->viento]
    #_[[29 55] tacet]
    [[31 11] dia/escucha-de-aves]
-     ;; noche
-   #_[[39 56] (partial noche/de-la-montana-al-fuego inputs @preouts)]
-   #_[[45 21] (partial noche/fuego inputs @preouts)]
-   #_[[50 0] (partial noche/alejamiento-del-fuego inputs @preouts)]
+   ;; noche
+   [[39 56] noche/de-la-montana-al-fuego]
+   [[45 21] noche/fuego]
    [[52 22] noche/polinizadores-nocturnos]
    [[59 0] noche/hacia-un-nuevo-universo]
    [[68 0] noche/hacia-un-nuevo-universo-stop]])
@@ -69,6 +71,8 @@
    :current-panners current-panners
    :main-fx main-fx
    :special-inputs special-inputs
+   ;; FIXME context should be initialized after init, or something
+   :texto-sonoro-rand-mixer-bus texto-sonoro-rand-mixer-bus
    :reaper-returns reaper-returns})
 
 (def performance-config
@@ -108,7 +112,7 @@
   (start-sequencer!
    {:context context
     :sections sections
-    :initial-section dia/dueto-con-polinizadores=pt1-emisión-de-señal-intercambio-de-energía})
+    :initial-section noche/fuego})
   (def test-context (atom (merge {:dur-s (* 5 60)
                                   :stop-rate 1/5}
                                  context)))

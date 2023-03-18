@@ -56,23 +56,24 @@
    lpf-freq 20000
    rev-mix 1
    out 0]
-  (o/out out     (-> (+ (o/convolution (* in1-amp (o/in in1))
-                                       (* in2-amp (o/in in2))
-                                       4096))
-                     (o/hpf hpf-freq)
-                     (o/free-verb rev-mix 0.2)
-                     (#(+ %
-                          (let [bpf-sig (o/bpf % (lfo 1 100 3400) (lfo 0.3 0.03 0.5))]
-                            (+ (* bpf-amp bpf-sig)
-                               (* bpf-rev-amp (o/free-verb bpf-sig 0.8 1))))))
-                     (o/lpf lpf-freq)
-                     (* 2 amp
-                        (lfo amp-lfo-freq amp-lfo-min amp-lfo-max)
-                        (o/env-gen (o/env-perc a r 1 curve)))
-                     (o/limiter max-amp 0.01)
-                     (o/delay-n delay delay)
-                     (* (o/env-gen (o/envelope [0 1 1 0] [0.001 (+ a r delay) 0.001])
-                                   :action o/FREE)))))
+  (o/out out
+         (-> (+ (o/convolution (* in1-amp (o/in in1))
+                               (* in2-amp (o/in in2))
+                               4096))
+             (o/hpf hpf-freq)
+             (o/free-verb rev-mix 0.2)
+             (#(+ %
+                  (let [bpf-sig (o/bpf % (lfo 1 100 3400) (lfo 0.3 0.03 0.5))]
+                    (+ (* bpf-amp bpf-sig)
+                       (* bpf-rev-amp (o/free-verb bpf-sig 0.8 1))))))
+             (o/lpf lpf-freq)
+             (* 2 amp
+                (lfo amp-lfo-freq amp-lfo-min amp-lfo-max)
+                (o/env-gen (o/env-perc a r 1 curve)))
+             (o/limiter max-amp 0.01)
+             (o/delay-n delay delay)
+             (* (o/env-gen (o/envelope [0 1 1 0] [0.001 (+ a r delay) 0.001])
+                           :action o/FREE)))))
 
 (comment
   (def texto-sonoro-rand-mixer-bus (o/audio-bus 1 "texto-sonoro-rand-mixer-bus"))
