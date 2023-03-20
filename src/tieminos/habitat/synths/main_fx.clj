@@ -6,7 +6,7 @@
    [tieminos.overtone-extensions :refer [defsynth]]
    [tieminos.sc-utils.synths.v1 :refer [lfo-kr]]))
 
-(declare heavy-reverb mid-reverb osc-reverb)
+(declare heavy-reverb mid-reverb osc-reverb light-reverb)
 
 (def main-fx (atom nil))
 
@@ -17,6 +17,10 @@
                            {:group (groups/fx)
                             :bus bus
                             :synth (heavy-reverb {:in bus})})
+           :light-reverb (let [bus (o/audio-bus 4 "light-reverb-bus")]
+                           {:group (groups/fx)
+                            :bus bus
+                            :synth (light-reverb {:in bus})})
            :mid-reverb (let [bus (o/audio-bus 4 "mid-reverb-bus")]
                          {:group (groups/fx)
                           :bus bus
@@ -41,6 +45,16 @@
    mix 0.7
    room 1.2
    damp 0.6
+   amp 1]
+  (o/out out
+         (* amp (o/free-verb (o/in in 4) mix room damp))))
+
+(defsynth light-reverb
+  [in 0
+   out (reaper-returns 3)
+   mix 0.5
+   room 0.7
+   damp 0.3
    amp 1]
   (o/out out
          (* amp (o/free-verb (o/in in 4) mix room damp))))

@@ -47,7 +47,7 @@
    [[12 24] amanecer/coro-de-la-manana-cantos-iniciales]
    [[14 30] amanecer/coro-de-la-manana-interacciones-cuanticas]
    [[17 0] amanecer/coro-de-la-manana-distancia-de-la-escucha]
-   [[20 25] amanecer/solo-de-milo]
+   [[20 10] amanecer/solo-de-milo]
    ;; día
    ;; mover a 23:14
    [[22 48] dia/dueto-con-polinizadores=pt1-emisión-de-señal-intercambio-de-energía]
@@ -64,7 +64,7 @@
    [[52 22] noche/polinizadores-nocturnos]
    ;; FIXME parece que hay un error en la transición de estas dos secciones
    [[62 0] noche/hacia-un-nuevo-universo]
-   [[68 20] noche/hacia-un-nuevo-universo-stop]])
+   [[67 45] noche/hacia-un-nuevo-universo-stop]])
 
 (def context
   {:inputs inputs
@@ -94,8 +94,9 @@
     (hseq/sequencer context sections*)
     (timbre/debug "starting-time" starting-time (count sections*) "/" (count sections))
     (reaper/time starting-time) ;; in case it's already playing
-    ;; TODO add reaper/rec
-    (reaper/play)))
+    (if rec?
+      (reaper/rec)
+      (reaper/play))))
 
 (comment
   (do
@@ -112,13 +113,20 @@
   ;; for testing
   (start-sequencer!
    {:context context
-    :sections sections
-    :initial-section noche/polinizadores-nocturnos})
+    :sections sections #_(quick-sections sections)
+    :initial-section noche/hacia-un-nuevo-universo})
+
+  (start-sequencer! performance-config)
   #_(amanecer/humedad test-context)
   (def test-context (atom (merge {:dur-s (* 5 60)
                                   :stop-rate 1/5}
                                  context)))
-
+  (noche/hacia-un-nuevo-universo-stop test-context)
+  (-> context :main-fx deref :light-reverb :synth (o/ctl :amp 16))
+  (-> context :preouts deref)
+  (defn quick-sections [sections]
+    (map-indexed (fn [i [_ f]] [[0 (* i 10)] f])
+                 sections))
   (dia/dueto-con-polinizadores=pt1-emisión-de-señal-intercambio-de-energía test-context)
   (dia/dueto-con-polinizadores=pt2-percepción-de-señal-danza-desarrollo-de-energía test-context)
   (dia/dueto-con-polinizadores=pt3-polen-electromagnetismo-agitación test-context)
