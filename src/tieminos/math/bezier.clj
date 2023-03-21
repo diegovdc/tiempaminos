@@ -24,14 +24,12 @@
     (with-meta (map (fn [t] (apply + (map #(% t) curve-fns)))
                     timesteps) {:points points})))
 
-
 (defn curve [num-timesteps points]
   (curve* (range 0 1 (/ 1 num-timesteps)) points))
 
 (comment
   (defn pow [base exponent]
     (reduce *' (repeat exponent base))))
-
 
 (defn plot-xy
   ([xs ys] (plot-xy xs ys ""))
@@ -49,16 +47,10 @@
          xy-plot (charts/xy-plot 0 1 :data dataset :points true :title plot-title)]
      (incanter/view xy-plot))))
 
-
 (comment
   (plot-xy (curve* (range 0 1 (/ 1 100)) [10 20 90 220])
            (curve* (range 0 1 (/ 1 100)) [0 25 0 2]) "test")
-  (plot (curve (range 0 1 (/ 1 100)) [0 25 0 2]) "test"))
-
-(def xys (map vector
-              (curve* (range 0 1.2 (/ 1 5)) (map #(/ % 5) [1 2 3 4 5]))
-              (curve* (range 0 1.2 (/ 1 5)) [1 2 3 4 5])))
-
+  (plot (map #(max 1.3 (min % 4)) (curve 200 (concat [1.3] (flatten (shuffle [[3.3 2.3] [3.5 -1.5 2.5 4.5] [6.2 7.7 -1.4] [-3 5.5 5 2 3.5] 2]))))) "test"))
 
 (defn to-intervals
   ([ys] (to-intervals (range 1 (inc (count ys))) ys))
@@ -82,8 +74,8 @@
         (imap/mark 10 11 :g)))
   (music 5)
 
-
   (def c (->> (curve 10 [10 2 20 1.2 1 1 1])
               (linexp 1 5)
               to-intervals))
   (c 4))
+

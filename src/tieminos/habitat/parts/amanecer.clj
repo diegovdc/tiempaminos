@@ -300,7 +300,6 @@
            {:convolver-synths convolvers})))
 
 (defn descomposicion-hacia-la-tierra [context]
-  ;; TODO revisar
   (timbre/info "descomposicion-hacia-la-tierra")
   (let [{:keys [dur-s amanecer/inicio-descomposicion]} @context
         {:keys [convolver-synths]} inicio-descomposicion]
@@ -432,3 +431,4 @@
         perc-inputs (dissoc @inputs :guitar)]
     (doseq [input perc-inputs]
       (rayos-y-reflejos "solo-de-milo" dur-s input))))
+
