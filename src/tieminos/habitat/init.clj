@@ -18,7 +18,8 @@
             mic-3-bus
             mic-4-bus
             preouts
-            set-preout-in!]]
+            set-preout-in!
+            special-inputs]]
    [tieminos.habitat.synths.main-fx :refer [init-main-fx!]]
    [tieminos.osc.reaper :as reaper]))
 
@@ -64,13 +65,14 @@
   (reset! current-panners {})
   (groups/init-groups!)
   (init-buses-and-input-vars!)
-  (init-preouts! inputs)
+  (init-preouts! @inputs)
   (init-main-fx!)
-  (init-analyzers! inputs)
-  (init-inputs! inputs)
-  (init-texto-sonoro-rand-mixer-synth!)
+  (init-analyzers! @inputs)
+  (init-inputs! @inputs)
+  (init-texto-sonoro-rand-mixer-synth! @special-inputs)
   (reset! habitat-initialized? true)
-  {:inputs (keys inputs)})
+  (timbre/info "Habitat initialized!")
+  {:inputs (keys @inputs)})
 
 (-> @preouts :guitar :bus)
 

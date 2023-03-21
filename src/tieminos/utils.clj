@@ -151,7 +151,7 @@
        (a/alt!
          (a/timeout interval-ms) (do (a/thread (f i))
                                      (recur (inc i)))
-         stop-chan-fn (timbre/info "Stopping iter-async-call...")))
+         stop-chan-fn (timbre/debug "Stopping iter-async-call...")))
      ;; memoize to prevent a subsequent call from stopping the thread
      (memoize #(a/>!! stop-chan-fn true)))))
 
@@ -174,7 +174,7 @@
                                                              e)
                                                (stop-chan-fn)))))
                                      (recur (inc i)))
-         stop-chan (timbre/info "Stopping iter-async-call2...")))
+         stop-chan (timbre/debug "Stopping iter-async-call2...")))
      ;; memoize to prevent a subsequent call from stopping the thread
      stop-chan-fn)))
 

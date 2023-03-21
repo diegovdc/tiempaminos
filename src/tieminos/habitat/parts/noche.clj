@@ -8,18 +8,17 @@
    [tieminos.habitat.panners :refer [panner stop-panner!]]
    [tieminos.habitat.parts.amanecer :refer [quick-jump-trayectories]]
    [tieminos.habitat.parts.dia-back :refer [make-wave-emisions-refrain]]
-   [tieminos.habitat.routing :refer [texto-sonoro-rand-mixer-bus]]
    [tieminos.habitat.synths.convolution
     :refer [live-convolver live-convolver-perc]]
    [tieminos.sc-utils.ctl.v1 :refer [ctl-interpolation]]
-   [tieminos.utils :refer [ctl-synth rrange]]
+   [tieminos.utils :refer [ctl-synth2 rrange]]
    [time-time.dynacan.players.gen-poly :as gp :refer [on-event ref-rain]]))
 
 (defn de-la-montana-al-fuego
   [context]
   (timbre/info "de-la-montana-al-fuego")
   (let [{:keys [dur-s inputs preouts]} @context]
-    (doseq [[k {:keys [bus]}] inputs]
+    (doseq [[k {:keys [bus]}] @inputs]
       (panner
        {:in bus
         :out (:bus (k @preouts))
@@ -90,8 +89,9 @@
 (defn- make-conv-refrains
   [total-events panner-buses context]
   (def panner-buses panner-buses)
-  (let [{:keys [dur-s inputs special-inputs reaper-returns main-fx]} @context
-        texto-sonoro-bus (:bus (:texto-sonoro special-inputs))]
+  (let [{:keys [dur-s inputs special-inputs texto-sonoro-rand-mixer-bus reaper-returns main-fx]} @context
+        texto-sonoro-bus @texto-sonoro-rand-mixer-bus]
+    (timbre/debug "make-conv-refrains")
     (mapv
      (fn [[k {:keys [bus]}]]
        (let [probability-pattern (fuego-conv-probability-pattern total-events)
@@ -99,6 +99,7 @@
              dur-ratio (/ dur-s total-events)
              durs (map #(* % dur-ratio) pattern-durs)
              id (keyword "noche" (str "fuego-" k))]
+         (timbre/debug "fuego-conv-refrain" id)
          (ref-rain
           :id id
           :loop? false
@@ -107,19 +108,16 @@
                      (let [[play? pattern-dur] (nth probability-pattern i [false])]
                        (when play?
                          (fuego-conv-synth {:in1 bus
-                                            ;; FIXME the require for this
-                                            :in2 texto-sonoro-rand-mixer-bus
+                                               ;; FIXME the require for this
+                                            :in2 @texto-sonoro-rand-mixer-bus
                                             :dur (* 2 dur-ratio pattern-dur)
                                             :out (rand-nth panner-buses)})))))
          id))
-      ;; TODO revisar inputs que desea Milo
-     inputs
-     #_(select-keys inputs [:guitar :mic-1 :mic-4 :mic-5]))))
+     @inputs)))
 
 (defn fuego
   [context]
   (timbre/info "fuego")
-  ;; TODO probar intensivamente fuego para garantizar que no crashea al servidor :S
   (let [{:keys [inputs preouts main-fx]} @context
         total-events 100
         panner-buses (mapv (fn [i]
@@ -131,9 +129,8 @@
                                  :rate (rrange 0.3 0.7)})
                                panner-bus))
                            (range 5))
-        ;; TODO revisar que esto esté funcionando bien, en la grabación no hay nada en el return 3
         conv-refrain-ids (make-conv-refrains total-events panner-buses context)]
-    (doseq [[k {:keys [bus]}] inputs]
+    (doseq [[k {:keys [bus]}] @inputs]
       (panner {:type :rand
                :in bus
                :out (:bus (k @preouts))
@@ -144,11 +141,9 @@
 
 (defn fuego-stop
   [context]
-  ;; TODO
   (timbre/info "fuego-stop")
   (let [{:keys [panner-buses refrain-ids]} (:noche/fuego @context)]
     (a/go
-      (a/<! (a/timeout 10000))
       (doseq [id refrain-ids]
         (gp/stop id))
       (a/<! (a/timeout 5000))
@@ -157,6 +152,7 @@
       (a/<! (a/timeout 10000))
       (doseq [bus panner-buses]
         (o/free-bus bus)))))
+
 (comment
   (-> gp/refrains deref keys))
 (defn polinizadores-nocturnos
@@ -170,7 +166,7 @@
   [context]
   (fuego-stop context)
   (timbre/info "polinizadores-nocturnos")
-  (let  [{:keys [dur-s inputs special-inputs reaper-returns]} @context
+  (let  [{:keys [dur-s inputs special-inputs texto-sonoro-rand-mixer-bus reaper-returns]} @context
          total-waves 6
          wave-dur (/ dur-s total-waves)
          main-out (reaper-returns 3)
@@ -207,8 +203,11 @@
          wave-refrain-ids (->> emision-refrain-configs
                                (map :refrain-id)
                                (remove nil?))]
+    ;; Might want to do this, but it seems fine atm
+    #_(doseq [[_k {:keys [bus]}] @inputs]
+        (stop-panner! bus))
     (assoc-refrain-to-context context wave-refrain-ids)
-    (doseq [[k {:keys [bus]}] (select-keys inputs [:guitar :mic-1 :mic-2])]
+    (doseq [[k {:keys [bus]}] (select-keys @inputs [:guitar :mic-1 :mic-2])]
       (let [refrain-id (main-refrain-id-fn (name k))]
         (make-wave-emisions-refrain
          {:refrain-id refrain-id
@@ -217,7 +216,7 @@
           :multiplier-refrain-id-fn (fn [index]
                                       (keyword "noche" (format "polinizadores-emision-de-señal-wave-multiplier-%s%s" (name k) index)))
           :input bus
-          :texto-sonoro-input texto-sonoro-rand-mixer-bus
+          :texto-sonoro-input @texto-sonoro-rand-mixer-bus
           :main-out main-out
           :multiplier-out multiplier-out
            ;; To prevent creating too many emisions, we just use the `:guitar` ones, but because they all use the `multiplier-out`,
@@ -237,12 +236,12 @@
   Aumenta reverb"
   [context]
   (timbre/info "hacia-un-nuevo-universo")
-  (let [{:keys [dur-s inputs preouts reaper-returns special-inputs main-fx]} @context
+  (let [{:keys [dur-s inputs preouts reaper-returns texto-sonoro-rand-mixer-bus main-fx]} @context
         convolver-synths (mapv (fn [pos [k {:keys [bus]}]]
                                  (let [convolver (live-convolver
                                                   {:in1 0
                                                    :in1-amp 1
-                                                   :in2 (:bus (:texto-sonoro special-inputs))
+                                                   :in2 @texto-sonoro-rand-mixer-bus
                                                    :in2-amp 1
                                                    :amp 0
                                                    :release 10
@@ -263,9 +262,9 @@
                                                          :params {:amp {:start end-1 :end end-2}}}))
                                    convolver))
                                (range 0 2 1/4)
-                               (shuffle (into [] inputs)))]
+                               (shuffle (into [] @inputs)))]
 
-    (doseq [[i [k {:keys [bus]}]] (map-indexed vector inputs)]
+    (doseq [[i [k {:keys [bus]}]] (map-indexed vector @inputs)]
       (let [pos (* i 1/4)]
         (timbre/debug "pos size" pos k bus)
         (panner {:in bus
@@ -304,6 +303,6 @@
   (let [{:keys [preouts]} @context
         synths (get-in @context [:noche/hacia-un-nuevo-universo :synths])]
     (doseq [s synths]
-      (ctl-synth s :gate 0))
+      (ctl-synth2 s :gate 0))
     (doseq [[_k {:keys [synth]}] @preouts]
-      (ctl-synth synth :release 15 :gate 0))))
+      (ctl-synth2 synth :release 15 :gate 0))))

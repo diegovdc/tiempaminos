@@ -166,13 +166,13 @@
   (o/stop)
   (def t ((o/synth (o/out (reaper-returns 3)
                           #_(* 0.2 (o/sin-osc))
-                          (o/in texto-sonoro-rand-mixer-bus)))
+                          (o/in @texto-sonoro-rand-mixer-bus)))
           (groups/mid)))
   (o/kill t)
   (def multiplier-out (o/audio-bus 1 "multiplier-out"))
   (def ffss (make-fuente-flor-señal-synth {:dur 45
-                                           :input (:bus (:guitar inputs))
-                                           :texto-sonoro-input texto-sonoro-rand-mixer-bus
+                                           :input (:bus (:guitar @inputs))
+                                           :texto-sonoro-input @texto-sonoro-rand-mixer-bus
                                            :main-out (reaper-returns 3)
                                            :multiplier-out multiplier-out}))
   (o/kill ffss)
@@ -261,7 +261,7 @@
   [context]
   ;; NOTE milo transiciona al dueto
   (timbre/info "dueto-con-polinizadores=pt1-emisión-de-señal-intercambio-de-energía")
-  (let [{:keys [dur-s inputs special-inputs reaper-returns]} @context
+  (let [{:keys [dur-s inputs texto-sonoro-rand-mixer-bus reaper-returns]} @context
         wave-dur (/ dur-s 3)
         main-out (reaper-returns 3)
         multiplier-out (o/audio-bus 1 "dia/dueto-con-polinizadores=pt1-emisión-de-señal-intercambio-de-energía-multiplier-out")
@@ -294,8 +294,8 @@
       :wave-dur dur*
       :multiplier-refrain-id-fn (fn [index]
                                   (keyword "dia" (str "emision-de-señal-wave-multiplier" index)))
-      :input (:bus (:guitar inputs))
-      :texto-sonoro-input (:bus (:texto-sonoro special-inputs))
+      :input (:bus (:guitar @inputs))
+      :texto-sonoro-input @texto-sonoro-rand-mixer-bus
       :main-out main-out
       :multiplier-out multiplier-out
       :emision-refrain-configs emision-refrain-configs
@@ -375,18 +375,18 @@
   danza-de-trayectorias"
   [context]
   (timbre/info "dueto-con-polinizadores=pt2-percepción-de-señal-danza-desarrollo-de-energía")
-  (let [{:keys [dur-s inputs special-inputs preouts]} @context
+  (let [{:keys [dur-s inputs preouts]} @context
         [t1 t2] (danza-de-trayectorias)]
     (def trayectorias** [t1 t2])
-    (doseq [[k {:keys [bus]}] inputs]
+    (doseq [[k {:keys [bus]}] @inputs]
       (panner
-       {:in (:bus (k inputs))
+       {:in (:bus (k @inputs))
         :type :trayectory
         :trayectory (if (#{:guitar} k) t1 t2)
         :out (:bus (k @preouts))}))))
 
-(defn polen-burst [refrain-id dur-s inputs panner-configs]
-  (let [input-buses (vals (select-keys inputs [:guitar :mic-1 :mic-2]))
+(defn polen-burst [refrain-id dur-s inputs* panner-configs]
+  (let [input-buses (vals (select-keys inputs* [:guitar :mic-1 :mic-2]))
         polens (+ 8 (rand-int 20))
         avg-dur (/ dur-s polens)
         min-dur (* 0.7 avg-dur)
@@ -401,12 +401,12 @@
      :loop? false
      :on-event (on-event
                  ;; TODO perhaps substitute with a grain synth (using `dust`) and some cps melodicish movement
-                (println "polen" index)
+                (timbre/debug "polen" {:index index :max-dur max-dur})
                 (make-convolver-1
                  input-buses
                  (:bus (rand-nth panner-configs))
                  (let [a (rrange 0.3 1)]
-                   (println max-dur)
+
                    {:delay (rrange 0 (* 30 max-dur))
                     :min-dur 0.2
                     :max-dur 1
@@ -441,7 +441,7 @@
                                         #(rrange 2 3) 1})
         polen-bursts-refrain :dia/polen-bursts]
 
-    (doseq [[_k {:keys [bus]}] inputs]
+    (doseq [[_k {:keys [bus]}] @inputs]
       (panner
        {:in bus
         :type (rand-nth [:clockwise :counter-clockwise])
@@ -463,7 +463,7 @@
      :on-event (on-event
                 (when (> (rand) 0.3)
                   (let [refrain-id (keyword "dia" (str "polen-burst-" index))]
-                    (polen-burst index dur-s inputs panner-configs)
+                    (polen-burst index dur-s @inputs panner-configs)
 
                     (swap! context update-in
                            [:dia/dueto-con-polinizadores=pt3-polen-electromagnetismo-agitación
@@ -575,7 +575,7 @@
                                              :out2 (:bus circle-l-pan-2-config)
                                              :out3 (:bus circle-r-pan-2-config)
                                              :out4 (:bus circle-r-pan-config)}))
-                                         inputs)
+                                         @inputs)
         ;; NOTE this `mapv` will initialize the panners
         stop-ctl-fns (mapv (fn [{:keys [bus type out rate]}]
                              (let [width 1.2]
@@ -662,7 +662,7 @@
 
 (defn dueto-con-polinizadores=pt5-movimiento-energía-alejamiento->viento
   [context]
-  (let [{:keys [dur-s inputs special-inputs reaper-returns current-panners main-fx]} @context
+  (let [{:keys [dur-s inputs reaper-returns current-panners main-fx]} @context
         duet-pt4-key :dia/dueto-con-polinizadores=pt4-multiplicación-atracción-orbitales
         {:keys [panner-buses stop-ctl-fns] :as  duet-pt4} (duet-pt4-key @context)]
     (timbre/info "dueto-con-polinizadores=pt5-movimiento-energía-alejamiento->viento")
@@ -752,7 +752,7 @@
   "Panneo random a muy baja velocidad con crecimientos y decreceimientos del área que ocupan los sonidos de cada fuente."
   [context]
   (let [{:keys [dur-s preouts inputs current-panners reaper-returns]} @context]
-    (doseq [[k {:keys [bus]}] inputs]
+    (doseq [[k {:keys [bus]}] @inputs]
       (let [panner-synth (:synth (get @current-panners bus))
             interval-ms 1000
             widths (map #(max 1.3 (min % 4))

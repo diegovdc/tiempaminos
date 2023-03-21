@@ -70,6 +70,9 @@
    :mic-7  27
    :texto-sonoro 28})
 
+(defonce inputs (atom {}))
+(defonce special-inputs (atom {}))
+
 (defn init-buses-and-input-vars! []
   (defonce guitar-bus (o/audio-bus 1 "guitar-bus"))
   (defonce mic-1-bus (o/audio-bus 1 "mic-1-bus"))
@@ -81,27 +84,27 @@
   (defonce mic-7-bus (o/audio-bus 1 "mic-7-bus"))
   (defonce texto-sonoro-bus (o/audio-bus 4 "texto-sonoro-bus"))
 
-  (def inputs
-    {:guitar {:in (:guitar ins)
-              :bus guitar-bus}
-     :mic-1 {:in (:mic-1 ins)
-             :bus mic-1-bus}
-     :mic-2 {:in (:mic-2 ins)
-             :bus mic-2-bus}
-     :mic-3 {:in (:mic-3 ins)
-             :bus mic-3-bus}
-     :mic-4 {:in (:mic-4 ins)
-             :bus mic-4-bus}
-     :mic-5 {:in (:mic-5 ins)
-             :bus mic-5-bus}
-     :mic-6 {:in (:mic-6 ins)
-             :bus mic-6-bus}
-     :mic-7 {:in (:mic-7 ins)
-             :bus mic-7-bus}})
+  (reset! inputs
+          {:guitar {:in (:guitar ins)
+                    :bus guitar-bus}
+           :mic-1 {:in (:mic-1 ins)
+                   :bus mic-1-bus}
+           :mic-2 {:in (:mic-2 ins)
+                   :bus mic-2-bus}
+           :mic-3 {:in (:mic-3 ins)
+                   :bus mic-3-bus}
+           :mic-4 {:in (:mic-4 ins)
+                   :bus mic-4-bus}
+           :mic-5 {:in (:mic-5 ins)
+                   :bus mic-5-bus}
+           :mic-6 {:in (:mic-6 ins)
+                   :bus mic-6-bus}
+           :mic-7 {:in (:mic-7 ins)
+                   :bus mic-7-bus}})
 
-  (def special-inputs
-    {:texto-sonoro {:in (:texto-sonoro ins)
-                    :bus texto-sonoro-bus}})
+  (reset! special-inputs
+          {:texto-sonoro {:in (:texto-sonoro ins)
+                          :bus texto-sonoro-bus}})
 
   (def input-number->bus*
     {0 guitar-bus
@@ -132,24 +135,27 @@
          (o/select (lfo 1 0 3)
                    (o/sound-in (map #(+ % in) (range 4))))))
 
+(defonce texto-sonoro-rand-mixer-bus (atom nil))
+
 (defn init-texto-sonoro-rand-mixer-synth!
-  []
-  (defonce texto-sonoro-rand-mixer-bus
-    (o/audio-bus 1 "texto-sonoro-rand-mixer-bus"))
+  [special-inputs*]
+  (when-not @texto-sonoro-rand-mixer-bus
+    (reset! texto-sonoro-rand-mixer-bus
+            (o/audio-bus 1 "texto-sonoro-rand-mixer-bus")))
   (texto-sonoro-rand-mixer
    {:group (groups/early)
-    :in (-> special-inputs :texto-sonoro :in)
-    :out texto-sonoro-rand-mixer-bus}))
+    :in (-> special-inputs* :texto-sonoro :in)
+    :out @texto-sonoro-rand-mixer-bus}))
 
 (comment
 
   (def ts (texto-sonoro-rand-mixer
            {:group (groups/early)
             :in (-> special-inputs :texto-sonoro :in)
-            :out texto-sonoro-rand-mixer-bus}))
+            :out @texto-sonoro-rand-mixer-bus}))
 
   (o/kill ts)
-  (o/demo (o/in texto-sonoro-rand-mixer-bus 1))
+  (o/demo (o/in @texto-sonoro-rand-mixer-bus 1))
   (o/kill texto-sonoro))
 
 (comment

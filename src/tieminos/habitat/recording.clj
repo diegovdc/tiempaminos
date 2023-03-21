@@ -98,7 +98,7 @@
 (defn run-get-signal-analysis
   [& {:keys [freq input-bus analysis-path]
       :or {freq 60}}]
-  (timbre/info "Initializing signal analyzer on bus:" input-bus)
+  (timbre/debug "Initializing signal analyzer on bus:" input-bus)
   ((o/synth
     (let [input (o/in input-bus)]
       (o/send-reply (o/impulse freq) analysis-path

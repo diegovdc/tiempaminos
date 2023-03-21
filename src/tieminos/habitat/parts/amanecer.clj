@@ -20,8 +20,7 @@
             inputs
             processes-return-1
             reaper-returns
-            reverb-return
-            texto-sonoro-rand-mixer-bus]]
+            reverb-return]]
    [tieminos.habitat.synths.convolution
     :refer [live-convolver live-convolver-perc]]
    [tieminos.habitat.synths.granular :as hgs]
@@ -66,15 +65,15 @@
             :initial-pos (:pos (last trayectory-start))})))))
 
 (defn humedad [context]
+  (timbre/info "humedad")
   (let [{:keys [inputs preouts]} @context]
-    (doseq [[k {:keys [bus]}] inputs]
+    (doseq [[k {:keys [bus]}] @inputs]
       (let [out (:bus (k @preouts))
             trayectory (make-initial-trayectory-data)
             config {:in bus
                     :type :trayectory
                     :out out
                     :trayectory trayectory}]
-        (timbre/info "Initializing section 1 on bus:" bus config)
         (panner config)))))
 
 (defn- rayos-y-reflejos
@@ -83,7 +82,7 @@
         elapsed-time (atom 0)
         last-synth (atom nil)
         id* (keyword (str "rayos-y-reflejos-" id "-" (name k)))]
-    (timbre/info "Starting" id*)
+    (timbre/debug "Starting" id*)
     (when-not bus
       (throw (ex-info "No input bus" {:input input})))
     (ref-rain
@@ -91,7 +90,7 @@
      :durs (map (fn [_] (rrange 0.2 1.5)) (range 100))
      :tempo 60
      :on-stop (fn [_]
-                (timbre/info "Stopping" id*)
+                (timbre/debug "Stopping" id*)
                 (ctl-synth2 @last-synth :gate 0))
      :on-event
      (on-event
@@ -101,7 +100,7 @@
             end-pos (+ start-pos (rrange -1 1))]
         (if (> @elapsed-time total-dur)
           (do
-            (timbre/info "Stopping" id*)
+            (timbre/debug "Stopping" id*)
             (ctl-synth2 @last-synth :gate 0)
             (update-refrain id* :before-update (fn [r] (assoc r :playing? false))))
           (do
@@ -127,15 +126,12 @@
 (defn sol-y-luminosidad [context]
   (timbre/info "sol-y-luminosidad")
   (let [{:keys [inputs preouts dur-s]} @context
-        guitar (:guitar inputs)
+        guitar (:guitar @inputs)
         guitar-trayectory [{:pos -0.5 :dur 15 :width 4}
                            {:pos -0.5 :dur 45 :width 1.3}
                            {:pos -0.5 :dur 70 :width 1.3}]
-        perc-inputs (dissoc inputs :guitar)]
-    (timbre/info "Salida del sol")
+        perc-inputs (dissoc @inputs :guitar)]
     ;; guitar
-    (timbre/info "Starting sol-y-luminosidad (guitar main)"
-                 (:bus (:guitar @preouts)))
     (panner {:in (:bus guitar)
              :type :trayectory
              :out (:bus (:guitar @preouts))
@@ -209,15 +205,14 @@
                       :min-dur
                       :max-dur)))))
 
-  ;; TODO left here, need to test
   (defn intercambios-de-energia [context]
     (timbre/info "intercambios-de-energia")
     (let [{:keys [inputs dur-s]} @context
-          input-pairs [[(:guitar inputs) (:mic-1 inputs)]
-                       [(:guitar inputs) (:mic-2 inputs)]
-                       [(:guitar inputs) (:mic-4 inputs)]
-                       [(:mic-3 inputs) (:mic-5 inputs)]
-                       [(:mic-6 inputs) (:mic-7 inputs)]]
+          input-pairs [[(:guitar @inputs) (:mic-1 @inputs)]
+                       [(:guitar @inputs) (:mic-2 @inputs)]
+                       [(:guitar @inputs) (:mic-4 @inputs)]
+                       [(:mic-3 @inputs) (:mic-5 @inputs)]
+                       [(:mic-6 @inputs) (:mic-7 @inputs)]]
           total-synths (count input-pairs)
           trayectories (mapv (fn [_]
                                (into (quick-jump-trayectories (/ dur-s 2)
@@ -286,12 +281,12 @@
 (defn inicio-descomposicion [context]
   (timbre/info "inicio-descomposicion")
   (free-intercambios-de-energia context)
-  (let [{:keys [inputs preouts]} @context
+  (let [{:keys [inputs preouts texto-sonoro-rand-mixer-bus]} @context
         convolvers (mapv (fn [[k {:keys [bus]}]]
                            (let [convolver-out (o/audio-bus 1 (str "convolver-out-" (name k)))
                                  synth (live-convolver {:group (groups/mid)
                                                         :in1 bus
-                                                        :in2 texto-sonoro-rand-mixer-bus
+                                                        :in2 @texto-sonoro-rand-mixer-bus
                                                         :out convolver-out})]
                              (panner {:group (groups/panners)
                                       :in convolver-out
@@ -300,7 +295,7 @@
                              {:synth synth
                               ;; use `out-bus` to release the panner
                               :out-bus convolver-out}))
-                         inputs)]
+                         @inputs)]
     (swap! context assoc :amanecer/inicio-descomposicion
            {:convolver-synths convolvers})))
 
@@ -318,8 +313,8 @@
   [context]
   (timbre/info  "coro-de-la-manana-cantos-iniciales")
   (let [{:keys [dur-s inputs preouts main-fx]} @context
-        guitar (:guitar inputs)
-        perc-inputs (dissoc inputs :guitar)]
+        guitar (:guitar @inputs)
+        perc-inputs (dissoc @inputs :guitar)]
     (let [trayectory (quick-jump-trayectories
                       (+ dur-s 10)
                       {#(rrange 0.5 1) 4
@@ -348,8 +343,8 @@
 (defn coro-de-la-manana-interacciones-cuanticas [context]
   (timbre/info "coro-de-la-manana-interacciones-cuanticas")
   (let [{:keys [inputs preouts dur-s]} @context
-        guitar (:guitar inputs)
-        perc-inputs (dissoc inputs :guitar)
+        guitar (:guitar @inputs)
+        perc-inputs (dissoc @inputs :guitar)
         make-trayectory (fn [] (quick-jump-trayectories
                                 (+ dur-s 10)
                                 {#(rrange 0.5 1) 4
@@ -374,13 +369,13 @@
 
 (defn coro-de-la-manana-distancia-de-la-escucha [context]
   (timbre/info "coro-de-la-manana-distancia-de-la-escucha")
-  (let [{:keys [inputs preouts]} @context
+  (let [{:keys [inputs preouts texto-sonoro-rand-mixer-bus]} @context
         convolvers (mapv
                     (fn [[k {:keys [bus]}]]
                       (let [convolver-out (o/audio-bus 1 (str "coro-de-la-mañana-distancia-convolver-out-" (name k)))
                             synth (live-convolver {:group (groups/mid)
                                                    :in1 bus
-                                                   :in2 texto-sonoro-rand-mixer-bus
+                                                   :in2 @texto-sonoro-rand-mixer-bus
                                                    :out convolver-out})
                             starting-point (+ 500 (rand-int 300))
                             ctl-stop-fn (iter-async-call
@@ -406,7 +401,7 @@
                          :ctl-stop-fn ctl-stop-fn
                           ;; use `out-bus` to release the panner
                          :out-bus convolver-out}))
-                    inputs)]
+                    @inputs)]
     (swap! context assoc :amanecer/coro-de-la-manana-distancia-de-la-escucha
            {:convolver-synths convolvers})))
 
@@ -431,141 +426,9 @@
                   (timbre/warn "coro-de-la-manana-distancia-de-la-escucha-stop should have stopped by now"))))))
 
 (defn solo-de-milo [context]
-  (timbre/info "Solo de Milo")
+  (timbre/info "solo-de-milo")
   (coro-de-la-manana-distancia-de-la-escucha-stop context)
   (let [{:keys [inputs preouts dur-s]} @context
-        perc-inputs (dissoc inputs :guitar)]
+        perc-inputs (dissoc @inputs :guitar)]
     (doseq [input perc-inputs]
       (rayos-y-reflejos "solo-de-milo" dur-s input))))
-
-(comment
-  (def test-bus (o/audio-bus 1 "test-bus"))
-  (def s1 ((o/synth (o/out test-bus
-                           (* 0.2 (o/lpf (o/saw 300) 1500))))
-           (groups/early)))
-  (o/kill s1)
-  (o/stop)
-  (def st (simple-perc-trayectory-4ch
-           {:in test-bus
-            :out (reaper-returns 1)
-            :start-pos 0
-            :end-pos 0.5
-            :curve 1.2
-             ;; :start-width 2
-            }))
-  (gp/stop)
-  (-> @gp/refrains keys)
-  (doseq [id [:hola :hola-1 :hola-2 :hola-3]]
-    (ref-rain
-     :id id
-      ;; TODO use durations beziers or something nicer
-     :durs (map (fn [_] (+ 1 (rand))) (range 20))
-     :loop? true
-     :ratio 1
-     :on-event (on-event
-                (let [start-pos (rand 2)
-                      end-pos (+ start-pos (* (rand-nth [1 -1])
-                                              (rand)))
-                      start-width (+ 1.2 (rand 3))
-                      end-width (-> (+ start-width (* (rand-nth [1 -1])
-                                                      (rand 2)))
-                                    (max 1.2)
-                                    (min 2))
-                      [a r] (rand-nth [[1 1]
-                                       [2 3]
-                                       [2 5]
-                                       [3 5]])]
-                  (simple-perc-trayectory-4ch
-                   {:in (input-number->bus* (rand-int 6))
-                    :out (reaper-returns (rand-nth [1 2]))
-                    :start-pos start-pos
-                    :end-pos end-pos
-                    :start-width start-width
-                    :end-width end-width
-                    :curve (rrange 0.1 0.3)
-                    :a a
-                    :r r
-                    :dur (* (rrange 1.5 4) dur-s)
-                    :amp 4}))))))
-
-(comment
-  (require '[tieminos.habitat.routing :refer [guitar-bus
-                                              mic-1-bus
-                                              mic-2-bus
-                                              mic-3-bus
-                                              mic-4-bus
-                                              preouts]]
-           '[tieminos.habitat.recording :as rec])
-
-  (def subsection "pt5")
-  (rec/rec-input {:section "amanecer"
-                  :subsection subsection
-                  :input-name "mic-2"
-                  :input-bus mic-2-bus
-                  :dur-s 7})
-  (rec/rec-input {:section "amanecer"
-                  :subsection subsection
-                  :input-name "mic-3"
-                  :input-bus mic-3-bus
-                  :dur-s 2})
-  (rec/rec-input {:section "amanecer"
-                  :subsection subsection
-                  :input-name "mic-4"
-                  :input-bus mic-4-bus
-                  :dur-s 7})
-  (rec/rec-input {:section "amanecer"
-                  :subsection subsection
-                  :input-name "guitar"
-                  :input-bus guitar-bus
-                  :dur-s 5}))
-(comment
-  (defn get-buf-keys [substr]
-    (->> @rec/bufs keys (filter #(str/includes? (name %) substr)) (sort-by name)))
-  (gp/stop)
-  (reset! rec/bufs {})
-  (-> @rec/bufs)
-
-  hgs/amanecer*snare-mist
-  (let [rates (->> (cps/make 2 [1 3 5 7 9] :norm-fac (* 17 21)) :scale (map :bounded-ratio))
-        segment-start (atom 0)
-        durs-mult (rrange 1 3)
-        durs (map #(* durs-mult %) ((rand-nth [fsf f s])
-                                    20
-                                    (rand-nth [0.1 0.5 0.3])
-                                    (rand-nth [1 0.8 2])))
-        pan-poss (rand-walk1 0.5 (count durs))
-        [amp rate-harm lpf-max] (rand-nth [[37 [1 1/2 2] 400]
-                                           [17 [12 8 10 4] 4000]])]
-
-    (ref-rain
-     :id (str "amanercer*nubes" (rand-int 7777))
-     :durs durs
-     :loop? false
-     :ratio 1
-     :on-event (on-event
-                (let [buf ((-> (get-buf-keys "pt5") first) @rec/bufs) #_(rand-nth (vals @rec/bufs))
-                      start (mod @segment-start 1)
-                      end (swap! segment-start (fn [_] (+ start (rand (- 1 start)))))
-                      rate (*  (rand-nth rate-harm) (rand-nth rates))]
-                  (println index dur rate (at-index pan-poss))
-                  (hgs/amanecer*guitar-clouds
-                   (merge
-                    {:buf buf
-                     :a (rand-nth [0.1 (* dur-s 0.3)])
-                     :a-level 0.5
-                     :d (* dur-s 0.5)
-                     :trig-rate 160
-                     :grain-dur 1/80
-                     :rate rate
-                     :d-level (rrange 0.2 0.5)
-                     :r (* 5 dur-s)
-                     :amp amp
-                     :start start
-                     :end end
-                     :pan (at-index pan-poss)
-                     :lpf-min 100
-                     :lpf-max (rand-nth [lpf-max])
-                     :rev-mix (rrange 0 1)
-                     :rev-room (rrange 0.5 1)
-                     :out processes-return-1}
-                    #_(hgs/rand-start-end))))))))

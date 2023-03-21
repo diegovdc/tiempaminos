@@ -37,34 +37,34 @@
 (def sections
   [;; amanecer
    ;; TODO revisar timestamps vs texto sonoro
-   [[0 0] amanecer/humedad]
-   [[5 20] amanecer/sol-y-luminosidad]
+   [[0 0] #'amanecer/humedad]
+   [[5 20] #'amanecer/sol-y-luminosidad]
    ;;  bajarle a la conv
-   [[7 30] amanecer/intercambios-de-energia]
-   [[9 0] amanecer/inicio-descomposicion]
-   [[10 20] amanecer/descomposicion-hacia-la-tierra]
+   [[7 30] #'amanecer/intercambios-de-energia]
+   [[9 0] #'amanecer/inicio-descomposicion]
+   [[10 20] #'amanecer/descomposicion-hacia-la-tierra]
    ;; TODO cascabeles giratorios
-   [[12 24] amanecer/coro-de-la-manana-cantos-iniciales]
-   [[14 30] amanecer/coro-de-la-manana-interacciones-cuanticas]
-   [[17 0] amanecer/coro-de-la-manana-distancia-de-la-escucha]
-   [[20 10] amanecer/solo-de-milo]
+   [[12 24] #'amanecer/coro-de-la-manana-cantos-iniciales]
+   [[14 30] #'amanecer/coro-de-la-manana-interacciones-cuanticas]
+   [[17 0] #'amanecer/coro-de-la-manana-distancia-de-la-escucha]
+   [[20 10] #'amanecer/solo-de-milo]
    ;; día
    ;; mover a 23:14
-   [[22 48] dia/dueto-con-polinizadores=pt1-emisión-de-señal-intercambio-de-energía]
-   [[24 30] dia/dueto-con-polinizadores=pt2-percepción-de-señal-danza-desarrollo-de-energía]
-   [[25 47] dia/dueto-con-polinizadores=pt3-polen-electromagnetismo-agitación]
-   [[27 51] dia/dueto-con-polinizadores=pt4-multiplicación-atracción-orbitales]
+   [[22 48] #'dia/dueto-con-polinizadores=pt1-emisión-de-señal-intercambio-de-energía]
+   [[24 30] #'dia/dueto-con-polinizadores=pt2-percepción-de-señal-danza-desarrollo-de-energía]
+   [[25 47] #'dia/dueto-con-polinizadores=pt3-polen-electromagnetismo-agitación]
+   [[27 51] #'dia/dueto-con-polinizadores=pt4-multiplicación-atracción-orbitales]
    ;; NOTE cambio en marca de tiempo respecto de la partitura
-   [[28 30] dia/dueto-con-polinizadores=pt5-movimiento-energía-alejamiento->viento]
+   [[28 30] #'dia/dueto-con-polinizadores=pt5-movimiento-energía-alejamiento->viento]
    #_[[29 55] tacet]
-   [[31 11] dia/escucha-de-aves]
+   [[31 11] #'dia/escucha-de-aves]
    ;; noche
-   [[39 56] noche/de-la-montana-al-fuego]
-   [[45 21] noche/fuego]
-   [[52 22] noche/polinizadores-nocturnos]
+   [[39 56] #'noche/de-la-montana-al-fuego]
+   [[42 30] #'noche/fuego]
+   [[52 22] #'noche/polinizadores-nocturnos]
    ;; FIXME parece que hay un error en la transición de estas dos secciones
-   [[62 0] noche/hacia-un-nuevo-universo]
-   [[67 45] noche/hacia-un-nuevo-universo-stop]])
+   [[62 0] #'noche/hacia-un-nuevo-universo]
+   [[67 45] #'noche/hacia-un-nuevo-universo-stop]])
 
 (def context
   {:inputs inputs
@@ -72,7 +72,6 @@
    :current-panners current-panners
    :main-fx main-fx
    :special-inputs special-inputs
-   ;; FIXME context should be initialized after init, or something
    :texto-sonoro-rand-mixer-bus texto-sonoro-rand-mixer-bus
    :reaper-returns reaper-returns})
 
@@ -81,13 +80,10 @@
    :sections sections
    :rec? true})
 
-(defn- fn-name [f]
-  (first (str/split (str f) #"@")))
-
 (defn start-sequencer!
   [{:keys [context sections initial-section rec?]}]
   (let [sections** (drop-while (fn [sect]
-                                 (not= (fn-name initial-section) (fn-name (second sect)))) sections)
+                                 (not= initial-section (second sect))) sections)
         sections* (if (seq sections**) sections** sections)
         starting-time (->> sections* first first
                            ((fn [[m s]] (+ (* 60 m) s))))]
@@ -104,6 +100,8 @@
     (amanecer/coro-de-la-manana-distancia-de-la-escucha-stop hseq/context)
     (dia/dueto-con-polinizadores=pt3-polen-electromagnetismo-agitación-stop hseq/context)
     (dia/dueto-con-polinizadores=pt4-multiplicación-atracción-orbitales-stop hseq/context)
+    (noche/fuego-stop hseq/context)
+    (noche/hacia-un-nuevo-universo-stop hseq/context)
     (o/stop)
     (gp/stop)
     (reaper/stop)
@@ -113,19 +111,22 @@
   ;; for testing
   (start-sequencer!
    {:context context
-    :sections sections #_(quick-sections sections)
-    :initial-section noche/hacia-un-nuevo-universo})
+    :sections sections #_(quick-sections 5 sections)
+    :initial-section #'noche/polinizadores-nocturnos})
 
   (start-sequencer! performance-config)
+  (timbre/set-level! :info)
   #_(amanecer/humedad test-context)
+  #_(noche/fuego test-context)
+  #_(noche/fuego-stop test-context)
   (def test-context (atom (merge {:dur-s (* 5 60)
                                   :stop-rate 1/5}
                                  context)))
   (noche/hacia-un-nuevo-universo-stop test-context)
   (-> context :main-fx deref :light-reverb :synth (o/ctl :amp 16))
   (-> context :preouts deref)
-  (defn quick-sections [sections]
-    (map-indexed (fn [i [_ f]] [[0 (* i 10)] f])
+  (defn quick-sections [dur sections]
+    (map-indexed (fn [i [_ f]] [[0 (* i dur)] f])
                  sections))
   (dia/dueto-con-polinizadores=pt1-emisión-de-señal-intercambio-de-energía test-context)
   (dia/dueto-con-polinizadores=pt2-percepción-de-señal-danza-desarrollo-de-energía test-context)
