@@ -94,18 +94,29 @@
       (reaper/rec)
       (reaper/play))))
 
+(defn stop-sequencer! [context]
+  (amanecer/free-intercambios-de-energia context)
+  (amanecer/coro-de-la-manana-distancia-de-la-escucha-stop context)
+  (dia/dueto-con-polinizadores=pt3-polen-electromagnetismo-agitación-stop context)
+  (dia/dueto-con-polinizadores=pt4-multiplicación-atracción-orbitales-stop context)
+  (noche/fuego-stop context)
+  (noche/hacia-un-nuevo-universo-stop context)
+  (o/stop)
+  (gp/stop)
+  (reaper/stop)
+  (reset! habitat-initialized? false))
+
+(defn start-habitat-performance! []
+  (timbre/set-level! :info)
+  (init!)
+  (start-sequencer! performance-config))
+
 (comment
-  (do
-    (amanecer/free-intercambios-de-energia hseq/context)
-    (amanecer/coro-de-la-manana-distancia-de-la-escucha-stop hseq/context)
-    (dia/dueto-con-polinizadores=pt3-polen-electromagnetismo-agitación-stop hseq/context)
-    (dia/dueto-con-polinizadores=pt4-multiplicación-atracción-orbitales-stop hseq/context)
-    (noche/fuego-stop hseq/context)
-    (noche/hacia-un-nuevo-universo-stop hseq/context)
-    (o/stop)
-    (gp/stop)
-    (reaper/stop)
-    (reset! habitat-initialized? false))
+  (defn- quick-sections [dur sections]
+    (map-indexed (fn [i [_ f]] [[0 (* i dur)] f])
+                 sections))
+  (start-habitat-performance!)
+  (stop-sequencer! hseq/context)
   (init!)
 
   ;; for testing
@@ -114,7 +125,6 @@
     :sections sections #_(quick-sections 5 sections)
     :initial-section #'noche/polinizadores-nocturnos})
 
-  (start-sequencer! performance-config)
   (timbre/set-level! :info)
   #_(amanecer/humedad test-context)
   #_(noche/fuego test-context)
@@ -125,38 +135,6 @@
   (noche/hacia-un-nuevo-universo-stop test-context)
   (-> context :main-fx deref :light-reverb :synth (o/ctl :amp 16))
   (-> context :preouts deref)
-  (defn quick-sections [dur sections]
-    (map-indexed (fn [i [_ f]] [[0 (* i dur)] f])
-                 sections))
-  (dia/dueto-con-polinizadores=pt1-emisión-de-señal-intercambio-de-energía test-context)
-  (dia/dueto-con-polinizadores=pt2-percepción-de-señal-danza-desarrollo-de-energía test-context)
-  (dia/dueto-con-polinizadores=pt3-polen-electromagnetismo-agitación test-context)
-  (dia/dueto-con-polinizadores=pt3-polen-electromagnetismo-agitación-stop test-context)
-  (dia/dueto-con-polinizadores=pt4-multiplicación-atracción-orbitales test-context)
-  (dia/dueto-con-polinizadores=pt5-movimiento-energía-alejamiento->viento test-context)
-  (dia/dueto-con-polinizadores=pt4-multiplicación-atracción-orbitales-stop test-context)
-
-  (dia/escucha-de-aves test-context)
-  #_(amanecer/coro-de-la-manana-distancia-de-la-escucha test-context)
-  #_(amanecer/coro-de-la-manana-distancia-de-la-escucha-stop test-context)
-  #_(amanecer/intercambios-de-energia test-context)
-  #_(def idc (amanecer/inicio-descomposicion test-context))
-
-  #_(do
-      (swap! test-context assoc :dur-s 10)
-      (def dht (amanecer/descomposicion-hacia-la-tierra test-context)))
-
-  #_(->> idc
-         :amanecer/inicio-descomposicion
-         :convolver-synths
-
-         (#(doseq [{:keys [synth out-bus]} %]
-
-             (free-synth-panner-and-bus synth out-bus))))
-  #_(amanecer/coro-de-la-manana-cantos-iniciales inputs @preouts @main-fx test-context)
-  (map :bus (vals inputs))
-  ;; TODO automatizar rec de reaper y desaactivación de loop
-  (start-sequencer! sections)
 
   (habitat-osc/responder
    (fn [{:keys [path args] :as msg}]
