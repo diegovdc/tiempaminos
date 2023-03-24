@@ -406,7 +406,6 @@
                  input-buses
                  (:bus (rand-nth panner-configs))
                  (let [a (rrange 0.3 1)]
-
                    {:delay (rrange 0 (* 30 max-dur))
                     :min-dur 0.2
                     :max-dur 1
@@ -416,7 +415,7 @@
                     :max-amp 1
                     :a (* a 2/3)
                     :r (* a 4/3)
-                    :amp-lfo-freq 100 #_(rrange 0.3 10)}))))))
+                    :amp-lfo-freq (rrange 3 100)}))))))
 
 (defn dueto-con-polinizadores=pt3-polen-electromagnetismo-agitación
   [context]
@@ -587,7 +586,7 @@
                                (panner-rate {:in bus
                                              :rate rate})
                                (let [interval-ms 200
-                                     end-rate 2.5
+                                     end-rate 4.5
                                      rate-increment (/ (- end-rate rate)
                                                        (/ (* dur-s 1000)
                                                           interval-ms))

@@ -27,6 +27,25 @@
              (* amp (o/env-gen (o/env-adsr a 1 1 release :curve -0.5)
                                gate
                                :action o/FREE)))))
+(defsynth rand-pan4v2
+  [in 0
+   out 0
+   amp 1
+   rate 0.1
+   release 2
+   width 2
+   a 2
+   orientation 0.5
+   gate 1]
+  (o/out out
+         (-> (oe/circle-az :num-channels 4
+                           :in (o/in in)
+                           :pos (o/lf-noise2 rate)
+                           :width width
+                           :orientation orientation)
+             (* amp (o/env-gen (o/env-adsr a 1 1 release :curve -0.5)
+                               gate
+                               :action o/FREE)))))
 
 (defsynth circle-pan-4ch
   ;; For circular motion use `direction` 1 or -1 only
@@ -103,6 +122,11 @@
                                     :in in*
                                     :out out*}
                                    args*))
+                     :rand-2 (rand-pan4v2
+                              (merge {:group (groups/panners)
+                                      :in in*
+                                      :out out*}
+                                     args*))
                      :trayectory (trayectory-pan-4ch
                                   (merge {:group (groups/panners)
                                           :in in*

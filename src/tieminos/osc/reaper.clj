@@ -5,7 +5,7 @@
 
 (defn init []
   (when-not @osc-client
-    (reset! osc-client (osc/osc-client "192.168.0.100" 1618))
+    (reset! osc-client (osc/osc-client "0.0.0.0" 1618))
     @osc-client))
 
 (defn time [seconds]

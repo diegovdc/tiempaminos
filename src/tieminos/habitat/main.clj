@@ -41,10 +41,9 @@
    [[5 20] #'amanecer/sol-y-luminosidad]
    ;;  bajarle a la conv
    [[7 30] #'amanecer/intercambios-de-energia]
-   [[9 0] #'amanecer/inicio-descomposicion]
-   [[10 20] #'amanecer/descomposicion-hacia-la-tierra]
+   [[9 0] #'amanecer/descomposicion]
    ;; TODO cascabeles giratorios
-   [[12 24] #'amanecer/coro-de-la-manana-cantos-iniciales]
+   [[12 50] #'amanecer/coro-de-la-manana-cantos-iniciales]
    [[14 30] #'amanecer/coro-de-la-manana-interacciones-cuanticas]
    [[17 0] #'amanecer/coro-de-la-manana-distancia-de-la-escucha]
    [[20 10] #'amanecer/solo-de-milo]
@@ -61,6 +60,7 @@
    ;; noche
    [[39 56] #'noche/de-la-montana-al-fuego]
    [[42 30] #'noche/fuego]
+   ;; TODO revisar convolución
    [[52 22] #'noche/polinizadores-nocturnos]
    ;; FIXME parece que hay un error en la transición de estas dos secciones
    [[62 0] #'noche/hacia-un-nuevo-universo]
@@ -116,6 +116,7 @@
     (map-indexed (fn [i [_ f]] [[0 (* i dur)] f])
                  sections))
   (start-habitat-performance!)
+  (stop-sequencer! test-context)
   (stop-sequencer! hseq/context)
   (init!)
 
@@ -123,7 +124,8 @@
   (start-sequencer!
    {:context context
     :sections sections #_(quick-sections 5 sections)
-    :initial-section #'noche/polinizadores-nocturnos})
+     ;; :initial-section #'amanecer/intercambios-de-energia
+    })
 
   (timbre/set-level! :info)
   #_(amanecer/humedad test-context)
@@ -149,3 +151,8 @@
          "/reso-pan" (reso-pan/trigger (:in args-map) 0 5 10)
          "/rec" (rec/rec-controller args-map)
          (println "Unknown path for message: " msg))))))
+
+(comment
+  (stop-sequencer! hseq/context)
+  (init!)
+  (start-habitat-performance!))

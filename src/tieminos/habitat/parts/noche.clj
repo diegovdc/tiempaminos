@@ -24,8 +24,8 @@
         :out (:bus (k @preouts))
         :type :trayectory
         :trayectory (quick-jump-trayectories dur-s
-                                             {#(rrange 4 8) 1
-                                              #(rrange 8 12) 2}
+                                             {#(rrange 2 5) 1
+                                              #(rrange 5 10) 2}
                                              :min-width 1.3
                                              :max-width 4)}))))
 

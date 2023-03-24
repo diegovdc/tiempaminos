@@ -207,12 +207,13 @@
 
   (defn intercambios-de-energia [context]
     (timbre/info "intercambios-de-energia")
-    (let [{:keys [inputs dur-s]} @context
+    (let [{:keys [inputs dur-s preouts]} @context
           input-pairs [[(:guitar @inputs) (:mic-1 @inputs)]
-                       [(:guitar @inputs) (:mic-2 @inputs)]
+                       [(:guitar @inputs) (:mic-3 @inputs)]
                        [(:guitar @inputs) (:mic-4 @inputs)]
-                       [(:mic-3 @inputs) (:mic-5 @inputs)]
-                       [(:mic-6 @inputs) (:mic-7 @inputs)]]
+                       [(:guitar @inputs) (:mic-5 @inputs)]
+                       [(:guitar @inputs) (:mic-6 @inputs)]
+                       [(:guitar @inputs) (:mic-7 @inputs)]]
           total-synths (count input-pairs)
           trayectories (mapv (fn [_]
                                (into (quick-jump-trayectories (/ dur-s 2)
@@ -233,12 +234,20 @@
                                    :type :trayectory
                                    :out (reaper-returns 3)
                                    :trayectory trayectory
-                                   :amp 3}))
+                                   :amp 2}))
                         convolver-outs
                         trayectories)
           sequencer-ids (mapv (fn [i]
                                 (keyword "amanecer" (str "intercambios-de-energia-" i)))
                               (range total-synths))]
+      (doseq [[k {:keys [bus]}] @inputs]
+        (panner {:group (groups/panners)
+                 :in bus
+                 :type :rand
+                 :out (:bus (k @preouts))
+                 :rate (rrange 0.4 2)
+                 :width (rrange 1.3 2)
+                 :amp 0.7}))
       (doall (map-indexed
               (fn [i sequencer-id]
                 (ref-rain
@@ -278,10 +287,10 @@
                       (o/free-bus out))
                   (timbre/warn "free-intercambios-de-energia should have stopped by now"))))))
 
-(defn inicio-descomposicion [context]
+(defn descomposicion [context]
   (timbre/info "inicio-descomposicion")
   (free-intercambios-de-energia context)
-  (let [{:keys [inputs preouts texto-sonoro-rand-mixer-bus]} @context
+  (let [{:keys [inputs preouts texto-sonoro-rand-mixer-bus reaper-returns]} @context
         convolvers (mapv (fn [[k {:keys [bus]}]]
                            (let [convolver-out (o/audio-bus 1 (str "convolver-out-" (name k)))
                                  synth (live-convolver {:group (groups/mid)
@@ -291,16 +300,26 @@
                              (panner {:group (groups/panners)
                                       :in convolver-out
                                       :type :rand
-                                      :out (:bus (k @preouts))})
+                                      :out (reaper-returns 3)
+                                      :rate (rrange 0.4 2)
+                                      :width (rrange 3 4)})
                              {:synth synth
                               ;; use `out-bus` to release the panner
                               :out-bus convolver-out}))
                          @inputs)]
+    (doseq [[k {:keys [bus]}] @inputs]
+      (panner {:group (groups/panners)
+               :in bus
+               :type :rand
+               :out (reaper-returns 1)
+               :rate (rrange 0.4 2)
+               :width (rrange 3 4)
+               :amp 0.2}))
     (swap! context assoc :amanecer/inicio-descomposicion
            {:convolver-synths convolvers})))
 
-(defn descomposicion-hacia-la-tierra [context]
-  (timbre/info "descomposicion-hacia-la-tierra")
+(defn descomposicion-stop [context]
+  (timbre/info "descomposicion-stop")
   (let [{:keys [dur-s amanecer/inicio-descomposicion]} @context
         {:keys [convolver-synths]} inicio-descomposicion]
     (before-dur-end
@@ -310,6 +329,7 @@
 
 (defn coro-de-la-manana-cantos-iniciales
   [context]
+  (descomposicion-stop context)
   (timbre/info  "coro-de-la-manana-cantos-iniciales")
   (let [{:keys [dur-s inputs preouts main-fx]} @context
         guitar (:guitar @inputs)
@@ -429,6 +449,8 @@
   (coro-de-la-manana-distancia-de-la-escucha-stop context)
   (let [{:keys [inputs preouts dur-s]} @context
         perc-inputs (dissoc @inputs :guitar)]
-    (doseq [input perc-inputs]
-      (rayos-y-reflejos "solo-de-milo" dur-s input))))
-
+    (doseq [[k {:keys [bus]}] perc-inputs]
+      (panner {:type :rand-2
+               :in bus
+               :out (:bus (k @preouts))
+               :rate (rrange 1 3)}))))
