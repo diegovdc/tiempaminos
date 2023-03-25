@@ -154,5 +154,9 @@
 
 (comment
   (stop-sequencer! hseq/context)
+  ;; 1     . llamar `init!`
+  ;; 2. Correr la octofonía en computadora 2
+  ;; 3. Pasados los 10 segundos llamar `start-habitat-performance!`
   (init!)
-  (start-habitat-performance!))
+  (start-habi tat-performance!)
+  :rcf)
