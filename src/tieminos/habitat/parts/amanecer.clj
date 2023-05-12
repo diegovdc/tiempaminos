@@ -1,8 +1,6 @@
 (ns tieminos.habitat.parts.amanecer
   (:require
    [clojure.data.generators :refer [weighted]]
-   [clojure.string :as str]
-   [erv.cps.core :as cps]
    [overtone.core :as o]
    [taoensso.timbre :as timbre]
    [tieminos.attractors.lorentz :as lorentz]
@@ -10,24 +8,14 @@
    [tieminos.habitat.groups :as groups]
    [tieminos.habitat.panners :refer [panner panner-rate stop-panner!]]
    [tieminos.habitat.panners.trayectory-panner
-    :refer [random-trayectories
-            simple-perc-trayectory-4ch
-            trayectory-noise
-            trayectory-pan-4ch]]
+    :refer [random-trayectories trayectory-noise trayectory-pan-4ch]]
    [tieminos.habitat.routing
-    :refer [clean-return
-            input-number->bus*
-            inputs
-            processes-return-1
-            reaper-returns
-            reverb-return]]
+    :refer [clean-return inputs reaper-returns reverb-return]]
    [tieminos.habitat.synths.convolution
     :refer [live-convolver live-convolver-perc]]
-   [tieminos.habitat.synths.granular :as hgs]
    [tieminos.habitat.utils
     :refer [before-dur-end free-synth-panner-and-bus]]
-   [tieminos.math.bezier-samples :refer [f fsf s]]
-   [tieminos.math.random-walk :refer [rand-walk1]]
+   [tieminos.overtone-extensions :as oe]
    [tieminos.utils :refer [ctl-synth ctl-synth2 iter-async-call rrange]]
    [time-time.dynacan.players.gen-poly
     :as
@@ -314,7 +302,7 @@
                :out (reaper-returns 1)
                :rate (rrange 0.4 2)
                :width (rrange 3 4)
-               :amp 0.2}))
+               :amp 1}))
     (swap! context assoc :amanecer/inicio-descomposicion
            {:convolver-synths convolvers})))
 
@@ -396,29 +384,32 @@
                                                    :in1 bus
                                                    :in2 @texto-sonoro-rand-mixer-bus
                                                    :out convolver-out})
-                            starting-point (+ 500 (rand-int 300))
-                            ctl-stop-fn (iter-async-call
-                                         100
-                                         (fn [i]
-                                           (let [point (lor1 (+ starting-point (* 5 i)))]
-                                             (ctl-synth
-                                              synth
-                                              :in1-amp (lorentz/bound point :x 1 2)
-                                              :in2-amp (lorentz/bound point :y 0.5 1)
-                                              :rev-mix (lorentz/bound point :x 0.3 1)
-                                              :rev-room (lorentz/bound point :y 0 0.5)
-                                              :amp (lorentz/bound point :z 0 0.9)))))]
+                            starting-point (+ 500 (rand-int 500))
+                            ctl-stop-fn (do
+                                          (Thread/sleep 20)
+                                          (iter-async-call
+                                           10
+                                           (fn [i]
+                                             (let [point (lor1 (+ starting-point (* 1 i)))]
+                                               (ctl-synth
+                                                synth
+                                                :in1-amp (lorentz/bound point :x 1.5 2)
+                                                :in2-amp (lorentz/bound point :y 0.5 1)
+                                                :rev-mix (lorentz/bound point :x 0.3 1)
+                                                :rev-room (lorentz/bound point :y 0 0.5)
+                                                :amp (lorentz/bound point :z 0.6 0.9))))))]
 
                         (panner {:group (groups/panners)
                                  :in convolver-out
                                  :type :rand
                                  :out (reaper-returns 3)})
-                        (panner-rate {:in bus
+
+                        (panner-rate {:in convolver-out
                                       :rate (rrange 0.1 0.5)
                                       :max 0.5})
                         {:synth synth
                          :ctl-stop-fn ctl-stop-fn
-                          ;; use `out-bus` to release the panner
+                         ;; use `out-bus` to release the panner
                          :out-bus convolver-out}))
                     @inputs)]
     (swap! context assoc :amanecer/coro-de-la-manana-distancia-de-la-escucha
@@ -444,13 +435,67 @@
                       (o/free-bus out-bus))
                   (timbre/warn "coro-de-la-manana-distancia-de-la-escucha-stop should have stopped by now"))))))
 
+(oe/defsynth reverb-accent
+  [in 0
+   dur 1
+   amp-1 1
+   amp-2 0
+   amp-3 0
+   amp-4 0
+   out 0]
+  #_(o/out 0 (* 0.2 (o/sin-osc 200)))
+  (o/out out
+         (-> (map (fn [amp]
+                    (* amp
+                       (+ (o/in in 1)
+                          (* (o/rand 0 0.4) (o/distort (o/in in 1))))
+                       (o/rand 15 30)
+                       (o/env-gen (o/envelope [0 1 1 0] [0.2 0.1 0.6 0.1])
+                                  :time-scale dur
+                                  :action o/FREE)))
+                  [amp-1 amp-2 amp-3 amp-4])
+             (o/limiter 0.97 0.05))))
+
+(defn on-reverb-accent [buses main-fx]
+  (when (> (rand) 0.8)
+    (timbre/debug "reverb accent")
+    (reverb-accent (assoc {:group (groups/mid)
+                           :in (rand-nth buses)
+                           :out (:bus (:heavy-reverb @main-fx))
+                           :dur (rrange 0.4 2)}
+                          (rand-nth [:amp-1 :amp-2 :amp-3 :amp-4])
+                          1))))
+
+(defn make-reverb-accents-refrain
+  [{:keys [buses main-fx dur-s]}]
+  (let [refrain-id :solo-de-milo-reverb-accents]
+    (ref-rain
+     :id refrain-id
+     :durs [0.5]
+     :on-event (fn [_] (on-reverb-accent buses main-fx)))
+    refrain-id))
+
 (defn solo-de-milo [context]
   (timbre/info "solo-de-milo")
   (coro-de-la-manana-distancia-de-la-escucha-stop context)
-  (let [{:keys [inputs preouts dur-s]} @context
-        perc-inputs (dissoc @inputs :guitar)]
+  (let [{:keys [inputs preouts dur-s main-fx]} @context
+        perc-inputs (dissoc @inputs :guitar)
+        refrain-id (make-reverb-accents-refrain
+                    {:buses (mapv (comp :bus second) perc-inputs)
+                     :dur-s dur-s
+                     :main-fx main-fx})]
     (doseq [[k {:keys [bus]}] perc-inputs]
       (panner {:type :rand-2
                :in bus
                :out (:bus (k @preouts))
-               :rate (rrange 1 3)}))))
+               :rate (rrange 1 3)}))
+    (swap! context
+           assoc-in
+           [:amanecer/solo-de-milo :refrain-ids] [refrain-id])))
+
+(defn solo-de-milo-stop [context]
+  (timbre/info "solo-de-milo-stop")
+  (let [{:keys [amanecer/solo-de-milo]} @context]
+    (doseq [id (:refrain-ids solo-de-milo)]
+      (gp/stop id))
+    (swap! context dissoc :amanecer/solo-de-milo)))

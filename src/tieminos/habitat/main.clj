@@ -1,7 +1,7 @@
 (ns tieminos.habitat.main
   (:require
-   [clojure.string :as str]
    [overtone.core :as o]
+   [overtone.sc.machinery.allocator :refer [clear-ids]]
    [taoensso.timbre :as timbre]
    [tieminos.habitat.init :refer [habitat-initialized? init!]]
    [tieminos.habitat.main-sequencer :as hseq]
@@ -63,7 +63,7 @@
    ;; TODO revisar convolución
    [[52 22] #'noche/polinizadores-nocturnos]
    ;; FIXME parece que hay un error en la transición de estas dos secciones
-   [[62 0] #'noche/hacia-un-nuevo-universo]
+   [[62 10] #'noche/hacia-un-nuevo-universo]
    [[67 45] #'noche/hacia-un-nuevo-universo-stop]])
 
 (def context

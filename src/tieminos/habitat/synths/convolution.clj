@@ -19,6 +19,7 @@
    gate 1
    rev-mix 1
    rev-room 0.2
+   max-amp 0.9
    out 0]
   (o/out out (-> (+ (o/convolution (* in1-amp (o/in in1))
                                    (* in2-amp (o/in in2))
@@ -32,7 +33,7 @@
                  (* 2 amp (o/env-gen (o/env-adsr 5 1 1 release :curve [1 -0.5 -0.5])
                                      gate
                                      :action o/FREE))
-                 (o/limiter 0.9 0.005)
+                 (o/limiter max-amp 0.005)
                  #_(o/lpf 5000))))
 
 (oe/defsynth live-convolver-perc
@@ -185,4 +186,3 @@
                :buf-2-amp (* 0.8 (norm-amp buf-2))}))))
 
   (-> @rec/test-samples keys))
-

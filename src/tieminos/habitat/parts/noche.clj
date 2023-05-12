@@ -7,7 +7,9 @@
    [tieminos.habitat.groups :as groups]
    [tieminos.habitat.panners :refer [panner stop-panner!]]
    [tieminos.habitat.parts.amanecer :refer [quick-jump-trayectories]]
-   [tieminos.habitat.parts.dia-back :refer [make-wave-emisions-refrain]]
+   [tieminos.habitat.parts.dia-back
+    :as dia
+    :refer [make-wave-emisions-refrain]]
    [tieminos.habitat.synths.convolution
     :refer [live-convolver live-convolver-perc]]
    [tieminos.sc-utils.ctl.v1 :refer [ctl-interpolation]]
@@ -203,11 +205,10 @@
          wave-refrain-ids (->> emision-refrain-configs
                                (map :refrain-id)
                                (remove nil?))]
-    ;; Might want to do this, but it seems fine atm
-    #_(doseq [[_k {:keys [bus]}] @inputs]
-        (stop-panner! bus))
+    (doseq [[_k {:keys [bus]}] (select-keys @inputs [:mic-3 :mic-4])]
+      (stop-panner! bus))
     (assoc-refrain-to-context context wave-refrain-ids)
-    (doseq [[k {:keys [bus]}] (select-keys @inputs [:guitar :mic-1 :mic-2])]
+    (doseq [[k {:keys [bus]}] (select-keys @inputs [:guitar :mic-1 :mic-2 :mic-5 :mic-7])]
       (let [refrain-id (main-refrain-id-fn (name k))]
         (make-wave-emisions-refrain
          {:refrain-id refrain-id
@@ -237,40 +238,48 @@
   [context]
   (timbre/info "hacia-un-nuevo-universo")
   (let [{:keys [dur-s inputs preouts reaper-returns texto-sonoro-rand-mixer-bus main-fx]} @context
-        convolver-synths (mapv (fn [pos [k {:keys [bus]}]]
-                                 (let [convolver (live-convolver
-                                                  {:in1 0
-                                                   :in1-amp 1
-                                                   :in2 @texto-sonoro-rand-mixer-bus
-                                                   :in2-amp 1
-                                                   :amp 0
-                                                   :release 10
-                                                   :gate 1
-                                                   :rev-mix 1
-                                                   :rev-room 0.2
-                                                   :out (reaper-returns 3)})]
-                                   (let [end-1 (if (= k :guitar) 1.5 0.85)
-                                         end-2 (if (= k :guitar) 3 1)]
-                                     (ctl-interpolation {:dur-s (/ dur-s 3)
-                                                         :step-ms 100
-                                                         :synth convolver
-                                                         :params {:amp {:start 0 :end end-1}}})
-                                     (ctl-interpolation {:delay-s (+ 5 (/ dur-s 3))
-                                                         :dur-s (/ dur-s 3)
-                                                         :step-ms 100
-                                                         :synth convolver
-                                                         :params {:amp {:start end-1 :end end-2}}}))
-                                   convolver))
-                               (range 0 2 1/4)
-                               (shuffle (into [] @inputs)))]
+        panner-buses&convolver-synths (mapv (fn [_pos [k {:keys [bus]}]]
+                                              (let [panner-bus (o/audio-bus 1 (str "noche-hacia-un-nuevo-universo-convolution-out-" (name k)))
+                                                    convolver (live-convolver
+                                                               {:group (groups/mid)
+                                                                :in1 bus
+                                                                :in1-amp 1
+                                                                :in2 @texto-sonoro-rand-mixer-bus
+                                                                :in2-amp 1
+                                                                :amp 0
+                                                                :release 10
+                                                                :gate 1
+                                                                :rev-mix 1
+                                                                :rev-room 0.2
+                                                                :out panner-bus})]
+                                                (panner {:type :rand
+                                                         :in panner-bus
+                                                         :out (reaper-returns 3)
+                                                         :rate (rrange 0.3 0.7)
+                                                         :width 3})
+                                                (Thread/sleep 20)
+                                                (let [end-1 (if (= k :guitar) 1.5 0.85)
+                                                      end-2 (if (= k :guitar) 3 1)]
+                                                  (ctl-interpolation {:dur-s (/ dur-s 3)
+                                                                      :step-ms 100
+                                                                      :synth convolver
+                                                                      :params {:amp {:start 0 :end end-1}}})
+                                                  (ctl-interpolation {:delay-s (+ 5 (/ dur-s 3))
+                                                                      :dur-s (/ dur-s 3)
+                                                                      :step-ms 100
+                                                                      :synth convolver
+                                                                      :params {:amp {:start end-1 :end end-2}}}))
+                                                {:panner-bus panner-bus :synth convolver}))
+                                            (range 0 2 1/4)
+                                            (shuffle (into [] @inputs)))]
 
     (doseq [[i [k {:keys [bus]}]] (map-indexed vector @inputs)]
       (let [pos (* i 1/4)]
         (timbre/debug "pos size" pos k bus)
         (panner {:in bus
                  :type :trayectory
-                 :out (:bus ((if (= k :guitar) :osc-reverb :light-reverb)
-                             @main-fx))
+                 :out (:bus (k @preouts) #_((if (= k :guitar) :osc-reverb :light-reverb)
+                                            @main-fx))
                  :trayectory [{:pos pos :width 1.3 :dur (/ dur-s 4)}
                               {:pos (+ pos 1.25) :width 2.5 :dur (/ dur-s 4)}
                               {:pos (+ pos 2.5) :width 4 :dur (/ dur-s 8)}
@@ -295,14 +304,15 @@
                         :params {:mix {:start 0.7 :end 1}
                                  :room {:start 2 :end 4}
                                  :damp {:start 0.8 :end 1}}})
-    (swap! context assoc-in [:noche/hacia-un-nuevo-universo :synths] convolver-synths)))
+    (swap! context assoc-in [:noche/hacia-un-nuevo-universo :panner-buses&convolver-synths] panner-buses&convolver-synths)))
 
 (defn hacia-un-nuevo-universo-stop
   [context]
   (timbre/info "hacia-un-nuevo-universo-stop")
   (let [{:keys [preouts]} @context
-        synths (get-in @context [:noche/hacia-un-nuevo-universo :synths])]
-    (doseq [s synths]
-      (ctl-synth2 s :gate 0))
+        panner-buses&convolver-synths (get-in @context [:noche/hacia-un-nuevo-universo :panner-buses&convolver-synths])]
+    (doseq [{:keys [panner-bus synth]} panner-buses&convolver-synths]
+      (ctl-synth2 synth :gate 0)
+      (stop-panner! panner-bus))
     (doseq [[_k {:keys [synth]}] @preouts]
       (ctl-synth2 synth :release 15 :gate 0))))
