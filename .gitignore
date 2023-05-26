@@ -15,7 +15,8 @@ pom.xml.asc
 /**/#*
 /**/.#*
 /**/.DS_Store
-.clj-kondo/
+.clj-kondo/.cache
+.clj-kondo/babashka
 .lsp/
 .cpcache
 recordings/*

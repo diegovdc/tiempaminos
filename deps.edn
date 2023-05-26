@@ -14,7 +14,7 @@
         org.bouncycastle/bctsp-jdk14 {:mvn/version "1.38"}
         ;; working with intervals
         io.helins/interval {:mvn/version "1.0.0-beta0"}
-        clj-kondo/clj-kondo {:mvn/version "2022.11.02"}
+        clj-kondo/clj-kondo {:mvn/version "2023.05.18"}
         ;; another interesting possibility, may offer other options
         ;; com.dean/interval-tree {:mvn/version  "0.1.2"}
         }}

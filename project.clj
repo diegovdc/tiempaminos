@@ -16,7 +16,7 @@
                  [incanter "1.9.3"]
                  ;; working with intervals
                  [io.helins/interval "1.0.0-beta0"]
-                 [clj-kondo "2022.11.02"]
+                 [clj-kondo "2023.05.18"]
                  ;; another interesting possibility, may offer other options
                  #_[com.dean/interval-tree "0.1.2"]]
   :plugins [[com.github.clojure-lsp/lein-clojure-lsp "1.1.4"]]

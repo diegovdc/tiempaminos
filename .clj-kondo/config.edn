@@ -1,0 +1,10 @@
+{:linters
+ {:unresolved-symbol {:exclude [(time-time.dynacan.players.gen-poly/on-event
+                                 [at-index index dur dur-s at-i])
+                                (tieminos.compositions.garden-earth.base/on-event
+                                 [at-index index dur dur-s at-i])]}
+  ;; :unresolved-var {:exclude [overtone.core]}
+  }
+ :lint-as {overtone.core/defsynth clojure.core/def}
+ :hooks {:analyze-call {overtone.core/defsynth hooks.defsynth/defsynth
+                        tieminos.overtone-extensions/defsynth hooks.defsynth/defsynth}}}
