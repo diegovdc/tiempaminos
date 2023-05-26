@@ -52,11 +52,11 @@
   (stop))
 
 #_(do
-  (defmacro defn& [name key-default-map body]
-    (let [ks# (vec (keys key-default-map))
-          args# ['& {:keys ks# :or key-default-map}]]
-      `(defn ~name ~args# ~body)))
-  ((defn& holabola {hola 5} hola)))
+    (defmacro defn& [name key-default-map body]
+      (let [ks# (vec (keys key-default-map))
+            args# ['& {:keys ks# :or key-default-map}]]
+        `(defn ~name ~args# ~body)))
+    ((defn& holabola {hola 5} hola)))
 (apply hash-map [1 2 3 4])
 
 (do
@@ -68,6 +68,7 @@
   ((defn& holabola [hola 5] hola)))
 
 (do
+  #_:clj-kondo/ignore
   (defn& oceanoises
     [amp 6
      durs [1 1 1 1 1 1 1 1 2 1 1 1 1 1 1 3]
@@ -100,12 +101,13 @@
                       :trig-rate trig-rate :grain-dur g-dur :dur dur*
                       :rate rate :speed (/ 1 dur*) :panl -1 :panr 1 :pan-lfo 2
                       :amp (* amp (rand-nth [10 5 3]))
-                      ;; :amp-lfo 5
+                         ;; :amp-lfo 5
                       :mix 1
                       :room 2}))))))
   (comment (oceanoises {:amp 6})))
 
 (do
+  #_:clj-kondo/ignore
   (defn& oceanoises-pluck
     [bufs (rec/filter* (fn [[_ id]] (= :oceanic id)) @rec/bufs)
      scale (subcps "3)4 of 3)6 3.5.7.9")
@@ -123,43 +125,45 @@
      dur-amp (weighted {1 20 3/2 1 4/3 5}) ;;longer durs amplify sound
      ]
     (if-not (seq bufs) (timbre/error "Bufs can not be empty")
-      (ref-rain
-       :id :oceanic/noises-pluck
-       :durs durs
-       :tempo 120
-       :ratio 1/9
-       :on-event (on-event
-                  (let [[[pc] b] (rand-nth (into [] bufs))
-                        deg-ls (degrees-layers at-index)
-                        rates (map (fn [i]
-                                     (interval-from-pitch-class
-                                      scale pc
-                                      (utils/wrap-at i deg-ls)))
-                                   (range (count deg-ls)))
-                        dur* (* 1/3 dur-amp)
-                        trig-rate (get-trig-rate at-index)
-                        [mix amp*] (weighted {[1 5] 10
-                                              [0.5 0.8] 5
-                                              [0 0.4] 3})]
-                    (doseq [g-dur (take 1 [1/10 1/8 1/32])
-                            rate rates]
-                      (granular/ocean-2
-                       {:out 8
-                        :group (early-g)
-                        :buf b :a (* a% dur*) :r (* r% dur*)
-                        :trig-rate trig-rate :grain-dur g-dur :dur dur*
-                        :rate rate :speed 3 :panl -1 :panr 1 :pan-lfo 5
-                        :amp (* amp amp* (rand-nth [10 5 3]))
-                        :amp-lfo 5
-                        :decay decay
-                        :mix mix
-                        :room 2})))))))
+            (ref-rain
+             :id :oceanic/noises-pluck
+             :durs durs
+             :tempo 120
+             :ratio 1/9
+             :on-event (on-event
+                        (let [[[pc] b] (rand-nth (into [] bufs))
+                              deg-ls (degrees-layers at-index)
+                              rates (map (fn [i]
+                                           (interval-from-pitch-class
+                                            scale pc
+                                            (utils/wrap-at i deg-ls)))
+                                         (range (count deg-ls)))
+                              dur* (* 1/3 dur-amp)
+                              trig-rate (get-trig-rate at-index)
+                              [mix amp*] (weighted {[1 5] 10
+                                                    [0.5 0.8] 5
+                                                    [0 0.4] 3})]
+                          (doseq [g-dur (take 1 [1/10 1/8 1/32])
+                                  rate rates]
+                            (granular/ocean-2
+                             {:out 8
+                              :group (early-g)
+                              :buf b :a (* a% dur*) :r (* r% dur*)
+                              :trig-rate trig-rate :grain-dur g-dur :dur dur*
+                              :rate rate :speed 3 :panl -1 :panr 1 :pan-lfo 5
+                              :amp (* amp amp* (rand-nth [10 5 3]))
+                              :amp-lfo 5
+                              :decay decay
+                              :mix mix
+                              :room 2})))))))
 
   (comment
-    (do (o/stop) (stop))
-    (oceanoises-pluck )))
+    #_:clj-kondo/ignore
+    (oceanoises-pluck)
+    (do (o/stop) (stop))))
 
 (comment
+  #_:clj-kondo/ignore
   (oceanoises-pluck
    :get-trig-rate (constantly 10)
    :scale (subcps "2)4 of 3)6 11-3.5.7.9")
@@ -167,8 +171,6 @@
    :dur-amps (weighted {1 10})
    :amp 14))
 
-
 (comment
   (o/recording-start "/home/diego/Desktop/oceanoises-pluck2.wav")
-  (o/recording-stop)
-  )
+  (o/recording-stop))

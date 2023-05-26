@@ -2,15 +2,13 @@
   (:require [tieminos.midi.core :refer [note-on]]
             [erv.cps.core :as cps]
             [erv.scale.core :as scale]
-            [overtone.core :as o :refer :all :exclude [on-event scale]]
+            [overtone.core :as o :refer :all :refer [defsynth free-verb distort pan2] :exclude [on-event scale]]
             [time-time.dynacan.players.gen-poly :as gp :refer [on-event ref-rain]]
             [time-time.standard :refer [wrap-at]]
             [clojure.string :as str]))
 (comment
   (def ps (o/load-samples "/home/diego/sc/taller-topologias-temporales-2019/Synths/drumKits/IAMM_Kits/**/*.wav"))
   (->> ps (map (juxt :id :name)) #_(filter #(-> % second (str/includes? "CONGA"))) println))
-
-
 
 (def scale
   (->> [1 3 5 7]
@@ -19,7 +17,7 @@
        (cps/bound-ratio 4)
        (cps/maps->data :bounded-ratio)
        :scale
-       #_ (#(cps/filter-scale % #{7}))))
+       #_(#(cps/filter-scale % #{7}))))
 
 (do
   (defn hexarhythm
@@ -40,15 +38,13 @@
           (map-indexed #(* %2 (wrap-at %1 mults))))))
   #_(println (hexarhythm #{1 3 5 7} [0 2 2 1 2 0 1] 4 [1])))
 
-
-
 (def melo (scale/stateful-interval->degree 0))
 (scale/deg->freq scale 60 (melo (rand-nth [1 -2])))
 
 (-> scale)
 
 (defn m
-  ([index intervals ] (m index intervals 30))
+  ([index intervals] (m index intervals 30))
   ([index intervals bound]
    (scale/deg->freq scale 100
                     (mod (melo (wrap-at index intervals)) bound))))
@@ -57,6 +53,7 @@
 
 (comment
   :boom
+  #_:clj-kondo/ignore
   ((o/synth (o/out 0 (-> (o/play-buf 2 (ps 99))
                          (#(+ % (free-verb % 0.5 2)))
                          (* 5)
@@ -69,8 +66,9 @@
   (def e-cabasa (ps 62))
   (def hi-conga (ps 14))
   (def low-conga (ps 14))                 ;; pass a 0.7 rate
-)
+  )
 (comment
+  #_:clj-kondo/ignore
   ((o/synth (o/out 0 (-> (o/play-buf 2 (ps 19))
                          (* (o/env-gen (o/env-perc 1 2) :action o/FREE))
                          (pan2 1)))))
@@ -79,7 +77,7 @@
 (defn period [seconds durs]
   (let [ratio (/ seconds (apply + durs))]
     (mapv #(* ratio %) durs)))
-
+#_:clj-kondo/ignore
 (defsynth perc* [perc 0
                  rate 1
                  amp 1
@@ -91,6 +89,7 @@
              (free-verb mix room)
              (pan2 pan))))
 
+#_:clj-kondo/ignore
 (defsynth lo [freq 100
               freq2 100
               freq3 100
@@ -106,12 +105,14 @@
 
 #_(o/stop)
 #_(lo 500)
+#_:clj-kondo/ignore
 (defsynth reverb [in 0 room-min 0.3 room-max 3]
   (o/out 0
          (-> (o/in in)
              (pan2 (lf-noise1:kr 0.5))
              (free-verb (lf-noise1:kr 0.1)
                         (-> (lf-noise1:kr 0.5) (range-lin:kr room-min room-max))))))
+#_:clj-kondo/ignore
 (comment
   (do
     (defonce main-g (group "get-on-the-bus main"))
@@ -123,13 +124,14 @@
  #(scale/deg->freq scale 60 (melo (wrap-at % [1 -2 1])))
  (range 20))
 
+#_:clj-kondo/ignore
 (comment
   (gp/stop)
   (def reverbs
     (->> (range 10)
          (mapv (fn [_] (let [bus (audio-bus)]
-                        {:fx (reverb [:tail later-g] :in bus)
-                         :bus bus})))))
+                         {:fx (reverb [:tail later-g] :in bus)
+                          :bus bus})))))
   (doseq [r reverbs] (ctl (:fx r) :room-min 2.5))
   (ref-rain :id ::aa2
             :durs (hexarhythm #{3} [2 0 0 0 0 0 0 0 1 0] 0 [1/2])
@@ -138,8 +140,7 @@
                                            :perc (wrap-at index [cabasa])
                                            :room 1
                                            :amp (wrap-at index [0.5 1]))
-                                        nil
-                                        ))))
+                                        nil))))
 
   (ref-rain :id ::b19
             :durs (period 0.2 (hexarhythm #{1 7 3} [5 2 1] 1 [5 2 2 3 3 2]))
@@ -161,8 +162,8 @@
                    dcy (+ 0.1 (rand 8))
                    amp 0.03
                    rv-bus (:bus (rand-nth reverbs))]
-               (case (wrap-at index [,, 4  2 4
-                                     ,, 4 4
+               (case (wrap-at index [4  2 4
+                                     4 4
                                      ;; 0 1 1 2 0 2 2 0 2
                                      ])
                  0 (lo [:tail early-g] f f2 f3
@@ -175,7 +176,6 @@
                        :amp (+ amp (rand 0.1))
                        :atk atk :dcy dcy :out rv-bus)
                  nil))))
-
 
   (ref-rain :id ::g
             :ref ::a5

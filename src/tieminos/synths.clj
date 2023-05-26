@@ -1,10 +1,10 @@
 (ns tieminos.synths
-  (:require [overtone.core :refer :all :as o]))
+  (:require [overtone.core :as o]))
 
 ;;;;;;;;;;;
 ;; Basic ;;
 ;;;;;;;;;;;
-(defsynth soft-saw
+(o/defsynth soft-saw
   [freq 200
    amp 0.5
    pan 0
@@ -12,10 +12,10 @@
    dcy 1
    out 0]
   (o/out out
-         (-> (saw freq)
-             (lpf 2000)
-             (pan2 pan)
-             (* (env-gen (env-perc atk dcy) :action FREE))
+         (-> (o/saw freq)
+             (o/lpf 2000)
+             (o/pan2 pan)
+             (* (o/env-gen (o/env-perc atk dcy) :action o/FREE))
              (* amp (o/amp-comp-a freq)))))
 
 
@@ -24,7 +24,7 @@
 ;;;;;;;;;;;;;;;;
 
 
-(defsynth low
+(o/defsynth low
   [freq 85
    amp 0.5
    mod-freq 8300
@@ -32,15 +32,15 @@
    atk 0.01
    dcy 1
    out 0]
-  (o/out out (-> (range-lin (pulse mod-freq) (- freq 15) (+ freq 15))
-                 sin-osc
-                 (pan2 pan)
-                 (* (env-gen (env-perc atk dcy) :action FREE))
+  (o/out out (-> (o/range-lin (o/pulse mod-freq) (- freq 15) (+ freq 15))
+                 o/sin-osc
+                 (o/pan2 pan)
+                 (* (o/env-gen (o/env-perc atk dcy) :action o/FREE))
                  (* amp (o/amp-comp-a freq)))))
 
 (comment (low))
 
-(defsynth short-plate
+(o/defsynth short-plate
   [freq 200
    amp 0.5
    mod-freq 1000
@@ -48,16 +48,16 @@
    atk 0.01
    dcy 1
    out 0]
-  (o/out out (-> (range-lin (pulse mod-freq) (- freq 200) (+ freq 200))
-                 sin-osc
-                 (pan2 pan)
-                 (* (env-gen (env-perc atk dcy) :action FREE))
+  (o/out out (-> (o/range-lin (o/pulse mod-freq) (- freq 200) (+ freq 200))
+                 o/sin-osc
+                 (o/pan2 pan)
+                 (* (o/env-gen (o/env-perc atk dcy) :action o/FREE))
                  (* amp (o/amp-comp-a freq)))))
 
 (comment (short-plate))
 
-(defsynth short-plate2
-  "A soft version"
+(o/defsynth short-plate2
+  ;; "A soft version"
   [freq 200
    amp 1
    mod-freq 8300
@@ -65,15 +65,15 @@
    atk 0.01
    dcy 1
    out 0]
-  (o/out out (-> (range-lin (pulse mod-freq) (- freq 200) (+ freq 200))
-                 sin-osc
-                 (pan2 pan)
-                 (* (env-gen (env-perc atk dcy) :action FREE))
+  (o/out out (-> (o/range-lin (o/pulse mod-freq) (- freq 200) (+ freq 200))
+                 o/sin-osc
+                 (o/pan2 pan)
+                 (* (o/env-gen (o/env-perc atk dcy) :action o/FREE))
                  (* amp))))
 
 (comment (short-plate2))
 
-(defsynth sharp-plate
+(o/defsynth sharp-plate
   [freq 350
    amp 1
    mod-freq 300
@@ -81,11 +81,11 @@
    atk 0.01
    dcy 0.5
    out 0]
-  (o/out out (-> (range-lin (saw mod-freq) (- freq 350) (+ freq 350))
-                 sin-osc
-                 (pan2 pan)
-                 (lpf 2000)
-                 (* (env-gen (env-perc atk dcy) :action FREE))
+  (o/out out (-> (o/range-lin (o/saw mod-freq) (- freq 350) (+ freq 350))
+                 o/sin-osc
+                 (o/pan2 pan)
+                 (o/lpf 2000)
+                 (* (o/env-gen (o/env-perc atk dcy) :action o/FREE))
                  (* amp (o/amp-comp-a freq)))))
 
 (comment (sharp-plate))
@@ -97,7 +97,7 @@
 ;;; melodic (they have gate)
 
 
-(defsynth low2
+(o/defsynth low2
   [freq 85
    amp 1
    mod-amp 1
@@ -112,23 +112,23 @@
    rel 0.5
    gate 1
    out 0]
-  (o/out out (-> (range-lin (* (env-gen
-                                (envelope [mod-amp mod-amp-end]
-                                          [mod-dur]))
-                               (pulse mod-freq))
-                            (- freq (/ mod-freq-range 2))
-                            (+ freq (/ mod-freq-range 2)))
-                 sin-osc
-                 (pan2 pan)
-                 (* (env-gen (env-adsr atk dcy sust rel)
-                             :gate gate :action FREE))
+  (o/out out (-> (o/range-lin (* (o/env-gen
+                                  (o/envelope [mod-amp mod-amp-end]
+                                              [mod-dur]))
+                                 (o/pulse mod-freq))
+                              (- freq (/ mod-freq-range 2))
+                              (+ freq (/ mod-freq-range 2)))
+                 o/sin-osc
+                 (o/pan2 pan)
+                 (* (o/env-gen (o/env-adsr atk dcy sust rel)
+                               :gate gate :action o/FREE))
                  (* amp))))
 
 (comment
   (def l (low2))
-  (ctl l :gate 0))
+  (o/ctl l :gate 0))
 
-(defsynth sharp-plate2
+(o/defsynth sharp-plate2
   [freq 350
    amp 1
    mod-freq 300
@@ -141,33 +141,32 @@
    rel 0.5
    gate 1
    out 0]
-  (o/out out (-> (range-lin (+ (* (saw (/  mod-freq 7.5))
-                                  (sin-osc (/  freq 2))
-                                  mod-amp2
-                                  0.1)
-                               (* (lf-tri mod-freq) 0.3 mod-amp2))
-                            (- freq mod-amp) (+ freq mod-amp))
-                 sin-osc
-                 (pan2 pan)
-                 (* (env-gen
-                     (env-adsr atk dcy sust rel :curve :sin)
-                     :gate gate :action FREE))
+  (o/out out (-> (o/range-lin (+ (* (o/saw (/  mod-freq 7.5))
+                                    (o/sin-osc (/  freq 2))
+                                    mod-amp2
+                                    0.1)
+                                 (* (o/lf-tri mod-freq) 0.3 mod-amp2))
+                              (- freq mod-amp) (+ freq mod-amp))
+                 o/sin-osc
+                 (o/pan2 pan)
+                 (* (o/env-gen
+                     (o/env-adsr atk dcy sust rel :curve :sin)
+                     :gate gate :action o/FREE))
                  (* amp (o/amp-comp-a freq)))))
 
-(defsynth noise-tone
+(o/defsynth noise-tone
   [freq 200
    bwr 0.01
    pan 0
    out 0
    amp 1]
   (o/out out
-         (-> (white-noise)
-             (resonz freq bwr)
-             (lpf (* 1.1 freq))
-             (* 120 amp (env-gen (env-perc) :action FREE))
-             (pan2 pan))))
+         (-> (o/white-noise)
+             (o/resonz freq bwr)
+             (o/lpf (* 1.1 freq))
+             (* 120 amp (o/env-gen (o/env-perc) :action o/FREE))
+             (o/pan2 pan))))
 
 (comment
   (noise-tone :amp 1)
-  (stop))
-
+  (o/stop))
