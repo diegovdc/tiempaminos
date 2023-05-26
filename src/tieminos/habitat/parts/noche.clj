@@ -10,6 +10,8 @@
    [tieminos.habitat.parts.dia-back
     :as dia
     :refer [make-wave-emisions-refrain]]
+   [tieminos.habitat.routing
+    :refer [get-mixed-instrument-return get-process-instrument-return]]
    [tieminos.habitat.synths.convolution
     :refer [live-convolver live-convolver-perc]]
    [tieminos.sc-utils.ctl.v1 :refer [ctl-interpolation]]
@@ -171,7 +173,6 @@
   (let  [{:keys [dur-s inputs special-inputs texto-sonoro-rand-mixer-bus reaper-returns]} @context
          total-waves 6
          wave-dur (/ dur-s total-waves)
-         main-out (reaper-returns 3)
          multiplier-out (o/audio-bus 1 "noche/polinizadores-nocturnos")
          assoc-refrain-to-context (fn [context refrain-ids]
                                     (swap! context
@@ -183,7 +184,7 @@
                           {:refrain-id refrain-id
                            :dur-s dur-s
                            :in multiplier-out
-                           :out main-out
+                           :out (get-mixed-instrument-return)
                            :delay-fn delay-fn
                            :should-play-alejamiento?-fn (fn [{:keys [index]}]
                                                           true
@@ -218,7 +219,7 @@
                                       (keyword "noche" (format "polinizadores-emision-de-señal-wave-multiplier-%s%s" (name k) index)))
           :input bus
           :texto-sonoro-input @texto-sonoro-rand-mixer-bus
-          :main-out main-out
+          :main-out (get-process-instrument-return k)
           :multiplier-out multiplier-out
            ;; To prevent creating too many emisions, we just use the `:guitar` ones, but because they all use the `multiplier-out`,
            ;; in theory it will contain the output of all the waves from all the inputs
@@ -254,7 +255,7 @@
                                                                 :out panner-bus})]
                                                 (panner {:type :rand
                                                          :in panner-bus
-                                                         :out (reaper-returns 3)
+                                                         :out (get-process-instrument-return k)
                                                          :rate (rrange 0.3 0.7)
                                                          :width 3})
                                                 (Thread/sleep 20)

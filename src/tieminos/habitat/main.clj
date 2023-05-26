@@ -13,6 +13,7 @@
    [tieminos.habitat.resonance-panner :as reso-pan]
    [tieminos.habitat.routing
     :refer [inputs
+            main-returns
             preouts
             reaper-returns
             special-inputs
@@ -73,7 +74,8 @@
    :main-fx main-fx
    :special-inputs special-inputs
    :texto-sonoro-rand-mixer-bus texto-sonoro-rand-mixer-bus
-   :reaper-returns reaper-returns})
+   :reaper-returns reaper-returns ;; eventually remove these
+   :main-returns main-returns})
 
 (def performance-config
   {:context context
@@ -124,11 +126,11 @@
   (start-sequencer!
    {:context context
     :sections sections #_(quick-sections 5 sections)
-     ;; :initial-section #'amanecer/intercambios-de-energia
-    })
+    :initial-section #'amanecer/intercambios-de-energia})
 
   (timbre/set-level! :info)
-  #_(amanecer/humedad test-context)
+  #_(amanecer/humedad hseq/context)
+  #_(amanecer/intercambios-de-energia hseq/context)
   #_(noche/fuego test-context)
   #_(noche/fuego-stop test-context)
   (def test-context (atom (merge {:dur-s (* 5 60)
@@ -160,3 +162,5 @@
   (init!)
   (start-habi tat-performance!)
   :rcf)
+
+

@@ -10,7 +10,13 @@
    [tieminos.habitat.panners.trayectory-panner
     :refer [random-trayectories trayectory-noise trayectory-pan-4ch]]
    [tieminos.habitat.routing
-    :refer [clean-return inputs reaper-returns reverb-return]]
+    :refer [clean-return
+            get-clean-instrument-return
+            get-mixed-instrument-return
+            get-process-instrument-return
+            inputs
+            reaper-returns
+            reverb-return]]
    [tieminos.habitat.synths.convolution
     :refer [live-convolver live-convolver-perc]]
    [tieminos.habitat.utils
@@ -37,8 +43,8 @@
    {:pos 2 :dur 10 :width 2.2}])
 
 (defn- make-initial-trayectory-data
-  "Should make a panning trayectory spanning around 5.3 minutes"
-  []
+  "Should make a panning trayectory spanning the total-dur"
+  [total-dur]
   (->> (let [trayectory-start (trayectory-noise
                                {:max-pos-change 0.3
                                 :max-width-change 0.7
@@ -47,17 +53,18 @@
          (into
           trayectory-start
           (random-trayectories
-           {:num-steps 30
-            :total-dur 150
+           {:num-steps (+ 30 (rand-int 20))
+            :total-dur (min 0 (- total-dur
+                                 (apply + (map :dur initial-trayectory-begining))))
             :max-pos-change 1
             :initial-pos (:pos (last trayectory-start))})))))
 
 (defn humedad [context]
   (timbre/info "humedad")
-  (let [{:keys [inputs preouts]} @context]
+  (let [{:keys [inputs dur-s preouts]} @context]
     (doseq [[k {:keys [bus]}] @inputs]
       (let [out (:bus (k @preouts))
-            trayectory (make-initial-trayectory-data)
+            trayectory (make-initial-trayectory-data dur-s)
             config {:in bus
                     :type :trayectory
                     :out out
@@ -96,6 +103,7 @@
               (ctl-synth @last-synth :gate 0))
             (reset! last-synth
                     (trayectory-pan-4ch {:in bus
+                                         ;; FIXME out should depend if this is being called from the guitar or percusion
                                          :out (rand-nth [clean-return reverb-return])
                                          :amp (rrange 1 2)
                                          :a (* (rrange 0.05 0.15) dur-s)
@@ -168,7 +176,7 @@
     (live-convolver-perc
      (let [dur (rrange min-dur max-dur)
            a (* dur (rrange 0.01 0.5))
-           [in1 in2] (shuffle ins)
+           [in1 in2] ins #_(shuffle ins)
            amp-lfo-min (rrange 0.4 1)]
        (merge {:group (groups/mid)
                :in1 (:bus in1)
@@ -193,26 +201,38 @@
                       :min-dur
                       :max-dur)))))
 
+  (defn intercambios-de-energia-input-pairs-fn
+    [{:keys [inputs]}]
+    [[(:guitar @inputs) (:mic-1 @inputs)]
+     [(:guitar @inputs) (:mic-3 @inputs)]
+     [(:guitar @inputs) (:mic-4 @inputs)]
+     [(:guitar @inputs) (:mic-5 @inputs)]
+     [(:guitar @inputs) (:mic-6 @inputs)]
+     [(:guitar @inputs) (:mic-7 @inputs)]])
+
   (defn intercambios-de-energia [context]
     (timbre/info "intercambios-de-energia")
-    (let [{:keys [inputs dur-s preouts]} @context
-          input-pairs [[(:guitar @inputs) (:mic-1 @inputs)]
-                       [(:guitar @inputs) (:mic-3 @inputs)]
-                       [(:guitar @inputs) (:mic-4 @inputs)]
-                       [(:guitar @inputs) (:mic-5 @inputs)]
-                       [(:guitar @inputs) (:mic-6 @inputs)]
-                       [(:guitar @inputs) (:mic-7 @inputs)]]
+    (let [{:keys [inputs dur-s preouts
+                  intercambios-de-energia/min-width
+                  intercambios-de-energia/input-pairs-fn
+                  intercambios-de-energia/convolver-in2-amp
+                  intercambios-de-energia/convolver-max-amp-fn]
+           :or {min-width 1.3
+                input-pairs-fn intercambios-de-energia-input-pairs-fn
+                convolver-in2-amp 2
+                convolver-max-amp-fn #(rrange 0.4 0.8)}} @context
+          input-pairs (input-pairs-fn @context)
           total-synths (count input-pairs)
           trayectories (mapv (fn [_]
                                (into (quick-jump-trayectories (/ dur-s 2)
                                                               {#(rrange 4 8) 3
                                                                #(rrange 8 12) 1}
-                                                              :min-width 1.3
+                                                              :min-width min-width
                                                               :max-width 4)
                                      (quick-jump-trayectories (/ dur-s 2)
                                                               {#(rrange 4 8) 3
                                                                #(rrange 1 4) 1}
-                                                              :min-width 1.3
+                                                              :min-width min-width
                                                               :max-width 4)))
                              (range total-synths))
           convolver-outs (mapv (fn [i] (o/audio-bus 1 (str "intercambios-de-energia-convolver-out-" i)))
@@ -220,7 +240,7 @@
           panners (mapv (fn [convolver-out trayectory]
                           (panner {:in convolver-out
                                    :type :trayectory
-                                   :out (reaper-returns 3)
+                                   :out (get-mixed-instrument-return)
                                    :trayectory trayectory
                                    :amp 2}))
                         convolver-outs
@@ -248,7 +268,9 @@
                               (< dur 1) nil
                               (> (rand) 0.0) (make-convolver-1
                                               (rand-nth input-pairs)
-                                              (rand-nth convolver-outs))
+                                              (rand-nth convolver-outs)
+                                              :in2-amp convolver-in2-amp
+                                              :max-amp (convolver-max-amp-fn))
                               :else nil))))
               sequencer-ids))
       (swap! context assoc
@@ -288,7 +310,7 @@
                              (panner {:group (groups/panners)
                                       :in convolver-out
                                       :type :rand
-                                      :out (reaper-returns 3)
+                                      :out (get-process-instrument-return k)
                                       :rate (rrange 0.4 2)
                                       :width (rrange 3 4)})
                              {:synth synth
@@ -299,7 +321,7 @@
       (panner {:group (groups/panners)
                :in bus
                :type :rand
-               :out (reaper-returns 1)
+               :out (get-clean-instrument-return k)
                :rate (rrange 0.4 2)
                :width (rrange 3 4)
                :amp 1}))
@@ -402,7 +424,7 @@
                         (panner {:group (groups/panners)
                                  :in convolver-out
                                  :type :rand
-                                 :out (reaper-returns 3)})
+                                 :out (get-process-instrument-return k)})
 
                         (panner-rate {:in convolver-out
                                       :rate (rrange 0.1 0.5)

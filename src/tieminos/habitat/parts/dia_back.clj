@@ -6,7 +6,9 @@
    [taoensso.timbre :as timbre]
    [tieminos.habitat.groups :as groups]
    [tieminos.habitat.panners :refer [panner panner-rate stop-panner!]]
-   [tieminos.habitat.parts.amanecer :refer [make-convolver-1]]
+   [tieminos.habitat.parts.amanecer
+    :refer [make-convolver-1 solo-de-milo-stop]]
+   [tieminos.habitat.routing :refer [get-mixed-instrument-return]]
    [tieminos.habitat.utils :refer [rand-time-segments]]
    [tieminos.math.bezier :as bz]
    [tieminos.math.random-walk :refer [rand-walk1]]
@@ -263,7 +265,7 @@
   (timbre/info "dueto-con-polinizadores=pt1-emisión-de-señal-intercambio-de-energía")
   (let [{:keys [dur-s inputs texto-sonoro-rand-mixer-bus reaper-returns]} @context
         wave-dur (/ dur-s 3)
-        main-out (reaper-returns 3)
+        main-out (get-mixed-instrument-return)
         multiplier-out (o/audio-bus 1 "dia/dueto-con-polinizadores=pt1-emisión-de-señal-intercambio-de-energía-multiplier-out")
         assoc-refrain-to-context (fn [context refrain-ids]
                                    (swap! context
@@ -375,6 +377,7 @@
   danza-de-trayectorias"
   [context]
   (timbre/info "dueto-con-polinizadores=pt2-percepción-de-señal-danza-desarrollo-de-energía")
+  (solo-de-milo-stop context)
   (let [{:keys [dur-s inputs preouts]} @context
         [t1 t2] (danza-de-trayectorias)]
     (def trayectorias** [t1 t2])
@@ -420,7 +423,7 @@
 (defn dueto-con-polinizadores=pt3-polen-electromagnetismo-agitación
   [context]
   (timbre/info "dueto-con-polinizadores=pt3-polen-electromagnetismo-agitación")
-  (let [{:keys [dur-s inputs main-fx reaper-returns]} @context
+  (let [{:keys [dur-s inputs preouts main-fx reaper-returns]} @context
         rand-pan-config {:bus (o/audio-bus 1 "dueto-polinizadores-pt3-rand-pan")
                          :type :rand}
         rand-pan-2-config {:bus (o/audio-bus 1 "dueto-polinizadores-pt3-rand-pan-2")
@@ -440,19 +443,20 @@
                                         #(rrange 2 3) 1})
         polen-bursts-refrain :dia/polen-bursts]
 
-    (doseq [[_k {:keys [bus]}] @inputs]
+    (doseq [[k {:keys [bus]}] @inputs]
       (panner
        {:in bus
         :type (rand-nth [:clockwise :counter-clockwise])
-        :out (:bus (:osc-reverb @main-fx))
+        :out (:bus (k @preouts))
         :width 3.5})
       (panner-rate {:in bus
                     :rate (rrange 0.2 0.4)}))
+
     (doseq [{:keys [bus type out]} panner-configs]
       (panner
        {:in bus
         :type type
-        :out (:bus (:osc-reverb @main-fx))})
+        :out (:bus (:mid-reverb @main-fx))})
       (panner-rate {:in bus
                     :rate (rrange 0.2 0.4)}))
     (ref-rain
@@ -750,7 +754,8 @@
 (defn escucha-de-aves
   "Panneo random a muy baja velocidad con crecimientos y decreceimientos del área que ocupan los sonidos de cada fuente."
   [context]
-  (let [{:keys [dur-s preouts inputs current-panners reaper-returns]} @context]
+  (timbre/info "escucha-de-aves")
+  (let [{:keys [dur-s preouts inputs current-panners main-fx reaper-returns texto-sonoro-rand-mixer-bus]} @context]
     (doseq [[k {:keys [bus]}] @inputs]
       (let [panner-synth (:synth (get @current-panners bus))
             interval-ms 1000
@@ -765,16 +770,8 @@
          {:in bus
           :type :rand
           :out (:bus (k @preouts))
-          :width (first widths)
+          :width 4
           :a 10})
         (panner-rate
          {:in bus
-          :rate (rrange 0.03 0.1)})
-
-        (if-not (o/node-active? panner-synth)
-          (timbre/error "Could not control synth as it is not active")
-          (iter-async-call2 interval-ms
-                            (fn [{:keys [index stop-chan-fn]}]
-                              (if-let [width (nth widths index nil)]
-                                (o/ctl panner-synth :width width)
-                                (stop-chan-fn)))))))))
+          :rate (rrange 0.03 0.1)})))))

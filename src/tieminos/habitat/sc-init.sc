@@ -8,8 +8,8 @@ o.memSize= 512000*20;
 o.maxNodes=128*1024;
 s.options.maxLogins = 8;
 o.numInputBusChannels = 32;
-o.numOutputBusChannels = 46;
-s.latency = 0.02;
+o.numOutputBusChannels = 54;
+s.latency = 0.01;
 s.waitForBoot({
 	().play;
 	s.makeGui; // `l` to show meter https://doc.sccode.org/Classes/Server.html
