@@ -92,9 +92,7 @@
 
 (defn- make-conv-refrains
   [total-events panner-buses context]
-  (def panner-buses panner-buses)
-  (let [{:keys [dur-s inputs special-inputs texto-sonoro-rand-mixer-bus reaper-returns main-fx]} @context
-        texto-sonoro-bus @texto-sonoro-rand-mixer-bus]
+  (let [{:keys [dur-s inputs  texto-sonoro-rand-mixer-bus]} @context]
     (timbre/debug "make-conv-refrains")
     (mapv
      (fn [[k {:keys [bus]}]]
@@ -159,6 +157,7 @@
 
 (comment
   (-> gp/refrains deref keys))
+
 (defn polinizadores-nocturnos
   "Resonancias que se esparcen por el espacio. Dura aprox 6.5 minutos
 
@@ -170,8 +169,9 @@
   [context]
   (fuego-stop context)
   (timbre/info "polinizadores-nocturnos")
-  (let  [{:keys [dur-s inputs special-inputs texto-sonoro-rand-mixer-bus reaper-returns]} @context
-         total-waves 6
+  (let  [{:keys [dur-s inputs  texto-sonoro-rand-mixer-bus polinizadores-nocturnos/total-waves]
+          :or {total-waves 6}} @context
+         total-waves total-waves
          wave-dur (/ dur-s total-waves)
          multiplier-out (o/audio-bus 1 "noche/polinizadores-nocturnos")
          assoc-refrain-to-context (fn [context refrain-ids]
@@ -186,7 +186,7 @@
                            :in multiplier-out
                            :out (get-mixed-instrument-return)
                            :delay-fn delay-fn
-                           :should-play-alejamiento?-fn (fn [{:keys [index]}]
+                           :should-play-alejamiento?-fn (fn [{:keys [_index]}]
                                                           true
                                                           #_(zero? (mod index 2)))
                            :make-synth-config (fn [_]
@@ -238,7 +238,7 @@
   Aumenta reverb"
   [context]
   (timbre/info "hacia-un-nuevo-universo")
-  (let [{:keys [dur-s inputs preouts reaper-returns texto-sonoro-rand-mixer-bus main-fx]} @context
+  (let [{:keys [dur-s inputs preouts texto-sonoro-rand-mixer-bus main-fx]} @context
         panner-buses&convolver-synths (mapv (fn [_pos [k {:keys [bus]}]]
                                               (let [panner-bus (o/audio-bus 1 (str "noche-hacia-un-nuevo-universo-convolution-out-" (name k)))
                                                     convolver (live-convolver

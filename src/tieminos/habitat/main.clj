@@ -1,7 +1,6 @@
 (ns tieminos.habitat.main
   (:require
    [overtone.core :as o]
-   [overtone.sc.machinery.allocator :refer [clear-ids]]
    [taoensso.timbre :as timbre]
    [tieminos.habitat.init :refer [habitat-initialized? init!]]
    [tieminos.habitat.main-sequencer :as hseq]
@@ -10,13 +9,10 @@
    [tieminos.habitat.parts.amanecer :as amanecer]
    [tieminos.habitat.parts.dia-back :as dia]
    [tieminos.habitat.parts.noche :as noche]
+   [tieminos.habitat.recording :as rec]
    [tieminos.habitat.resonance-panner :as reso-pan]
    [tieminos.habitat.routing
-    :refer [inputs
-            main-returns
-            preouts
-            reaper-returns
-            special-inputs
+    :refer [inputs main-returns preouts reaper-returns special-inputs
             texto-sonoro-rand-mixer-bus]]
    [tieminos.habitat.synths.main-fx :refer [main-fx]]
    [tieminos.osc.reaper :as reaper]
@@ -114,6 +110,7 @@
   (start-sequencer! performance-config))
 
 (comment
+  #_:clj-kondo/ignore
   (defn- quick-sections [dur sections]
     (map-indexed (fn [i [_ f]] [[0 (* i dur)] f])
                  sections))
@@ -126,7 +123,7 @@
   (start-sequencer!
    {:context context
     :sections sections #_(quick-sections 5 sections)
-    :initial-section #'amanecer/intercambios-de-energia})
+    :initial-section #'#'noche/polinizadores-nocturnos})
 
   (timbre/set-level! :info)
   #_(amanecer/humedad hseq/context)
@@ -160,7 +157,5 @@
   ;; 2. Correr la octofonía en computadora 2
   ;; 3. Pasados los 10 segundos llamar `start-habitat-performance!`
   (init!)
-  (start-habi tat-performance!)
+  (start-habitat-performance!)
   :rcf)
-
-
