@@ -1,8 +1,8 @@
 {:linters
  {:unresolved-symbol {:exclude [(time-time.dynacan.players.gen-poly/on-event
-                                 [at-index index dur dur-s at-i])
+                                 [at-index index dur dur-s at-i i])
                                 (tieminos.compositions.garden-earth.base/on-event
-                                 [at-index index dur dur-s at-i])]}
+                                 [at-index index dur dur-s at-i i])]}
   ;; :unresolved-var {:exclude [overtone.core]}
   }
  :lint-as {overtone.core/defsynth clojure.core/def}
