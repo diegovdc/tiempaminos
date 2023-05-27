@@ -115,10 +115,10 @@
     (o/on-event analysis-path
                 (fn [data]
                   (when (get @recording? input-bus-name-keyword)
-                    (let [[_node-id input-bus amp freq freq?*] (-> data :args)
+                    (let [[_node-id _input-bus amp freq freq?*] (-> data :args)
                           freq? (= freq?* 1.0)]
                       #_(when (> amp 0.7))
-                      (println input-bus-name-keyword "amp" amp)
+                      (timbre/debug input-bus-name-keyword "amp" amp)
                       (swap! analysis-history
                              update
                              input-bus-name-keyword
@@ -172,6 +172,7 @@
   [buf]
   (:amp-norm-mult buf 1))
 
+#_:clj-kondo/ignore
 (comment
   (require '[tieminos.habitat.routing :refer [guitar-bus
                                               mic-1-bus
@@ -201,20 +202,24 @@
    :samples-path habitat-samples-path))
 
 (comment
-  (let [buf-key :amanecer-subsection-mic-1-2]
+  #_:clj-kondo/ignore
+  (require '[tieminos.utils :refer [rrange]])
+  (let [buf-key :amanecer-subsection-guitar-1]
     (o/demo
+     #_(o/sin-osc)
      (* (norm-amp (-> @bufs buf-key))
         (o/play-buf 1 (-> @bufs buf-key)))))
-
+  (-> guitar-bus)
+  (o/demo (o/in guitar-bus))
   (normalize-amp 0.5)
   (-> @bufs)
   (rec-input {:section "amanecer"
-              :subsection "subsection"
+              :subsection "ide"
+              :input-name "guitar"
+              :input-bus guitar-bus
+              :dur-s (rrange 7 15)})
+  (rec-input {:section "amanecer"
+              :subsection "ide"
               :input-name "mic-1"
               :input-bus mic-1-bus
-              :dur-s 5})
-  (rec-input {:section "amanecer"
-              :subsection "subsection"
-              :input-name "mic-3"
-              :input-bus mic-3-bus
-              :dur-s 5}))
+              :dur-s (rrange 7 15)}))

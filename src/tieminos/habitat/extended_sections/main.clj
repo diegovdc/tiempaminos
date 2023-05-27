@@ -2,7 +2,7 @@
   "For setting up different recompositions of Habitat.
   i.e. like playing only different sections, and extending them."
   (:require
-   [tieminos.habitat.init :refer [init!]]
+   [tieminos.habitat.init :refer [habitat-initialized? init!]]
    [tieminos.habitat.main :as main]
    [tieminos.habitat.main-sequencer :as hseq]
    [tieminos.habitat.parts.amanecer :as amanecer]
@@ -47,5 +47,6 @@
   (main/start-sequencer! polinizadores-nocturnos))
 
 (comment
-  (do (main/stop-sequencer! hseq/context)
+  (-> @hseq/context)
+  (do (when @habitat-initialized? (main/stop-sequencer! hseq/context))
       (init!)))
