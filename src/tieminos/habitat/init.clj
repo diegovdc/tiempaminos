@@ -10,9 +10,11 @@
     :refer [guitar-bus
             init-buses-and-input-vars!
             init-preouts!
+            init-recordable-inputs!
             init-texto-sonoro-rand-mixer-synth!
             input
             inputs
+            main-returns
             mic-1-bus
             mic-2-bus
             mic-3-bus
@@ -21,7 +23,8 @@
             set-preout-in!
             special-inputs]]
    [tieminos.habitat.synths.main-fx :refer [init-main-fx!]]
-   [tieminos.osc.reaper :as reaper]))
+   [tieminos.osc.reaper :as reaper]
+   [tieminos.utils :refer [init-async-seq-call-loop!]]))
 
 (defonce inputs-registry (atom {}))
 (defonce analyzers-registry (atom {}))
@@ -63,6 +66,7 @@
       (tieminos.core/connect))
     (reaper/init)
     (habitat-osc/init)
+    (init-async-seq-call-loop!)
     (reset! current-panners {})
     (groups/init-groups!)
     (init-buses-and-input-vars!)
@@ -71,6 +75,7 @@
     (init-analyzers! @inputs)
     (init-inputs! @inputs)
     (init-texto-sonoro-rand-mixer-synth! @special-inputs)
+    (init-recordable-inputs! main-returns)
     (reset! habitat-initialized? true))
   (timbre/info "Habitat initialized!")
   {:inputs (keys @inputs)})
@@ -103,3 +108,4 @@
     :in mic-4-bus
     :out (-> @preouts :mic-4 :bus)})
   (set-preout-in! :guitar guitar-bus))
+

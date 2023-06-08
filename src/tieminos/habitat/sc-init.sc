@@ -8,7 +8,7 @@ o.memSize= 512000*20;
 o.maxNodes=128*1024;
 s.options.maxLogins = 8;
 o.numInputBusChannels = 32;
-o.numOutputBusChannels = 54;
+o.numOutputBusChannels = 58;
 s.latency = 0.01;
 s.waitForBoot({
 	().play;

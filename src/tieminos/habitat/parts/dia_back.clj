@@ -15,7 +15,7 @@
    [tieminos.math.utils :refer [linlin]]
    [tieminos.overtone-extensions :as oe]
    [tieminos.sc-utils.synths.v1 :refer [lfo lfo-kr]]
-   [tieminos.utils :refer [iter-async-call2 rrange wrap-at]]
+   [tieminos.utils :refer [iter-async-call2 rrange sequence-call wrap-at]]
    [time-time.dynacan.players.gen-poly :as gp :refer [on-event ref-rain]]))
 
 (defn make-fuente-flor-señal-synth
@@ -87,6 +87,74 @@
                  (o/out main-out full-synth)
                  (o/out multiplier-out (o/mix full-synth))))]
     (synth (groups/mid) :in input)))
+
+(oe/defsynth fuente-flor-senal
+  ;; "See `dueto-con-polinizadores=pt1-emisión-de-señal-intercambio-de-energía`.
+  ;; Segments: (t0 -> t30% increase width and reverb; t30% -> t60% add convolution; t60% -> t90% multiply and spread invididual subsigals; t90% -> t100% fadeout)"
+  [dur 5
+   input 0
+   texto-sonoro-input 1
+   main-out 0
+   multiplier-out 0
+   amp 1
+   conv-amp 2
+   amp-limit 0.9]
+  (let [seg-dur1 (* 0.3 dur)       ; t0 -> t30% increase width and reverb;
+        seg-dur2 (* 0.3 dur)       ; t30% -> t60% add convolution;
+        seg-dur3 (* 0.3 dur)       ; t60% -> t90% multiply and spread individual
+        seg-dur4 (* 0.1 dur)       ; t90% -> t100% fadeout
+        width-env (o/envelope [1.3 4 4 3 1.3]
+                              [seg-dur1
+                               seg-dur2
+                               seg-dur3
+                               seg-dur4])
+
+        pos-env (o/envelope (let [initial-pos (rand 2)]
+                              (->> (range 5)
+                                   (map (fn [_] (+ (rrange -0.7 0.7) initial-pos)))
+                                   (into [])))
+                            [seg-dur1
+                             seg-dur2
+                             seg-dur3
+                             seg-dur4])
+        main-amp-env (o/envelope [0 1 1 1 0.3 0.7 0]
+                                 [0.5
+                                  (- seg-dur1 0.5)
+                                  seg-dur2
+                                  seg-dur3
+                                  (/ seg-dur4 2)
+                                  (/ seg-dur4 2)])
+        main-reverb-mix-env (o/envelope [0.4 1] [seg-dur1 seg-dur2])
+        main-reverb-room-env (o/envelope [0.4 1 2 1] [seg-dur1 seg-dur2 seg-dur3 seg-dur4])
+        conv-amp-env (o/envelope #_[0 1 1 1 0.8 0] [0 0 1 1 0.8 0]
+                                 [seg-dur1
+                                  seg-dur2
+                                  seg-dur3
+                                  (/ seg-dur4 2)
+                                  (/ seg-dur4 2)])]
+    (let [main-synth (-> (oe/circle-az :num-channels 4
+                                       :in (o/in input)
+                                       :pos (o/env-gen pos-env)
+                                       :width (o/env-gen width-env)
+                                       :orientation 0)
+                         (o/free-verb main-reverb-mix-env main-reverb-room-env))
+          convolver-synth (-> (o/convolution main-synth
+                                             (+ (o/delay-n (o/mix main-synth) 0.01 0.01)
+                                                (* 0.7 (o/delay-n (o/mix main-synth) 0.02 0.02))
+                                                (* 1 (o/in texto-sonoro-input)))
+                                             (/ 4096 2))
+                              (o/hpf 300)
+                              (o/free-verb 0.5 0.2)
+                              (* conv-amp (o/env-gen conv-amp-env)))
+          full-synth (-> (+ convolver-synth
+                            (o/in input)
+                            (* main-synth (o/env-gen main-amp-env)))
+                         (* amp (o/env-gen (o/envelope [0 1 1 0]
+                                                       [0.5 dur 0.5])
+                                           :action o/FREE))
+                         (o/limiter amp-limit 0.05))]
+      (o/out main-out full-synth)
+      (o/out multiplier-out (o/mix full-synth)))))
 
 (oe/defsynth alejamientos-senal-synth
   [in 0
@@ -236,20 +304,23 @@
    :durs refrain-durs
    :loop? false
    :on-event (on-event
-              (let [multiplier-refrain-id (multiplier-refrain-id-fn index)]
-                (timbre/debug refrain-id index input main-out)
-                (make-fuente-flor-señal-synth
-                 (merge {:dur wave-dur
-                         :input input
-                         :texto-sonoro-input texto-sonoro-input
-                         :main-out main-out
-                         :multiplier-out multiplier-out}
-                        (make-fuente-flor-señal-synth-params {})))
-                (emision-de-señal-wave
-                 {:multiplier-refrain-id multiplier-refrain-id
-                  :emision-refrain-configs emision-refrain-configs
-                  :dur wave-dur})
-                (assoc-refrain-to-context context [multiplier-refrain-id])))))
+              (let [multiplier-refrain-id (multiplier-refrain-id-fn index)
+                    emissions-refrain-fn (fn []
+                                           (timbre/debug "emission!" refrain-id index input main-out)
+                                           (fuente-flor-senal
+                                            (merge {:group (groups/mid)
+                                                    :dur wave-dur
+                                                    :input input
+                                                    :texto-sonoro-input texto-sonoro-input
+                                                    :main-out main-out
+                                                    :multiplier-out multiplier-out}
+                                                   (make-fuente-flor-señal-synth-params {})))
+                                           (emision-de-señal-wave
+                                            {:multiplier-refrain-id multiplier-refrain-id
+                                             :emision-refrain-configs emision-refrain-configs
+                                             :dur wave-dur})
+                                           (assoc-refrain-to-context context [multiplier-refrain-id]))]
+                (sequence-call 1500 emissions-refrain-fn)))))
 
 (defn dueto-con-polinizadores=pt1-emisión-de-señal-intercambio-de-energía
   "Comienza Diego.

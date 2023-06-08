@@ -12,10 +12,16 @@
    [tieminos.habitat.recording :as rec]
    [tieminos.habitat.resonance-panner :as reso-pan]
    [tieminos.habitat.routing
-    :refer [inputs main-returns preouts reaper-returns special-inputs
+    :refer [inputs
+            main-returns
+            preouts
+            reaper-returns
+            recordable-outputs
+            special-inputs
             texto-sonoro-rand-mixer-bus]]
    [tieminos.habitat.synths.main-fx :refer [main-fx]]
    [tieminos.osc.reaper :as reaper]
+   [tieminos.utils :refer [stop-async-seq-call-loop!]]
    [time-time.dynacan.players.gen-poly :as gp]))
 
 (defn TEMPORARY-multichan-wrapper
@@ -70,8 +76,9 @@
    :main-fx main-fx
    :special-inputs special-inputs
    :texto-sonoro-rand-mixer-bus texto-sonoro-rand-mixer-bus
-   :reaper-returns reaper-returns ;; eventually remove these
-   :main-returns main-returns})
+   :reaper-returns reaper-returns ;; TODO remove these
+   :main-returns main-returns
+   :recordable-outputs recordable-outputs})
 
 (def performance-config
   {:context context
@@ -102,6 +109,7 @@
   (o/stop)
   (gp/stop)
   (reaper/stop)
+  (stop-async-seq-call-loop!)
   (reset! habitat-initialized? false))
 
 (defn start-habitat-performance! []

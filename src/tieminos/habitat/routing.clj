@@ -20,7 +20,7 @@
   "Returns map, numbered after the returns in reaper i.e. 1 based numbers"
   (let [starting-chan 33
         n-chans 4
-        total-returns 5
+        total-returns 6
         return-outs (range starting-chan
                            (+ starting-chan
                               (* n-chans total-returns))
@@ -39,13 +39,38 @@
 (def percussion-main-out (reaper-returns 3))
 (def percussion-processes-main-out (reaper-returns 4))
 (def mixed-main-out (reaper-returns 5))
+(def non-recordable-main-out (reaper-returns 6))
 (def main-returns {:guitar guitar-main-out
                    :guitar-processes guitar-processes-main-out
                    :percussion percussion-main-out
                    :percussion-processes percussion-processes-main-out
-                   :mixed mixed-main-out})
+                   :mixed mixed-main-out
+                   :non-recordable non-recordable-main-out})
+
+(oe/defsynth recordable-output
+  ;; mixdown a 4-ch input into a 1-ch output
+  [bus 0 out 0]
+  (o/out out (o/mix (o/in bus 4))))
+
+(defn make-recorable-outputs
+  [output-buses]
+  (->> (dissoc output-buses :non-recordable)
+       (mapv (fn [[k bus-num]]
+               (let [bus (o/audio-bus 1 (str (name k) "-recordable-output-bus"))]
+                 [k {:bus bus
+                     :synth (recordable-output {:group (groups/preouts :tail)
+                                                :bus bus-num
+                                                :out bus})}])))
+       (into {})))
+;; should be 1-channel signals
+(defonce recordable-outputs (atom {}))
+
+(defn init-recordable-inputs!
+  [output-buses]
+  (reset! recordable-outputs (make-recorable-outputs output-buses)))
 
 (comment
+  (init-recordable-inputs! main-returns)
   (o/stop)
   (def s ((o/synth (o/out (reaper-returns 1)
                           (* 0.2 (o/lpf (o/saw 300) 1500))))
@@ -84,15 +109,17 @@
 (defonce special-inputs (atom {}))
 
 (defn init-buses-and-input-vars! []
-  (defonce guitar-bus (o/audio-bus 1 "guitar-bus"))
-  (defonce mic-1-bus (o/audio-bus 1 "mic-1-bus"))
-  (defonce mic-2-bus (o/audio-bus 1 "mic-2-bus"))
-  (defonce mic-3-bus (o/audio-bus 1 "mic-3-bus"))
-  (defonce mic-4-bus (o/audio-bus 1 "mic-4-bus"))
-  (defonce mic-5-bus (o/audio-bus 1 "mic-5-bus"))
-  (defonce mic-6-bus (o/audio-bus 1 "mic-6-bus"))
-  (defonce mic-7-bus (o/audio-bus 1 "mic-7-bus"))
-  (defonce texto-sonoro-bus (o/audio-bus 4 "texto-sonoro-bus"))
+  #_:clj-kondo/ignore
+  (do
+    (defonce guitar-bus (o/audio-bus 1 "guitar-bus"))
+    (defonce mic-1-bus (o/audio-bus 1 "mic-1-bus"))
+    (defonce mic-2-bus (o/audio-bus 1 "mic-2-bus"))
+    (defonce mic-3-bus (o/audio-bus 1 "mic-3-bus"))
+    (defonce mic-4-bus (o/audio-bus 1 "mic-4-bus"))
+    (defonce mic-5-bus (o/audio-bus 1 "mic-5-bus"))
+    (defonce mic-6-bus (o/audio-bus 1 "mic-6-bus"))
+    (defonce mic-7-bus (o/audio-bus 1 "mic-7-bus"))
+    (defonce texto-sonoro-bus (o/audio-bus 4 "texto-sonoro-bus")))
 
   (reset! inputs
           {:guitar {:in (:guitar ins)
@@ -116,6 +143,7 @@
           {:texto-sonoro {:in (:texto-sonoro ins)
                           :bus texto-sonoro-bus}})
 
+  #_:clj-kondo/ignore
   (def input-number->bus*
     {0 guitar-bus
      1 mic-1-bus
@@ -248,4 +276,3 @@
     (let [in* (o/in in 4)]
       (o/out (reaper-returns 1) in*)
       (o/out (reaper-returns 2) in*))))
-

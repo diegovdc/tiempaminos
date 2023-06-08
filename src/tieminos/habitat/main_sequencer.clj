@@ -42,6 +42,46 @@
                                   :section-index section-index)
                            (section context))))))
 
+(defn subsequencer
+  "A sequencer that should be nested inside the main sequencer.
+  Sections are a vector of [timestamp side-fx-fn]
+  A `timestamp` is [minute second]
+  The `side-fx-fn` receives the `context` atom
+  Receives a `context` as opposed to sequencer which actually initializes the context."
+  [refrain-id context sections]
+  (when-not @habitat-initialized?
+    (throw (ex-info "Must call `tieminos.habitat.init/init!` first" {})))
+  (let [sections*   (->> sections
+                         timestamps->dur-intervals
+                         (map #(update-in % [0] seconds->dur bpm)))
+        durs (map first sections*)]
+    (timbre/info "Starting Habitat")
+    (ref-rain :id refrain-id
+              :durs durs
+              :loop? false
+              :tempo bpm
+              :on-event (on-event
+                         (let [section-index index
+                               section (-> sections
+                                           (nth section-index)
+                                           second)]
+                           (swap! context assoc
+                                  :dur-s dur-s
+                                  :section-index section-index)
+                           (section context))))))
+
+(comment
+  (reset! habitat-initialized? true)
+  (sequencer {:i :am :a :context}
+             [[[0 0] (fn [ctx] (println "#1" ctx))]
+              [[0 5] (fn [ctx] (subsequencer
+                                ::step-2-sub-sequencer
+                                ctx
+                                [[[0 5] (fn [ctx] (println "#2.1" ctx))]
+                                 [[0 7.5] (fn [ctx] (println "#2.2"))]
+                                 [[0 10] (fn [ctx] (println "#2.3"))]]))]
+              [[0 10] (fn [ctx] (println "#2"))]]))
+
 (do
   (defn timestamps->dur-intervals*
     "Transforms a vector of shape [[minutes seconds]] to a vector of durations [dur].

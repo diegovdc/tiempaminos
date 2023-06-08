@@ -169,7 +169,7 @@
   [context]
   (fuego-stop context)
   (timbre/info "polinizadores-nocturnos")
-  (let  [{:keys [dur-s inputs  texto-sonoro-rand-mixer-bus polinizadores-nocturnos/total-waves]
+  (let  [{:keys [dur-s inputs  texto-sonoro-rand-mixer-bus preouts polinizadores-nocturnos/total-waves]
           :or {total-waves 6}} @context
          total-waves total-waves
          wave-dur (/ dur-s total-waves)
@@ -187,7 +187,8 @@
                            :out (get-mixed-instrument-return)
                            :delay-fn delay-fn
                            :should-play-alejamiento?-fn (fn [{:keys [_index]}]
-                                                          true
+                                                          (timbre/debug "playing alejamiento")
+                                                          (> (rand) 0.2)
                                                           #_(zero? (mod index 2)))
                            :make-synth-config (fn [_]
                                                 (let [dur (rrange 2 5)]
@@ -206,8 +207,12 @@
          wave-refrain-ids (->> emision-refrain-configs
                                (map :refrain-id)
                                (remove nil?))]
-    (doseq [[_k {:keys [bus]}] (select-keys @inputs [:mic-3 :mic-4])]
-      (stop-panner! bus))
+    (doseq [[k {:keys [bus]}] @inputs]
+      (panner {:type :rand
+               :in bus
+               :out (:bus (k @preouts))
+               :rate (rrange 0.1 0.3)
+               :width 2.7}))
     (assoc-refrain-to-context context wave-refrain-ids)
     (doseq [[k {:keys [bus]}] (select-keys @inputs [:guitar :mic-1 :mic-2 :mic-5 :mic-7])]
       (let [refrain-id (main-refrain-id-fn (name k))]

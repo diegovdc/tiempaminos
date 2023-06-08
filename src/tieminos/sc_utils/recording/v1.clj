@@ -20,8 +20,9 @@
     buf))
 
 (o/defsynth writer
-  "Use a custom input, with `o/in`"
   [in-bus 0 buf 0 seconds 5]
+  ;; `in-bus` should be a mono bus
+  ;; "Use a custom input, with `o/in`"
   ;; https://depts.washington.edu/dxscdoc/Help/Classes/RecordBuf.html
   (let [in (o/in in-bus)
         env (o/env-gen (o/envelope [0 1 1 0]

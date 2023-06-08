@@ -185,3 +185,48 @@
                                           (flush))))
   (stop-me)
   (stop-me2))
+
+(defonce async-channels (atom {}))
+
+(defn init-async-seq-call-loop!
+  []
+  (if-not (and (:seq-call-chan @async-channels)
+               (:seq-call-loop @async-channels))
+    (let [seq-call-chan (a/chan)
+          seq-call-loop (a/go-loop
+                         []
+                          (let [{:keys [timeout f shutdown-loop?]} (a/<! seq-call-chan)]
+                            (when-not shutdown-loop?
+                              (f)
+                              (a/<! (a/timeout timeout))
+                              (recur))))]
+      (swap! async-channels assoc
+             :seq-call-chan seq-call-chan
+             :seq-call-loop seq-call-loop)
+      (timbre/info "async-seq-call channels initialized"))
+    (timbre/warn "async-seq-call-loop channels already exist"
+                 {:async-channels async-channels})))
+
+(defn stop-async-seq-call-loop!
+  []
+  (a/>!! (:seq-call-chan @async-channels) {:shutdown-loop? true})
+  (a/close! (:seq-call-loop @async-channels))
+  (a/close! (:seq-call-chan @async-channels))
+  (swap! async-channels dissoc :seq-call-loop :seq-call-chan)
+  (timbre/info "async-seq-call channels stoppped"))
+
+(defn sequence-call
+  "Prevent function calls from happening to close together.
+  This is useful for example when calling the SC server with synthdefs that might saturate it if too close together and while things are playing."
+  [timeout f]
+  (if-let [chan (:seq-call-chan @async-channels)]
+    (a/>!! chan {:f f :timeout timeout})
+    (timbre/error "`init-async-seq-call-loop!' has not been called"
+                  {:async-channels async-channels})))
+
+(comment
+  (init-async-seq-call-loop!)
+  (stop-async-seq-call-loop!)
+
+  (doseq [x (range 5)]
+    (sequence-call 100 #(println x))))
