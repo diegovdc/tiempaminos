@@ -1,5 +1,6 @@
 (ns tieminos.habitat.recording
   (:require
+   [clojure.core.async :as a]
    [clojure.string :as str]
    [overtone.core :as o]
    [taoensso.timbre :as timbre]
@@ -105,6 +106,22 @@
                     [(o/amplitude:kr input) (o/pitch:kr input)]
                     1)))))
 
+(defn do-receive-analysis
+  [input-bus-name-keyword data]
+  (when (get @recording? input-bus-name-keyword)
+    (let [[_node-id _input-bus amp freq freq?*] (-> data :args)
+          freq? (= freq?* 1.0)]
+
+      #_(timbre/debug input-bus-name-keyword "amp" amp "freq" freq)
+      (swap! analysis-history
+             update
+             input-bus-name-keyword
+             conj
+             {:amp amp
+              :timestamp (o/now)
+              :freq freq
+              :freq? freq?}))))
+
 (defn run-receive-analysis
   "Gets analysis from `in` 0 in almost real time
   and `conj`es the data into`analysis-history.
@@ -113,26 +130,20 @@
   (let [handler-name (keyword (str (str/replace analysis-path #"/" "")
                                    "-handler"))]
     (o/on-event analysis-path
-                (fn [data]
-                  (when (get @recording? input-bus-name-keyword)
-                    (let [[_node-id _input-bus amp freq freq?*] (-> data :args)
-                          freq? (= freq?* 1.0)]
-                      #_(when (> amp 0.7))
-                      (timbre/debug input-bus-name-keyword "amp" amp)
-                      (swap! analysis-history
-                             update
-                             input-bus-name-keyword
-                             conj
-                             {:amp amp
-                              :timestamp (o/now)
-                              :freq freq
-                              :freq? freq?}))))
+                (fn [data] (do-receive-analysis input-bus-name-keyword data))
                 handler-name)
     handler-name))
+
+(comment
+  (require '[tieminos.habitat.routing :refer [inputs]])
+  (reset! recording? {})
+  (-> @inputs :guitar :bus keys)
+  (o/demo (o/in (-> @inputs :guitar :bus))))
 
 (defn start-signal-analyzer
   [& {:keys [input-bus]}]
   (let [analysis-path (format "/receive-%s-analysis" (:name input-bus))]
+    (timbre/debug "Starting analyzer with path" analysis-path)
     {:receiver (run-receive-analysis
                 :freq analyzer-freq
                 :input-bus-name-keyword (keyword (:name input-bus))
@@ -223,3 +234,4 @@
               :input-name "mic-1"
               :input-bus mic-1-bus
               :dur-s (rrange 7 15)}))
+

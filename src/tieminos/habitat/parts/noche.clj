@@ -315,10 +315,12 @@
 (defn hacia-un-nuevo-universo-stop
   [context]
   (timbre/info "hacia-un-nuevo-universo-stop")
-  (let [{:keys [preouts]} @context
-        panner-buses&convolver-synths (get-in @context [:noche/hacia-un-nuevo-universo :panner-buses&convolver-synths])]
-    (doseq [{:keys [panner-bus synth]} panner-buses&convolver-synths]
-      (ctl-synth2 synth :gate 0)
-      (stop-panner! panner-bus))
-    (doseq [[_k {:keys [synth]}] @preouts]
-      (ctl-synth2 synth :release 15 :gate 0))))
+  (try
+    (let [{:keys [preouts]} @context
+          panner-buses&convolver-synths (get-in @context [:noche/hacia-un-nuevo-universo :panner-buses&convolver-synths])]
+      (doseq [{:keys [panner-bus synth]} panner-buses&convolver-synths]
+        (ctl-synth2 synth :gate 0)
+        (stop-panner! panner-bus))
+      (doseq [[_k {:keys [synth]}] @preouts]
+        (ctl-synth2 synth :release 15 :gate 0)))
+    (catch Exception e (timbre/error "Couldn't stop hacia-un-nuevo-universo" e))))

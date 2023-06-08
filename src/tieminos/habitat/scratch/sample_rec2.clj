@@ -125,7 +125,7 @@
     (o/demo
      (* (norm-amp buf)
         (o/play-buf 1 buf))))
-
+  (-> @rec/bufs first second :amp-norm-mult)
   (rec-input {:section "amanecer"
               :subsection "ide"
               :input-name "guitar"
@@ -231,4 +231,3 @@
                        buf
                        {:amp (* (rrange 0.2 1) (norm-amp buf))
                         :rate (scale/deg->freq scale 1 (+ (mod i 43)))})))))))
-

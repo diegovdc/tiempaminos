@@ -4,6 +4,7 @@
   (:require
    [erv.cps.core :as cps]
    [erv.scale.core :as scale]
+   [taoensso.timbre :as timbre]
    [tieminos.compositions.garden-earth.synths.recording :as rec]
    [tieminos.habitat.init :refer [habitat-initialized? init!]]
    [tieminos.habitat.main :as main]
@@ -92,7 +93,8 @@
               [[52 22] #'polinizadores-nocturnos*]
               [[62 10] (fn [_] (println "end"))]]
    :initial-sections #'polinizadores-nocturnos*
-   :rec? true})
+   ;; :rec? true
+   })
 
 (comment
   (main/start-sequencer! polinizadores-nocturnos)
@@ -100,8 +102,9 @@
   (noche/fuego-stop hseq/context))
 
 (comment
+
   (-> @hseq/context)
+  (timbre/set-level! :info)
   (do  (when @habitat-initialized?
          (main/stop-sequencer! hseq/context))
        (init!)))
-
