@@ -93,7 +93,9 @@
 ;;;;;;;;;;;;;;;;;;;
 
 (defonce analysis-history (atom {}))
-
+(comment
+  ;; TODO is freq being added to the analysis?
+  (->> @analysis-history vals flatten (filter :freq?)))
 (def analyzer-freq 60)
 
 (defn run-get-signal-analysis
@@ -174,6 +176,7 @@
         amp-norm-mult (normalize-amp (:max-amp analysis))]
     (swap! bufs update buf-key
            assoc
+           :rec/time sample-start
            :analysis (-> analysis
                          (assoc :avg-amp avg-amp)
                          (dissoc :amps))
@@ -234,4 +237,3 @@
               :input-name "mic-1"
               :input-bus mic-1-bus
               :dur-s (rrange 7 15)}))
-
