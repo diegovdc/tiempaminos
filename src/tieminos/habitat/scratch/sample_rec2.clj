@@ -1,14 +1,17 @@
 (ns tieminos.habitat.scratch.sample-rec2
   (:require
+   [clojure.data.generators :refer [weighted]]
    [erv.cps.core :as cps]
    [erv.scale.core :as scale]
    [overtone.core :as o]
    [taoensso.timbre :as timbre]
    [tieminos.habitat.groups :as groups]
    [tieminos.habitat.init :refer [init!]]
-   [tieminos.habitat.recording :as rec :refer [norm-amp rec-input]]
+   [tieminos.habitat.recording :as rec :refer [norm-amp rec-input recording?]]
    [tieminos.habitat.routing
-    :refer [inputs main-returns mixed-main-out recordable-outputs]]
+    :refer [inputs main-returns preouts recordable-outputs]]
+   [tieminos.habitat.synths.granular :refer [amanecer*guitar-clouds]]
+   [tieminos.habitat.utils :refer [open-inputs-with-rand-pan]]
    [tieminos.math.bezier-samples :as bzs]
    [tieminos.overtone-extensions :as oe]
    [tieminos.sc-utils.synths.v1 :refer [lfo]]
@@ -95,8 +98,26 @@
                         buf
                         (synth-params {:i i :buf buf}))))))))
 
+(defn hacia-un-nuevo-unierso-harmonies
+  [{:keys [buf-fn period-dur total-durs loop? refrain-id synth-params]
+    :or {period-dur 4
+         refrain-id :hacia-un-nuevo-unierso-harmonies
+         total-durs 20
+         loop? true}}]
+  (let [buf (buf-fn {})]
+    (when buf
+      (ref-rain
+       :id refrain-id
+       :durs (periodize-durs period-dur (bzs/f total-durs 0.1 1))
+       :loop? loop?
+       :on-event (on-event
+                  (s1 (default-synth-params
+                        buf
+                        (synth-params {:i i :buf buf}))))))))
+
 (comment
   (-> @rec/bufs)
+  (gp/stop)
   (let [scale (->> (cps/make 3 [9 13 15 21 27 31]) :scale)]
     (rising-upwards
      {:buf-fn (fn [_] (-> @rec/bufs vals rand-nth))
@@ -117,6 +138,301 @@
               (rec&play (-> @recordable-outputs vec rand-nth second :bus)
                         dur-s
                         (fn [_])))))
+(defn start-rec-loop!2
+  [{:keys [input-bus-fn
+           durs]
+    :or {durs (mapv (fn [_] (rrange 3 10)) (range 40))}}]
+  (ref-rain
+   :id :rec-loop2
+   :durs durs
+   :on-event (on-event
+              (rec&play (input-bus-fn {:index index})
+                        dur-s
+                        (fn [_])))))
+
+(defn rand-latest-buf [_]
+  (->> @rec/bufs vals (sort-by :rec/time) reverse (filter :analysis) (take 3) (rand-nth)))
+
+(comment
+  (open-inputs-with-rand-pan
+   {:inputs inputs
+    :preouts preouts})
+  (gp/stop)
+  (gp/stop :rec-loop2)
+  (reset! recording? {})
+  (reset! rec/bufs {})
+
+  (start-rec-loop!2
+   {:input-bus-fn (fn [_] (-> @inputs (select-keys [:guitar :mic-1]) vals rand-nth :bus))
+    :durs (mapv (fn [_] (rrange 5 10)) (range 40))})
+  (hacia-un-nuevo-universo-perc-refrain {:buf-fn (fn [_] (->> @rec/bufs vals (sort-by :rec/time) reverse (filter :analysis) (take 5) (#(when (seq %) (rand-nth %)))))
+                                         :rates (map #(* 2 %) [1 6 7 11 9 2 12 8 5 13]) #_(range 1 10)
+                                         :amp 1
+                                         :period 10
+                                         :durs [2 3 5 3]
+                                         :d-weights {8 1
+                                                     5 1
+                                                     3 1}
+                                         :d-level-weights {0.3 5
+                                                           0.1 2
+                                                           0.2 3
+                                                           0.4 2}
+                                         :a-weights {(rrange 0.01 0.3) 2
+                                                     (rrange 1 2) 3
+                                                     (rrange 2 5) 1}}))
+
+(defn hacia-un-nuevo-universo-perc-refrain
+  [{:keys [buf-fn period durs rates amp d-weights d-level-weights a-weights room-weights]
+    :or {buf-fn rand-latest-buf
+         period 2.5
+         durs (bzs/fsf 20 0.1 1)
+         rates (range 1 10)
+         amp 1
+         a-weights {(rrange 0.01 0.1) 10
+                    (rrange 2 5) 1/2}
+         d-weights {(rrange 0.2 0.3) 5
+                    (rrange 0.3 0.5) 3
+                    (rrange 0.5 1) 1
+                    (rrange 1 5) 1/2}
+         d-level-weights {0.3 1}
+         room-weights {0.2 2, 2 1/2 4 1/2}}}]
+  (ref-rain
+   :id :hacia-un-nuevo-universo-perc2
+   :durs (periodize-durs period durs)
+   :on-event (on-event
+              (when-let [buf (buf-fn {:index index})]
+                (let [start 0 #_(rrange (rrange 0 0.5) 0.7)
+                      end 1 #_(+ start (rrange 0.05 0.3))
+                      rate (at-i rates
+                                 #_(concat [1 2 3 4 5 6 7 8 9]
+                                           (map #(/ % 9/2) (range 9 18))
+                                           (map #(/ (* 2 %) 19) (range 19 38))))
+                      a (weighted a-weights)
+                      trig-rate (+ 90 (rand-int 20))
+                      config {:buf buf
+                              :a a
+                              :d (/ (+ (/ a 2) (weighted d-weights))
+                                    2)
+                              :r (+ (/ a 2) (weighted d-weights))
+                              :d-level (weighted d-level-weights)
+                              :rev-room (weighted room-weights)
+                              :trig-rate 100
+                              :grain-dur (/ 1 (/ trig-rate 2))
+                              :amp-lfo (rrange 0.1 0.4)
+                              :amp-lfo-min 0.95
+                              :lpf-max (rrange 2000 10000)
+                              :start start
+                              :end end
+                              :pan (rrange -1 1)
+                              :out (main-returns :non-recordable)}]
+                  ;; TODO perhaps add :interp to the `grain-buf` in this synth
+                  (amanecer*guitar-clouds (assoc config
+                                                 :rate rate
+                                                 :interp (rand-nth [1 2 4])
+                                                 :amp (* amp (rrange 0.9 1) (norm-amp buf))))
+                  (amanecer*guitar-clouds (assoc config
+                                                 :rate (* (rand-nth [2 3/2 7/4 1/2 1 1 1 1]) rate)
+                                                 :interp (rand-nth [1 2 4])
+                                                 :amp (* amp (rrange 0.7 0.9) (norm-amp buf)))))))))
+
+
+(oe/defsynth amanecer*guitar-clouds-2
+  ;; TODO pass in manual envelope
+  [buf 0
+   trig-rate 40
+   grain-dur 1/20
+   rate 1
+   amp 1
+   amp-lfo-min 0.5
+   amp-lfo 0.1
+   start 0.1
+   end 0.3
+   a 0.1
+   d 1
+   d-level 0.3
+   r 3
+   out 0
+   lpf-min 100
+   lpf-max 2000
+   pan 0
+   rev-mix 1
+   rev-room 0.5
+   a-level 1]
+  (o/out out
+         (-> (o/grain-buf
+               :num-channels 1
+               :trigger (o/impulse trig-rate)
+               :dur grain-dur
+               :sndbuf buf
+               :rate rate
+               :pos  (o/line start end (+ a d r))
+               :interp 4
+               :pan 0)
+             (o/lpf (lfo 0.1 lpf-min lpf-max))
+             #_(#(+ % (* 0.7 (o/b-moog % 500 (lfo 2 0.2 0.6) 2))))
+             (#(o/pan-az 4 % :pos pan :width (lfo 0.1 1 2.5)))
+             (o/free-verb rev-mix rev-room)
+             (* amp
+                #_(lfo amp-lfo amp-lfo-min 1)
+                (o/env-gen (o/envelope [0 a-level d-level 0] [a d r]
+                                       [-1 -5])
+                           :action o/FREE)))))
+
+(defn hacia-un-nuevo-universo-perc-refrain-2
+  [{:keys [buf-fn period durs rates amp d-weights d-level-weights a-weights room-weights]
+    :or {buf-fn rand-latest-buf
+         period 2.5
+         durs (bzs/fsf 20 0.1 1)
+         rates (range 1 10)
+         amp 1
+         a-weights {(rrange 0.01 0.1) 10
+                    (rrange 2 5) 1/2}
+         d-weights {(rrange 0.2 0.3) 5
+                    (rrange 0.3 0.5) 3
+                    (rrange 0.5 1) 1
+                    (rrange 1 5) 1/2}
+         d-level-weights {0.3 1}
+         room-weights {0.2 2
+                       0.5, 2
+                       2 1/2
+                       10 1/4}}}]
+  (ref-rain
+   :id :hacia-un-nuevo-universo-perc2.2
+   :durs (periodize-durs period durs)
+   :on-event (on-event
+              (when-let [buf (buf-fn {:index index})]
+                (let [start #_0 (rrange (rrange 0 0.5) 0.7)
+                      end #_1 (+ start (rrange 0.05 (- 1 start)))
+                      rate (at-i rates)
+                      a (weighted a-weights)
+                      trig-rate (+ 50 (rand-int 50))
+                      config {:buf buf
+                              :a a
+                              :d (/ (+ (/ a 2) (weighted d-weights))
+                                    2)
+                              :r (+ (/ a 2) (weighted d-weights))
+                              :d-level (weighted d-level-weights)
+                              :rev-room (weighted room-weights)
+                              :trig-rate trig-rate
+                              :grain-dur (/ 1 (/ trig-rate 2))
+                              :amp-lfo (rrange 0.1 4)
+                              :amp-lfo-min 0.95
+                              :lpf-min 20
+                              :lpf-max (rrange 2000 10000)
+                              :start start
+                              :end end
+                              :pan (rrange -1 1)
+                              :out (main-returns :non-recordable)}]
+                  (amanecer*guitar-clouds-2 (assoc config
+                                                   :rate rate
+                                                   :amp (* amp (rrange 0.9 1) (norm-amp buf))))
+                  (amanecer*guitar-clouds-2 (assoc config
+                                                   :rate (* (rand-nth [2 3/2 7/4 1/2 1 1 1 1]) rate)
+                                                   :amp (* amp (rrange 0.7 0.9) (norm-amp buf)))))))))
+
+(comment
+  (hacia-un-nuevo-universo-perc-refrain-2
+    {:buf-fn (fn [_] (->> @rec/bufs vals (sort-by :rec/time) reverse (filter :analysis) (take 5) (#(when (seq %) (rand-nth %)))))
+     :rates (map #(* 2 %) [1 6 7 11 9 2 12 8 5 13]) #_(range 1 10)
+     :amp 0.9
+     :period 10
+     :durs [2 3 5 3]
+     :d-weights {8 1
+                 5 1
+                 3 1}
+     :d-level-weights {0.3 5
+                       0.1 2
+                       0.2 3
+                       0.4 2}
+     :a-weights {(rrange 0.01 0.3) 2
+                 (rrange 1 2) 3
+                 (rrange 2 5) 1}})
+  (->> @rec/bufs vals last)
+
+  (gp/stop)
+  (ref-rain
+    :id :hacia-un-nuevo-universo
+    :durs (periodize-durs 20 (bzs/f 20 0.1 1))
+    :on-event (on-event
+                (let [d (rrange 1 4)
+                      buf (rand-latest-buf)
+                      config {:buf buf
+                              :d d
+                              :amp 0.05
+                              :rev-room 4
+                              :trig-rate 200
+                              :grain-dur 1/100
+                              :a 2
+                              :amp-lfo 20
+                              :start 0 :end 1}
+                      rates (take (rand-int 5) [1 3 5 7 9])]
+                  (amanecer*guitar-clouds (assoc config
+                                                 :rate 2
+                                                 :amp (* (rrange 0.9 1) (norm-amp buf))
+                                                 :pan (rrange -1 1))))))
+  (ref-rain
+    :id :hacia-un-nuevo-universo-perc
+    :durs (periodize-durs 2 (bzs/f 20 0.1 1))
+    :on-event (on-event
+                (let [buf (rand-latest-buf)
+                      config {:buf buf
+                              :d (rrange 0.2 0.3)
+                              :amp 0.05
+                              :rev-room 0.2
+                              :trig-rate 100
+                              :grain-dur 1/50
+                              :a (rrange 0.01 0.1)
+                              :amp-lfo 20
+                              :start 0 :end 1}
+                      rate (at-i [1 2 3 4 5 6 7 8 9])]
+                  (amanecer*guitar-clouds (assoc config
+                                                 :rate rate
+                                                 :amp (* (rrange 0.9 1) (norm-amp buf))
+                                                 :pan (rrange -1 1))))))
+
+  #_(gp/stop)
+
+  #_(hacia-un-nuevo-universo-perc-refrain {:amp 1})
+  (defn hacia-un-nuevo-universo-perc-refrain
+    [{:keys [period notes-in-period durs rates amp d-weights room-weights]
+      :or {period 2.5
+           notes-in-period 20
+           durs (bzs/fsf notes-in-period 0.1 1)
+           rates (range 1 10)
+           amp 1
+           d-weights {(rrange 0.2 0.3) 5
+                      (rrange 0.3 0.5) 3
+                      (rrange 0.5 1) 1
+                      (rrange 1 5) 1/2}
+           room-weights {0.2 10, 2 1/2}}}]
+    (ref-rain
+      :id :hacia-un-nuevo-universo-perc2
+      :durs (periodize-durs period durs)
+      :on-event (on-event
+                  (let [buf (rand-latest-buf) #_(->> @rec/bufs vals last)
+                        start (rrange (rrange 0 0.5) 0.7)
+                        end (+ start (rrange 0.05 0.3))
+                        rate (at-i rates #_(concat [1 2 3 4 5 6 7 8 9]
+                                                   (map #(/ % 9/2) (range 9 18))
+                                                   (map #(/ (* 2 %) 19) (range 19 38))))
+                        a (weighted {(rrange 0.01 0.1) 10
+                                     (rrange 2 5) 1/2})
+                        config {:buf buf
+                                :a a
+                                :d (+ (/ a 2) (weighted d-weights))
+                                :rev-room (weighted room-weights)
+                                :trig-rate 100
+                                :grain-dur 1/50
+                                :amp-lfo 20
+                                :start start
+                                :end end
+                                :pan (rrange -1 1)}]
+                    (amanecer*guitar-clouds (assoc config
+                                                   :rate rate
+                                                   :amp (* amp (rrange 0.9 3) (norm-amp buf))))
+                    (amanecer*guitar-clouds (assoc config
+                                                   :rate (* (rand-nth [2 3/2 7/4 1/2]) rate)
+                                                   :amp (* amp (rrange 0.7 2) (norm-amp buf)))))))))
 
 (comment
   (init!)
@@ -218,16 +534,18 @@
                     {:amp (* (rrange 0.2 1) (norm-amp buf))
                      :rate (fn [{:keys [scale i]}] (scale/deg->freq scale 1 (+ (mod i 43))))})})
   (gp/stop)
-  (->> @rec/bufs  vals (map :amp-norm-mult))
+  (->> @rec/bufs vals (map :analysis))
+  (o/demo (o/play-buf 1 (-> @rec/bufs vals rand-nth)))
   (reset! rec/bufs {})
-  (let [scale (->> (cps/make 3 [9 13 15 21 27 31]) :scale)]
+  (let [scale (->> (cps/make 2 [1 3 5 7 9]) :scale)]
     (ref-rain
      :id ::rising-upwards
      :durs (periodize-durs 20 (bzs/f 20 0.1 1))
      :on-event (on-event
+                (println i (-> @rec/bufs vals rand-nth))
                 (let [buf (-> @rec/bufs vals rand-nth)]
 
-                  (s1 (synth-params
-                       buf
-                       {:amp (* (rrange 0.2 1) (norm-amp buf))
-                        :rate (scale/deg->freq scale 1 (+ (mod i 43)))})))))))
+                  (s1 (default-synth-params
+                        buf
+                        {:amp (* (rrange 0.2 1) (norm-amp buf))
+                         :rate (scale/deg->freq scale 1 (at-i [1 1 1 4 6 5]))})))))))

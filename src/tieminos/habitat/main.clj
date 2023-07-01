@@ -1,6 +1,7 @@
 (ns tieminos.habitat.main
   (:require
    [overtone.core :as o]
+   [overtone.sc.machinery.allocator :refer [clear-ids]]
    [taoensso.timbre :as timbre]
    [tieminos.habitat.init :refer [habitat-initialized? init!]]
    [tieminos.habitat.main-sequencer :as hseq]
@@ -12,8 +13,13 @@
    [tieminos.habitat.recording :as rec :refer [recording?]]
    [tieminos.habitat.resonance-panner :as reso-pan]
    [tieminos.habitat.routing
-    :refer [inputs main-returns preouts reaper-returns recordable-outputs
-            special-inputs texto-sonoro-rand-mixer-bus]]
+    :refer [inputs
+            main-returns
+            preouts
+            reaper-returns
+            recordable-outputs
+            special-inputs
+            texto-sonoro-rand-mixer-bus]]
    [tieminos.habitat.synths.main-fx :refer [main-fx]]
    [tieminos.osc.reaper :as reaper]
    [tieminos.utils :refer [stop-async-seq-call-loop!]]
@@ -107,6 +113,10 @@
   (stop-async-seq-call-loop!)
   (reset! recording? {})
   (reset! habitat-initialized? false))
+
+(comment
+  (clear-ids :audio-bus)
+  (clear-ids :control-bus))
 
 (defn start-habitat-performance! []
   (timbre/set-level! :info)

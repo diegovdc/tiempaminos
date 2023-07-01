@@ -3,10 +3,22 @@
    [clojure.data.generators :refer [weighted]]
    [overtone.core :as o]
    [taoensso.timbre :as timbre]
-   [tieminos.habitat.panners :refer [stop-panner!]]
-   [tieminos.math.bezier-samples :refer [f]]
-   [tieminos.utils :refer [ctl-synth]]
+   [tieminos.habitat.panners :as panners :refer [panner panner-rate
+                                                 stop-panner!]]
+   [tieminos.utils :refer [ctl-synth rrange]]
    [time-time.dynacan.players.gen-poly :as gp :refer [on-event ref-rain]]))
+
+(defn open-inputs-with-rand-pan
+  [{:keys [inputs preouts] :as _context}]
+  (doseq [input @inputs]
+    (let [[k {:keys [bus]}] input]
+      (panner {:in bus
+               :type :rand
+               :out (:bus (k @preouts))
+               :amp 0.5})
+      (panner-rate {:in bus
+                    :rate (rrange 0.1 0.5)
+                    :max 0.5}))))
 
 (defn free-synth-panner-and-bus
   "Works assuming a flow where synth's out-bus goes to a unique panner for that bus.
@@ -16,7 +28,7 @@
         panner-release 5]
     (cond
       (not release-time) (timbre/warn "Can not free-synth-panner-and-bus")
-      (not (o/node-active? synth)) nil ; do nothing
+      (not (o/node-active? synth)) nil  ; do nothing
       :else (ref-rain
              :id (keyword (str "free-synth-panner-and-bus" (rand-int 10000)))
              :durs [release-time panner-release 2]

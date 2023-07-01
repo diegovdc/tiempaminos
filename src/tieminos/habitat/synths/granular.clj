@@ -1,13 +1,93 @@
 (ns tieminos.habitat.synths.granular
-  (:require [overtone.core :as o]
-            [tieminos.overtone-extensions :as oe]
-            [tieminos.sc-utils.synths.v1 :refer [lfo]]))
+  (:require
+   [overtone.core :as o]
+   [tieminos.habitat.recording :refer [norm-amp]]
+   [tieminos.overtone-extensions :as oe]
+   [tieminos.sc-utils.synths.v1 :refer [lfo]]
+   [tieminos.utils :refer [rrange]]))
 
 (defn rand-start-end
   []
   (let [start (rand 0.9)
         end (+ start (rand (- 1 start)))]
     {:start start :end end}))
+
+(oe/defsynth amanecer*guitar-clouds
+    ;; TODO pass in manual envelope
+  [buf 0
+   trig-rate 40
+   grain-dur 1/20
+   rate 1
+   amp 1
+   amp-lfo-min 0.5
+   amp-lfo 0.1
+   start 0.1
+   end 0.3
+   a 0.1
+   d 1
+   d-level 0.3
+   r 3
+   out 0
+   lpf-min 100
+   lpf-max 2000
+   pan 0
+   rev-mix 1
+   rev-room 0.5
+   interp 1
+   a-level 1]
+  (o/out out
+         (-> (o/grain-buf
+              :num-channels 1
+              :trigger (o/impulse trig-rate)
+              :dur grain-dur
+              :sndbuf buf
+              :rate rate
+              :pos  (o/line start end (+ a d r))
+              :interp interp
+              :pan 0)
+             (o/lpf (lfo 0.1 lpf-min lpf-max))
+             (#(o/pan-az 4 % :pos pan :width (lfo 0.1 1 2.5)))
+             (o/free-verb rev-mix rev-room)
+             (* amp
+                #_(lfo amp-lfo amp-lfo-min 1)
+                (o/env-gen (o/envelope [0 a-level d-level 0] [a d r]
+                                       [-1 -5])
+                           :action o/FREE)))))
+
+(oe/defsynth amanecer*snare-mist
+    ;; TODO pass in manual envelope
+  [buf 0
+   trig-rate 100
+   grain-dur 1/10
+   rate 1
+   amp 1
+   min-amp 0.5
+   amp-lfo 0.1
+   start 0.1
+   end 0.3
+   a 0.1
+   d 1
+   d-level 0.3
+   r 3
+   out 0]
+
+  (o/out out
+         (-> (o/grain-buf
+              :num-channels 1
+              :trigger (o/dust trig-rate)
+              :dur [grain-dur]
+              :sndbuf buf
+              :rate rate
+              :pos (+  #_(lfo 200 start end) (o/line start end (apply + [a d r])))
+              :pan 0)
+             (o/lpf (lfo 0.1 20 2700))
+             (#(o/pan-az 4 % :pos (lfo 0.1 -1 1) :width (lfo 0.1 1 2.5)))
+             (* (lfo 5 0 1))
+             (o/free-verb 0.5 2 0.1)
+             (* amp
+                (o/env-gen (o/envelope [0 1 d-level 0] [a d r]
+                                       [-1 -5])
+                           :action o/FREE)))))
 
 (comment
   (require '[tieminos.sc-utils.recording.v1 :refer [bufs]]
@@ -16,50 +96,32 @@
 
   (o/defsynth play-buf*
     [buf 0]
-    (o/out 0 (o/play-buf 1 buf)))
+    (o/out 0 (o/play-buf 1 buf :action o/FREE)))
 
+  (play-buf*
+   (->> @rec/bufs vals rand-nth))
+  (o/stop)
+  (let [d (rrange 1 4)
+        buf (->> @rec/bufs vals rand-nth)
+        config {:buf buf
+                :d d
+                :amp 0.05
+                :rev-room 4
+                :trig-rate 200
+                :grain-dur 1/100
+                :a 2
+                :amp-lfo 20
+                :start 0 :end 1}
+        rates (take (rand-int 5) [1 3 5 7 9])]
+    (doseq [r rates]
+      (amanecer*guitar-clouds (assoc config
+                                     :rate r
+                                     :amp (* (rrange 0.9 1) (norm-amp buf))
+                                     :pan (rrange -1 1)))))
   ;; todo generate bufs go to `tieminos.sc-utils.recording.v1`
   ;; and play some stuff in the `comment` at the bottom
   (->> @rec/bufs keys)
-  (oe/defsynth amanecer*guitar-clouds
-    ;; TODO pass in manual envelope
-    [buf 0
-     trig-rate 40
-     grain-dur 1/20
-     rate 1
-     amp 1
-     min-amp 0.5
-     amp-lfo 0.1
-     start 0.1
-     end 0.3
-     a 0.1
-     d 1
-     d-level 0.3
-     r 3
-     out 0
-     lpf-min 100
-     lpf-max 2000
-     pan 0
-     rev-mix 1
-     rev-room 0.5
-     a-level 1]
-    (o/out out
-           (-> (o/grain-buf
-                :num-channels 1
-                :trigger (o/impulse trig-rate)
-                :dur grain-dur
-                :sndbuf buf
-                :rate rate
-                :pos  (o/line start end (+ a d r))
-                :pan 0)
-               #_(o/lpf (lfo 0.1 lpf-min lpf-max))
-               (#(o/pan-az 4 % :pos pan :width (lfo 0.1 1 2.5)))
-               (o/free-verb rev-mix rev-room)
-               (* amp
-                  #_(lfo 0.1 0 1)
-                  (o/env-gen (o/envelope [0 a-level d-level 0] [a d r]
-                                         [-1 -5])
-                             :action o/FREE)))))
+
   (play-buf* (:amanecer-pt4-mic-3-4 @rec/bufs))
   (oe/defsynth amanecer*snare-mist
     ;; TODO pass in manual envelope
@@ -125,4 +187,3 @@
                   :input-name "mic-2"
                   :input-bus mic-2-bus
                   :dur-s 7}))
-

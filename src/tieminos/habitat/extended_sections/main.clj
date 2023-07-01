@@ -5,15 +5,17 @@
    [erv.cps.core :as cps]
    [erv.scale.core :as scale]
    [taoensso.timbre :as timbre]
-   [tieminos.compositions.garden-earth.synths.recording :as rec]
    [tieminos.habitat.init :refer [habitat-initialized? init!]]
    [tieminos.habitat.main :as main]
    [tieminos.habitat.main-sequencer :as hseq :refer [subsequencer]]
    [tieminos.habitat.parts.amanecer :as amanecer]
    [tieminos.habitat.parts.noche :as noche]
    [tieminos.habitat.recording :refer [norm-amp]]
-   [tieminos.habitat.scratch.sample-rec2 :refer [rising-upwards
-                                                 start-rec-loop!]]
+   [tieminos.habitat.recording :as rec]
+   [tieminos.habitat.routing :refer [inputs]]
+   [tieminos.habitat.scratch.sample-rec2 :refer [hacia-un-nuevo-universo-perc-refrain rand-latest-buf
+                                                 rising-upwards start-rec-loop! start-rec-loop!2]]
+   [tieminos.math.bezier-samples :as bzs]
    [tieminos.utils :refer [rrange]]
    [time-time.dynacan.players.gen-poly :as gp]))
 
@@ -88,23 +90,144 @@
 (def polinizadores-nocturnos
   ;; TODO revisar refrains de emision hay cosas raras (aumentos de volumen y saturación del servidor)
   {:context (merge main/context {})
-   :sections [#_[[52 15] #'noche/fuego]
-              #_[[52 18] #'noche/fuego-stop]
-              [[52 22] #'polinizadores-nocturnos*]
+   :sections [[[52 22] #'polinizadores-nocturnos*]
               [[62 10] (fn [_] (println "end"))]]
    :initial-sections #'polinizadores-nocturnos*
    ;; :rec? true
    })
 
-(comment
-  (main/start-sequencer! polinizadores-nocturnos)
-  (noche/fuego hseq/context)
-  (noche/fuego-stop hseq/context))
+(defn hacia-un-nuevo-universo*
+  [context]
+  (noche/hacia-un-nuevo-universo context)
+  (subsequencer
+   :sequencer/polinizadores-nocturnos
+   context
+   (let [scale-1 (->> (cps/make 3 [9 13 15 21 27 31]) :scale)
+         make-sample-player-config (fn [scale]
+                                     {:buf-fn (fn [_] (-> @rec/bufs vals rand-nth))
+                                      :period-dur 20
+                                      :total-durs 20
+                                      :loop? true
+                                      :refrain-id :rising-upwards-loop
+                                      :synth-params (fn [{:keys [buf i]}]
+                                                      {:amp (* (rrange 0.2 1) (norm-amp buf))
+                                                       :rate (scale/deg->freq scale 1 (+ (mod i 43)))})})]
+     ;; TODO coso percusivo con samples ganulados, breves y reson-eco-reverb, tal vez convlucieon
+     ;; Siempre usar últimos sonidos tocados
+     ;; Transponer siempre espectral
+     [[[62 10] (fn [_]
+                 (start-rec-loop!2
+                  {:input-bus-fn (fn [_] (-> @inputs (select-keys [:guitar :mic-1 :mic-2]) vals rand-nth :bus))
+                   :durs (mapv (fn [_] (rrange 1 3)) (range 40))})
+                 (hacia-un-nuevo-universo-perc-refrain
+                  {:buf-fn rand-latest-buf
+                   :period 5
+                   :amp 5
+                   :durs (bzs/fsf 10 0.1 1)
+                   :rates (concat (map #(* % 4) (range 1 14)))
+                   :d-weights {(rrange 0.2 0.3) 5
+                               (rrange 0.3 0.5) 3
+                               (rrange 0.5 1) 1
+                               (rrange 1 5) 2}}))]
+      [[63 30] (fn [_] (hacia-un-nuevo-universo-perc-refrain
+                        {:buf-fn rand-latest-buf
+                         :period 5
+                         :amp 8
+                         :durs (bzs/fsf 18 0.1 1)
+                         :rates (concat (range 1 14)
+                                        (map #(/ % 2) (range 14 29)))
+                         :a-weights {(rrange 0.01 0.1) 3
+                                     (rrange 2 5) 1}
+                         :d-weights {(rrange 0.2 0.3) 5
+                                     (rrange 0.3 0.5) 3
+                                     (rrange 0.5 1) 1
+                                     (rrange 1 5) 1}}))]
+      [[64 40] (fn [_] (hacia-un-nuevo-universo-perc-refrain
+                        {:buf-fn rand-latest-buf
+                         :period 3.5
+                         :amp 8
+                         :durs (bzs/fsf 20 0.1 1)
+                         :rates (concat (map #(/ % 4) (range 64 128)))
+                         :a-weights {(rrange 0.01 0.1) 6
+                                     (rrange 2 5) 1}
+                         :d-weights {(rrange 0.2 0.3) 5
+                                     (rrange 0.3 0.5) 3
+                                     (rrange 0.5 1) 1.5
+                                     (rrange 1 5) 0.5}}))]
+      [[65 0] (fn [_] (hacia-un-nuevo-universo-perc-refrain
+                       {:buf-fn rand-latest-buf
+                        :period 3
+                        :amp 9
+                        :durs (bzs/fsf 20 0.1 1)
+                        :rates (concat (map #(/ % 4) (range 64 128)))
+                        :d-weights {(rrange 0.2 0.3) 5
+                                    (rrange 0.3 0.5) 3
+                                    (rrange 0.5 1) 1
+                                    (rrange 1 5) 1/2}}))]
+      [[65 10] (fn [_] (hacia-un-nuevo-universo-perc-refrain
+                        {:buf-fn rand-latest-buf
+                         :period 2.5
+                         :amp 10
+                         :durs (bzs/fsf 20 0.1 1)
+                         :rates (concat (map #(/ % 4) (range 64 128)))
+                         :d-weights {(rrange 0.2 0.3) 5
+                                     (rrange 0.3 0.5) 3
+                                     (rrange 0.5 1) 1
+                                     (rrange 1 5) 1/2}}))]
+      [[65 30] (fn [_] (hacia-un-nuevo-universo-perc-refrain
+                        {:buf-fn rand-latest-buf
+                         :period 2.5
+                         :amp 10
+                         :durs (bzs/fsf 20 0.1 1)
+                         :rates (concat (map #(/ % 4) (range 64 128)))
+                         :d-weights {(rrange 0.2 0.3) 5
+                                     (rrange 0.3 0.5) 3
+                                     (rrange 0.5 1) 1
+                                     (rrange 1 5) 1/2}}))]
+      [[66 0] (fn [_] (hacia-un-nuevo-universo-perc-refrain
+                       {:buf-fn rand-latest-buf
+                        :period 2.5
+                        :amp 7
+                        :durs (bzs/fsf 20 0.1 1)
+                        :rates (concat (range 1 38))
+                        :d-weights {(rrange 0.2 0.3) 5
+                                    (rrange 0.3 0.5) 3
+                                    (rrange 0.5 1) 1
+                                    (rrange 1 5) 1/2}
+                        :a-weights {(rrange 0.01 0.1) 5
+                                    (rrange 2 5) 1}}))]
+      [[66 30] (fn [_] (hacia-un-nuevo-universo-perc-refrain
+                        {:buf-fn rand-latest-buf
+                         :period 4
+                         :amp 5
+                         :durs (bzs/fsf 20 0.1 1)
+                         :rates (concat (range 1 19))
+                         :d-weights {(rrange 0.2 0.3) 5
+                                     (rrange 0.3 0.5) 3
+                                     (rrange 0.5 1) 1
+                                     (rrange 1 5) 1/2}}))]
+
+      [[67 0] (fn [_]
+                (gp/stop :rec-loop2)
+                (gp/stop :hacia-un-nuevo-universo-perc2))]])))
+
+(def hacia-un-nuevo-universo
+  {:context (merge main/context {})
+   :sections [[[62 10] #'hacia-un-nuevo-universo*]
+              #_[[67 45] #'noche/hacia-un-nuevo-universo-stop]]
+   :initial-sections #'hacia-un-nuevo-universo*
+   ;; :rec? true
+   })
 
 (comment
+  (main/start-sequencer! hacia-un-nuevo-universo))
 
+(comment
+  ;; TODO generar función para abrir y cerrar los micros para probar
   (-> @hseq/context)
+  (fn [_] (-> @inputs (select-keys [:guitar :mic-1 :mic-2]) vals rand-nth :bus))
   (timbre/set-level! :info)
   (do  (when @habitat-initialized?
          (main/stop-sequencer! hseq/context))
        (init!)))
+
