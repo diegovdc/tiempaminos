@@ -31,8 +31,11 @@
   (let [ks (keys key-data)
         key* (first (filter #(str/includes? % "Key_") ks))
         chan (first (filter #(str/includes? % "Chan_") ks))
-        color (first (filter #(str/includes? % "Col_") ks))]
+        color (first (filter #(str/includes? % "Col_") ks))
+        key-type  (first (filter #(str/includes? % "KTyp_") ks))]
     {:key key*
+     :key-type key-type
+     :key-type-val (get key-data key-type)
      :key-val (get key-data key*)
      :chan chan
      :chan-val (get key-data chan)
