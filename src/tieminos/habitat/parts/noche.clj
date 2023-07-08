@@ -5,7 +5,7 @@
    [overtone.core :as o]
    [taoensso.timbre :as timbre]
    [tieminos.habitat.groups :as groups]
-   [tieminos.habitat.panners :refer [panner stop-panner!]]
+   [tieminos.habitat.panners :refer [panner panner-rate stop-panner!]]
    [tieminos.habitat.parts.amanecer :refer [quick-jump-trayectories]]
    [tieminos.habitat.parts.dia-back
     :as dia
@@ -264,8 +264,8 @@
                                                          :rate (rrange 0.3 0.7)
                                                          :width 3})
                                                 (Thread/sleep 20)
-                                                (let [end-1 (if (= k :guitar) 1.5 0.85)
-                                                      end-2 (if (= k :guitar) 3 1)]
+                                                (let [end-1 (if (= k :guitar) 0.3 0.5)
+                                                      end-2 (if (= k :guitar) 0.1 1)]
                                                   (ctl-interpolation {:dur-s (/ dur-s 3)
                                                                       :step-ms 100
                                                                       :synth convolver
@@ -283,15 +283,12 @@
       (let [pos (* i 1/4)]
         (timbre/debug "pos size" pos k bus)
         (panner {:in bus
-                 :type :trayectory
-                 :out (:bus (k @preouts) #_((if (= k :guitar) :osc-reverb :light-reverb)
-                                            @main-fx))
-                 :trayectory [{:pos pos :width 1.3 :dur (/ dur-s 4)}
-                              {:pos (+ pos 1.25) :width 2.5 :dur (/ dur-s 4)}
-                              {:pos (+ pos 2.5) :width 4 :dur (/ dur-s 8)}
-                              {:pos (+ pos 3) :width 3 :dur (/ dur-s 4)}
-                              {:pos (+ pos 3.25) :width 4 :dur (/ dur-s 4)}]
-                 :a 7})))
+                 :type :rand
+                 :out (:bus (k @preouts))
+                 :amp 0.5})
+        (panner-rate {:in bus
+                      :rate (rrange 0.1 0.5)
+                      :max 0.5})))
     (ctl-interpolation {:dur-s (* 2/3 dur-s)
                         :step-ms 100
                         :synth (:synth (:osc-reverb @main-fx))
