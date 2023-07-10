@@ -137,35 +137,56 @@
    :durs (mapv (fn [_] (rrange 3 10)) (range 40))
    :on-event (on-event
               (rec&play (-> @recordable-outputs vec rand-nth second :bus)
-                        dur-s
+                        (max 0.01 (- dur-s 0.1)) ;; prevent the `recording?` pred to fail by just a few ms of overlap
                         (fn [_])))))
-(defn start-rec-loop!2
+(defn start-rec-loop2!
+  "Calls an input-bus-fn to get a bus for recording."
   [{:keys [input-bus-fn
            durs]
     :or {durs (mapv (fn [_] (rrange 3 10)) (range 40))}}]
   (ref-rain
-   :id :rec-loop2
-   :durs durs
-   :on-event (on-event
-              (rec&play (input-bus-fn {:index index})
-                        dur-s
-                        (fn [_])))))
+    :id :rec-loop2
+    :durs durs
+    :on-event (on-event
+                (rec&play (input-bus-fn {:index index})
+                          (max 0.01 (- dur-s 0.1)) ;; prevent the `recording?` pred to fail by just a few ms of overlap
+                          (fn [_])))))
+
+(defn start-rec-loop3!
+  "Calls an input-bus-fn to get a vector or busses for recording"
+  [{:keys [input-bus-fn
+           durs]
+    :or {durs (mapv (fn [_] (rrange 3 10)) (range 40))}}]
+  (ref-rain
+    :id :rec-loop3
+    :durs durs
+    :on-event (on-event
+                (let [buses (input-bus-fn {:index index})]
+                  (doseq [bus buses]
+                    (rec&play bus
+                              (max 0.01 (- dur-s 0.1)) ;; prevent the `recording?` pred to fail by just a few ms of overlap
+                              (fn [_])))))))
 
 (defn rand-latest-buf [_]
   (->> @rec/bufs vals (sort-by :rec/time) reverse (filter :analysis) (take 3) (rand-nth)))
 
 (comment
   (open-inputs-with-rand-pan
-   {:inputs inputs
-    :preouts preouts})
+    {:inputs inputs
+     :preouts preouts})
   (gp/stop)
-  (gp/stop :rec-loop2)
   (reset! recording? {})
   (reset! rec/bufs {})
+  (start-rec-loop2!
+    {:input-bus-fn (fn [_] (-> @inputs (select-keys [:guitar :mic-1]) vals rand-nth :bus))
+     :durs (mapv (fn [_] (rrange 5 10)) (range 40))})
+  (gp/stop :rec-loop2)
 
-  (start-rec-loop!2
-   {:input-bus-fn (fn [_] (-> @inputs (select-keys [:guitar :mic-1]) vals rand-nth :bus))
-    :durs (mapv (fn [_] (rrange 5 10)) (range 40))})
+  (start-rec-loop3!
+    {:input-bus-fn (fn [_] (-> @inputs (select-keys [:guitar :mic-1]) vals (->> (map :bus))))
+     :durs (mapv (fn [_] (rrange 5 10)) (range 40))})
+  (gp/stop :rec-loop3)
+
   (hacia-un-nuevo-universo-perc-refrain {:buf-fn (fn [_] (->> @rec/bufs vals (sort-by :rec/time) reverse (filter :analysis) (take 5) (#(when (seq %) (rand-nth %)))))
                                          :rates (map #(* 2 %) [1 6 7 11 9 2 12 8 5 13]) #_(range 1 10)
                                          :amp 1

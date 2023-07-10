@@ -13,7 +13,10 @@
    [tieminos.habitat.recording  :as rec :refer [norm-amp recording?]]
    [tieminos.habitat.routing :refer [inputs preouts]]
    [tieminos.habitat.scratch.sample-rec2 :refer [hacia-un-nuevo-universo-perc-refrain
-                                                 hacia-un-nuevo-universo-perc-refrain-v1p2 rising-upwards start-rec-loop! start-rec-loop!2]]
+                                                 hacia-un-nuevo-universo-perc-refrain-v1p2
+                                                 rising-upwards
+                                                 start-rec-loop!
+                                                 start-rec-loop2!]]
    [tieminos.habitat.utils :refer [open-inputs-with-rand-pan]]
    [tieminos.utils :refer [rrange]]
    [time-time.dynacan.players.gen-poly :as gp]))
@@ -108,7 +111,7 @@
 
    [[[62 10]
      (fn [_context]
-       (start-rec-loop!2
+       (start-rec-loop2!
         {:input-bus-fn (fn [_] (-> @inputs (select-keys [:guitar :mic-1]) vals rand-nth :bus))
          :durs (mapv (fn [_] (rrange 5 10)) (range 40))})
        (hacia-un-nuevo-universo-perc-refrain
@@ -153,7 +156,7 @@
   (transpose-chord [0 1 2] [0 1 2 3])
   (fib-chord-seq (transpose-chord [0 1 2] [0 1 2 3]))
 
-  (start-rec-loop!2
+  (start-rec-loop2!
     {:input-bus-fn (fn [_] (-> @inputs (select-keys [:guitar :mic-1 :mic-2]) vals rand-nth :bus))
      :durs (mapv (fn [_] (rrange 5 10)) (range 40))})
 
@@ -209,7 +212,7 @@
                      :preouts preouts}))]
        [[90 00]
         (fn [_]
-          (start-rec-loop!2
+          (start-rec-loop2!
             {:input-bus-fn (fn [_] (-> @inputs (select-keys [:guitar :mic-1 :mic-2]) vals rand-nth :bus))
              :durs (mapv (fn [_] (rrange 5 10)) (range 40))})
           (hacia-un-nuevo-universo-perc-refrain-v1p2
@@ -328,7 +331,7 @@
 
        [[105 0] (fn [_]
                  (gp/stop :rec-loop2)
-                 (gp/stop :hacia-un-nuevo-universo-perc2))]]))
+                  (gp/stop :hacia-un-nuevo-universo-perc2))]]))
   (def hacia-un-nuevo-universo-impro
     {:context (merge main/context {})
      :sections [[[87 00] #'hacia-un-nuevo-universo-live]]
