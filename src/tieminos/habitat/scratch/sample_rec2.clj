@@ -235,6 +235,60 @@
                                                  :interp (rand-nth [1 2 4])
                                                  :amp (* amp (rrange 0.7 0.9) (norm-amp buf)))))))))
 
+(defn hacia-un-nuevo-universo-perc-refrain-v1p2
+  "This version can handle rate chords (a vector of rates)"
+  [{:keys [buf-fn period durs rates amp d-weights d-level-weights a-weights room-weights]
+    :or {buf-fn rand-latest-buf
+         period 2.5
+         durs (bzs/fsf 20 0.1 1)
+         rates (range 1 10)
+         amp 1
+         a-weights {(rrange 0.01 0.1) 10
+                    (rrange 2 5) 1/2}
+         d-weights {(rrange 0.2 0.3) 5
+                    (rrange 0.3 0.5) 3
+                    (rrange 0.5 1) 1
+                    (rrange 1 5) 1/2}
+         d-level-weights {0.3 1}
+         room-weights {0.2 2, 2 1/2 4 1/2}}}]
+  (let [rates* (map (fn [r] (if (sequential? r) r [r])) rates)]
+    (ref-rain
+      :id :hacia-un-nuevo-universo-perc2
+      :durs (periodize-durs period durs)
+      :on-event (on-event
+                  (when-let [buf (buf-fn {:index index})]
+                    (let [rate (at-i rates*)]
+                      (doseq [r rate]
+                        (let [start 0 #_(rrange (rrange 0 0.5) 0.7)
+                              end 1 #_(+ start (rrange 0.05 0.3))
+                              a (weighted a-weights)
+                              trig-rate (+ 90 (rand-int 20))
+                              config {:buf buf
+                                      :a a
+                                      :d (/ (+ (/ a 2) (weighted d-weights))
+                                            2)
+                                      :r (+ (/ a 2) (weighted d-weights))
+                                      :d-level (weighted d-level-weights)
+                                      :rev-room (weighted room-weights)
+                                      :trig-rate 100
+                                      :grain-dur (/ 1 (/ trig-rate 2))
+                                      :amp-lfo (rrange 0.1 0.4)
+                                      :amp-lfo-min 0.95
+                                      :lpf-max (rrange 2000 10000)
+                                      :start start
+                                      :end end
+                                      :out (main-returns :non-recordable)
+                                      :pan (rrange -1 1)}]
+                          (amanecer*guitar-clouds (assoc config
+
+                                                         :rate (float r)
+                                                         :interp (rand-nth [1 2 4])
+                                                         :amp (* amp (rrange 0.2 1) (norm-amp buf))))
+                          (amanecer*guitar-clouds (assoc config
+                                                 :rate (* (rand-nth [2 3/2 5/4 7/4 1/2 1 1 1 1]) r)
+                                                 :interp (rand-nth [4])
+                                                 :amp (* amp (rrange 0 0.7) (norm-amp buf))))))))))))
+
 
 (oe/defsynth amanecer*guitar-clouds-2
   ;; TODO pass in manual envelope
