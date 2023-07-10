@@ -186,6 +186,16 @@
   [buf]
   (:amp-norm-mult buf 1))
 
+
+
+(defn silence?
+  ([buf] (silence? 0.05 buf))
+  ([threshold buf]
+   (if-let [max-amp (-> buf :analysis :max-amp)]
+     (< max-amp threshold)
+     (do (timbre/warn "Buffer has no `:analysis :max-amp` key. Assuming it is silent.")
+         true))))
+
 #_:clj-kondo/ignore
 (comment
   (require '[tieminos.habitat.routing :refer [guitar-bus
