@@ -153,7 +153,7 @@
                           (fn [_])))))
 
 (defn start-rec-loop3!
-  "Calls an input-bus-fn to get a vector or busses for recording"
+  "Calls an input-bus-fn to get a vector or busses for recording. Records all inputs simultaneously and with the same duration."
   [{:keys [input-bus-fn
            durs]
     :or {durs (mapv (fn [_] (rrange 3 10)) (range 40))}}]
@@ -166,6 +166,23 @@
                     (rec&play bus
                               (max 0.01 (- dur-s 0.1)) ;; prevent the `recording?` pred to fail by just a few ms of overlap
                               (fn [_])))))))
+(defn start-rec-loop4!
+  "Records all inputs asynchronously and with (potentially) different durations.
+
+  `rec-data-vec` is a list of maps with `:id` (keyword), `:bus`, and `:durs` (optional)"
+  [rec-data-vec]
+  (mapv (fn [{:keys [id bus durs]
+            :or {durs (mapv (fn [_] (rrange 3 10)) (range 40))}}]
+         (let [id* (keyword "rec-loop4" (if (keyword? id) (name id) (str id)))]
+           (ref-rain
+             :id id*
+             :durs durs
+             :on-event (on-event
+                         (rec&play bus
+                                   (max 0.01 (- dur-s 0.1)) ;; prevent the `recording?` pred to fail by just a few ms of overlap
+                                   (fn [_]))))
+           id*))
+       rec-data-vec))
 
 (defn rand-latest-buf [_]
   (->> @rec/bufs vals (sort-by :rec/time) reverse (filter :analysis) (take 3) (rand-nth)))
@@ -186,6 +203,11 @@
     {:input-bus-fn (fn [_] (-> @inputs (select-keys [:guitar :mic-1]) vals (->> (map :bus))))
      :durs (mapv (fn [_] (rrange 5 10)) (range 40))})
   (gp/stop :rec-loop3)
+
+  (def rec-loop-ids (start-rec-loop4!
+                      (map (fn [[id data]] (assoc data :id id))
+                           (select-keys @inputs [:guitar :mic-1]))))
+  (doseq [id rec-loop-ids] (gp/stop id))
 
   (hacia-un-nuevo-universo-perc-refrain {:buf-fn (fn [_] (->> @rec/bufs vals (sort-by :rec/time) reverse (filter :analysis) (take 5) (#(when (seq %) (rand-nth %)))))
                                          :rates (map #(* 2 %) [1 6 7 11 9 2 12 8 5 13]) #_(range 1 10)
