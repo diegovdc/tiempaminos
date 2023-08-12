@@ -42,7 +42,7 @@
 
   A minimum `:width` of around `1.3` is good for panning from single channel to single channel.
   Maximum `:width` should be `4` otherwise artifacts may be produced."
-  [& {:keys [num-channels in pos level width orientation]
+  [& {:keys [_num-channels _in _pos _level _width _orientation]
       :as pan-az-args}]
   (circle-az* (apply o/pan-az (flatten (seq pan-az-args)))))
 

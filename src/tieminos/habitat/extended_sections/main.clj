@@ -4,17 +4,19 @@
   (:require
    [erv.cps.core :as cps]
    [erv.scale.core :as scale]
+   [overtone.core :as o]
    [taoensso.timbre :as timbre]
+   [tieminos.habitat.groups :as groups]
    [tieminos.habitat.init :refer [habitat-initialized? init!]]
    [tieminos.habitat.main :as main]
    [tieminos.habitat.main-sequencer :as hseq :refer [subsequencer]]
    [tieminos.habitat.parts.amanecer :as amanecer]
    [tieminos.habitat.parts.noche :as noche]
    [tieminos.habitat.recording  :as rec :refer [norm-amp recording?]]
-   [tieminos.habitat.routing :refer [inputs preouts]]
+   [tieminos.habitat.routing :refer [inputs main-returns preouts]]
    [tieminos.habitat.scratch.sample-rec2 :refer [hacia-un-nuevo-universo-perc-refrain
-                                                 hacia-un-nuevo-universo-perc-refrain-v1p2 rising-upwards start-rec-loop! start-rec-loop2!
-                                                 start-rec-loop3!]]
+                                                 hacia-un-nuevo-universo-perc-refrain-v1p2 quad-router-2o rev-filter rising-upwards start-rec-loop!
+                                                 start-rec-loop2! start-rec-loop3!]]
    [tieminos.habitat.utils :refer [open-inputs-with-rand-pan]]
    [tieminos.utils :refer [rrange]]
    [time-time.dynacan.players.gen-poly :as gp]))
@@ -206,6 +208,20 @@
                  (rrange 2 5) 1}})
 
 
+
+  (def in1 (o/audio-bus 4 "test-in-bus"))
+  (def out1 (o/audio-bus 4 "test-out-bus1"))
+  (def out2 (o/audio-bus 4 "test-out-bus1"))
+
+  (def qbr (quad-router-2o {:group (groups/mid :tail)
+                            :in-bus in1
+                            :out-bus1 out1
+                            :out-bus2 (main-returns :mixed)} ))
+
+  (o/kill qbr)
+  (rev-filter
+    {:group (groups/panners)
+     :in-bus out1})
   ;; TODO renombrar
   (defn hacia-un-nuevo-universo-live
     [context]
@@ -224,7 +240,8 @@
             {:input-bus-fn (fn [_] (-> @inputs (select-keys [:guitar :mic-1 :mic-2]) vals (->> (map :bus))))
              :durs (mapv (fn [_] (rrange 5 10)) (range 40))})
           (hacia-un-nuevo-universo-perc-refrain-v1p2
-            {:buf-fn (fn [_] (->> @rec/bufs vals (sort-by :rec/time) reverse (filter :analysis) (take 10) (#(when (seq %) (rand-nth %)))))
+            {:out-bus in1
+             :buf-fn (fn [_] (->> @rec/bufs vals (sort-by :rec/time) reverse (filter :analysis) (take 10) (#(when (seq %) (rand-nth %)))))
              :rates #_(interleave (fib-chord-seq (transpose-chord [0 9 16] [20 19 2 27 23 34 50 48])
                                                  #_(transpose-chord [0 5 13 21] (map #(- % 21) [20 28 25 31 39 27])))
                                   (fib-chord-seq (transpose-chord [8] [20 19 2 27 23 34 50 48]))
@@ -238,7 +255,7 @@
              (interleave (fib-chord-seq (transpose-chord [0 5 13 21] (range 0 (* 21 6) 5)))
                          (reverse (fib-chord-seq (transpose-chord [0 5 13 21] (range 0 (* 21 6) 5)))))
              :amp 0.6
-             :period 30
+             :period 10
              :durs [2 3 5 3 8]
              :d-weights {8 1
                          5 1
@@ -251,10 +268,46 @@
                          (rrange 0.2 0.8) 1
                          (rrange 1 2) 3
                          (rrange 2 5) 1}}))]
-       [[95 00]
+       [[93 00]
         (fn [_]
+          (start-rec-loop3!
+            {:input-bus-fn (fn [_] (-> @inputs (select-keys [:guitar :mic-1 :mic-2]) vals (->> (map :bus))))
+             :durs (mapv (fn [_] (rrange 5 10)) (range 40))})
           (hacia-un-nuevo-universo-perc-refrain-v1p2
-            {:buf-fn (fn [_] (->> @rec/bufs vals (sort-by :rec/time) reverse (filter :analysis) (take 10) (#(when (seq %) (rand-nth %)))))
+            {:out-bus in1
+             :buf-fn (fn [_] (->> @rec/bufs vals (sort-by :rec/time) reverse (filter :analysis) (take 10) (#(when (seq %) (rand-nth %)))))
+             :rates #_(interleave (fib-chord-seq (transpose-chord [0 9 16] [20 19 2 27 23 34 50 48])
+                                                 #_(transpose-chord [0 5 13 21] (map #(- % 21) [20 28 25 31 39 27])))
+                                  (fib-chord-seq (transpose-chord [8] [20 19 2 27 23 34 50 48]))
+                                  (fib-chord-seq (transpose-chord [-2 13 18] [20 19 27 23 3 34 50 48]))
+                                  (fib-chord-seq (transpose-chord [3] [20 19 2 27 23 34 50 48]))
+                                  (fib-chord-seq (transpose-chord [-15 21] [20 19 27 23 34 50 48 0]))
+                                  (fib-chord-seq (transpose-chord [13] [20 19 2 27 23 34 50 48])))
+             #_(concat (fib-chord-seq (transpose-chord [0 5 13 21] (map #(- % 21) [20 28 25 31 39 27])))
+                       (fib-chord-seq (transpose-chord [0 5 13 21] (map #(* 2 (- % 21)) [20 28 25 31 39 27])))
+                       (fib-chord-seq (transpose-chord [0 5 13 21] (map #(* 4 (- % 21)) [20 28 25 31 39 27]))))
+             (interleave (fib-chord-seq (transpose-chord [0 5 13 21] (range 0 (* 21 6) 5)))
+                         (reverse (fib-chord-seq (transpose-chord [0 5 13 21] (range 0 (* 21 6) 5)))))
+             :amp 0.6
+             :period 10
+             :durs [2 3 5 3 8]
+             :d-weights {8 1
+                         5 1
+                         3 1}
+             :d-level-weights {0.3 5
+                               0.1 2
+                               0.2 3
+                               0.4 2}
+             :a-weights {(rrange 0.01 0.2) 1/4
+                         (rrange 0.2 0.8) 1
+                         (rrange 1 2) 3
+                         (rrange 2 5) 1}}))]
+       [[96 00]
+        (fn [_]
+          ;; duraciones y ataques más largos
+          (hacia-un-nuevo-universo-perc-refrain-v1p2
+            {:out-bus in1
+             :buf-fn (fn [_] (->> @rec/bufs vals (sort-by :rec/time) reverse (filter :analysis) (take 10) (#(when (seq %) (rand-nth %)))))
              :rates #_(interleave (fib-chord-seq (transpose-chord [0 9 16] [20 19 2 27 23 34 50 48])
                                                  #_(transpose-chord [0 5 13 21] (map #(- % 21) [20 28 25 31 39 27])))
                                   (fib-chord-seq (transpose-chord [8] [20 19 2 27 23 34 50 48]))
@@ -279,10 +332,51 @@
                                0.4 2}
              :a-weights {(rrange 8 15) 4
                          (rrange 2 5) 1}}))]
-       [[100 00]
+       [[99 00]
         (fn [_]
+          ;; acordes graves
+          ;;
+          ;; Mucho menos material
+          ;; Dejar que la maquina esté generando el camino
+          ;; Utilizamos lo que la maquina produce como material para desarrollar
+          ;; Imagen: planeta hostil, entorno raro, desertico, venenoso quizá
+          ;; Imagen: nebulosa
+          ;;
           (hacia-un-nuevo-universo-perc-refrain-v1p2
-            {:buf-fn (fn [_] (->> @rec/bufs vals (sort-by :rec/time) reverse (filter :analysis) (take 10) (#(when (seq %) (rand-nth %)))))
+            {:out-bus in1
+             :buf-fn (fn [_] (->> @rec/bufs vals (sort-by :rec/time) reverse (filter :analysis) (take 10) (#(when (seq %) (rand-nth %)))))
+             :rates #_(interleave (fib-chord-seq (transpose-chord [0 9 16] [20 19 2 27 23 34 50 48])
+                                                 #_(transpose-chord [0 5 13 21] (map #(- % 21) [20 28 25 31 39 27])))
+                                  (fib-chord-seq (transpose-chord [8] [20 19 2 27 23 34 50 48]))
+                                  (fib-chord-seq (transpose-chord [-2 13 18] [20 19 27 23 3 34 50 48]))
+                                  (fib-chord-seq (transpose-chord [3] [20 19 2 27 23 34 50 48]))
+                                  (fib-chord-seq (transpose-chord [-15 21] [20 19 27 23 34 50 48 0]))
+                                  (fib-chord-seq (transpose-chord [13] [20 19 2 27 23 34 50 48])))
+             #_(concat (fib-chord-seq (transpose-chord [0 5 13 21] (map #(- % 21) [20 28 25 31 39 27])))
+                       (fib-chord-seq (transpose-chord [0 5 13 21] (map #(* 2 (- % 21)) [20 28 25 31 39 27])))
+                       (fib-chord-seq (transpose-chord [0 5 13 21] (map #(* 4 (- % 21)) [20 28 25 31 39 27]))))
+             (interleave (fib-chord-seq (transpose-chord [0 1] (range (* 21 -3) 0 4)))
+                         (reverse (fib-chord-seq (transpose-chord [2 3] (range (* 21 -3) 0 4)))))
+             :amp 0.6
+             :period 30
+             :durs [2 3 5 3 8]
+             :d-weights {8 1
+                         5 1
+                         13 1}
+             :d-level-weights {0.3 5
+                               0.1 2
+                               0.2 3
+                               0.4 2}
+             :a-weights {(rrange 0.01 0.2) 1/4
+                         (rrange 0.2 0.8) 1
+                         (rrange 1 2) 3
+                         (rrange 2 5) 1}}))]
+       [[102 00]
+        (fn [_]
+          ;; TODO acordes graves y agudos
+          (hacia-un-nuevo-universo-perc-refrain-v1p2
+            {:out-bus in1
+             :buf-fn (fn [_] (->> @rec/bufs vals (sort-by :rec/time) reverse (filter :analysis) (take 10) (#(when (seq %) (rand-nth %)))))
              :rates #_(interleave (fib-chord-seq (transpose-chord [0 9 16] [20 19 2 27 23 34 50 48])
                                                  #_(transpose-chord [0 5 13 21] (map #(- % 21) [20 28 25 31 39 27])))
                                   (fib-chord-seq (transpose-chord [8] [20 19 2 27 23 34 50 48]))
@@ -309,53 +403,9 @@
                          (rrange 0.2 0.8) 1
                          (rrange 1 2) 3
                          (rrange 2 5) 1}}))]
-       [[100 00]                        ;; NOTE Version B de la de arriba
+       #_[[110 00]
         (fn [_]
-          (do
-            (hacia-un-nuevo-universo-perc-refrain-v1p2
-              {:buf-fn (fn [_] (->> @rec/bufs vals (sort-by :rec/time) reverse (filter :analysis) (take 10) (#(when (seq %) (rand-nth %)))))
-               :rates (interleave (fib-chord-seq (transpose-chord [0] (range (* 21 -3) 0 5)))
-                                  (reverse (fib-chord-seq (transpose-chord [13] (range (* 21 -3) 0 5)))))
-               :amp 0.6
-               :period 30
-               :durs [2 3 5 3 8]
-               :d-weights {8 1
-                           5 1
-                           3 1}
-               :d-level-weights {0.3 5
-                                 0.1 2
-                                 0.2 3
-                                 0.4 2}
-               :a-weights {(rrange 0.01 0.2) 1/4
-                           (rrange 0.2 0.8) 1
-                           (rrange 1 2) 3
-                           (rrange 2 5) 1}})
-            (hacia-un-nuevo-universo-perc-refrain-v1p2
-              {:buf-fn (fn [_] (->> @rec/bufs vals (sort-by :rec/time) reverse (filter :analysis) (take 10) (#(when (seq %) (rand-nth %)))))
-               :rates (interleave (fib-chord-seq (transpose-chord [0 9 16] [20 19 2 27 23 34 50 48])
-                                                 #_(transpose-chord [0 5 13 21] (map #(- % 21) [20 28 25 31 39 27])))
-                                  (fib-chord-seq (transpose-chord [8] [20 19 2 27 23 34 50 48]))
-                                  (fib-chord-seq (transpose-chord [-2 13 18] [20 19 27 23 3 34 50 48]))
-                                  (fib-chord-seq (transpose-chord [3] [20 19 2 27 23 34 50 48]))
-                                  (fib-chord-seq (transpose-chord [-15 21] [20 19 27 23 34 50 48 0]))
-                                  (fib-chord-seq (transpose-chord [13] [20 19 2 27 23 34 50 48])))
-
-               :amp 0.6
-               :period 80
-               ;; :durs [2 3 5 3 8]
-               :d-weights {8 1
-                           5 1
-                           3 1}
-               :d-level-weights {0.3 5
-                                 0.5 2
-                                 0.2 3
-                                 0.4 2}
-               :a-weights {(rrange 0.01 0.2) 1/4
-                           (rrange 0.2 0.8) 1
-                           (rrange 1 2) 3
-                           (rrange 2 5) 1}})))]
-       [[105 00]
-        (fn [_]
+          ;; multiple harmonies in the mid-high register
           (hacia-un-nuevo-universo-perc-refrain-v1p2
             {:buf-fn (fn [_] (->> @rec/bufs vals (sort-by :rec/time) reverse (filter :analysis) (take 10) (#(when (seq %) (rand-nth %)))))
              :rates (interleave (fib-chord-seq (transpose-chord [0 9 16] [20 19 2 27 23 34 50 48]))
@@ -382,7 +432,7 @@
                          (rrange 1 2) 3
                          (rrange 2 5) 1}}))]
 
-       [[110 0] (fn [_]
+       [[105 0] (fn [_]
                   (gp/stop :rec-loop3)
                   (gp/stop :hacia-un-nuevo-universo-perc2))]]))
   (def hacia-un-nuevo-universo-impro

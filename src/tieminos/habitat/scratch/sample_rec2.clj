@@ -280,9 +280,62 @@
                                                    :interp (rand-nth [1 2 4])
                                                    :amp (* amp (rrange 0.7 0.9) (norm-amp buf))))))))))
 
+
+(oe/defsynth quad-router-2o
+  ;; route a quadraphonic signal to two quadraphonic outputs
+  [in-bus 0 out-bus1 0 out-bus2 4]
+  (o/out out-bus1 (o/in in-bus 4))
+  (o/out out-bus2 (o/in in-bus 4)))
+
+(oe/defsynth quad-router-3o
+  ;; route a quadraphonic signal to two quadraphonic outputs
+  [in-bus 0 out-bus1 0 out-bus2 4 out-bus3 8]
+  (o/out out-bus1 (o/in in-bus 4))
+  (o/out out-bus2 (o/in in-bus 4))
+  (o/out out-bus3 (o/in in-bus 4)))
+
+(oe/defsynth rev-filter
+  [in-bus 0]
+    (o/out (main-returns :non-recordable)
+           (-> (let [[a b c d] (o/in in-bus 4)]
+                 [d c a b])
+               (o/delay-l 0.1 0.1)
+               (o/bpf (lfo 0.1 800 8000) (lfo 0.135 0.1 0.8))
+               (o/free-verb 1 1 0.1))))
+
+(comment
+  ;; audio routing to different outputs
+
+
+  (def in1 (o/audio-bus 4 "test-in-bus"))
+  (def out1 (o/audio-bus 4 "test-out-bus1"))
+  (def out2 (o/audio-bus 4 "test-out-bus2"))
+
+  (oe/defsynth sini
+    [out-bus 0
+     freq 100]
+    (o/out out-bus (* 0.2 (oe/circle-az
+                            {:num-channels 4
+                             :in (o/saw freq)
+                             :pos (lfo 2 -1 1)}))))
+
+
+
+  (sini {:group (groups/early)
+         :out-bus in1})
+  (quad-router-2o {:group (groups/mid)
+                   :in-bus in1
+                   :out-bus1 out1
+                   :out-bus2 (main-returns :non-recordable)} )
+  (def o201 (reverbed-filtered-reflections {:group (groups/panners)
+                                            :in-bus out1}))
+  (o/kill o201)
+  (o/stop)
+  )
+
 (defn hacia-un-nuevo-universo-perc-refrain-v1p2
   "This version can handle rate chords (as a vector of rates)"
-  [{:keys [buf-fn period durs rates amp d-weights d-level-weights a-weights room-weights]
+  [{:keys [buf-fn period durs rates amp d-weights d-level-weights a-weights room-weights out-bus]
     :or {buf-fn rand-latest-buf
          period 2.5
          durs (bzs/fsf 20 0.1 1)
@@ -295,7 +348,8 @@
                     (rrange 0.5 1) 1
                     (rrange 1 5) 1/2}
          d-level-weights {0.3 1}
-         room-weights {0.2 2, 2 1/2 4 1/2}}}]
+         room-weights {0.2 2, 2 1/2 4 1/2}
+         out-bus (main-returns :non-recordable)}}]
   (let [rates* (map (fn [r] (if (sequential? r) r [r])) rates)]
     (ref-rain
       :id :hacia-un-nuevo-universo-perc2
@@ -309,7 +363,8 @@
                                 end 1 #_(+ start (rrange 0.05 0.3))
                                 a (weighted a-weights)
                                 trig-rate (+ 90 (rand-int 20))
-                                config {:buf buf
+                                config {:group (groups/mid)
+                                        :buf buf
                                         :a a
                                         :d (/ (+ (/ a 2) (weighted d-weights))
                                               2)
@@ -323,7 +378,7 @@
                                         :lpf-max (rrange 2000 10000)
                                         :start start
                                         :end end
-                                        :out (main-returns :non-recordable)
+                                        :out out-bus
                                         :pan (rrange -1 1)}]
                             (amanecer*guitar-clouds (assoc config
 
