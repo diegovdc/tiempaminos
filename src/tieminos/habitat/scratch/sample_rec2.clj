@@ -335,7 +335,7 @@
 
 (defn hacia-un-nuevo-universo-perc-refrain-v1p2
   "This version can handle rate chords (as a vector of rates)"
-  [{:keys [buf-fn period durs rates amp d-weights d-level-weights a-weights room-weights out-bus]
+  [{:keys [buf-fn period durs rates amp d-weights d-level-weights a-weights room-weights out-bus silence-thresh]
     :or {buf-fn rand-latest-buf
          period 2.5
          durs (bzs/fsf 20 0.1 1)
@@ -349,14 +349,17 @@
                     (rrange 1 5) 1/2}
          d-level-weights {0.3 1}
          room-weights {0.2 2, 2 1/2 4 1/2}
-         out-bus (main-returns :non-recordable)}}]
+         out-bus (main-returns :non-recordable)
+         silence-thresh 0.05}}]
   (let [rates* (map (fn [r] (if (sequential? r) r [r])) rates)]
     (ref-rain
       :id :hacia-un-nuevo-universo-perc2
       :durs (periodize-durs period durs)
       :on-event (on-event
+                  (println "RRRRRRRRRRRRRRA")
                   (when-let [buf (buf-fn {:index index})]
-                    (when-not (silence? buf) ;; allow us to control silences by not playing
+                    (when-not (silence? silence-thresh buf) ;; allow us to control silences by not playing
+                      (println "NOT SILENCE")
                       (let [rate (at-i rates*)]
                         (doseq [r rate]
                           (let [start 0 #_(rrange (rrange 0 0.5) 0.7)

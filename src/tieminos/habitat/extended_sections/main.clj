@@ -142,10 +142,12 @@
    :initial-sections #'hacia-un-nuevo-universo*
    :rec? true})
 
+
 (def fib-21 [{:ratio 1, :bounded-ratio 1024/987, :bounding-period 2} {:ratio 4181/4096, :bounded-ratio 4181/3948, :bounding-period 2} {:ratio 17/16, :bounded-ratio 1088/987, :bounding-period 2} {:ratio 17711/16384, :bounded-ratio 17711/15792, :bounding-period 2} {:ratio 9/8, :bounded-ratio 384/329, :bounding-period 2} {:ratio 305/256, :bounded-ratio 1220/987, :bounding-period 2} {:ratio 5/4, :bounded-ratio 1280/987, :bounding-period 2} {:ratio 323/256, :bounded-ratio 1292/987, :bounding-period 2} {:ratio 21/16, :bounded-ratio 64/47, :bounding-period 2} {:ratio 5473/4096, :bounded-ratio 5473/3948, :bounding-period 2} {:ratio 89/64, :bounded-ratio 1424/987, :bounding-period 2} {:ratio 1449/1024, :bounded-ratio 69/47, :bounding-period 2} {:ratio 377/256, :bounded-ratio 1508/987, :bounding-period 2} {:ratio 3/2, :bounded-ratio 512/329, :bounding-period 2} {:ratio 1597/1024, :bounded-ratio 1597/987, :bounding-period 2} {:ratio 13/8, :bounded-ratio 1664/987, :bounding-period 2} {:ratio 6765/4096, :bounded-ratio 2255/1316, :bounding-period 2} {:ratio 55/32, :bounded-ratio 1760/987, :bounding-period 2} {:ratio 28657/16384, :bounded-ratio 28657/15792, :bounding-period 2} {:ratio 233/128, :bounded-ratio 1864/987, :bounding-period 2} {:ratio 987/512, :bounded-ratio 2N, :bounding-period 2}])
-  (defn fib-chord [degs] (->> degs
-                              (map (fn [deg]
-                                     (scale/deg->freq fib-21 1 deg)))))
+
+(defn fib-chord [degs] (->> degs
+                            (map (fn [deg]
+                                   (scale/deg->freq fib-21 1 deg)))))
   (defn fib-chord-seq [chords]
     (map fib-chord chords))
 
@@ -208,20 +210,8 @@
                  (rrange 2 5) 1}})
 
 
+  (declare in1)
 
-  (def in1 (o/audio-bus 4 "test-in-bus"))
-  (def out1 (o/audio-bus 4 "test-out-bus1"))
-  (def out2 (o/audio-bus 4 "test-out-bus1"))
-
-  (def qbr (quad-router-2o {:group (groups/mid :tail)
-                            :in-bus in1
-                            :out-bus1 out1
-                            :out-bus2 (main-returns :mixed)} ))
-
-  (o/kill qbr)
-  (rev-filter
-    {:group (groups/panners)
-     :in-bus out1})
   ;; TODO renombrar
   (defn hacia-un-nuevo-universo-live
     [context]
@@ -339,24 +329,14 @@
           ;; Mucho menos material
           ;; Dejar que la maquina esté generando el camino
           ;; Utilizamos lo que la maquina produce como material para desarrollar
-          ;; Imagen: planeta hostil, entorno raro, desertico, venenoso quizá
+          ;; Imagen: planeta hostil, entorno raro, desértico, venenoso quizá
           ;; Imagen: nebulosa
           ;;
           (hacia-un-nuevo-universo-perc-refrain-v1p2
             {:out-bus in1
              :buf-fn (fn [_] (->> @rec/bufs vals (sort-by :rec/time) reverse (filter :analysis) (take 10) (#(when (seq %) (rand-nth %)))))
-             :rates #_(interleave (fib-chord-seq (transpose-chord [0 9 16] [20 19 2 27 23 34 50 48])
-                                                 #_(transpose-chord [0 5 13 21] (map #(- % 21) [20 28 25 31 39 27])))
-                                  (fib-chord-seq (transpose-chord [8] [20 19 2 27 23 34 50 48]))
-                                  (fib-chord-seq (transpose-chord [-2 13 18] [20 19 27 23 3 34 50 48]))
-                                  (fib-chord-seq (transpose-chord [3] [20 19 2 27 23 34 50 48]))
-                                  (fib-chord-seq (transpose-chord [-15 21] [20 19 27 23 34 50 48 0]))
-                                  (fib-chord-seq (transpose-chord [13] [20 19 2 27 23 34 50 48])))
-             #_(concat (fib-chord-seq (transpose-chord [0 5 13 21] (map #(- % 21) [20 28 25 31 39 27])))
-                       (fib-chord-seq (transpose-chord [0 5 13 21] (map #(* 2 (- % 21)) [20 28 25 31 39 27])))
-                       (fib-chord-seq (transpose-chord [0 5 13 21] (map #(* 4 (- % 21)) [20 28 25 31 39 27]))))
-             (interleave (fib-chord-seq (transpose-chord [0 1] (range (* 21 -3) 0 4)))
-                         (reverse (fib-chord-seq (transpose-chord [2 3] (range (* 21 -3) 0 4)))))
+             :rates (interleave (fib-chord-seq (transpose-chord [0 1] (range (* 21 -3) 0 4)))
+                                (reverse (fib-chord-seq (transpose-chord [2 3] (range (* 21 -3) 0 4)))))
              :amp 0.6
              :period 30
              :durs [2 3 5 3 8]
@@ -373,36 +353,36 @@
                          (rrange 2 5) 1}}))]
        [[102 00]
         (fn [_]
-          ;; TODO acordes graves y agudos
+          ;; grabado en v 2.2.8
+          ;; A. manteniéndonos en una sola nota/cuerda/platillo funciona muy bien (2da y 3ra grabaciónes de ese archivo de reaper) - reconocible, humano - milo de pronto golpes secos sobr el platillo que suenan como latidos
+          ;; B. moviéndonos entre muchas notas/cuerdas/platillos funciona bien (1ra grabación de ese archivo de reaper) - pero es algo difícil de reconocer, no se siente familiar, sino desconocido, alienígena, no-gaiano - secciones mucho más altas y lejanas del espectro
+
+          ;; Idea: puede haber una transición de esa interioridad espiritual hacia esa cosa desconocida del universo
+          (start-rec-loop3!
+            {:input-bus-fn (fn [_] (-> @inputs (select-keys [:guitar :mic-1 :mic-2]) vals (->> (map :bus))))
+             :durs (mapv (fn [_] (rrange 10 20)) (range 40))})
           (hacia-un-nuevo-universo-perc-refrain-v1p2
             {:out-bus in1
              :buf-fn (fn [_] (->> @rec/bufs vals (sort-by :rec/time) reverse (filter :analysis) (take 10) (#(when (seq %) (rand-nth %)))))
-             :rates #_(interleave (fib-chord-seq (transpose-chord [0 9 16] [20 19 2 27 23 34 50 48])
-                                                 #_(transpose-chord [0 5 13 21] (map #(- % 21) [20 28 25 31 39 27])))
-                                  (fib-chord-seq (transpose-chord [8] [20 19 2 27 23 34 50 48]))
-                                  (fib-chord-seq (transpose-chord [-2 13 18] [20 19 27 23 3 34 50 48]))
-                                  (fib-chord-seq (transpose-chord [3] [20 19 2 27 23 34 50 48]))
-                                  (fib-chord-seq (transpose-chord [-15 21] [20 19 27 23 34 50 48 0]))
-                                  (fib-chord-seq (transpose-chord [13] [20 19 2 27 23 34 50 48])))
-             #_(concat (fib-chord-seq (transpose-chord [0 5 13 21] (map #(- % 21) [20 28 25 31 39 27])))
-                       (fib-chord-seq (transpose-chord [0 5 13 21] (map #(* 2 (- % 21)) [20 28 25 31 39 27])))
-                       (fib-chord-seq (transpose-chord [0 5 13 21] (map #(* 4 (- % 21)) [20 28 25 31 39 27]))))
-             (interleave (fib-chord-seq (transpose-chord [0 5 13 21] (range (* 21 -3) 0 5)))
-                         (reverse (fib-chord-seq (transpose-chord [0 5 13 21] (range (* 21 -3) 0 5)))))
+             :silence-thresh 0.05
+             :rates (interleave (fib-chord-seq (transpose-chord [1 3 5 8] (range (* 21 -3) (* 21 3) 5)))
+                                (fib-chord-seq (transpose-chord [14 15 16 17] (range (* 21 -3) (* 21 3)  5)))
+                                (reverse (fib-chord-seq (transpose-chord [1 3 5 8] (range (* 21 -3) (* 21 3) 5))))
+                                (fib-chord-seq (transpose-chord [13 15] (range (* 21 -3) (* 21 3) 5)))
+                                (reverse (fib-chord-seq (transpose-chord [11 12] (range (* 21 -3) (* 21 3) 5))))
+                                (reverse (fib-chord-seq (transpose-chord [14 15 16 17] (range (* 21 -3) (* 21 3) 5)))))
              :amp 0.6
              :period 30
-             :durs [2 3 5 3 8]
+             :durs [2 3 5 3 8 13 5 8 2 3 5]
              :d-weights {8 1
                          5 1
-                         3 1}
+                         3 0.3}
              :d-level-weights {0.3 5
                                0.1 2
                                0.2 3
-                               0.4 2}
-             :a-weights {(rrange 0.01 0.2) 1/4
-                         (rrange 0.2 0.8) 1
-                         (rrange 1 2) 3
-                         (rrange 2 5) 1}}))]
+                               0.4 8}
+             :a-weights {(rrange 5 8) 3
+                         (rrange 3 5) 2}}))]
        #_[[110 00]
         (fn [_]
           ;; multiple harmonies in the mid-high register
@@ -458,4 +438,19 @@
   (timbre/set-level! :info)
   (do  (when @habitat-initialized?
          (main/stop-sequencer! hseq/context))
-       (init!)))
+       (init!))
+
+  ;; also part of the initialization of hacia un nuevo universo
+  (def in1 (o/audio-bus 4 "test-in-bus"))
+  (def out1 (o/audio-bus 4 "test-out-bus1"))
+  (def out2 (o/audio-bus 4 "test-out-bus1"))
+
+  (def qbr (quad-router-2o {:group (groups/mid :tail)
+                            :in-bus in1
+                            :out-bus1 out1
+                            :out-bus2 (main-returns :mixed)} ))
+
+  (o/kill qbr)
+  (rev-filter
+    {:group (groups/panners)
+     :in-bus out1}))

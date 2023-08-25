@@ -77,8 +77,8 @@
                                   :out 0}))
 
   (o/ctl bps :gate 0)
-  (o/ctl bps2   :gate 0)
-  (o/ctl bps3   :gate 0)
+  (o/ctl bps2 :gate 0)
+  (o/ctl bps3 :gate 0)
 
   (o/kill bps)
   (oli)
@@ -99,5 +99,4 @@
                 (o/mouse-y:kr 0 0.2))
               #_(#(oe/circle-az {:num-channels 4
                                  :in %
-                                 :pos (lfo 0.1 -1 1)}))))
-  )
+                                 :pos (lfo 0.1 -1 1)})))))
