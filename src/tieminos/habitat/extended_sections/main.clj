@@ -383,6 +383,50 @@
                                0.4 8}
              :a-weights {(rrange 5 8) 3
                          (rrange 3 5) 2}}))]
+       [[102 00]
+        ;; v2.2.9
+        (fn [_]
+          (start-rec-loop3!
+            {:input-bus-fn (fn [_] (-> @inputs (select-keys [:guitar :mic-1 :mic-2]) vals (->> (map :bus))))
+             :durs (mapv (fn [_] (rrange 10 20)) (range 40))})
+          (hacia-un-nuevo-universo-perc-refrain-v1p2
+            {:out-bus in1
+             :buf-fn (fn [_] (->> @rec/bufs vals (sort-by :rec/time) reverse (filter :analysis) (take 10) (#(when (seq %) (rand-nth %)))))
+             :silence-thresh 0.05
+             :rates (fib-chord-seq (transpose-chord [0 5] [0]))
+             :amp 0.6
+             :period 30
+             :durs [2 3 5 3 8 13 5 8 2 3 5]
+             :d-weights {8 1
+                         5 1
+                         3 0.3}
+             :d-level-weights {0.3 5
+                               0.1 2
+                               0.2 3
+                               0.4 8}
+             :a-weights {(rrange 5 8) 3
+                         (rrange 3 5) 2}}))]
+        (fn [_]
+          (start-rec-loop3!
+            {:input-bus-fn (fn [_] (-> @inputs (select-keys [:guitar :mic-1 :mic-2]) vals (->> (map :bus))))
+             :durs (mapv (fn [_] (rrange 10 20)) (range 40))})
+          (hacia-un-nuevo-universo-perc-refrain-v1p2
+            {:out-bus in1
+             :buf-fn (fn [_] (->> @rec/bufs vals (sort-by :rec/time) reverse (filter :analysis) (take 10) (#(when (seq %) (rand-nth %)))))
+             :silence-thresh 0.05
+             :rates (fib-chord-seq (transpose-chord [0 5] [0]))
+             :amp 0.6
+             :period 30
+             :durs [2 3 5 3 8 13 5 8 2 3 5]
+             :d-weights {8 1
+                         5 1
+                         3 0.3}
+             :d-level-weights {0.3 5
+                               0.1 2
+                               0.2 3
+                               0.4 8}
+             :a-weights {(rrange 5 8) 3
+                         (rrange 3 5) 2}}))]
        #_[[110 00]
         (fn [_]
           ;; multiple harmonies in the mid-high register
@@ -423,7 +467,18 @@
      })
   :rfc)
 
-
+(comment
+  (fib-chord-seq (transpose-chord [0 6 12 18] (range 21))) ;; acorde bonito, muy liso
+  (fib-chord-seq (transpose-chord [0 4 8 12 16 20 24 28] [0 1])) ;; calido con un poco de disonancia
+  (fib-chord-seq (transpose-chord [ 11 15 19] (range 21))) ;; estable claro (segmento de arriba: 4-4)
+  (fib-chord-seq (transpose-chord [ 10 15 20] (range 21))) ;; nocturno (5-5)
+  (flatten [(fib-chord-seq (transpose-chord [0 9 16] [20 19 2 27 23 34 50 48]))
+            (fib-chord-seq (transpose-chord [8] [20 19 2 27 23 34 50 48]))
+            (fib-chord-seq (transpose-chord [-2 13 18] [20 19 27 23 3 34 50 48]))
+            (fib-chord-seq (transpose-chord [3] [20 19 2 27 23 34 50 48]))
+            (fib-chord-seq (transpose-chord [-15 21] [20 19 27 23 34 50 48 0]))
+            (fib-chord-seq (transpose-chord [13] [20 19 2 27 23 34 50 48]))])
+  )
 
 
 (comment
@@ -453,4 +508,8 @@
   (o/kill qbr)
   (rev-filter
     {:group (groups/panners)
-     :in-bus out1}))
+     :in-bus out1})
+
+  (open-inputs-with-rand-pan
+    {:inputs inputs
+     :preouts preouts}))

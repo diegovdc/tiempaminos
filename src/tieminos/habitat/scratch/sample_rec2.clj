@@ -335,7 +335,9 @@
 
 (defn hacia-un-nuevo-universo-perc-refrain-v1p2
   "This version can handle rate chords (as a vector of rates)"
-  [{:keys [buf-fn period durs rates amp d-weights d-level-weights a-weights room-weights out-bus silence-thresh]
+  [{:keys [buf-fn period durs rates amp
+           amp-fn ;; optional, takes the index and returns an amp value, if present `amp` will be overriden
+           d-weights d-level-weights a-weights room-weights out-bus silence-thresh]
     :or {buf-fn rand-latest-buf
          period 2.5
          durs (bzs/fsf 20 0.1 1)
@@ -360,7 +362,8 @@
                   (when-let [buf (buf-fn {:index index})]
                     (when-not (silence? silence-thresh buf) ;; allow us to control silences by not playing
                       (println "NOT SILENCE")
-                      (let [rate (at-i rates*)]
+                      (let [rate (at-i rates*)
+                            amp* (if amp-fn (amp-fn index) amp)]
                         (doseq [r rate]
                           (let [start 0 #_(rrange (rrange 0 0.5) 0.7)
                                 end 1 #_(+ start (rrange 0.05 0.3))
@@ -384,14 +387,13 @@
                                         :out out-bus
                                         :pan (rrange -1 1)}]
                             (amanecer*guitar-clouds (assoc config
-
                                                            :rate (float r)
                                                            :interp (rand-nth [1 2 4])
-                                                           :amp (* amp (rrange 0.2 1) (norm-amp buf))))
+                                                           :amp (* amp* (rrange 0.2 1) (norm-amp buf))))
                             (amanecer*guitar-clouds (assoc config
                                                            :rate (* (rand-nth [2 3/2 5/4 7/4 1/2 1 1 1 1]) r)
                                                            :interp (rand-nth [4])
-                                                           :amp (* amp (rrange 0 0.7) (norm-amp buf)))))))))))))
+                                                           :amp (* amp* (rrange 0 0.7) (norm-amp buf)))))))))))))
 
 
 (oe/defsynth amanecer*guitar-clouds-2
