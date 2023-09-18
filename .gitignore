@@ -21,6 +21,7 @@ pom.xml.asc
 .cpcache
 recordings/*
 !recordings/.gitkeep
+!recordings/code
 samples/habitat_samples/test*
 resources/*.wav
 .cider-repl-history
