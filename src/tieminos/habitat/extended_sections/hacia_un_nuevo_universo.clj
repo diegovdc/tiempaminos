@@ -49,6 +49,28 @@
                                  :gate gate
                                  :action o/FREE)))))
 
+(oe/defsynth algo-basic-pitch-shifter
+  [in 0
+   ratio 1
+   amp 1
+   a 5
+   r 5
+   dur 1
+   out 0]
+  (o/out out
+         (-> (o/pitch-shift
+               (o/in in)
+               0.1
+               ratio
+               0
+               0)
+             (#(oe/circle-az {:num-channels 4
+                              :in %
+                              :pos (lfo 0.1 -1 1)}))
+             (* amp (o/env-gen (o/envelope [0 1 1 0]
+                                           [a dur r])
+                               :action o/FREE)))))
+
 
 (comment
   (o/defsynth oli
