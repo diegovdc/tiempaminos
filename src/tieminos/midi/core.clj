@@ -4,7 +4,6 @@
    [overtone.sc.node :refer [ctl node?]]
    [taoensso.timbre :as timbre]))
 
-
 ;; If getting the error Device is Busy:
 ;; https://linuxmusicians.com/viewtopic.php?p=133696
 ;; http://www.tedfelix.com/linux/linux-midi.html
@@ -13,14 +12,13 @@
 
 ;; NOTE on virmidi, if overtone starts to crash on load, maybe virmidi was corrupted (has already happend to me once)
 
-
-(def ks (try (midi/midi-in "VirMIDI")
-             (catch Exception e
-               (timbre/warn (str "Could not connect to VirMIDI: " (.getMessage e))))))
-
-(def oxygen (try (midi/midi-in "USB MIDI")
+(defonce ks (try (midi/midi-in "VirMIDI")
                  (catch Exception e
-                   (timbre/warn (str "Could not connect to USB MIDI: " (.getMessage e))))))
+                   (timbre/warn (str "Could not connect to VirMIDI: " (.getMessage e))))))
+
+(defonce oxygen (try (midi/midi-in "USB MIDI")
+                     (catch Exception e
+                       (timbre/warn (str "Could not connect to USB MIDI: " (.getMessage e))))))
 (comment
   ;; basic USAGE
   (midi-in-event
@@ -52,9 +50,11 @@
 (defonce synths (atom {}))
 
 (defn add-synth [ev synth]
-  (when (or (node? synth)
-            (and (seq synth) (every? node? synth)))
-    (swap! synths assoc (:note ev) synth)))
+  (let [midi-note (:note ev)]
+    (when (and (not (get @synths midi-note))
+               (or (node? synth)
+                   (and (seq synth) (every? node? synth))))
+      (swap! synths assoc midi-note synth))))
 
 (defn remove-synth [ctl ev]
   (let [synth (@synths (:note ev))]
@@ -102,6 +102,6 @@
     (midi/midi-note-off sink n chan)))
 (comment
   (note-on (fn [_] (println (:note _))))
-  (all-notes-off)
+  (all-notes-off oxygen)
   (midi-in-event :note-on (fn [_] (println "on" ((juxt :channel :note) _)))
                  :note-off (fn [_] (println "off" ((juxt :channel :note) _)))))
