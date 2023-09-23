@@ -17,9 +17,11 @@
    [tieminos.habitat.routing :refer [inputs main-returns
                                      percussion-processes-main-out preouts]]
    [tieminos.habitat.scratch.sample-rec2 :refer [hacia-un-nuevo-universo-perc-refrain
-                                                 hacia-un-nuevo-universo-perc-refrain-v1p2 quad-router-2o rev-filter rising-upwards start-rec-loop!
-                                                 start-rec-loop2! start-rec-loop3!]]
+                                                 hacia-un-nuevo-universo-perc-refrain-v1p2 hacia-un-nuevo-universo-perc-refrain-v2-2-aprox-durations
+                                                 quad-router-2o rev-filter rising-upwards start-rec-loop! start-rec-loop2!
+                                                 start-rec-loop3!]]
    [tieminos.habitat.utils :refer [open-inputs-with-rand-pan]]
+   [tieminos.midi.core :refer [midi-in-event oxygen]]
    [tieminos.utils :refer [rrange]]
    [time-time.dynacan.players.gen-poly :as gp :refer [on-event ref-rain]]))
 
@@ -774,6 +776,7 @@
   :rfc)
 
 (comment
+  ;; milo solo, grabado en 2.2.10
   (gp/stop)
   (ref-rain
     :id :milo-pitch-shifter
@@ -810,6 +813,71 @@
                    :a (at-i [0.2 ])
                    :dur (* 2 dur-s)
                    :out percussion-processes-main-out}))))
+
+(comment
+  ;;
+  (gp/stop)
+  (def cps (cps/make 2 [1 3 5 7]))
+  (midi-in-event
+    :midi-input oxygen
+    :note-on (fn [{:as event}]
+               (let [vel (:velocity event)
+                     note (:note event)
+                     ratio #_(/ note 24) #_(scale/deg->freq fib-21 1 (- note 40))
+                     (scale/deg->freq (:scale cps) 1 (- note 30))
+                     amp (/ vel  127)
+                     a (/ vel 30)]
+                 #_(println note ratio)
+                 #_(basic-pitch-shifter
+                     {:group (groups/mid)
+                      :in (-> @inputs :guitar :bus)
+                      :ratio ratio
+                      :window 0.1
+                      :amp 0.3
+                      :a 0.5
+                      :out guitar-processes-main-out}))))
+
+  #_(ref-rain
+      :id :diego-pitch-shifter
+      :tempo 60
+      :durs [1/2 1/5 2 1/3 1/4 1/5]
+      :on-event (on-event
+
+                  (algo-basic-pitch-shifter
+                    {:group (groups/mid)
+                     :in (-> @inputs :guitar :bus)
+                     :ratio (* 2 (at-i [1 2 3 5 7 13 3/2 17/2]))
+                     :amp (at-i [0.2 1 1.5])
+                     :a (at-i [0.2 ])
+                     :dur (* 2 dur-s)
+                     :out percussion-processes-main-out})))
+
+  (start-rec-loop3!
+    {:input-bus-fn (fn [_] (-> @inputs (select-keys [:guitar :mic-1 :mic-2]) vals (->> (map :bus))))
+     :durs (mapv (fn [_] (rrange 10 20)) (range 40))})
+
+  (hacia-un-nuevo-universo-perc-refrain-v2-2-aprox-durations
+    {:out-bus in1
+     :buf-fn (fn [_] (->> @rec/bufs vals (sort-by :rec/time) reverse (filter :analysis) (take 10) (#(when (seq %) (rand-nth %)))))
+     :silence-thresh 0.05
+     :rates (interleave (fib-chord-seq (transpose-chord [1 3 5 8] (range (* 21 -3) (* 21 3) 5)))
+                        (fib-chord-seq (transpose-chord [14 15 16 17] (range (* 21 -3) (* 21 3)  5)))
+                        (reverse (fib-chord-seq (transpose-chord [1 3 5 8] (range (* 21 -3) (* 21 3) 5))))
+                        (fib-chord-seq (transpose-chord [13 15] (range (* 21 -3) (* 21 3) 5)))
+                        (reverse (fib-chord-seq (transpose-chord [11 12] (range (* 21 -3) (* 21 3) 5))))
+                        (reverse (fib-chord-seq (transpose-chord [14 15 16 17] (range (* 21 -3) (* 21 3) 5)))))
+     :amp 0.6
+     :period 30
+     :durs [2 3 5 3 8 13 5 8 2 3 5]
+     :d-weights {8 1
+                 5 1
+                 3 0.3}
+     :d-level-weights {0.3 5
+                       0.1 2
+                       0.2 3
+                       0.4 8}
+     :a-weights {(rrange 5 8) 3
+                 (rrange 3 5) 2}}))
 
 
 (comment

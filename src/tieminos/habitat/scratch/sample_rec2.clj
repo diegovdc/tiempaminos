@@ -333,6 +333,94 @@
   (o/stop)
   )
 
+(defn rescale-envelope
+  [target-dur a d r]
+  (let [total (+ a d r)
+        a% (/ a total)
+        d% (/ d total)
+        r% (/ r total)]
+    {:a (* target-dur a%)
+     :d  (* target-dur d%)
+     :r (* target-dur r%)}))
+
+(defn dur->dur%
+  "Can not go above 1"
+  [dur target-dur]
+  (min 1 (/ target-dur dur)))
+
+(defn hacia-un-nuevo-universo-perc-refrain-v2-scalable-durs
+  "This version can handle aproximate durations of the recordings
+  for more realistic sounds.
+  Also handles durations rate chords (as a vector of rates)"
+  [{:keys [buf-fn period durs rates amp
+           dur%-fn ;; optional, returns the % of the buffer dur to play back and the offset => {:dur% 0.5 :offset 0.3}
+           amp-fn ;; optional, takes the index and returns an amp value, if present `amp` will be overriden
+           d-weights d-level-weights a-weights room-weights out-bus silence-thresh]
+    :or {buf-fn rand-latest-buf
+         period 2.5
+         durs (bzs/fsf 20 0.1 1)
+         rates (range 1 10)
+         amp 1
+         a-weights {(rrange 0.01 0.1) 10
+                    (rrange 2 5) 1/2}
+         d-weights {(rrange 0.2 0.3) 5
+                    (rrange 0.3 0.5) 3
+                    (rrange 0.5 1) 1
+                    (rrange 1 5) 1/2}
+         d-level-weights {0.3 1}
+         room-weights {0.2 2, 2 1/2 4 1/2}
+         out-bus (main-returns :non-recordable)
+         silence-thresh 0.05
+         dur%-fn (fn [_buf-dur _i] {:dur% 1 :offset 0})}}]
+  (let [rates* (map (fn [r] (if (sequential? r) r [r])) rates)]
+    (ref-rain
+      ;; TODO rename id
+      :id :hacia-un-nuevo-universo-perc2
+      :durs (periodize-durs period durs)
+      :on-event (on-event
+                  (println "RRRRRRRRRRRRRRA")
+                  (when-let [buf (buf-fn {:index index})]
+                    (when-not (silence? silence-thresh buf) ;; allow us to control silences by not playing
+                      (println "NOT SILENCE")
+                      (let [rate (at-i rates*)
+                            amp* (if amp-fn (amp-fn index) amp)]
+                        (->> buf :duration (println "durationNNNNNNNNNNNN"))
+                        (doseq [r rate]
+                          (let [a* (weighted a-weights)
+                                d* (/ (+ (/ a* 2) (weighted d-weights))
+                                      2)
+                                r* (+ (/ a* 2) (weighted d-weights))
+                                buf-dur* (:duration buf)
+                                {:keys [dur% offset]} (dur%-fn buf-dur* i)
+                                buf-dur (* buf-dur* dur%)
+                                start offset
+                                end (+ offset dur%)
+                                {:keys [a d r]} (rescale-envelope buf-dur a* d* r*)
+                                trig-rate (+ 90 (rand-int 20))
+                                config {:group (groups/mid)
+                                        :buf buf
+                                        :a a
+                                        :d d
+                                        :r r
+                                        :d-level (weighted d-level-weights)
+                                        :rev-room (weighted room-weights)
+                                        :trig-rate 100
+                                        :grain-dur (/ 1 (/ trig-rate 2))
+                                        :amp-lfo (rrange 0.1 0.4)
+                                        :amp-lfo-min 0.95
+                                        :lpf-max (rrange 2000 10000)
+                                        :start start
+                                        :end end
+                                        :out out-bus
+                                        :pan (rrange -1 1)}]
+                            (amanecer*guitar-clouds (assoc config
+                                                           :rate (float r)
+                                                           :interp (rand-nth [1 2 4])
+                                                           :amp (* amp* (rrange 0.2 1) (norm-amp buf))))
+                            (amanecer*guitar-clouds (assoc config
+                                                           :rate (* (rand-nth [2 3/2 5/4 7/4 1/2 1 1 1 1]) r)
+                                                           :interp (rand-nth [4])
+                                                           :amp (* amp* (rrange 0 0.7) (norm-amp buf)))))))))))))
 (defn hacia-un-nuevo-universo-perc-refrain-v1p2
   "This version can handle rate chords (as a vector of rates)"
   [{:keys [buf-fn period durs rates amp
