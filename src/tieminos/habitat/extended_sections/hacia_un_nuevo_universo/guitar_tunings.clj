@@ -1,4 +1,4 @@
-(ns tieminos.habitat.extended-sections.hacia-un-nuevo-universo-guitar-tunings
+(ns tieminos.habitat.extended-sections.hacia-un-nuevo-universo.guitar-tunings
   (:require
    [overtone.core :as o]))
 

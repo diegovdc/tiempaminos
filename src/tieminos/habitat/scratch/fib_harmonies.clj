@@ -4,8 +4,8 @@
    [clojure.set :as set]
    [erv.scale.core :as scale]
    [overtone.core :as o]
-   [tieminos.habitat.extended-sections.main :refer [fib-chord-seq
-                                                    transpose-chord]]
+   [tieminos.habitat.extended-sections.harmonies.fib-1 :refer [fib-chord-seq
+                                                               transpose-chord]]
    [tieminos.midi.core :refer [midi-in-event oxygen]]
    [tieminos.synths :as synths]
    [time-time.dynacan.players.gen-poly :as gp :refer [on-event ref-rain]]))

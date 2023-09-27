@@ -1,4 +1,4 @@
-(ns tieminos.habitat.extended-sections.hacia-un-nuevo-universo
+(ns tieminos.habitat.extended-sections.hacia-un-nuevo-universo.synths
   (:require
    [overtone.core :as o]
    [tieminos.habitat.groups :as groups]

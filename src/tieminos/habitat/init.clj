@@ -2,6 +2,7 @@
   (:require
    [overtone.core :as o]
    [taoensso.timbre :as timbre]
+   [tieminos.core]
    [tieminos.habitat.groups :as groups]
    [tieminos.habitat.osc :as habitat-osc]
    [tieminos.habitat.panners :refer [circle-pan-4ch current-panners]]
