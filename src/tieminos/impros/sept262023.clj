@@ -2,7 +2,7 @@
   (:require
    [overtone.music.pitch :refer [note]]
    [piratidal.core :refer [speed]]
-   [piratidal.experiments.rhythm-generator :refer [dur tidal]]
+   [piratidal.experiments.rhythm-generator.v1 :refer [dur tidal]]
    [tieminos.synths :as synths]
    [time-time.dynacan.players.gen-poly :as gp :refer [on-event ref-rain]]))
 

@@ -601,7 +601,7 @@
                 (swap! context dissoc k)
                 (case index
                   0 (do
-                      (doseq [f rate-inc-stop-fns]
+                      (doseq [f panner-buses-and-async-ctl-fns]
                         (f))
                       (doseq [synth synths]
                         (o/ctl synth :gate 0)))

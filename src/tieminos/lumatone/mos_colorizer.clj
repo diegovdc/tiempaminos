@@ -7,7 +7,7 @@
    [tieminos.lumatone.ltn :refer [get-keys make-ltn parse-ltn]]
    [thi.ng.color.core :as color]
    [thi.ng.color.gradients :as grad]
-   [tieminos.lumatone.general-keyboard :as gral-kb]))
+   [tieminos.lumatone.coord-system :as gral-kb]))
 
 (def color-map
   {#{:a :d :e} "#6c7eac"

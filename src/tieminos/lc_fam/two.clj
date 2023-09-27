@@ -78,16 +78,16 @@
   (let [ratio (/ seconds (apply + durs))]
     (mapv #(* ratio %) durs)))
 #_:clj-kondo/ignore
-(defsynth perc* [perc 0
+(o/defsynth perc* [perc 0
                  rate 1
                  amp 1
                  pan 0
                  mix 0.3
                  room 1]
-  (out 0 (-> (play-buf 2 perc rate)
+  (o/out 0 (-> (o/play-buf 2 perc rate)
              (* amp (o/env-gen (o/env-perc 1 2) :action o/FREE))
-             (free-verb mix room)
-             (pan2 pan))))
+             (o/free-verb mix room)
+             (o/pan2 pan))))
 
 #_:clj-kondo/ignore
 (defsynth lo [freq 100
@@ -97,21 +97,21 @@
               atk 0.1
               dcy 0.5
               out 0]
-  (let [sig (-> (lf-tri freq)
-                (+ (* 0.6 (saw freq2) (sin-osc freq3)))
-                (lpf 12000)
-                (* amp 1.5 (lf-noise1 0.1) (o/env-gen (o/env-perc atk dcy) :action o/FREE)))]
+  (let [sig (-> (o/lf-tri freq)
+                (+ (* 0.6 (o/saw freq2) (o/sin-osc freq3)))
+                (o/lpf 12000)
+                (* amp 1.5 (o/lf-noise1 0.1) (o/env-gen (o/env-perc atk dcy) :action o/FREE)))]
     (o/out out sig)))
 
 #_(o/stop)
 #_(lo 500)
-#_:clj-kondo/ignore
-(defsynth reverb [in 0 room-min 0.3 room-max 3]
+
+(o/defsynth reverb [in 0 room-min 0.3 room-max 3]
   (o/out 0
          (-> (o/in in)
-             (pan2 (lf-noise1:kr 0.5))
-             (free-verb (lf-noise1:kr 0.1)
-                        (-> (lf-noise1:kr 0.5) (range-lin:kr room-min room-max))))))
+             (o/pan2 (o/lf-noise1:kr 0.5))
+             (o/free-verb (o/lf-noise1:kr 0.1)
+                        (-> (o/lf-noise1:kr 0.5) (o/range-lin:kr room-min room-max))))))
 #_:clj-kondo/ignore
 (comment
   (do

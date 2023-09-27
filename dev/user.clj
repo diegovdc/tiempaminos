@@ -19,7 +19,7 @@
   ;; FIXME Ya casi funciona solo hay que arreglar el require en tieminos.compositions.garden-earth.synths.granular
   (refresh))
 
-(set-refresh-dirs "src" "test")
+(set-refresh-dirs "src" "dev" "test")
 
 (defn restart []
   (doseq [[port _] @osc-servers]

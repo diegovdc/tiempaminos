@@ -1,4 +1,4 @@
-(ns tieminos.lumatone.gral-keyboard
+(ns tieminos.lumatone.coord-system
   "See 20230604174831-lumatone_coordinate_system.org"
   (:require
    [clojure.string :as str]))

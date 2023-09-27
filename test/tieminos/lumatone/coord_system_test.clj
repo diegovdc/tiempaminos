@@ -1,7 +1,7 @@
 (ns tieminos.lumatone.coord-system-test
   (:require
    [clojure.test :refer [deftest is testing]]
-   [tieminos.lumatone.gral-keyboard
+   [tieminos.lumatone.coord-system
     :refer
     [add-coords
      board-keys

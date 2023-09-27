@@ -17,7 +17,7 @@
    [tieminos.habitat.routing :refer [inputs main-returns
                                      percussion-processes-main-out preouts]]
    [tieminos.habitat.scratch.sample-rec2 :refer [hacia-un-nuevo-universo-perc-refrain
-                                                 hacia-un-nuevo-universo-perc-refrain-v1p2 hacia-un-nuevo-universo-perc-refrain-v2-2-aprox-durations
+                                                 hacia-un-nuevo-universo-perc-refrain-v1p2 hacia-un-nuevo-universo-perc-refrain-v2-scalable-durs
                                                  quad-router-2o rev-filter rising-upwards start-rec-loop! start-rec-loop2!
                                                  start-rec-loop3!]]
    [tieminos.habitat.utils :refer [open-inputs-with-rand-pan]]
@@ -856,7 +856,7 @@
     {:input-bus-fn (fn [_] (-> @inputs (select-keys [:guitar :mic-1 :mic-2]) vals (->> (map :bus))))
      :durs (mapv (fn [_] (rrange 10 20)) (range 40))})
 
-  (hacia-un-nuevo-universo-perc-refrain-v2-2-aprox-durations
+  (hacia-un-nuevo-universo-perc-refrain-v2-scalable-durs
     {:out-bus in1
      :buf-fn (fn [_] (->> @rec/bufs vals (sort-by :rec/time) reverse (filter :analysis) (take 10) (#(when (seq %) (rand-nth %)))))
      :silence-thresh 0.05
