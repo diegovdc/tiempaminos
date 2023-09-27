@@ -9,19 +9,21 @@
 
 (def root 130)
 (def note-mappings
-  {48 1  ;; sa
-   60 2
-   50 9/8 ;; re
-   62 9/4
-   51 6/5 ;; komal ga
-   52 5/4 ;; ga
-   53 4/3 ;; ma
-   55 3/2 ;; pa
-   56 8/5 ;; komal dha
-   57 5/3 ;; dha
-   46 9/10 ;; komal ni
-   58 9/5
-   59 15/8 ;; ni
+  {43 3/4   ;; pa
+   46 9/10  ;; komal ni
+   47 15/16 ;; ni
+   48 1     ;; sa
+   50 9/8   ;; re
+   51 6/5   ;; komal ga
+   52 5/4   ;; ga
+   53 4/3   ;; ma
+   55 3/2   ;; pa
+   56 8/5   ;; komal dha
+   57 5/3   ;; dha
+   58 9/5   ;; komal ni
+   59 15/8  ;; ni
+   60 2     ;; sa
+   62 9/4   ;; re
    })
 (comment
   (o/stop)

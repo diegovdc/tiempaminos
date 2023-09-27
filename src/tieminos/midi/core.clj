@@ -86,7 +86,7 @@
   "`note` events receive a map with the following keys
    `'(:data2 :command :channel :msg :note :status :data1 :device :timestamp :velocity)`"
   [& {:keys [midi-input note-on note-off auto-ctl]
-      :or {midi-input ks
+      :or {midi-input oxygen
            auto-ctl true
            note-off (fn [_] nil)}}]
   (midi/midi-handle-events

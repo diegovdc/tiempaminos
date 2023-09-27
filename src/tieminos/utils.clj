@@ -24,9 +24,15 @@
   (mapcat (partial period seconds) durs))
 
 (defn gen-chord [scale fundamental [gens degs]]
+  "Get a set of frequencies by passing in a cps scale, a fundamental and a vector with generators and degrees"
   (let [scale** (->> scale (#(cps/filter-scale % gens)))]
     (map (partial scale/deg->freq scale** fundamental) degs)))
 
+(comment
+  (gen-chord (:scale (cps/make 2 [1 3 5 7]))
+             200
+             [[1 3] [2 3 4]])
+  )
 
 ;; Range mapping https://github.com/supercollider/supercollider/blob/18c4aad363c49f29e866f884f5ac5bd35969d828/lang/LangSource/MiscInlineMath.h
 
