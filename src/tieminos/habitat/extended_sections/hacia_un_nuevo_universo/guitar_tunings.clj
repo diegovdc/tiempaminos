@@ -9,7 +9,7 @@
                     4 5/2
                     3 7/2
                     2 11/2
-                    1 12/2             ;maybe later 25/4 or 13/2
+                    1 25/4             ;maybe later 25/4 or 13/2
                     })
 (o/defsynth tuner
   [freq 112
