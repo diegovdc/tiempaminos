@@ -68,12 +68,13 @@
 
 (defn run-rec
   "NOTE: `input-bus` may be `nil`. This will use `o/sound-in` 0"
-  [bufs-atom buf-key seconds input-bus]
+  [bufs-atom buf-key seconds input-bus & {:keys [progress-bar?]}]
 
   (println (format "\nStarting!\n\n%s seconds" seconds))
   (let [progress-range "0%                                  100%"
         durs (repeat 40 (/ 1 (count progress-range)))
-        progress-bar-fn (make-progress-bar-fn progress-range)]
+        progress-bar-fn (when progress-bar?
+                          (make-progress-bar-fn progress-range))]
     (when-not input-bus
       (throw (ex-info "No `input-bus` provided for recording." {})))
     (ref-rain :id (keyword "granular" (str "recording"
@@ -83,12 +84,13 @@
               :durs durs
               :on-event
               (on-event
-               (when (zero? index)
-                 (rec-buf {:bufs-atom bufs-atom
-                           :buf-key buf-key
-                           :seconds seconds
-                           :input-bus input-bus}))
-               (progress-bar-fn index)))))
+                (when (zero? index)
+                  (rec-buf {:bufs-atom bufs-atom
+                            :buf-key buf-key
+                            :seconds seconds
+                            :input-bus input-bus}))
+                (when progress-bar?
+                  (progress-bar-fn index))))))
 
 (def recording?
   "For external use only (an outside check if something is being recorded)"
@@ -96,10 +98,11 @@
 
 (defn start-recording
   "NOTE: `input-bus` may be `nil`. See `run-rec`."
-  [& {:keys [bufs-atom buf-key seconds msg on-end countdown input-bus bpm]
-      :or {on-end (fn [buf-key] nil)
+  [& {:keys [bufs-atom buf-key seconds msg on-end countdown input-bus bpm _progress-bar? on-rec-start]
+      :or {on-end (fn [_buf-key] nil)
            countdown 3
-           bpm 60}}]
+           bpm 60}
+      :as rec-config}]
   (ref-rain
    :id (keyword "recording" (str "start-recording"
                                  (name-buf-key buf-key)))
@@ -111,8 +114,8 @@
    :on-event (on-event
               (do
                 (when (zero? index)
-                  (do (timbre/info (str msg " \n buf-key: " buf-key))
-                      (println "Countdown:")))
+                  (timbre/info (str msg " \n buf-key: " buf-key))
+                  (println "Countdown:"))
 
                 (cond (> (- countdown index) 0)
                       (do (print (str (- countdown index) "... "))
@@ -120,7 +123,9 @@
 
                       (= countdown index)
                       (do (reset! recording? true)
-                          (run-rec bufs-atom buf-key seconds input-bus))
+                          (run-rec bufs-atom buf-key seconds input-bus rec-config)
+                          (when on-rec-start
+                            (on-rec-start rec-config)))
 
                       :else
                       (do (println "Done!")
