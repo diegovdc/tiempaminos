@@ -267,33 +267,36 @@
 (defn format-val
   ([k] k)
   ([k v] (format "%s=%s" k v)))
-(do
-  (defn ltn-data->ltn
-    [ltn-data]
-    (->> ltn-data
-         (sort-by :board/key)
-         (group-by :board/id)
-         (mapcat (fn [[board-id keys-data]]
-                   (concat
-                    [(format "[Board%s]" board-id)]
-                    (mapcat (fn [{:keys [key key-value chan chan-value color cc-invert k-type]}]
-                              (let [key-exists? (> key-value -1)]
-                                (->> [(format-val key (if key-exists?
-                                                        key-value 0))
-                                      (format-val chan chan-value)
-                                      (format-val color "000000")
-                                      (when-not key-exists?
-                                        (format-val k-type 0))
-                                      cc-invert]
-                                     (remove nil?))))
-                            keys-data))))
-         (str/join "\n")))
 
-  (spit "/Users/diego/Music/diego/lumatone/31_gen-18_4-7_template.ltn"
+(defn ltn-data->ltn
+  [ltn-data]
+  (->> ltn-data
+       (sort-by :board/key)
+       (group-by :board/id)
+       (mapcat (fn [[board-id keys-data]]
+                 (concat
+                   [(format "[Board%s]" board-id)]
+                   (mapcat (fn [{:keys [key key-value chan chan-value color cc-invert k-type]}]
+                             (let [key-exists? (> key-value -1)]
+                               (->> [(format-val key (if key-exists?
+                                                       key-value 0))
+                                     (format-val chan chan-value)
+                                     (format-val color "000000")
+                                     (when-not key-exists?
+                                       (format-val k-type 0))
+                                     cc-invert]
+                                    (remove nil?))))
+                           keys-data))))
+       (str/join "\n")))
+
+(comment
+  (spit "/Users/diego/Music/diego/lumatone/34_gen-13_oneirotonic-13-34_template.ltn"
         (ltn-data->ltn
-         (let [gen 18 period 31]
-           (make-ltn-data
-            {:offset 28
-             :period period
-             :xy-intervals ((generate-keyboard-types->xy-intervals gen period)
-                            [4 7])})))))
+          (let [gen 13 period 34]
+            (make-ltn-data
+              {:offset 80
+               :period period
+               :xy-intervals ((generate-keyboard-types->xy-intervals gen period)
+                              [13 34])}))))
+
+  (generate-keyboard-types->xy-intervals 13 34))
