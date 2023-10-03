@@ -12,8 +12,6 @@
          :lin-weighted-amps {} ;; i.e. {:guitar {:avg-30s 0.5 :avg-5s 0.4}}
          }))
 
-(-> @amp-analysis)
-
 ;; API
 (defn add-amp-data [input-key timestamp amp]
   (when (::inited? @amp-analysis)

@@ -6,6 +6,7 @@
    [tieminos.habitat.groups :as groups]
    [tieminos.habitat.osc :as habitat-osc]
    [tieminos.habitat.panners :refer [circle-pan-4ch current-panners]]
+   [tieminos.habitat.reactivity.amp :refer [init-amp-analyzer!]]
    [tieminos.habitat.recording :refer [start-signal-analyzer]]
    [tieminos.habitat.routing
     :refer [guitar-bus init-buses-and-input-vars! init-preouts!
@@ -48,7 +49,7 @@
         (try (o/kill analyzer)
              (catch Exception _
                (timbre/warn "Signal analyzer does not exist anymore")))))
-
+    (init-amp-analyzer!)
     (reset! analyzers-registry
             (into {}
                   (map

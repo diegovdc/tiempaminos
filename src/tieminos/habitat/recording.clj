@@ -1,12 +1,14 @@
 (ns tieminos.habitat.recording
   (:require
-   [clojure.core.async :as a]
    [clojure.string :as str]
    [overtone.core :as o]
+   [overtone.music.time :refer [now]]
    [taoensso.timbre :as timbre]
+   [tieminos.habitat.reactivity.amp :refer [add-amp-data analyze-amps?]]
    [tieminos.habitat.routing :refer [bus->bus-name input-number->bus*]]
+   [tieminos.math.utils :refer [avg]]
    [tieminos.sc-utils.recording.v1 :as rec :refer [start-recording]]
-   [tieminos.utils :refer [avg hz->ms normalize-amp]]))
+   [tieminos.utils :refer [hz->ms normalize-amp]]))
 
 (declare make-buf-key! add-analysis)
 
@@ -17,7 +19,7 @@
   (atom {}))
 
 (defn rec-input
-  [{:keys [section subsection input-name input-bus dur-s on-end msg countdown]
+  [{:keys [section subsection input-name input-bus dur-s on-end msg countdown on-rec-start]
     :or {on-end (fn [& args])
          msg "Recording"
          countdown 0}}]
@@ -27,16 +29,17 @@
       (do
         (swap! recording? assoc input-kw true)
         (start-recording
-         :bufs-atom bufs
-         :buf-key (make-buf-key! section subsection input-name)
-         :input-bus input-bus
-         :seconds dur-s
-         :msg msg
-         :on-end (fn [buf-key]
-                   (swap! recording? assoc input-kw false)
-                   (add-analysis dur-s buf-key input-bus)
-                   (on-end buf-key))
-         :countdown countdown)))))
+          :bufs-atom bufs
+          :buf-key (make-buf-key! section subsection input-name)
+          :input-bus input-bus
+          :seconds dur-s
+          :msg msg
+          :on-end (fn [buf-key]
+                    (swap! recording? assoc input-kw false)
+                    (add-analysis dur-s buf-key input-bus)
+                    (on-end buf-key))
+          :countdown countdown
+          :on-rec-start on-rec-start)))))
 
 (def habitat-samples-path (str (System/getProperty "user.dir")
                                "/samples/habitat_samples/"))
@@ -96,7 +99,8 @@
 (comment
   ;; TODO is freq being added to the analysis?
   (->> @analysis-history vals flatten (filter :freq?)))
-(def analyzer-freq 60)
+
+(def analyzer-freq 60) ;; TODO lower and test
 
 (defn run-get-signal-analysis
   [& {:keys [freq input-bus analysis-path]
@@ -110,19 +114,25 @@
 
 (defn do-receive-analysis
   [input-bus-name-keyword data]
-  (when (get @recording? input-bus-name-keyword)
-    (let [[_node-id _input-bus amp freq freq?*] (-> data :args)
-          freq? (= freq?* 1.0)]
+  (let [recording-bus? (get @recording? input-bus-name-keyword)
+        analyzing-amp? (analyze-amps? input-bus-name-keyword)]
+    (when (or recording-bus? analyzing-amp?)
+      (let [[_node-id _input-bus amp freq freq?*] (-> data :args)
+            freq? (= freq?* 1.0)]
 
-      #_(timbre/debug input-bus-name-keyword "amp" amp "freq" freq)
-      (swap! analysis-history
-             update
-             input-bus-name-keyword
-             conj
-             {:amp amp
-              :timestamp (o/now)
-              :freq freq
-              :freq? freq?}))))
+        (when analyzing-amp?
+          (add-amp-data input-bus-name-keyword (now) amp))
+
+        (when recording-bus?
+          #_ (timbre/debug input-bus-name-keyword "amp" amp "freq" freq)
+          (swap! analysis-history
+                 update
+                 input-bus-name-keyword
+                 conj
+                 {:amp amp
+                  :timestamp (o/now)
+                  :freq freq
+                  :freq? freq?}))))))
 
 (defn run-receive-analysis
   "Gets analysis from `in` 0 in almost real time
@@ -144,11 +154,12 @@
 
 (defn start-signal-analyzer
   [& {:keys [input-bus]}]
-  (let [analysis-path (format "/receive-%s-analysis" (:name input-bus))]
-    (timbre/debug "Starting analyzer with path" analysis-path)
+  (let [input-bus-name-keyword (keyword (:name input-bus))
+        analysis-path (format "/receive-%s-analysis" (:name input-bus))]
+    (timbre/debug "Starting analyzer with path:" analysis-path " for input " input-bus-name-keyword)
     {:receiver (run-receive-analysis
                 :freq analyzer-freq
-                :input-bus-name-keyword (keyword (:name input-bus))
+                :input-bus-name-keyword input-bus-name-keyword
                 :analysis-path analysis-path)
      :analyzer (run-get-signal-analysis
                 :freq analyzer-freq

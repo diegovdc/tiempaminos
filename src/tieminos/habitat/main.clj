@@ -10,16 +10,12 @@
    [tieminos.habitat.parts.amanecer :as amanecer]
    [tieminos.habitat.parts.dia-back :as dia]
    [tieminos.habitat.parts.noche :as noche]
+   [tieminos.habitat.reactivity.amp :refer [stop-amp-analyzer!]]
    [tieminos.habitat.recording :as rec :refer [recording?]]
    [tieminos.habitat.resonance-panner :as reso-pan]
    [tieminos.habitat.routing
-    :refer [inputs
-            main-returns
-            preouts
-            reaper-returns
-            recordable-outputs
-            special-inputs
-            texto-sonoro-rand-mixer-bus]]
+    :refer [inputs main-returns preouts reaper-returns recordable-outputs
+            special-inputs texto-sonoro-rand-mixer-bus]]
    [tieminos.habitat.synths.main-fx :refer [main-fx]]
    [tieminos.osc.reaper :as reaper]
    [tieminos.utils :refer [stop-async-seq-call-loop!]]
@@ -111,6 +107,7 @@
   (gp/stop)
   (reaper/stop)
   (stop-async-seq-call-loop!)
+  (stop-amp-analyzer!)
   (reset! recording? {})
   (reset! habitat-initialized? false))
 

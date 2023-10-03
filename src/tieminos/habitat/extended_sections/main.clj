@@ -882,6 +882,9 @@
 
 (comment
   ;; TODO generar función para abrir y cerrar los micros para probar
+   (reset! recording? {})
+  (reset! rec/bufs {})
+  (main/start-sequencer! hacia-un-nuevo-universo-impro)
   (-> @hseq/context)
   (fn [_] (-> @inputs (select-keys [:guitar :mic-1 :mic-2]) vals rand-nth :bus))
   (timbre/set-level! :info)
