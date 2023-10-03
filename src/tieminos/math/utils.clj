@@ -53,3 +53,26 @@
   [max x]
   (/ (Math/log (+ 1 x))
      (Math/log (+ 1 max))))
+
+(defn avg
+  [xs]
+  (if-not (seq xs)
+    0
+    (/ (apply + xs) (count xs))))
+
+(defn linearly-weighted-avg
+  [xs]
+  (if-not (seq xs)
+    0
+    (let [total (count xs)]
+      (/ (apply + (map-indexed
+                    (fn [i x] (* x (- total i)))
+                    xs))
+         (apply + (range (inc total)))))))
+
+;; TODO add tests
+(linearly-weighted-avg [1 1 1 1])
+(linearly-weighted-avg [1 9/10 8/10 7/10 6/10 5/10])
+(linearly-weighted-avg (reverse [1 9/10 8/10 7/10 6/10 5/10]))
+(linearly-weighted-avg (range 1 -1/10 -1/10))
+(linearly-weighted-avg (reverse (range 1 -1/10 -1/10)))
