@@ -1,16 +1,14 @@
 (ns user
-  (:require [taoensso.timbre :as timbre]
-            [clojure.tools.namespace.repl :as repl :refer [refresh set-refresh-dirs]]
-            [clojure.string :as str]
-            [overtone.core :as o]
-            [overtone.libs.counters :refer [next-id]]
-            [overtone.sc.machinery.allocator :refer [alloc-id]]
-            [overtone.sc.machinery.server.connection :as oc]
-            [tieminos.osc.core :refer [osc-servers stop-server]]
-            [tieminos.overtone-extensions :as oe]
-            [time-time.dynacan.players.gen-poly :as gp]
-            [erv.utils.conversions :as conv]
-            [erv.utils.ratios :as ratios]))
+  (:require
+   [clojure.java.shell :refer [sh]]
+   [clojure.string :as str]
+   [clojure.tools.namespace.repl :as repl :refer [refresh set-refresh-dirs]]
+   [overtone.core :as o]
+   [overtone.sc.machinery.server.connection :as oc]
+   [taoensso.timbre :as timbre]
+   [tieminos.osc.core :refer [osc-servers stop-server]]
+   [tieminos.overtone-extensions :as oe]
+   [time-time.dynacan.players.gen-poly :as gp]))
 
 (timbre/set-level! :info)
 
@@ -33,7 +31,14 @@
 #_:clj-kondo/ignore
 (def stop gp/stop)
 
-(defn connect [] (o/connect-external-server))
+(defn is-process-running? [process-name]
+  (let [cmd-result (sh "pgrep" process-name)]
+    (= 0 (:exit cmd-result))))
+
+(defn connect []
+  (if-not (is-process-running? "scsynth")
+    (timbre/error "scscynth not running, please start it.")
+    (o/connect-external-server)))
 
 (defn test-sound []
   (o/demo (* 0.2 (o/pan2 (o/sin-osc))))
