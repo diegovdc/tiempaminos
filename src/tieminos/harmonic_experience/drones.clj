@@ -18,6 +18,7 @@
    46 9/10  ;; komal ni
    47 15/16 ;; ni
    48 1     ;; sa
+   49 16/15 ;; komal re
    50 9/8   ;; re
    51 6/5   ;; komal ga
    52 5/4   ;; ga
@@ -29,26 +30,14 @@
    58 9/5   ;; komal ni
    59 15/8  ;; ni
    60 2     ;; sa
+   61 32/15 ;; komal re
    62 9/4   ;; re
-   64 10/4  ;; re
+   63 12/5  ;; komal ga
+   64 10/4  ;; ga
    })
 
-
 (comment
-  ;; for lattice
-  1
-  9/8
-  6/5
-  5/4
-  4/3
-  3/2
-  8/5
-  5/3
-  9/5
-  15/8)
 
-(comment
-  
   (o/stop)
   (def sa (drone root))
   (o/ctl sa :gate 0)
@@ -63,8 +52,6 @@
   (def lattice-data (draw-lattice
                       (into #{} (map period-reduce (map second note-mappings)))))
 
-  (-> @lattice-data)
-  (swap! lattice-data update :played-notes conj 5/4)
   (when (midi/midi-in "USB MIDI")
     (defonce oxygen (midi/midi-in "USB MIDI")))
 
@@ -78,11 +65,12 @@
                      (harmonic (* root ratio) :amp (linexp* 0 127 0.5 3 (:velocity ev))))
                    (timbre/error "Note not mapped" (:note ev))))
       :note-off (fn [ev]
-                  (let [ratio (period-reduce (note-mappings (:note ev)))]
-                    (swap! lattice-data update :played-notes #(->> %
-                                                                   (remove (fn [r] (= r ratio)))
-                                                                   (into #{})))
-                    nil)))))
+                  (when (note-mappings (:note ev))
+                    (let [ratio (period-reduce (note-mappings (:note ev)))]
+                      (swap! lattice-data update :played-notes #(->> %
+                                                                     (remove (fn [r] (= r ratio)))
+                                                                     (into #{})))
+                      nil))))))
 
 (o/defsynth drone2
   [freq 130
@@ -108,7 +96,9 @@
    amp 1
    gate 1]
   (o/out 0
-         (-> (* 0.7 (lfo 0.6 0.2 0.6) (o/sin-osc [freq (* 2 freq)]))
+         (-> (* 0.7 (lfo 0.6 0.2 0.6) (o/mix (o/sin-osc [freq
+                                                         (* 2 freq)
+                                                         (* 3 freq)])))
              (o/pan2 (lfo 0.4 -0.5 0.5))
              #_(o/hpf 700)
              (#(+ % (o/bpf % (lfo 0.5 (* 2 freq) 800) 0.3)))
