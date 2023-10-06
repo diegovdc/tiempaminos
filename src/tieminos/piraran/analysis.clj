@@ -66,8 +66,7 @@
 (def dorian-hexanies-in-polydori
   "A vector of maps each with the hexany `:sets` and the `:degrees` of the notes in `polydori-v2`
   NOTE: do use `polydori-v2` as it's degrees differ from `polydori`"
-  (mapcat (fn [[_ factors]]
-
+  (mapcat (fn [i [_ factors]]
             (let [f-set (set factors)
                   poly-factors #{1 3 9 19 15 21 7}
                   factors-not-on-f-set (set/difference poly-factors f-set)
@@ -76,18 +75,27 @@
                                            :scale
                                            (map :set))]
               (->> (combo/combinations factors-not-on-f-set 2)
-                   (map (fn [common-factors]
+                   (map (fn [j common-factors]
                           (let [sets (map #(into % common-factors)
                                           hexany-note-factors)]
-                            {:hexany (:scale hexany)
+                            {:name (format "diat%sv%s" i (inc j))
+                             :hexany (:scale hexany)
                              :hexany-note-factors hexany-note-factors
                              :unique-factors f-set
                              :common-factors (set common-factors)
                              :sets sets
-                             :degrees (map polydori-set->deg sets)}))))))
+                             :degrees (map polydori-set->deg sets)}))
+                        (range)))))
+          (range)
           dorian-hexanies))
 
-(->> dorian-hexanies-in-polydori)
+(def dorian-hexanies-in-polydori-by-name
+  (reduce (fn [m hx] (assoc m (:name hx) hx))
+          {}
+          dorian-hexanies-in-polydori))
+
+(->> dorian-hexanies)
+(->> dorian-hexanies-in-polydori (map (juxt :name (comp sort :degrees))))
 (polydori-set->deg #{1 15 21 9})
 (-> dorian-hexanies-in-polydori
     (nth 2))
@@ -222,9 +230,7 @@
 ;;;looking for where to transpose the scale so that one of the diatonic scales lands as close to 12edo as possible
 
 
-(->> dorian-hexanies-in-polydori
-     first
-     :sets)
+(->> dorian-hexanies-in-polydori)
 ;;
 ;; diatonic 1
 (->> polydori-v2
