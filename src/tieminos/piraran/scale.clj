@@ -52,8 +52,14 @@
                       sets)))
        (apply merge)))
 
+(def polydori-deg->sets
+  (->> polydori-set->deg
+       (group-by second)
+       (map (fn [[k vs]] [k (mapv first vs)]))
+       (into {})))
+
 (comment
-  (-> polydori-set->deg)
+  (->> polydori-set->deg (sort-by second))
   (polydori-set->deg #{1 15 21 9})
   (-> polydori-v2))
 
