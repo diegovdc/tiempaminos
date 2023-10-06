@@ -1,13 +1,12 @@
-(ns tieminos.analysis.polydori.cps-explorer
+(ns tieminos.polydori.analysis.cps-explorer
   (:require
    [clojure.string :as str]
    [erv.constant-structures.graphics :refer [init-cs-tool! update-state]]
    [erv.utils.conversions :as convo]
    [overtone.midi :as midi]
    [tieminos.midi.core :refer [midi-in-event]]
-   [tieminos.piraran.scale :refer [polydori-set->deg polydori-v2]]
+   [tieminos.polydori.scale :refer [polydori-set->deg polydori-v2]]
    [tieminos.utils :refer [map-subscale-degs]]))
-
 
 ;; TODO move this a polydori
 

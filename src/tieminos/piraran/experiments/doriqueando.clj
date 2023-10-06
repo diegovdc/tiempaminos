@@ -8,8 +8,8 @@
     :refer [act-level elapsed-time get-out make-activity-map]]
    [tieminos.piraran.dorian-scales :as ds]
    [tieminos.piraran.harmonic-clock :as hc]
-   [tieminos.piraran.scale :refer [polydori root]]
    [tieminos.piraran.synths :refer [sini]]
+   [tieminos.polydori.scale :refer [polydori root]]
    [tieminos.synths :refer [low sharp-plate]]
    [tieminos.utils :refer [rrange]]
    [time-time.dynacan.players.gen-poly :refer [on-event ref-rain stop]]))

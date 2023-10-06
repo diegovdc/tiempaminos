@@ -3,7 +3,7 @@
    [erv.utils.core :refer [wrap-at]]
    [taoensso.timbre :as timbre]
    [tieminos.piraran.harmonic-form :as form]
-   [tieminos.piraran.scale :refer [polydori]]
+   [tieminos.polydori.scale :refer [polydori]]
    [time-time.dynacan.players.gen-poly :refer [on-event ref-rain stop]]))
 
 (defn +hexanies [moment]

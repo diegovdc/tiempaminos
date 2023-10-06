@@ -3,7 +3,7 @@
    [clojure.string :as str]
    [overtone.midi :as midi]
    [tieminos.midi.core :refer [midi-in-event]]
-   [tieminos.piraran.scale :refer [polydori-set->deg polydori-v2]]
+   [tieminos.polydori.scale :refer [polydori-set->deg polydori-v2]]
    [tieminos.utils :refer [map-subscale-degs]]
    [time-time.dynacan.players.gen-poly :as gp :refer [on-event ref-rain]]))
 

@@ -1,7 +1,9 @@
 (ns tieminos.piraran.analysis-test
   (:require
    [clojure.test :refer [deftest is testing]]
-   [tieminos.piraran.analysis :refer [dorian-hexanies-in-polydori]]))
+   [tieminos.polydori.analysis.dorian-hexanies
+    :refer
+    [dorian-hexanies-in-polydori]]))
 
 (deftest dorian-hexanies-in-polydori-test
   (testing "Each `:hexany-note-factors` group should have 3 haxanies in there"

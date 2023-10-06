@@ -8,7 +8,7 @@
    [tieminos.piraran.base :as base :refer [get-out]]
    [tieminos.piraran.harmonic-clock :as hc]
    [tieminos.piraran.harmonic-form :as form]
-   [tieminos.piraran.scale :refer [root]]
+   [tieminos.polydori.scale :refer [root]]
    [tieminos.utils :refer [rrange]]
    [time-time.dynacan.players.gen-poly :as gp :refer [on-event ref-rain]]))
 

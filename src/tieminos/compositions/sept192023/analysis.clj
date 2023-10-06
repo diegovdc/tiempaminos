@@ -1,10 +1,8 @@
 (ns tieminos.compositions.sept192023.analysis
   (:require
-   [tieminos.analysis.polydori.diatonics :refer [dorian-hex-connections]]
-   [tieminos.piraran.analysis :refer [dorian-hexanies-in-polydori-by-name]]))
-
-
-dorian-hex-connections
+   [tieminos.polydori.analysis.dorian-hexanies
+    :refer
+    [dorian-hex-connections dorian-hexanies-in-polydori-by-name]]))
 
 (def cps
   {:beating-pads "diat2v2"

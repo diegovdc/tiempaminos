@@ -2,7 +2,7 @@
   (:require
    [erv.scale.core :as scale]
    [erv.utils.conversions :as conv]
-   [tieminos.piraran.scale :refer [polydori polydori-v2]]
+   [tieminos.polydori.scale :refer [polydori polydori-v2]]
    [time-time.dynacan.players.gen-poly :as gp :refer [on-event ref-rain]]
    [time-time.standard :refer [rrand]]))
 

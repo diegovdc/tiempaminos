@@ -3,10 +3,9 @@
    [overtone.midi :as midi]
    [tieminos.midi.core :refer [midi-in-event]]
    [tieminos.midi.plain-algo-note :refer [algo-note]]
-   [tieminos.piraran.scale :refer [polydori-set->deg polydori-v2]]
+   [tieminos.polydori.scale :refer [polydori-set->deg polydori-v2]]
    [tieminos.utils :refer [map-subscale-degs rrange]]
-   [time-time.dynacan.players.gen-poly :refer [on-event ref-rain]]
-   [time-time.dynacan.players.gen-poly :as gp]))
+   [time-time.dynacan.players.gen-poly :as gp :refer [on-event ref-rain]]))
 
 (def sink (midi/midi-out "VirMIDI"))
 

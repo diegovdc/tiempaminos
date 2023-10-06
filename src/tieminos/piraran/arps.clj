@@ -7,7 +7,7 @@
    [tieminos.math.utils :refer [linexp]]
    [tieminos.piraran.base :refer [get-out]]
    [tieminos.piraran.harmonic-clock :refer [dek-seq momento]]
-   [tieminos.piraran.scale :refer [root]]
+   [tieminos.polydori.scale :refer [root]]
    [time-time.dynacan.players.gen-poly :refer [on-event ref-rain]]))
 
 (defn scale-durs [total-dur durs]

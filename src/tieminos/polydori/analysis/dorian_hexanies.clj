@@ -1,4 +1,4 @@
-(ns tieminos.piraran.analysis
+(ns tieminos.polydori.analysis.dorian-hexanies
   (:require
    [clojure.math.combinatorics :as combo]
    [clojure.set :as set]
@@ -6,7 +6,7 @@
    [erv.cps.core :as cps]
    [erv.cps.similarity :as cpss]
    [tieminos.piraran.dorian-scales :as ds]
-   [tieminos.piraran.scale
+   [tieminos.polydori.scale
     :refer
     [+cents polydori polydori-set->deg polydori-v2]]))
 
@@ -267,3 +267,22 @@
     (nth 0)
     :sets
     set)
+
+(def dorian-hex-connections
+  (->>
+    (for [source dorian-hexanies-in-polydori
+          target dorian-hexanies-in-polydori]
+      (let [intersection (set/intersection (set (:degrees source))
+                                           (set (:degrees target)))]
+        (cond
+          (= source target) nil
+          (zero? (count intersection)) nil
+          :else {(:name source) {:name (:name target)
+                                 :degrees intersection
+                                 :size (count intersection)}}
+          )))
+    (remove nil?)
+    (reduce (fn [acc m]
+              (update acc (ffirst m)
+                      (comp #(sort-by :size > %) conj)
+(first (vals m)))) {})))

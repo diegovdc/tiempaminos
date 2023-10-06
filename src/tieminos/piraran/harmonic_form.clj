@@ -3,7 +3,7 @@
    [clojure.string :as str]
    [erv.scale.scl :refer [make-scl-file]]
    [tieminos.piraran.dorian-scales :refer [anti-dorico-1v1 dorico-1v2]]
-   [tieminos.piraran.scale :refer [+cents polydori polydori-by-sets]]))
+   [tieminos.polydori.scale :refer [+cents polydori polydori-by-sets]]))
 
 (def harmonic-form
   "Momento 0:  antidórico diff ?

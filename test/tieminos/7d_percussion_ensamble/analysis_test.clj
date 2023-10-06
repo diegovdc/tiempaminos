@@ -7,7 +7,7 @@
             diatonic-hexanies-intersection-summary
             intersect-diatonic-hexanies
             named-diatonic-hexanies]]
-   [tieminos.piraran.scale :refer [polydori-v2]]
+   [tieminos.polydori.scale :refer [polydori-v2]]
    [tieminos.utils :refer [map-subscale-degs]]))
 
 (deftest named-diatonic-hexanies-test

@@ -2,12 +2,10 @@
   (:require
    [clojure.set :as set]
    [clojure.string :as str]
-   [tieminos.piraran.analysis :refer [dorian-hexanies-in-polydori]]
-   [tieminos.piraran.scale :refer [polydori-set->deg polydori-v2]]
+   [tieminos.polydori.analysis.dorian-hexanies
+    :refer [dorian-hexanies-in-polydori]]
+   [tieminos.polydori.scale :refer [polydori-set->deg polydori-v2]]
    [tieminos.utils :refer [indexes-of map-subscale-degs]]))
-
-
-
 
 ;;;;;;
 ;;; Making some sort of mapping from hexany to hexany with data about the

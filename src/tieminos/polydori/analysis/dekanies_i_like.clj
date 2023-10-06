@@ -1,4 +1,4 @@
-(ns tieminos.analysis.polydori.dekanies-i-like
+(ns tieminos.polydori.analysis.dekanies-i-like
   "Dekanies I like from polydori")
 
 {"3)5 of 4)7 3-7.9.15.19.21" {:size 12

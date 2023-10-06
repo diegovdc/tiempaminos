@@ -4,8 +4,9 @@
   (:require
    [erv.scale.core :as scale]
    [overtone.core :as o]
-   [tieminos.piraran.analysis :refer [dorian-hexanies-in-polydori]]
-   [tieminos.piraran.scale :refer [polydori-v2]]
+   [tieminos.polydori.analysis.dorian-hexanies
+    :refer [dorian-hexanies-in-polydori]]
+   [tieminos.polydori.scale :refer [polydori-v2]]
    [tieminos.sc-utils.groups.v1 :as groups]
    [tieminos.synths :as s]
    [tieminos.utils :refer [map-subscale-degs]]

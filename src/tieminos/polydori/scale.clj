@@ -1,4 +1,4 @@
-(ns tieminos.piraran.scale
+(ns tieminos.polydori.scale
   (:require
    [erv.cps.core :as cps]
    [erv.utils.conversions :as conv]

@@ -1,7 +1,8 @@
 (ns tieminos.piraran.kbm
   (:require
-   [tieminos.piraran.analysis :refer [dorian-hexanies-in-polydori]]
-   [tieminos.piraran.scale :refer [polydori-v2]]))
+   [tieminos.polydori.analysis.dorian-hexanies
+    :refer [dorian-hexanies-in-polydori]]
+   [tieminos.polydori.scale :refer [polydori-v2]]))
 
 (-> polydori-v2)
 

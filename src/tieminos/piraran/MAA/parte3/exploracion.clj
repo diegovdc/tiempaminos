@@ -5,8 +5,9 @@
    [overtone.midi :as midi]
    [tieminos.core]
    [tieminos.midi.plain-algo-note :as pa :refer [algo-note malgo-note]]
-   [tieminos.piraran.analysis :refer [dorian-hexanies-in-polydori]]
-   [tieminos.piraran.scale :refer [polydori]]
+   [tieminos.polydori.analysis.dorian-hexanies
+    :refer [dorian-hexanies-in-polydori]]
+   [tieminos.polydori.scale :refer [polydori]]
    [tieminos.synths :as s]
    [tieminos.utils :refer [cps->tidal-scale]]
    [time-time.dynacan.players.gen-poly :as gp :refer [on-event ref-rain]]))
