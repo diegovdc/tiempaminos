@@ -1,4 +1,4 @@
-(ns tieminos.impros.sept192023
+(ns tieminos.compositions.sept192023.original-improv
   (:require
    [overtone.midi :as midi]
    [tieminos.midi.plain-algo-note :refer [malgo-note]]
