@@ -188,12 +188,12 @@
                               :preouts preouts})
 
   (do ;; Start
-    (let [time-offset (+ (* 60 5) 45)]
+    (let [time-offset (+ (* 60 7) 34)]
       (def sections* (partial sections time-offset))
       (main/start-sequencer!
         {:context (merge main/context {})
          :sections [[[time-offset 00] #'sections*]]
          :initial-section #'sections*
-         ;; :rec? true
+         :rec? true
          })))
   (o/stop))
