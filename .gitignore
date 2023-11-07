@@ -25,3 +25,5 @@ recordings/*
 samples/habitat_samples/test*
 resources/*.wav
 .cider-repl-history
+# use (overtone.linter/emit!) to regenerate the configuration
+.clj-kondo/overtone/
