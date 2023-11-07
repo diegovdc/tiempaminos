@@ -19,11 +19,22 @@
 (defonce oxygen (try (midi/midi-in "USB MIDI")
                      (catch Exception e
                        (timbre/warn (str "Could not connect to USB MIDI: " (.getMessage e))))))
+
+(defonce oxygen* (atom nil))
+
+(defn get-oxygen!
+  []
+  (if @oxygen*
+    @oxygen*
+    (try (reset! oxygen* (midi/midi-in "USB MIDI"))
+         (catch Exception e
+           (timbre/warn (str "Could not connect to USB MIDI: " (.getMessage e)))))))
+
 (comment
   ;; basic USAGE
   (midi-in-event
-   :midi-input oxygen
-   :note-on (fn [_] (println "pepe"))))
+    :midi-input oxygen
+    :note-on (fn [_] (println "pepe"))))
 
 (comment
   (midi/midi-out "VirMIDI")

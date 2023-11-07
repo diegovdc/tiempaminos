@@ -96,6 +96,24 @@
 ;;;;;;;;;;;
 ;;; melodic (they have gate)
 
+(o/defsynth soft-saw2
+  [freq 200
+   amp 0.5
+   pan 0
+   atk 0.01
+   dcy 1
+   sust 0.3
+   rel 0.5
+   gate 1
+   out 0]
+  (o/out out
+         (-> (o/saw freq)
+             (o/lpf 2000)
+             (o/pan2 pan)
+             (* (o/env-gen (o/env-adsr atk dcy sust rel)
+                               :gate gate :action o/FREE))
+             (* amp (o/amp-comp-a freq)))))
+
 
 (o/defsynth low2
   [freq 85
@@ -113,8 +131,8 @@
    gate 1
    out 0]
   (o/out out (-> (o/range-lin (* (o/env-gen
-                                  (o/envelope [mod-amp mod-amp-end]
-                                              [mod-dur]))
+                                   (o/envelope [mod-amp mod-amp-end]
+                                               [mod-dur]))
                                  (o/pulse mod-freq))
                               (- freq (/ mod-freq-range 2))
                               (+ freq (/ mod-freq-range 2)))

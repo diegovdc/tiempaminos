@@ -59,7 +59,7 @@
         (q/point (:x coords) (:y coords))
         (q/stroke-weight 3.5)
         (q/stroke 255 255))
-      (q/text-font (q/create-font "Monospace" 10) 10)
+      (q/text-font (q/create-font "Monospace" 5) 5)
       (q/stroke-weight 0)
       #_(q/fill 255 0 0)
       (doseq [{:keys [ratio coords numer-factors denom-factors]} data]
@@ -75,12 +75,16 @@
 
 
 
-(defn draw-lattice [ratios]
-  (let [width 800
-        height 800
-        lattice-data (atom (assoc (ratios->lattice-data base-coords
+(defn draw-lattice
+  [{:keys [ratios width height text-type]
+    :or {width 800
+         height 800
+         text-type :ratios              ; #{:factors :ratios}
+         }}]
+  (let [lattice-data (atom (assoc (ratios->lattice-data base-coords
                                                         ratios)
-                                  :played-notes #{}))]
+                                  :played-notes #{}
+                                  :text-type text-type))]
     (q/defsketch lattice-tool
       :title "Lattice Tool"
       :host "lattice-canvas"
@@ -88,6 +92,6 @@
       :setup (fn []
                #_(q/pixel-density 2)
                (q/frame-rate 24))
-      :draw (#'draw (atom :ratio) width height lattice-data)
+      :draw (#'draw (atom text-type) width height lattice-data)
       :size [width height])
     lattice-data))
