@@ -8,7 +8,6 @@
 (def sink (midi/midi-out "VirMIDI"))
 
 (comment
-
   (let [my-malgo #(malgo-note (merge {:sink sink
                                       :scale-size 6
                                       :base-midi-deg 60
