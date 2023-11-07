@@ -1,0 +1,3 @@
+Synths
+* snare/shaker
+fuzz wave shaper
