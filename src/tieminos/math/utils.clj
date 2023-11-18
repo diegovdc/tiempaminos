@@ -44,6 +44,9 @@
   ([in-min in-max out-min out-max nums]
    (map (partial linexp* in-min in-max out-min out-max) nums)))
 
+(defn log2 [n]
+    (/ (Math/log n) (Math/log 2)))
+
 (defn logscale
   ;; Based on https://stackoverflow.com/a/28132981, only works when min is 0, but there are other options in this answer
   "Logarithmically scale `x` with respect to `max`.
