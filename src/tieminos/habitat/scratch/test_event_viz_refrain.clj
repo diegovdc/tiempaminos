@@ -9,23 +9,12 @@
 (comment
 
   (http/post "http://localhost:5000/visualizer-data"
-             {:events [{:label ":test", :width 50N, :x 0, :y 910.421662693446, :color "lightgreen"}
-                       {:label ":test", :width 50N, :x 50N, :y 947.409517658386, :color "lightgreen"}
-                       {:label ":test",
-                        :width 50N,
-                        :x 100N,
-                        :y 960.9242686135344,
-                        :color "lightgreen"}
-                       {:label ":test",
-                        :width 50N,
-                        :x 150N,
-                        :y 997.9121235784746,
-                        :color "lightgreen"}
-                       {:label ":test",
-                        :width 50N,
-                        :x 200N,
-                        :y 1040.6114684750726,
-                        :color "lightgreen"}]}
+             {:body (pr-str {:events
+                             [{:label ":test", :width 50, :x 0, :y 910, :color "lightgreen"}
+                              {:label ":test", :width 50, :x 50, :y 947, :color "lightgreen"}
+                              {:label ":test", :width 50, :x 100, :y 960, :color "lightgreen"}
+                              {:label ":test", :width 50, :x 150, :y 997, :color "lightgreen"}
+                              {:label ":test", :width 50, :x 200, :y 1040, :color "lightgreen"}]})}
              (fn [{:keys [status headers body error]}] ;; asynchronous response handling
                (if error
                  (println "Failed, exception is " error)
@@ -37,11 +26,11 @@
   (defn freq->px
     ([freq] (freq->px 16 freq))
     ([scaling-factor freq]
-     (* scaling-factor (cps->midi freq))))
+     (int (* scaling-factor (cps->midi freq)))))
 
   (defn ms->px
     [ms]
-    (/ ms 10))
+    (int (/ ms 10)))
 
   (defn event->viz-event
     [{:keys [refrain/id dur-ms elapsed-ms freq]}]
