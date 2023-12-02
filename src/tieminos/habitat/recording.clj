@@ -29,17 +29,17 @@
       (do
         (swap! recording? assoc input-kw true)
         (start-recording
-          :bufs-atom bufs
-          :buf-key (make-buf-key! section subsection input-name)
-          :input-bus input-bus
-          :seconds dur-s
-          :msg msg
-          :on-end (fn [buf-key]
-                    (swap! recording? assoc input-kw false)
-                    (add-analysis dur-s buf-key input-bus)
-                    (on-end buf-key))
-          :countdown countdown
-          :on-rec-start on-rec-start)))))
+         :bufs-atom bufs
+         :buf-key (make-buf-key! section subsection input-name)
+         :input-bus input-bus
+         :seconds dur-s
+         :msg msg
+         :on-end (fn [buf-key]
+                   (swap! recording? assoc input-kw false)
+                   (add-analysis dur-s buf-key input-bus)
+                   (on-end buf-key))
+         :countdown countdown
+         :on-rec-start on-rec-start)))))
 
 (def habitat-samples-path (str (System/getProperty "user.dir")
                                "/samples/habitat_samples/"))
@@ -98,7 +98,9 @@
 (defonce analysis-history (atom {}))
 (comment
   ;; TODO is freq being added to the analysis?
-  (->> @analysis-history vals flatten (filter :freq?)))
+  (->> @analysis-history vals flatten (filter :freq?))
+  (->> @analysis-history :guitar-bus (map :freq))
+  (->> @analysis-history :mic-1-bus (map :freq)))
 
 (def analyzer-freq 60) ;; TODO lower and test
 
@@ -124,7 +126,7 @@
           (add-amp-data input-bus-name-keyword (now) amp))
 
         (when recording-bus?
-          #_ (timbre/debug input-bus-name-keyword "amp" amp "freq" freq)
+          #_(timbre/debug input-bus-name-keyword "amp" amp "freq" freq)
           (swap! analysis-history
                  update
                  input-bus-name-keyword
@@ -174,30 +176,34 @@
         analysis (->> (get @analysis-history (keyword (:name input-bus)))
                       (drop-while #(> (:timestamp %) now))
                       (take-while #(>= (:timestamp %) sample-start))
-                      (reduce (fn [acc {:keys [amp]}]
+                      (reduce (fn [acc {:keys [amp freq freq?]}]
                                 (-> acc
                                     (update :min-amp min amp)
                                     (update :max-amp max amp)
-                                    (update :amps conj amp)))
+                                    (update :amps conj amp)
+                                    (cond-> freq? (update :freqs conj freq))))
+
                               {:min-amp 0
                                :max-amp 0
-                               :amps ()}))
-        buf (@bufs buf-key)
+                               :amps ()
+                               :freqs ()}))
         avg-amp (avg (:amps analysis))
+        avg-freq? (boolean (seq (:freqs analysis)))
+        avg-freq (when avg-freq? (avg (:freqs analysis)))
         amp-norm-mult (normalize-amp (:max-amp analysis))]
     (swap! bufs update buf-key
            assoc
            :rec/time sample-start
            :analysis (-> analysis
                          (assoc :avg-amp avg-amp)
-                         (dissoc :amps))
+                         (assoc :avg-freq? avg-freq?)
+                         (cond-> avg-freq? (assoc :avg-freq avg-freq))
+                         (dissoc :amps :freqs))
            :amp-norm-mult amp-norm-mult)))
 
 (defn norm-amp
   [buf]
   (:amp-norm-mult buf 1))
-
-
 
 (defn silence?
   ([buf] (silence? 0.05 buf))
