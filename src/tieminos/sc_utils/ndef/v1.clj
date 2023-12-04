@@ -34,10 +34,7 @@
 (comment
   (do
     (reset! ndefs {})
-    (macroexpand-1 '(ndef-synth
-                     :my-id
-                     (* 0.2 (o/sin-osc 200))
-                     {:out 0})))
+    (macroexpand-1 '(ndef-synth :my-id (* 0.2 (o/sin-osc 200)) {:out 0})))
 
   (ndef :my-id (* 0.2 (o/sin-osc 100)))
   (stop :my-id)
