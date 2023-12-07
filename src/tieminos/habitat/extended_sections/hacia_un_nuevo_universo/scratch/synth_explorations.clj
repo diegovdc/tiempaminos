@@ -63,7 +63,8 @@
                     #_(* 0.5 ))]))
       {:out percussion-processes-main-out})
   (ndef ::exploration
-      (let [sig (o/in (-> @inputs :mic-1 :bus))
+      (let [sig (o/in (o/mix [(-> @inputs :mic-1 :bus)
+                              (-> @inputs :guitar :bus)]))
             ps-sig (+ (* (lfo-kr 0.4 0.1 0.4) (o/pitch-shift sig 0.1 3/2))
                       (* (lfo-kr 0.5 0.1 0.4) (o/pitch-shift sig 0.1 5/4))
                       (* (lfo-kr 0.5 0.1 0.4) (o/pitch-shift sig 0.2 11/4)))
@@ -77,7 +78,7 @@
                          #_(o/free-verb 1 (lfo-kr 1 0.1 10) 0))]
         ;; Both elements of this mix can be played on their own or mixed
         (o/mix [ ;; Original effected signal
-                #_(o/pan4 dist-sig (lfo-kr 2 -1 1) (lfo-kr 2 -1 1))
+                (o/pan4 dist-sig (lfo-kr 2 -1 1) (lfo-kr 2 -1 1))
                 ;; Delays the signal by up to 1s, sounds good on it's own
                 (-> dist-sig
                     (o/delay-l 1 (lfo-kr 1 0.1 1))

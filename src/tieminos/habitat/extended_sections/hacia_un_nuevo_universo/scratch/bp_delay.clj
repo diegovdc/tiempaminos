@@ -133,7 +133,7 @@
   (doseq [synth (:delays delay-bank1)]
     (o/ctl synth :room 2 :amp 0.6))
   (doseq [synth (:delays delay-bank2)]
-    (o/ctl synth :room 2 :amp 0.6))
+    (o/ctl synth :room 2 ))
 
   (let [config {:group (groups/mid)
                 :in (-> @inputs :mic-1 :bus)
