@@ -60,9 +60,7 @@
                                   (/ seg-dur4 2)
                                   (/ seg-dur4 2)])
         synth (o/synth
-               [{:name :in
-                 :default (clojure.core/float (overtone.sc.node/to-id 0))
-                 :rate :ar}]
+               [in 0]
                (let [main-synth (-> (oe/circle-az :num-channels 4
                                                   :in (o/in in)
                                                   :pos (o/env-gen pos-env)

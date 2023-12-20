@@ -29,9 +29,7 @@
         widths (map :width trayectory)
         curves (repeat (count trayectory) 0.2)
         release-node (dec (count trayectory))]
-    ((o/synth [{:name :gate
-                :default (clojure.core/float (overtone.sc.node/to-id 1))
-                :rate :kr}]
+    ((o/synth [gate 1]
               (o/out out
                      (-> (oe/circle-az :num-channels 4
                                        :in (o/in in)

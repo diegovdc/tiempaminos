@@ -6,7 +6,7 @@
         potemkin/potemkin {:mvn/version "0.4.5"}
         org.clojure/data.generators {:mvn/version "1.0.0"}
         io.github.diegovdc/overtone {:git/url "https://github.com/diegovdc/overtone.git"
-                                     :sha "eb0f20fa08215e2203f261fbb259c42ee9e1e7c4"} #_{:local/root "../overtone" :deps/manifest :deps}
+                                     :sha "1a239fb591b20bc8bc33b4ce75092f4be359219a"} #_{:local/root "../overtone" :deps/manifest :deps}
         videco/piratidal {:local/root "../../../code/piratidal" :deps/manifest :deps}
         io.github.diegovdc/time-time {:git/url "https://github.com/diegovdc/time-time.git"
                                       :sha "3dda2b5ef43a297f7bba98d414b7009dfbdd5c63"} #_{:local/root "../time-tiem" :deps/manifest :deps}
