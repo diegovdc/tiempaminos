@@ -32,16 +32,22 @@
                                                           {:period (rand-nth periods)} )) )))
                   ))))
 
-
-
-
+(comment
+  (gp/stop)
+  (chords1
+    (let [cps (-> cps-19-31-43-55-79-91/hexanies first second cps-utils/+degrees)]
+      {:cps cps
+       :chords [(first (cps-utils/harmonic-triad-degrees cps 0))]
+       :note-octave-transpositions [0 1 2]})))
 
 (defn hacia-un-nuevo-universo-perc-refrain-v2p2
   "This version can handle rate chords (as a vector of rates)"
   [{:keys [refrain-id web-visualizer-fn-id
            buf-fn period durs rates amp
            amp-fn ;; optional, takes the index and returns an amp value, if present `amp` will be overriden
-           d-weights d-level-weights a-weights room-weights out-bus silence-thresh
+           d-weights d-level-weights a-weights room-weights
+           out-bus
+           silence-thresh
            on-play
            refrain-ratio]
     :or {refrain-id ::hacia-un-nuevo-universo-perc3
@@ -96,22 +102,17 @@
                                         :pan (rrange -1 1)}]
 
                             (doseq [synth-args [(assoc config
-                                                         :rate (float r)
-                                                         :interp (rand-nth [1 2 4])
-                                                         :amp (* amp* (rrange 0.2 1) (norm-amp buf)))
-                                                  (assoc config
-                                                           :rate (* (rand-nth [2 3/2 5/4 7/4 1/2 1 1 1 1]) r)
-                                                           :interp (rand-nth [4])
-                                                           :amp (* amp* (rrange 0 0.7) (norm-amp buf)))]]
+                                                       :rate (float r)
+                                                       :interp (rand-nth [1 2 4])
+                                                       :amp (* amp* (rrange 0.2 1) (norm-amp buf)))
+                                                (assoc config
+                                                       :rate (* (rand-nth [2 3/2 5/4 7/4 1/2 1 1 1 1]) r)
+                                                       :interp (rand-nth [4])
+                                                       :amp (* amp* (rrange 0 0.7) (norm-amp buf)))]]
+                              (println "=============BUFF Duration" (:duration buf))
+                              (println "=============SYNTH Duration"
+                                       (apply + (vals (select-keys config [:a :d :r])))
+                                       (select-keys config [:a :d :r]))
                               (on-play {:refrain/data data
                                         :meta {:context/web-visualizer-fn-id web-visualizer-fn-id} ;; TODO
                                         :synth-args synth-args} )))))))))))
-
-(comment
-  (gp/stop)
-  (chords1
-    (let [cps (-> cps-19-31-43-55-79-91/hexanies first second cps-utils/+degrees)]
-      {:cps cps
-       :chords [(first (cps-utils/harmonic-triad-degrees cps 0))]
-       :note-octave-transpositions [0 1 2]}))
-  )

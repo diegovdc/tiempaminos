@@ -72,8 +72,8 @@
                                                    :r 5
                                                    })))}))
 
-  (nebulosa&planeta-hostil
-    {::nebulosa&planeta-hostil/out-bus (main-returns :mixed)}))
+  #_(nebulosa&planeta-hostil
+   {::nebulosa&planeta-hostil/out-bus percussion-processes-main-out}))
 
 (comment
   (gp/stop)

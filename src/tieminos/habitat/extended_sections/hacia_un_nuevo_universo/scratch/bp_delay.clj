@@ -8,7 +8,8 @@
    [tieminos.habitat.main-sequencer :as hseq]
    [tieminos.habitat.recording :as rec]
    [tieminos.habitat.routing :refer [guitar-processes-main-out inputs
-                                     percussion-processes-main-out preouts]]
+                                     main-returns percussion-processes-main-out
+                                     preouts]]
    [tieminos.habitat.utils :refer [open-inputs-with-rand-pan]]
    [tieminos.math.utils :refer [linexp*]]
    [tieminos.midi.core :refer [get-oxygen! midi-in-event]]
@@ -96,14 +97,14 @@
   (def delay-bank1 (make-bp-delay-bank
                      {:group (groups/mid)
                       :in (-> @inputs :mic-1 :bus)
-                      :out percussion-processes-main-out
+                      :out (main-returns :mixed)
                       :configs [{:delay-time 1/2}
                                 {:delay-time 1}
                                 {:delay-time 3}]}))
   (def delay-bank2 (make-bp-delay-bank
                      {:group (groups/mid)
                       :in (-> @inputs :guitar :bus)
-                      :out guitar-processes-main-out
+                      :out (main-returns :mixed)
                       :configs [{:delay-time 3/5}
                                 {:delay-time 3/2}
                                 {:delay-time 7/2}]}))
@@ -114,10 +115,10 @@
     [{:durs [3]
       :make-on-event #(on-event (ctl-synth2 % :ratio (at-i [1 2 7/4 6/5])))}
      {:durs [3/8]
-      :make-on-event #(on-event (ctl-synth2 % :ratio (/ (* 2 (inc (rand-int 12)))
+      :make-on-event #(on-event (ctl-synth2 % :ratio (/ (* (inc (rand-int 12)))
                                                         (inc (rand-int 12)))))}
      {:durs [1]
-      :make-on-event #(on-event (ctl-synth2 % :ratio (/ (* 2 (inc (rand-int 12)))
+      :make-on-event #(on-event (ctl-synth2 % :ratio (/ (*  (inc (rand-int 12)))
                                                         (inc (rand-int 12)))))}])
   (make-refrains
     "bank2" (:delays delay-bank2)
@@ -131,9 +132,9 @@
                                                         (inc (rand-int 12)))))}])
 
   (doseq [synth (:delays delay-bank1)]
-    (o/ctl synth :room 2 :amp 0.6))
+    (o/ctl synth :room 2 :amp 0.2)) ;; TODO agregar control continuo
   (doseq [synth (:delays delay-bank2)]
-    (o/ctl synth :room 2 ))
+    (o/ctl synth :room 2 :amp 0.3))
 
   (let [config {:group (groups/mid)
                 :in (-> @inputs :mic-1 :bus)
@@ -141,7 +142,7 @@
                 :delay-time 1/2
                 :amp 0.8
                 :room 5
-                :out percussion-processes-main-out}]
+                :out (main-returns :mixed)}]
     (def delay1 (bp-delay (assoc config :delay-time 1/2)))
     (def delay2 (bp-delay (assoc config :delay-time 1)))
     (def delay3 (bp-delay (assoc config :delay-time 3))))
