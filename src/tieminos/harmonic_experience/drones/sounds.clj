@@ -15,8 +15,9 @@
    amp 1
    gate 1]
   (o/out 0
-         (-> (map #(* (lfo (o/n-rand 0.5 1.2) 0.2 0.6) (o/sin-osc (* % freq)))
-                  [1 2 3 4 5 6 7 8 9 15])
+         (-> (map #(* (lfo (o/n-rand 0.5 1.2) 0.2 0.6)
+                      (o/sin-osc (* % freq)))
+                  [1 2 3 4 5 6 7 8 9 11 13 15])
              (o/mix)
              (o/pan2 (lfo 0.4 -0.5 0.5))
              #_(o/hpf 700)
@@ -34,6 +35,20 @@
          (-> (* 0.7 (lfo 0.6 0.2 0.6) (o/mix (o/sin-osc [freq
                                                          (* 2 freq)
                                                          (* 3 freq)])))
+             (o/pan2 (lfo 0.4 -0.5 0.5))
+             #_(o/hpf 700)
+             (#(+ % (o/bpf % (lfo 0.5 (* 2 freq) 800) 0.3)))
+             (* amp (o/env-gen (o/env-asr a s r) :gate gate :action o/FREE)))))
+
+(o/defsynth sine
+  [freq 130
+   amp 1
+   a 2
+   s 1
+   r 2
+   gate 1]
+  (o/out 0
+         (-> (* 0.7 (lfo 0.6 0.2 0.6) (o/mix (o/sin-osc [freq freq])))
              (o/pan2 (lfo 0.4 -0.5 0.5))
              #_(o/hpf 700)
              (#(+ % (o/bpf % (lfo 0.5 (* 2 freq) 800) 0.3)))
