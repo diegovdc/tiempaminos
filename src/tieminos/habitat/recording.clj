@@ -111,6 +111,7 @@
   ((o/synth
     (let [input (o/in input-bus)]
       (o/send-reply (o/impulse freq) analysis-path
+                    ;; TODO Probably use PeakFollower instead of amplitude
                     [(o/amplitude:kr input) (o/pitch:kr input)]
                     1)))))
 
