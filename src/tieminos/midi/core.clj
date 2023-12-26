@@ -21,7 +21,6 @@
                        (timbre/warn (str "Could not connect to USB MIDI: " (.getMessage e))))))
 
 (defonce oxygen* (atom nil))
-
 (defn get-oxygen!
   []
   (if @oxygen*
@@ -29,6 +28,16 @@
     (try (reset! oxygen* (midi/midi-in "USB MIDI"))
          (catch Exception e
            (timbre/warn (str "Could not connect to USB MIDI: " (.getMessage e)))))))
+
+(defonce lumatone* (atom nil))
+
+(defn get-lumatone!
+  []
+  (if @lumatone*
+    @lumatone*
+    (try (reset! lumatone* (midi/midi-in "Lumatone"))
+         (catch Exception e
+           (timbre/warn (str "Could not connect to Lumatone: " (.getMessage e)))))))
 
 (comment
   ;; basic USAGE
