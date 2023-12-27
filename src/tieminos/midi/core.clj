@@ -42,8 +42,8 @@
 (comment
   ;; basic USAGE
   (midi-in-event
-    :midi-input oxygen
-    :note-on (fn [_] (println "pepe"))))
+   :midi-input oxygen
+   :note-on (fn [_] (println "pepe"))))
 
 (comment
   (midi/midi-out "VirMIDI")
@@ -71,35 +71,80 @@
 
 (defn add-synth [ev synth]
   (let [midi-note (:note ev)]
-    (when (and (not (get @synths midi-note))
-               (or (node? synth)
-                   (and (seq synth) (every? node? synth))))
-      (swap! synths assoc midi-note synth))))
+    (when (or (node? synth)
+              (and (seq synth) (every? node? synth)))
+      (swap! synths update midi-note (fnil conj []) synth))))
+
+(comment
+  (with-redefs [synths (atom {})
+                node? map?]
+    (add-synth {:note 5} [{:i-am :synth}
+                          {:i-am :synth2}]))
+  (add-synth {:note 5} [{:i-am :synth}
+                        {:i-am :synth2}])
+  (-> @synths)
+  (reset! synths {}))
 
 (defn remove-synth [ctl ev]
-  (let [synth (@synths (:note ev))]
+  (let [note-synths (@synths (:note ev))
+        synths-to-kill (first note-synths)
+        live-synths (into [] (rest note-synths))]
     (cond
-      (node? synth) (do (ctl synth :gate 0)
-                        (swap! synths dissoc (:note ev)))
-      (and (seq synth) (every? node? synth)) (do (doseq [s synth] (ctl s :gate 0))
-                                                 (swap! synths dissoc (:note ev)))
-      :else nil)))
+      (node? synths-to-kill) (ctl synths-to-kill :gate 0)
+
+      (and (seq synths-to-kill) (every? node? synths-to-kill))
+      (doseq [s synths-to-kill] (ctl s :gate 0)))
+
+    (if (seq live-synths)
+      (swap! synths assoc (:note ev) live-synths)
+      (swap! synths dissoc (:note ev)))))
+
+(comment
+  (with-redefs [synths (atom {5 [[{:i-am :synth} {:i-am :synth2}]]
+                              6 [{:i-am :synth2}]})
+                node? map?]
+    (remove-synth assoc {:note 5})
+    @synths))
+
+(def auto-gate-fns
+  {:add add-synth :remove (partial remove-synth ctl)})
 
 (defn get-auto-gate-ctl [auto-ctl]
   (if auto-ctl
-    {:add add-synth :remove (partial remove-synth ctl)}
+    auto-gate-fns
     {:add (fn [_ _] nil) :remove (fn [_] nil)}))
 
+(defn get-note-synths [note]
+  (get @synths note))
+
+(defonce round-robin-state (atom {}))
+
 (defn- handle-midi-event
-  [ev {:keys [note-on note-off auto-ctl]}]
+  "`dup-note-mode` #{:multi :round-robin} - what to do whane multiple consecutive note-on events happen on a single midi note (without alternating note-off events)
+    - `:multi` allow any number of synths to be triggered on a single note
+    - `:round-robin` allow only one note at a time, killing the previous synth playing on that note"
+  [ev {:keys [note-on note-off auto-ctl dup-note-mode]
+       :or {dup-note-mode :multi}}]
   (try
     (let [cmd (:command ev)
           gate-ctl (get-auto-gate-ctl auto-ctl)]
-      (cond
-        (and (= cmd :note-on) note-on) ((gate-ctl :add) ev (note-on ev))
-        (and (= cmd :note-off) note-off) (do (note-off ev)
-                                             ((gate-ctl :remove) ev))
-        :else nil))
+      (condp = [auto-ctl cmd dup-note-mode]
+        [true :note-on :multi] ((gate-ctl :add) ev (note-on ev))
+        [true :note-on :round-robin] (let [note (:note ev)
+                                           note-synths (get-note-synths note)]
+                                       (swap! round-robin-state
+                                              assoc-in [:held-keys note]
+                                              ;; include the new synth we are playing
+                                              (inc (count note-synths)))
+                                       (doseq [_ note-synths]
+                                         ((gate-ctl :remove) ev))
+                                       ((gate-ctl :add) ev (note-on ev)))
+        [true :note-off :multi] (do (note-off ev) ((gate-ctl :remove) ev))
+        [true :note-off :round-robin] (let [note (:note ev)]
+                                        (note-off ev)
+                                        (when (= 1 (get @round-robin-state [:held-keys note]))
+                                          ((gate-ctl :remove) ev))
+                                        (swap! round-robin-state update-in [:held-keys note] dec))))
     (catch Exception e (timbre/error "MIDIError" e))))
 
 (defn midi-in-event
