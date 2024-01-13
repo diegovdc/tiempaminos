@@ -10,7 +10,7 @@
    [tieminos.midi.core :refer [get-oxygen! midi-in-event]]
    [tieminos.utils :refer [wrap-at]]))
 
-(def root (midi->cps 48))
+(def root (midi->cps 45))
 (def note-mappings [1
                     13/12
                     9/8
