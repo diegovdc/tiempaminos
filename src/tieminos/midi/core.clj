@@ -39,6 +39,18 @@
          (catch Exception e
            (timbre/warn (str "Could not connect to Lumatone: " (.getMessage e)))))))
 
+(defonce iac2* (atom nil))
+
+(defn get-iac2!
+  " iac1 is used for sending and iac2 for receiving
+  Internal mac routing aka VirMIDI"
+  []
+  (if @iac2*
+    @iac2*
+    (try (reset! iac2* (midi/midi-in "Bus 2"))
+         (catch Exception e
+           (timbre/warn (str "Could not connect to Lumatone: " (.getMessage e)))))))
+
 (comment
   ;; basic USAGE
   (midi-in-event
@@ -46,6 +58,7 @@
    :note-on (fn [_] (println "pepe"))))
 
 (comment
+  (reset! iac2* nil)
   (midi/midi-out "VirMIDI")
   (midi/midi-in)
   (midi/midi-devices)
@@ -128,23 +141,34 @@
   (try
     (let [cmd (:command ev)
           gate-ctl (get-auto-gate-ctl auto-ctl)]
-      (condp = [auto-ctl cmd dup-note-mode]
-        [true :note-on :multi] ((gate-ctl :add) ev (note-on ev))
-        [true :note-on :round-robin] (let [note (:note ev)
-                                           note-synths (get-note-synths note)]
-                                       (swap! round-robin-state
-                                              assoc-in [:held-keys note]
-                                              ;; include the new synth we are playing
-                                              (inc (count note-synths)))
-                                       (doseq [_ note-synths]
-                                         ((gate-ctl :remove) ev))
-                                       ((gate-ctl :add) ev (note-on ev)))
-        [true :note-off :multi] (do (note-off ev) ((gate-ctl :remove) ev))
-        [true :note-off :round-robin] (let [note (:note ev)]
-                                        (note-off ev)
-                                        (when (= 1 (get @round-robin-state [:held-keys note]))
-                                          ((gate-ctl :remove) ev))
-                                        (swap! round-robin-state update-in [:held-keys note] dec))))
+
+      (cond
+        (= cmd :control-change) (println "CC" ((juxt :note  :velocity :channel) ev))
+        (= cmd :pitch-bend) (timbre/warn "pitch-bend message not implemented yet")
+
+        (#{:note-on :note-off} cmd)
+        (condp = [auto-ctl cmd dup-note-mode]
+          [true :note-on :multi] ((gate-ctl :add) ev (note-on ev))
+          [true :note-on :round-robin] (let [note (:note ev)
+                                             note-synths (get-note-synths note)]
+                                         (swap! round-robin-state
+                                                assoc-in [:held-keys note]
+                                                ;; include the new synth we are playing
+                                                (inc (count note-synths)))
+                                         (doseq [_ note-synths]
+                                           ((gate-ctl :remove) ev))
+                                         ((gate-ctl :add) ev (note-on ev)))
+          [true :note-off :multi] (do (note-off ev) ((gate-ctl :remove) ev))
+          [true :note-off :round-robin] (let [note (:note ev)]
+                                          (note-off ev)
+                                          (when (= 1 (get @round-robin-state [:held-keys note]))
+                                            ((gate-ctl :remove) ev))
+                                          (swap! round-robin-state update-in [:held-keys note] dec))
+          ;; TODO add tests
+          [false :note-on :multi] (note-on ev)
+          [false :note-on :round-robin] (note-on ev)
+          [false :note-off :multi] (note-off ev)
+          [false :note-off :round-robin] (note-off ev))))
     (catch Exception e (timbre/error "MIDIError" e))))
 
 (defn midi-in-event

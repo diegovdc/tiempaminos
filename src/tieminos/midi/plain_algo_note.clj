@@ -78,7 +78,9 @@
 
 (defn malgo-note
   "`algo-note` with `midi-mapper`.
-  Notice that `:deg` substitutes `:note` and `:base-midi-chan` substitutes `:chan`"
+  Notice that `:deg` substitutes `:note` and `:base-midi-chan` substitutes `:chan`
+
+  NOTE that `base-midi-chan` is zero indexed while midi channels are 1 indexed"
   ;; TODO add/test subscale-degs
   [{:keys [sink dur vel tempo offset
            deg scale-size base-midi-deg base-midi-chan
