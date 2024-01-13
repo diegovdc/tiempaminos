@@ -1,3 +1,43 @@
 Synths
 * snare/shaker
 fuzz wave shaper
+* Wavetables
+Waldorf - klingklan
+Waldorf - DigDu
+Waldorf - FMGlock
+Waldorf - FMP
+* Plan
+1. Transcribe main ideas
+2. Work out project tempo  = 60*9 @ 7/16
+3. Make harmonic plan
+4. Make sequence of ref-rains
+5. Maybe add some new cool ideas
+6. Record
+* Main ideas
+** Rhythm
+3 2 2
+** 1. Scale 0
+0
+0 2
+0 2 1 2
+0 2 1 2 4
+0 2 1 3 4
+0 2 1 3 4 5 3 -- all degrees
+0 2 1 3 [4 7] 5 3  -- size=7 --  cool but less interesting
+...
+[0 5 5] 2 [1 -7] 8 [4 7 3] [6 5] [3 3 8 9]
+** 2. Scale 0 + 2
+[0 5 5] 2 [1 -7] 8 [4 7 3] [6 5] [3 3 8 9] -- very nice with this pattern, same as previous
+** 3. add pad
+what's used is nice, but not great
+** 4. Scale 5 (minuto 11)
+[0 5 5] 2 [1 -7] [9 8] [4 -3 7 3] [6 5] [3 3 8 -5 9] [0 5 11] -- chida, forming the theme I like
+** 5. Scale 8 -> 9 and 11 (ca. 16') -- The Really Nice Moment! -- notice the octaves in the :base-freq
+*** TODO review harmonies
+[0 15 5] [14 13] [1 -7] [9 8] [4 -3 7 13] [6 5 11] [3 3 8 -5 9] [0 5 11]
+** 6. Scale 14 (ca. 20') -- The Also Really Nice Moment! -- notice the octaves in the :base-freq
+*** TODO review harmonies
+[0 15 5] [14 13] [1 -7] [9 8] [4 -3 7 13] [6 5 11] [3 3 8 -5 9] [0 5 11]
+[10 0] [14 13] [1 -7 12] [9 8 10] [4 -3 13] [6 5 11] [3 13 8 -5 9]
+** 7. Harmonies of Scales 15 - 17 (ca 25:30)
+[0 5] [1 -7] [1 -7 -13] [3 3 9] [0 11 2]
