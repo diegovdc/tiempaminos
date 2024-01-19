@@ -15,8 +15,8 @@
 
 (comment
   (when @habitat-initialized?
-    (main/stop-sequencer! hseq/context)
     (reset! rec/recording? {})
+    (main/stop-sequencer! hseq/context)
     (reset! rec/bufs {})
     (reset! amp-trig/handlers {}))
   (init!)
@@ -55,7 +55,7 @@
                                 (* 0.5 (o/env-gen (o/env-perc 2 1  0.2 0.7)))))
 
                        (* (o/env-gen (o/envelope [0 1 0.7 0.5 0] [0.3 3 2 5])
-                                      :time-scale 1
+                                     :time-scale 1
                                      :action o/FREE) )
                        (o/free-verb (scu/lfo-kr 2 0.4 0.7) 2 0)))))
 
@@ -73,7 +73,8 @@
 
   (def a-t (reg-amp-trigger {:in (-> @inputs :mic-1 :bus)
                              :handler #'amp-trig-handler}))
-  (-> a-t :id)
+  (-> a-t )
+  (o/kill a-t)
   (swap! amp-trig/handlers dissoc 312)
   (amp-trig/dereg-handler {:id 312})
 
