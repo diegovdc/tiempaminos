@@ -1,5 +1,6 @@
 (ns tieminos.piraran.kbm
   (:require
+   [clojure.java.io :as io]
    [tieminos.polydori.analysis.dorian-hexanies
     :refer [dorian-hexanies-in-polydori]]
    [tieminos.polydori.scale :refer [polydori-v2]]))
@@ -16,9 +17,9 @@
 ! Last MIDI note number to retune:
 127
 ! Middle note where the first entry of the mapping is mapped to:
-60
+%s
 ! Reference note for which frequency is given:
-60
+%s
 ! Frequency to tune the above note to
 %s
 ! Scale degree to consider as formal octave (determines difference in pitch
@@ -36,19 +37,31 @@
 %s
 ")
 
+(defn get-tuning-freq
+  [root-freq scale first-degree]
+  (double (* root-freq (:bounded-ratio (nth scale first-degree)))))
+
 (comment
-  (let [tuning-freq 261.6255653006]
+  (let [root-freq 200
+        middle-note 60]
     (->> dorian-hexanies-in-polydori
-         (map (comp #(apply format hexany-template tuning-freq %) sort :degrees)) (partition 3)
+         (map (comp #(apply
+                      format
+                      hexany-template
+                      middle-note
+                      middle-note
+                      (get-tuning-freq root-freq (:scale polydori-v2) (first %))
+                      %) sort :degrees)) (partition 3)
          (map-indexed
           (fn [i group]
             (map-indexed (fn [j kbm]
-                           [(format "/Users/diego/Music/tunings/piraran/diat%sv%s-cps-4_7-1_3_7_9_15_19_21_p2@%s.kbm"
+                           [(format "/Users/diego/Music/tunings/7D-perc-ensemble/diat%sv%s-cps-4_7-1_3_7_9_15_19_21_p2@root-%shz.kbm"
                                     i
                                     (inc j)
-                                    tuning-freq)
+                                    root-freq)
                             kbm]) group)))
          flatten
          (partition 2)
          (#(doseq [[file content] %]
+             (io/make-parents file)
              (spit file content))))))
