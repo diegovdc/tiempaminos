@@ -76,7 +76,11 @@
 
   (comment
     ;; Amplitudes
-    {:guitar {:scarlett 4.5 :amp [5 7 8]}})
+    {:guitar {:scarlett 4.5 :ampli [5 7 8] :amp-trig/threshold :default}
+     :mic-1 {:scarlett 6 :amp-trig/threshold :default}
+     :mic-2 {:scarlett 7 :amp-trig/threshold :default}
+     :mic-3/lavalier {:scarlett 8 :amp-trig/threshold :default}
+     :scarlett/out 8})
 
   (do
     ;; NOTE keep, only ps below
@@ -88,6 +92,7 @@
        out 0]
       (o/out out (let [sig (o/mix [(o/in (-> @inputs :mic-1 :bus) 1)
                                    (o/in (-> @inputs :mic-2 :bus) 1)
+                                   (o/in (-> @inputs :mic-3 :bus) 1)
                                    (* 1.5  (o/in (-> @inputs :guitar :bus) 1))])
                        sig2 (+ #_(-> sig
                                      (o/pitch-shift 0.1 ps1)
@@ -109,10 +114,11 @@
                                 (o/pitch-shift 0.1 ps2 0 0.0001)
                                 (* 0.5 (o/env-gen (o/env-perc 2 1  0.2 0.7)))))
                        (o/limiter 0.9 0.005)
-                       (*  (o/env-gen (o/envelope [0 1 1 0.65 0.6 0] [0.3 0.5 1.5 4 2])
+                       (o/free-verb (scu/lfo-kr 2 0.4 0.7) 2 0)
+                       (*  (o/env-gen (o/envelope [0 1 1 0.65 0.6 0]
+                                                  [0.3 0.5 1.5 4 2])
                                       :time-scale 1
-                                      :action o/FREE))
-                       (o/free-verb (scu/lfo-kr 2 0.4 0.7) 2 0)))))
+                                      :action o/FREE))))))
 
     (oe/defsynth filtered-rev-long-tail
       []
@@ -130,35 +136,50 @@
                  :out percussion-processes-main-out}))
 
     (defn mic-2-amp-trig-handler
+      [{:keys [in]}]
+      (println :trig/mic-2 (java.util.Date.))
+      (ps-ringz {:group (groups/mid)
+                 :in in
+                 :ps1 3/2
+                 :ps2 (* (rand-nth [1 2]) (rand-nth [1/4 11/32 4/11 13/32]))
+                 :rz-freq (* (rand-nth [200 250 300])
+                             (rand-nth [1 2 3 4 5]))
+                 :out percussion-processes-main-out}))
+
+    (defn mic-3-amp-trig-handler
       [{:keys [_in]}]
-      (println :trig/mic-2)
-      (play-sample mixed-main-out))
+      (println :trig/mic-3 (java.util.Date.))
+      (play-sample {:out mixed-main-out}))
 
     (defn guitar-amp-trig-handler
       [{:keys [_in]}]
-      (println :trig/guitar)
+      (println :trig/guitar (java.util.Date.))
       (play-sample {:out mixed-main-out})))
 
 
 
   (start-rec-loop3!
-    {:input-bus-fn (fn [_] (-> @inputs (select-keys [:guitar :mic-1 :mic-2]) vals (->> (map :bus))))
+    {:input-bus-fn (fn [_] (-> @inputs (select-keys [:guitar :mic-1 :mic-2 :mic-3]) vals (->> (map :bus))))
      :durs (mapv (fn [_] (rrange 10 20)) (range 40))})
 
   (do
     (def mic-1-ampt (reg-amp-trigger {:in (-> @inputs :mic-1 :bus)
                                       :handler #'mic-1-amp-trig-handler}))
     (def mic-2-ampt (reg-amp-trigger {:in (-> @inputs :mic-2 :bus)
-                                      :handler #'mic-1-amp-trig-handler}))
+                                      :handler #'mic-2-amp-trig-handler}))
+    (def mic-3-ampt (reg-amp-trigger {:in (-> @inputs :mic-3 :bus)
+                                      :handler #'mic-3-amp-trig-handler}))
     (def guitar-ampt (reg-amp-trigger {:in (-> @inputs :guitar :bus)
-
-                                       :handler #'mic-1-amp-trig-handler})))
-  (-> mic-1-ampt)
-  (amp-trig/dereg-handler mic-1-ampt)
-  (amp-trig/dereg-handler mic-2-ampt)
-
-  (amp-trig/dereg-handler guitar-ampt)
-
+                                       :handler #'guitar-amp-trig-handler})))
   (open-inputs-with-rand-pan
     {:inputs inputs
-     :preouts preouts}))
+     :preouts preouts})
+
+
+  (-> mic-1-ampt)
+
+  (do
+    (amp-trig/dereg-handler mic-1-ampt)
+    (amp-trig/dereg-handler mic-2-ampt)
+    (amp-trig/dereg-handler mic-3-ampt)
+    (amp-trig/dereg-handler guitar-ampt)))
