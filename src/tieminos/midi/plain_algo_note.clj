@@ -59,22 +59,29 @@
       (algo-note-fn sink dur n vel chan tempo offset))
     (algo-note-fn sink dur note vel chan tempo offset)))
 
-(defn midi-mapper
-  "This returns a midi mapping function that takes a `scale-deg` and returns the corresponding midi note
+(quot (- 210 127) 29)
+(- 210 (* 3 29))
+(do
+  (defn midi-mapper
+    "This returns a midi mapping function that takes a `scale-deg` and returns the corresponding midi note
   The `base-midi-deg` must be a midi note that correspondes to the first degree of the provided scale.
   The `base-midi-chan` is the channel that refers to the given `base-midi-deg`."
-  [scale-size base-midi-deg base-midi-chan scale-deg]
+    [scale-size base-midi-deg base-midi-chan scale-deg]
+    (println scale-size base-midi-deg base-midi-chan scale-deg)
 
-  (let [octave (quot scale-deg scale-size)
-        new-deg  (+ base-midi-deg scale-deg)
-        note (if (<= 0 new-deg 127)
-               new-deg
-               (mod new-deg scale-size))
-        chan (if (<= 0 new-deg 127)
-               base-midi-chan
-               (+ base-midi-chan octave))]
-    {:note note
-     :chan chan}))
+    (let [new-deg  (+ base-midi-deg scale-deg)
+          chan (cond (neg? (- new-deg 127)) 0
+                     :else (inc (quot (max 0 (- new-deg 127)) scale-size)))
+          note (- new-deg (* chan scale-size))]
+      (println {:new-deg new-deg
+       :note note
+       :chan chan})
+      {:new-deg new-deg
+       :note note
+       :chan chan}))
+  [(midi-mapper 29 60 0 15)
+   (midi-mapper 29 60 0 70)
+   (midi-mapper 29 60 0 150)])
 
 (defn malgo-note
   "`algo-note` with `midi-mapper`.
@@ -91,19 +98,19 @@
          offset 0
          base-midi-chan 0}}]
   (algo-note
-   (merge {:sink sink
-           :dur dur
-           :vel vel
-           :tempo tempo
-           :offset offset}
-          (midi-mapper scale-size
-                       base-midi-deg
-                       base-midi-chan
-                       (if-not (seq subscale)
-                         deg
-                         (map-subscale-degs scale-size
-                                            subscale
-                                            deg))))))
+    (merge {:sink sink
+            :dur dur
+            :vel vel
+            :tempo tempo
+            :offset offset}
+           (midi-mapper scale-size
+                        base-midi-deg
+                        base-midi-chan
+                        (if-not (seq subscale)
+                          deg
+                          (map-subscale-degs scale-size
+                                             subscale
+                                             deg))))))
 
 (comment
   (require '[time-time.dynacan.players.gen-poly :as gp])

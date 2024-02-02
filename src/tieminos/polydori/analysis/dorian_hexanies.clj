@@ -286,3 +286,15 @@
               (update acc (ffirst m)
                       (comp #(sort-by :size > %) conj)
 (first (vals m)))) {})))
+
+
+(comment
+  (-> dorian-hex-connections
+      (select-keys ["diat0v1"
+                    "diat0v2"
+                    "diat0v3"]))
+  (-> dorian-hex-connections
+      (select-keys ["diat0v1"
+                    "diat1v3"
+                    "diat0v3"]))
+  )
