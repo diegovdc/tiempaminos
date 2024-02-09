@@ -287,17 +287,19 @@
                       (comp #(sort-by :size > %) conj)
 (first (vals m)))) {})))
 
+(def hex-name->scale-index (into {} (map-indexed (fn [i name*] [name* i]) (sort (keys dorian-hex-connections)))))
+
+(defn add-scale-index
+  [connection-map]
+  (->> connection-map
+       (map (fn [[k connections]]
+              [k (map (fn [{:keys [name] :as connection}]
+                        (assoc connection :index (get hex-name->scale-index name)))
+                      connections)]))
+       (into {})))
 
 (comment
-  (def hex-name->scale-index (into {} (map-indexed (fn [i name*] [name* i]) (sort (keys dorian-hex-connections)))))
-  (defn add-scale-index
-    [connection-map]
-    (->> connection-map
-         (map (fn [[k connections]]
-                [k (map (fn [{:keys [name] :as connection}]
-                          (assoc connection :index (get hex-name->scale-index name)))
-                        connections)]))
-         (into {})))
+
   (-> dorian-hex-connections
       (select-keys ["diat0v1"
                     "diat0v2"
