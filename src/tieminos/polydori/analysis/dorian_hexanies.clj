@@ -289,12 +289,32 @@
 
 
 (comment
+  (def hex-name->scale-index (into {} (map-indexed (fn [i name*] [name* i]) (sort (keys dorian-hex-connections)))))
+  (defn add-scale-index
+    [connection-map]
+    (->> connection-map
+         (map (fn [[k connections]]
+                [k (map (fn [{:keys [name] :as connection}]
+                          (assoc connection :index (get hex-name->scale-index name)))
+                        connections)]))
+         (into {})))
   (-> dorian-hex-connections
       (select-keys ["diat0v1"
                     "diat0v2"
-                    "diat0v3"]))
+                    "diat0v3"])
+      add-scale-index)
   (-> dorian-hex-connections
       (select-keys ["diat0v1"
                     "diat1v3"
                     "diat0v3"]))
+  (-> dorian-hex-connections
+      (select-keys ["diat4v3"
+                    "diat5v2"
+                    "diat3v3"
+                    "diat6v3"
+                    ])
+      add-scale-index)
+  (-> dorian-hex-connections
+      (select-keys ["diat3v3"])
+      add-scale-index)
   )

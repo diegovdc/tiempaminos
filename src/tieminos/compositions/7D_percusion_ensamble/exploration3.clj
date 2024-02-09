@@ -525,7 +525,314 @@
                                :dur (weighted {0.1 9 1 5 })
                                :vel (at-i [100 80])}))
                   )))
-  
+
+  ;; Estadio 4?
+  ;; NOTE sucede en 11, pero viene del 9 ---- TODO cómo movernos del  4+5+7 (estadio 3) al 9 o al 11?
+  (do
+    (ref-rain
+      :id ::4 :durs [3 2 2] :ratio 1/9
+      :ref ::2
+      :on-event (on-event
+
+                  (let [synth (rand-nth synths)
+                        deg (at-i [(at-i [0 15 5])
+                                   (at-i [14 13])
+                                   (at-i [1 -7 12])
+                                   (at-i [9 8])
+                                   (at-i [4 -3 7 13])
+                                   (at-i [6 5 11])
+                                   (at-i [3 3 8 -5 9])
+                                   (at-i [0 5 11])])
+                        scale-1 (at-i [11])
+                        scale-2 (at-i [11])
+                        tr 0]
+                    (synth
+                      :freq (deg->freq :base-freq 200 :scale scale-1 :degree (+ deg tr) )
+                      :mod-freq (rrand 600 10000)
+                      :dcy 3
+                      :amp 0.5
+                      :out (bh (case deg -7 2 0)))
+
+                    (synth
+                      :freq (deg->freq :base-freq (at-i [200 400]) :scale scale-2 :degree (+ deg tr) )
+                      :mod-freq (rrand 6000 10000)
+                      :dcy 3
+                      :amp 0.5
+                      :out (bh (case deg -7 2 0))))))
+    (ref-rain
+      :id ::4-pad :durs [5 3 3] :ratio 1/9
+      :ref ::4
+      :on-event (on-event
+                  (let [synth (rand-nth synths)
+                        deg (at-i [(at-i [0 5])
+                                   (at-i [1 -7])
+                                   (at-i [3 3 9])
+                                   (at-i [0 11])])]
+                    (synth
+                      :freq (deg->freq :base-freq 400 :scale 11 :degree deg )
+                      :mod-freq (rrand 600 10000)
+                      :atk (rand 0.2)
+                      :dcy 3
+                      :amp (rand 0.3)
+                      :out (bh (case deg -7 2 0)))
+
+                    (synth
+                      :freq (deg->freq :base-freq 800 :scale 11 :degree deg )
+                      :mod-freq (rrand 6000 10000)
+                      :atk 3
+                      :dcy 3
+                      :amp (rand 0.2)
+                      :out (bh (case deg -7 2 0)))
+
+
+                    #_(if (> (rand) 0.3)
+                        (my-malgo {:deg (diat->polydori-degree scale-1
+                                                               (+ tr (at-i [2 2 3 2 3])
+                                                                  (weighted {0 5 4 4 -4 4}) deg))
+                                   :dur (weighted {0.1 9 1 5 2 5})
+                                   :vel (at-i [60 100 40])})
+                        (my-malgo {:deg (diat->polydori-degree scale-2
+                                                               (+ tr
+                                                                  (at-i [-6 6 0 -6 0]) ;; NOTE add later
+                                                                  (weighted {0 5 4 4 -4 4}) deg))
+                                   :dur (weighted {0.1 9 1 5 })
+                                   :vel (at-i [100 80])}))))))
+
+  ;; Estadio 5?
+  ;;
+  (do
+    (ref-rain
+      :id ::4 :durs [3 2 2] :ratio 1/9
+      :ref ::2
+      :on-event (on-event
+                  (let [synth (rand-nth synths)
+                        deg (at-i [(at-i [10 0 15 5])
+                                   (at-i [14 13])
+                                   (at-i [1 -7 12])
+                                   (at-i [9 8 10])
+                                   (at-i [4 -3 7 13])
+                                   (at-i [6 5 11])
+                                   (at-i [3 3 8 -5 9])
+                                   (at-i [0 5 11])])
+                        ;; harmonies that go with 14: 10, 7, 4, 5 (12 just a little spice)
+                        scale-1 (weighted {14 10
+                                           ;; 10 2
+                                           ;; 12 1
+                                           })
+                        scale-2 (weighted {
+                                           ;; just using 14 o 10 works great
+                                           ;; 14 10
+                                           ;; 7 1
+                                           })
+                        tr -0]
+                    (synth
+                      :freq (deg->freq :base-freq (at-i [200 200 200 100]) :scale scale-1 :degree (+ deg tr) )
+                      :mod-freq (rrand 600 10000)
+                      :dcy 3
+                      :amp 0.5
+                      :out (bh (case deg -7 2 0)))
+
+                    (synth
+                      :freq (deg->freq :base-freq (at-i [200 400]) :scale scale-2 :degree (+ deg tr #_3) )
+                      :mod-freq (rrand 6000 10000)
+                      :dcy 3
+                      :amp 0.5
+                      :out (bh (case deg -7 2 0)))
+                    )))
+    (ref-rain
+      :id ::4-pad :durs [5 3 3] :ratio 1/9
+      :ref ::4
+      :on-event (on-event
+                  (let [synth (rand-nth synths)
+                        deg (at-i [(at-i [0 5])
+                                   (at-i [1 -7])
+                                   (at-i [3 3 9])
+                                   (at-i [0 11])])]
+                    (synth
+                      :freq (deg->freq :base-freq 400 :scale 14 :degree deg )
+                      :mod-freq (rrand 600 10000)
+                      :atk (rand 0.2)
+                      :dcy 3
+                      :amp (rand 0.3)
+                      :out (bh (case deg -7 2 0)))
+
+                    (synth
+                      :freq (deg->freq :base-freq 800 :scale 14 :degree deg )
+                      :mod-freq (rrand 6000 10000)
+                      :atk 3
+                      :dcy 3
+                      :amp (rand 0.2)
+                      :out (bh (case deg -7 2 0)))
+
+                    
+                    #_(if (> (rand) 0.3)
+                        (my-malgo {:deg (diat->polydori-degree scale-1
+                                                               (+ tr (at-i [2 2 3 2 3])
+                                                                  (weighted {0 5 4 4 -4 4}) deg))
+                                   :dur (weighted {0.1 9 1 5 2 5})
+                                   :vel (at-i [60 100 40])})
+                        (my-malgo {:deg (diat->polydori-degree scale-2
+                                                               (+ tr
+                                                                  (at-i [-6 6 0 -6 0]) ;; NOTE add later
+                                                                  (weighted {0 5 4 4 -4 4}) deg))
+                                   :dur (weighted {0.1 9 1 5 })
+                                   :vel (at-i [100 80])}))
+                    ))))
+
+  ;; Estadio 6?
+  ;; NOTE `#20` then transition to `#1`, play themes from the begining
+  ;; Idea:
+  ;;   start with pad alone on scale #20
+  ;;   then add the other scales (harmonic cycle)
+  ;;   then crescendo in `::4` (see note in `deg` definition)
+  ;;        `::4` is on #20, then add #1... and perhaps #16?
+  ;;   then add polytemporal `::5` (`1/8` is used now, but I also experimented with `1/13` using rhythm [8/5 1 1] (or [8 5 5]/5))
+  ;;        all this is still unclear
+  ;;        NOTE `::5` is the one of the themes of the begining, from the `#0` - `#2` scales.
+  (do
+    #_(gp/stop )
+
+    ;; `::4-pad` TEMPLATE
+    #_(ref-rain :id ::4-pad :durs [5 3 3] :ratio 1/9 :ref ::4 :on-event (let [scales (concat (repeat 20 20) (repeat 20 1) (repeat 20 16))] (on-event (let [synth (rand-nth synths) deg (at-i [(at-i [0 5]) (at-i [1 -7]) (at-i [3 3 9]) (at-i [0 11])]) scale (at-i scales)] (synth :freq (deg->freq :base-freq 400 :scale scale :degree deg) :mod-freq (rrand 600 10000) :atk (rand 0.2) :dcy 3 :amp (rand 0.3) :out (bh (case deg -7 2 0))) (synth :freq (deg->freq :base-freq 800 :scale scale :degree deg) :mod-freq (rrand 6000 10000) :atk 3 :dcy 3 :amp (rand 0.2) :out (bh (case deg -7 2 0))) #_ (if (> (rand) 0.3) (my-malgo {:deg (diat->polydori-degree scale-1 (+ tr (at-i [2 2 3 2 3]) (weighted {0 5 4 4 -4 4}) deg)) :dur (weighted {0.1 9 1 5 2 5}) :vel (at-i [60 100 40])}) (my-malgo {:deg (diat->polydori-degree scale-2 (+ tr (at-i [-6 6 0 -6 0]) (weighted {0 5 4 4 -4 4}) deg)) :dur (weighted {0.1 9 1 5}) :vel (at-i [100 80])}))))))
+
+    (ref-rain
+      :id ::4-pad :durs [5 3 3] :ratio 1/9
+      :ref ::4
+      :on-event (let [scales (concat (repeat 20 20)
+                                     #_(repeat 20 1)
+                                     #_(repeat 20 16))]
+                  (on-event
+                    (let [synth (rand-nth synths)
+                          deg (at-i [(at-i [0 5])
+                                     (at-i [1 -7])
+                                     (at-i [3 3 9])
+                                     (at-i [0 11])])
+                          scale (at-i scales)]
+                      (synth
+                        :freq (deg->freq :base-freq 400 :scale scale :degree deg )
+                        :mod-freq (rrand 600 10000)
+                        :atk (rand 0.2)
+                        :dcy 3
+                        :amp (rand 0.3)
+                        :out (bh (case deg -7 2 0)))
+
+                      (synth
+                        :freq (deg->freq :base-freq 800 :scale scale :degree deg )
+                        :mod-freq (rrand 6000 10000)
+                        :atk 3
+                        :dcy 3
+                        :amp (rand 0.2)
+                        :out (bh (case deg -7 2 0)))
+
+
+                      #_(if (> (rand) 0.3)
+                          (my-malgo {:deg (diat->polydori-degree scale-1
+                                                                 (+ tr (at-i [2 2 3 2 3])
+                                                                    (weighted {0 5 4 4 -4 4}) deg))
+                                     :dur (weighted {0.1 9 1 5 2 5})
+                                     :vel (at-i [60 100 40])})
+                          (my-malgo {:deg (diat->polydori-degree scale-2
+                                                                 (+ tr
+                                                                    (at-i [-6 6 0 -6 0]) ;; NOTE add later
+                                                                    (weighted {0 5 4 4 -4 4}) deg))
+                                     :dur (weighted {0.1 9 1 5 })
+                                     :vel (at-i [100 80])}))
+                      ))))
+
+
+
+    ;; `::4` TEMPLATE
+    #_(ref-rain :id ::4 :durs [3 2 2] :ratio 1/9 :ref ::2 :on-event (on-event (let [synth (rand-nth synths) deg (at-i [(at-i [10 0 15 5]) (at-i [14 13]) (at-i [1 -7 12]) (at-i [9 8 10]) (at-i [4 -3 7 13]) (at-i [6 5 11]) (at-i [3 3 8 -5 9]) (at-i [0 5 11]) (at-i [10 15 11 15 16 17 18 19 20]) (at-i [10 5 11 12 13 14 15 16 17 18 19 20]) (at-i [10 5 9 8 11 12 13 14 15 16 17 18 19 20])]) scale-1 (weighted {20 5}) scale-2 (weighted {20 10 1 10}) tr -0 amp 0.2] (when-not (#{0 1} (mod i 30)) (synth :freq (deg->freq :base-freq 200 :scale scale-1 :degree (+ deg tr)) :mod-freq (rrand 600 10000) :dcy 3 :amp (* amp (rrand 0.5 0.9)) :out (bh (case deg -7 2 0)))) (when (#{0 3} (mod i 7)) (synth :freq (deg->freq :base-freq (at-i [200]) :scale scale-2 :degree (+ deg tr 3)) :mod-freq (rrand 6000 10000) :dcy 3 :amp (* amp 1.1 (rrand 0.5 0.9)) :out (bh (case deg -7 2 0)))))))
+
+    (ref-rain
+      :id ::4 :durs [3 2 2] :ratio 1/9
+      :ref ::2
+      :on-event (on-event
+                  (let [synth (rand-nth synths)
+                        deg (at-i [(at-i [10 0 15 5])
+                                   (at-i [14 13])
+                                   (at-i [1 -7 12])
+                                   (at-i [9 8 10])
+                                   (at-i [4 -3 7 13])
+                                   (at-i [6 5 11])
+                                   (at-i [3 3 8 -5 9])
+                                   (at-i [0 5 11])
+                                   ;; NOTE add this or remove ?
+                                   (at-i [10 15 11 15 16 17 18 19 20])
+                                   (at-i [10 5 11 12 13 14 15 16 17 18 19 20])
+                                   (at-i [10 5 9 8 11 12 13 14 15 16 17 18 19 20])
+                                   ])
+                        ;; harmonies that go with 14: 10, 7, (12 just a little spice)
+                        scale-1 (weighted {
+                                           20 5
+                                           ;; 1 5
+                                           })
+                        scale-2 (weighted {
+                                           20 10
+                                           1 10
+
+                                           })
+                        tr -0
+                        amp 0.2]
+                    (when-not (#{0 1} (mod i 30))
+                      (synth
+                        :freq (deg->freq :base-freq 200 :scale scale-1 :degree (+ deg tr) )
+                        :mod-freq (rrand 600 10000)
+                        :dcy 3
+                        :amp (* amp (rrand 0.5 0.9))
+                        :out (bh (case deg -7 2 0))))
+
+                    (when (#{0 3} (mod i 7))
+                      (synth
+                        :freq (deg->freq :base-freq (at-i [200]) :scale scale-2 :degree (+ deg tr 3) )
+                        :mod-freq (rrand 6000 10000)
+                        :dcy 3
+                        :amp (* amp 1.1 (rrand 0.5 0.9))
+                        :out (bh (case deg -7 2 0))))
+                    )))
+
+    (gp/stop ::5)
+    ;;  NOTE start when on scale #1
+    ;; `::5` TEMPLATE:  explorar polyrritmos en los bajos, i.e. 1/8
+    #_(ref-rain :id ::5 :ref ::4 :durs [3 2 2] :ratio 1/8 :on-event (on-event (let [synth (rand-nth synths) deg #_ (at-i [0 2 1 (at-i [2 3]) 4]) (at-i [(at-i [0 5 5]) 2 (at-i [1 -7]) (at-i [8 2 8]) (at-i [4 7 3]) (at-i [6 5]) (at-i [3 3 8 9])])] #_ (synth :freq (deg->freq :base-freq 100 :scale 1 :degree deg) :mod-freq (rrand 6000 10000) :pan (mempan (mod deg 2)) :amp (rrange 0.45 0.7) :out (bh 0)) (synth :freq (deg->freq :base-freq 200 :scale 1 :degree deg) :mod-freq (rrand 6000 10000) :pan (mempan (mod deg 2)) :amp (rrange 0.45 0.7) :out (bh 0)) #_ (when (> (rand) 0.6) (my-malgo {:deg (diat->polydori-degree 1 (+ (at-i [0 -4 0 -4 -3]) deg)) :dur (weighted {1 9 1.5 8}) :vel 100})) #_ (if (> (rand) 0.5) (my-malgo {:deg (diat->polydori-degree 1 (+ (at-i [-4 0 -4 -4 0 -4 0]) deg)) :dur (weighted {1 9 1.5 8}) :vel 100})) #_ (when (> (rand) 0.4)) (my-malgo {:deg (diat->polydori-degree 1 (+ (at-i [2 2 3 2 3]) (weighted {0 5 4 4}) deg)) :dur (weighted {0.1 9 1 5}) :vel 100}) #_ (my-malgo {:base-midi-chan 0 :deg deg :dur 0.1 :vel 100}))))
+
+    #_(ref-rain
+        :id ::5
+        :ref ::4
+        :durs [3 2 2 ] :ratio 1/8 ;; explorar polyrritmos en los bajos, i.e. 1/8
+        :on-event (on-event
+                    (let [synth (rand-nth synths)
+                          deg #_(at-i [0 2 1 (at-i [2 3]) 4])
+                          (at-i [(at-i [0 5 5])
+                                 2
+                                 (at-i [1 -7])
+                                 (at-i [8 2 8])
+                                 (at-i [4 7 3])
+                                 (at-i [6 5])
+                                 (at-i [3 3 8 9])])]
+                      #_(synth
+                          :freq (deg->freq :base-freq 100 :scale 1 :degree deg)
+                          :mod-freq (rrand 6000 10000)
+                          :pan (mempan (mod deg 2))
+                          :amp (rrange 0.45 0.7)
+                          :out (bh 0))
+                      (synth
+                        :freq (deg->freq :base-freq 200 :scale 1 :degree deg)
+                        :mod-freq (rrand 6000 10000)
+                        :pan (mempan (mod deg 2))
+                        :amp (rrange 0.45 0.7)
+                        :out (bh 0))
+                      ;; TODO agregar silencions con when-not
+                      #_(when (> (rand ) 0.6)
+                          (my-malgo {:deg (diat->polydori-degree 1 (+ (at-i [0 -4 0 -4 -3]) deg)) :dur (weighted {1 9 1.5 8}) :vel 100}))
+                      #_(if (> (rand) 0.5)
+                          (my-malgo {:deg (diat->polydori-degree 1 (+ (at-i [-4  0 -4 -4 0 -4 0]) deg)) :dur (weighted {1 9 1.5 8}) :vel 100}))
+                      #_(when (> (rand) 0.4))
+                      (my-malgo {:deg (diat->polydori-degree 1 (+ (at-i [2 2 3 2 3]) (weighted {0 5 4 4 }) deg)) :dur (weighted {0.1 9 1 5}) :vel 100})
+                      #_(my-malgo {:base-midi-chan 0 :deg deg :dur 0.1 :vel 100})))))
+
+
+
   :7d-perc)
 
 (comment
