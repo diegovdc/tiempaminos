@@ -84,13 +84,13 @@
               :durs durs
               :on-event
               (on-event
-                (when (zero? index)
-                  (rec-buf {:bufs-atom bufs-atom
-                            :buf-key buf-key
-                            :seconds seconds
-                            :input-bus input-bus}))
-                (when progress-bar?
-                  (progress-bar-fn index))))))
+               (when (zero? index)
+                 (rec-buf {:bufs-atom bufs-atom
+                           :buf-key buf-key
+                           :seconds seconds
+                           :input-bus input-bus}))
+               (when progress-bar?
+                 (progress-bar-fn index))))))
 
 (def recording?
   "For external use only (an outside check if something is being recorded)"
@@ -266,7 +266,7 @@
     (->> @bufs keys)
 
     (replay #_(->> @bufs keys rand-nth)
-            :guitar-bus-1670702407392
+     :guitar-bus-1670702407392
             ;; :guitar-bus-1670701982972
             ;; :guitar-bus-1670701991874
             ;; :guitar-bus-1670702000967

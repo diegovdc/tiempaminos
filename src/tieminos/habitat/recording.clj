@@ -10,7 +10,7 @@
    [tieminos.sc-utils.recording.v1 :as rec :refer [start-recording]]
    [tieminos.utils :refer [hz->ms normalize-amp]]))
 
-(declare make-buf-key! add-analysis)
+(declare make-buf-key! add-analysis add-meta)
 
 (defonce bufs (atom {}))
 
@@ -20,7 +20,7 @@
 
 (defn rec-input
   [{:keys [section subsection input-name input-bus dur-s on-end msg countdown on-rec-start]
-    :or {on-end (fn [& args])
+    :or {on-end (fn [& _args])
          msg "Recording"
          countdown 0}}]
   (let [input-kw (-> input-bus :name keyword)]
@@ -37,6 +37,7 @@
          :on-end (fn [buf-key]
                    (swap! recording? assoc input-kw false)
                    (add-analysis dur-s buf-key input-bus)
+                   (add-meta buf-key section subsection input-name)
                    (on-end buf-key))
          :countdown countdown
          :on-rec-start on-rec-start)))))
@@ -213,6 +214,13 @@
      (< max-amp threshold)
      (do (timbre/warn "Buffer has no `:analysis :max-amp` key. Assuming it is silent.")
          true))))
+
+(defn add-meta
+  [buf-key section subsection input-name]
+  (swap! bufs update buf-key
+         assoc :rec/meta {:section section
+                                :subsection subsection
+                                :input-name input-name}))
 
 #_:clj-kondo/ignore
 (comment
