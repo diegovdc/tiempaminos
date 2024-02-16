@@ -5,6 +5,8 @@
    [erv.scale.core :as scale]
    [overtone.core :as o]
    [taoensso.timbre :as timbre]
+   [tieminos.habitat.extended-sections.polinizadores-nocturnos.emisiones-refrain
+    :refer [polinizadores-nocturnos]]
    [tieminos.habitat.extended-sections.ui.v1 :refer [add-rec-bar]]
    [tieminos.habitat.init :refer [habitat-initialized? init!]]
    [tieminos.habitat.main :as main]
@@ -12,10 +14,13 @@
    [tieminos.habitat.osc :refer [args->map init responder]]
    [tieminos.habitat.parts.noche :as noche]
    [tieminos.habitat.recording :as rec :refer [norm-amp]]
-   [tieminos.habitat.routing :refer [guitar-processes-main-out inputs
-                                     percussion-processes-main-out preouts]]
-   [tieminos.habitat.scratch.sample-rec2 :refer [rising-upwards
-                                                 start-rec-loop!]]
+   [tieminos.habitat.routing
+    :refer [guitar-processes-main-out
+            inputs
+            percussion-processes-main-out
+            preouts]]
+   [tieminos.habitat.scratch.sample-rec2
+    :refer [rising-upwards start-rec-loop!]]
    [tieminos.habitat.utils :refer [open-inputs-with-rand-pan]]
    [tieminos.overtone-extensions :as oe]
    [tieminos.sc-utils.synths.v1 :refer [lfo]]
@@ -114,10 +119,7 @@
 
 (defn polinizadores-nocturnos*
   [context]
-  (noche/fuego context)
-  (Thread/sleep 200)
-  (noche/fuego-stop context)
-  (noche/polinizadores-nocturnos context)
+  (polinizadores-nocturnos context)
 
   (subsequencer
     :sequencer/polinizadores-nocturnos
@@ -139,37 +141,38 @@
                   (start-layers-refrain! "mic-2-bus")
                   (start-layers-refrain! "mic-3-bus"))]
        #_[[53 0] (fn [_] (rising-upwards (make-sample-player-config scale-1)))]
-       [[55 0] (fn [_] (rising-upwards (-> (make-sample-player-config scale-1)
+       [[55 0] (fn [_] #_(rising-upwards (-> (make-sample-player-config scale-1)
                                            (assoc :period-dur 4))))]
        [[55 10] (fn [_]
-                  (gp/stop :rising-upwards-loop)
-                  (reset! rec/bufs {}))]
-       [[57 0] (fn [_] (rising-upwards (make-sample-player-config scale-1)))]
-       [[59 0] (fn [_] (reset! rec/bufs {}))]
-       [[60 0] (fn [_] (rising-upwards (-> (make-sample-player-config scale-1)
+                  #_(gp/stop :rising-upwards-loop)
+                  #_(reset! rec/bufs {}))]
+       [[57 0] (fn [_] #_(rising-upwards (make-sample-player-config scale-1)))]
+       [[59 0] (fn [_] #_(reset! rec/bufs {}))]
+       [[60 0] (fn [_] #_(rising-upwards (-> (make-sample-player-config scale-1)
                                            (assoc :period-dur 4))))]
-       [[60 10] (fn [_] (rising-upwards (make-sample-player-config scale-1)))]
+       [[60 10] (fn [_] #_(rising-upwards (make-sample-player-config scale-1)))]
        [[61 0] (fn [_]
-                 (reset! rec/bufs {})
-                 (rising-upwards (-> (make-sample-player-config scale-1)
+                 #_(reset! rec/bufs {})
+                 #_(rising-upwards (-> (make-sample-player-config scale-1)
                                      (assoc :period-dur 4))))]
        [[62 10] (fn [_]
                   (gp/stop :rec-loop)
                   (gp/stop ::layers)
-                  (gp/stop :rising-upwards-loop))]])))
+                 ( gp/stop :rising-upwards-loop))]])))
 
-(def polinizadores-nocturnos
+(def polinizadores-nocturnos-main
   ;; TODO revisar refrains de emision hay cosas raras (aumentos de volumen y saturación del servidor)
   {:context (merge main/context {})
    :sections [[[52 22] #'polinizadores-nocturnos*]
               [[62 10] (fn [_] (println "end"))]]
    :initial-sections #'polinizadores-nocturnos*
-   :rec? true})
+   ;; :rec? true
+   })
 
 (comment
   (reset! rec/recording? {})
   (reset! rec/bufs {})
-  (main/start-sequencer! polinizadores-nocturnos)
+  (main/start-sequencer! polinizadores-nocturnos-main)
   (-> @hseq/context)
 
   (timbre/set-level! :info)
