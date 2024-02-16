@@ -10,6 +10,7 @@
    [tieminos.polydori.scale :refer [polydori-v2]]
    [tieminos.sc-utils.groups.v1 :as groups]
    [tieminos.utils :refer [map-subscale-degs]]
+   [time-time.dynacan.players.gen-poly :as gp :refer [on-event ref-rain]]
    [time-time.standard :refer [rrand]]))
 
 (def sink (midi/midi-out "VirMIDI"))
@@ -84,3 +85,13 @@
 (def mempan
   (memoize (fn [deg-mod]
              (rrand -1.0 1))))
+
+(defn sub-rain
+  [{:keys [ref durs on-event ratio]
+    :or {ratio 1/9}}]
+  (ref-rain (cond-> {:id (keyword "sub-rain" (str (random-uuid)))
+                     :loop? false
+                     :durs durs
+                     :ratio ratio
+                     :on-event on-event}
+              ref (assoc :ref ref))))
