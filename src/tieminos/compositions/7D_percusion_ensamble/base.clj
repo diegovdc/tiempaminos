@@ -35,18 +35,17 @@
                    (map-subscale-degs (count (:scale polydori-v2))
                                       (:degrees
                                        (nth
-                                         dorian-hexanies-in-polydori
-                                         scale))
+                                        dorian-hexanies-in-polydori
+                                        scale))
                                       degree)))
-
 
 (defn diat->polydori-degree
   [scale degree]
   (map-subscale-degs (count (:scale polydori-v2))
                      (:degrees
                       (nth
-                        dorian-hexanies-in-polydori
-                        scale))
+                       dorian-hexanies-in-polydori
+                       scale))
                      degree))
 
 (o/defsynth low

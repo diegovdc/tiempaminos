@@ -93,38 +93,36 @@
       (doseq [id [:ratito :ratito3 :ratito2]]
         (gp/stop id)))
 
-
   (def delay-bank1 (make-bp-delay-bank
-                     {:group (groups/mid)
-                      :out 1
-                      :configs [{:delay-time 1/2}
-                                {:delay-time 1}
-                                {:delay-time 3}]}))
+                    {:group (groups/mid)
+                     :out 1
+                     :configs [{:delay-time 1/2}
+                               {:delay-time 1}
+                               {:delay-time 3}]}))
 
   (o/free delay-bank1)
 
   (make-refrains
-    "bank1" (:delays delay-bank1)
-    [{:durs [3]
-      :make-on-event #(on-event (ctl-synth2 % :ratio (at-i [1 2 4 8])
-                                            :amp 2))}
-     {:durs [3/8]
-      :make-on-event #(on-event (ctl-synth2 % :ratio (at-i (map (fn [i] (* 2 i)) (range 13 26)))
-                                            :amp 0))}
-     {:durs [1]
-      :make-on-event #(on-event (ctl-synth2 % :ratio (at-i (map (fn [i] (/ 1 i)) (range 13 24)))
-                                            :amp 0
-                                            ))}])
+   "bank1" (:delays delay-bank1)
+   [{:durs [3]
+     :make-on-event #(on-event (ctl-synth2 % :ratio (at-i [1 2 4 8])
+                                           :amp 2))}
+    {:durs [3/8]
+     :make-on-event #(on-event (ctl-synth2 % :ratio (at-i (map (fn [i] (* 2 i)) (range 13 26)))
+                                           :amp 0))}
+    {:durs [1]
+     :make-on-event #(on-event (ctl-synth2 % :ratio (at-i (map (fn [i] (/ 1 i)) (range 13 24)))
+                                           :amp 0))}])
   (make-refrains
-    "bank2" (:delays delay-bank2)
-    [{:durs [3]
-      :make-on-event #(on-event (ctl-synth2 % :ratio (at-i [1 2 7/4 6/5])))}
-     {:durs [3/8]
-      :make-on-event #(on-event (ctl-synth2 % :ratio (/ (* 2 (inc (rand-int 12)))
-                                                        (inc (rand-int 12)))))}
-     {:durs [1]
-      :make-on-event #(on-event (ctl-synth2 % :ratio (/ (* 2 (inc (rand-int 12)))
-                                                        (inc (rand-int 12)))))}])
+   "bank2" (:delays delay-bank2)
+   [{:durs [3]
+     :make-on-event #(on-event (ctl-synth2 % :ratio (at-i [1 2 7/4 6/5])))}
+    {:durs [3/8]
+     :make-on-event #(on-event (ctl-synth2 % :ratio (/ (* 2 (inc (rand-int 12)))
+                                                       (inc (rand-int 12)))))}
+    {:durs [1]
+     :make-on-event #(on-event (ctl-synth2 % :ratio (/ (* 2 (inc (rand-int 12)))
+                                                       (inc (rand-int 12)))))}])
 
   (doseq [synth (:delays delay-bank1)]
     (o/ctl synth :room 3 :amp 0.6)) ;; TODO agregar control continuo
@@ -147,28 +145,28 @@
     (ref-rain :id :ratito
               :durs [3]
               :on-event (on-event
-                          "hola"))
+                         "hola"))
     (ref-rain :id :ratito2
               :ref :ratito
               :ratio 1/8
               :on-event (on-event
-                          (ctl-synth2 delay1 :ratio (/ (* 2 (inc (rand-int 12)))
-                                                       (inc (rand-int 12))))))
+                         (ctl-synth2 delay1 :ratio (/ (* 2 (inc (rand-int 12)))
+                                                      (inc (rand-int 12))))))
     (ref-rain :id :ratito3
               :ref :ratito
               :ratio 1/3
               :on-event (on-event
-                          (ctl-synth2 delay3 :ratio (/ (inc (rand-int 12))
-                                                       (inc (rand-int 12)))))))
+                         (ctl-synth2 delay3 :ratio (/ (inc (rand-int 12))
+                                                      (inc (rand-int 12)))))))
 
   (def oxygen (get-oxygen!))
   (midi-in-event
-    :midi-input oxygen
-    :note-on (fn [{:keys [note velocity]}]
-               (soft-saw2 (groups/early)
-                          :freq (midi->cps note)
-                          :amp (linexp* 0 127 0.5 1 velocity)
-                          :out delay-in2)))
+   :midi-input oxygen
+   :note-on (fn [{:keys [note velocity]}]
+              (soft-saw2 (groups/early)
+                         :freq (midi->cps note)
+                         :amp (linexp* 0 127 0.5 1 velocity)
+                         :out delay-in2)))
 
   (when @habitat-initialized?
     (main/stop-sequencer! hseq/context)
@@ -177,5 +175,5 @@
   (init!)
   (-> percussion-processes-main-out)
   (open-inputs-with-rand-pan
-    {:inputs inputs
-     :preouts preouts}))
+   {:inputs inputs
+    :preouts preouts}))

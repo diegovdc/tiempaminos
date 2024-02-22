@@ -86,7 +86,6 @@
                    xs))
          (apply + (map (fn [i] (Math/pow alpha (- n i))) (range 1 (inc n))))))))
 
-
 ;; TODO add tests
 (linearly-weighted-avg [1 1 1 1])
 (linearly-weighted-avg [1 9/10 8/10 7/10 6/10 5/10])

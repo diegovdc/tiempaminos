@@ -56,9 +56,9 @@
    :on-event
    (on-event
     (let [note (or #_(nth scale 1  (rand-nth [2 1 0]))
-                   (rand-nth scale))]
+                (rand-nth scale))]
       (tuning-monitor                   ; synth
-       (* (rand-nth [ 220 880 440]) (:bounded-ratio note))
+       (* (rand-nth [220 880 440]) (:bounded-ratio note))
        5 5 0.25)
       (println (pitch-class->pr-fingering
                 (-> note :pitch :class))

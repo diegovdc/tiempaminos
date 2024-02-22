@@ -30,24 +30,24 @@
 ;; 4. explorar diferentes armonía
 
 (oe/defsynth basic-pitch-shifter
-    [in 0
-     ratio 1
-     amp 1
-     gate 1
-     out 0]
-    (o/out out
-           (-> (o/pitch-shift
-                 (o/in in)
-                 0.1
-                 ratio
-                 0
-                 0)
-               (#(oe/circle-az {:num-channels 4
-                                :in %
-                                :pos (lfo 0.1 -1 1)}))
-               (* amp (o/env-gen (o/env-asr 5 1 5)
-                                 :gate gate
-                                 :action o/FREE)))))
+  [in 0
+   ratio 1
+   amp 1
+   gate 1
+   out 0]
+  (o/out out
+         (-> (o/pitch-shift
+              (o/in in)
+              0.1
+              ratio
+              0
+              0)
+             (#(oe/circle-az {:num-channels 4
+                              :in %
+                              :pos (lfo 0.1 -1 1)}))
+             (* amp (o/env-gen (o/env-asr 5 1 5)
+                               :gate gate
+                               :action o/FREE)))))
 
 (oe/defsynth algo-basic-pitch-shifter
   [in 0
@@ -59,18 +59,17 @@
    out 0]
   (o/out out
          (-> (o/pitch-shift
-               (o/in in)
-               0.1
-               ratio
-               0
-               0)
+              (o/in in)
+              0.1
+              ratio
+              0
+              0)
              (#(oe/circle-az {:num-channels 4
                               :in %
                               :pos (lfo 0.1 -1 1)}))
              (* amp (o/env-gen (o/envelope [0 1 1 0]
                                            [a dur r])
                                :action o/FREE)))))
-
 
 (comment
   (o/defsynth oli
@@ -83,19 +82,17 @@
                      1
                      (o/mouse-y:kr 1 4))))
 
-
-
   (def bps (basic-pitch-shifter {:group (groups/mid)
                                  :in (-> @inputs :mic-1 :bus)
                                  :ratio 19/16 #_(+ 3/2 1/10)
                                  :out 0}))
   (def bps2 (basic-pitch-shifter {:group (groups/mid)
                                   :in (-> @inputs :mic-1 :bus)
-                                  :ratio (+ 3/2 )
+                                  :ratio (+ 3/2)
                                   :out 0}))
   (def bps3 (basic-pitch-shifter {:group (groups/mid)
                                   :in (-> @inputs :mic-1 :bus)
-                                  :ratio (+ 8/7 )
+                                  :ratio (+ 8/7)
                                   :out 0}))
 
   (o/ctl bps :gate 0)
@@ -109,16 +106,16 @@
 
   (o/demo 20
           (-> (o/pitch-shift
-                (o/in (-> @inputs :mic-1 :bus))
-                0.2
+               (o/in (-> @inputs :mic-1 :bus))
+               0.2
                 ;; using chords like this produce some interesting sonorities
-                [(+ 3/2 0.1)
-                 #_(+ 3/2 0.12)
+               [(+ 3/2 0.1)
+                #_(+ 3/2 0.12)
                  ;; and higher pitched ratios produce interesting artifacts
-                 #_(+ 13/8)]
-                0
+                #_(+ 13/8)]
+               0
                 ;; keep exploring this
-                (o/mouse-y:kr 0 0.2))
+               (o/mouse-y:kr 0 0.2))
               #_(#(oe/circle-az {:num-channels 4
                                  :in %
                                  :pos (lfo 0.1 -1 1)})))))

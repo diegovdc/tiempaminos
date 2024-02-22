@@ -61,8 +61,8 @@
                   :height height
                   :coords {:x 0 :y (- 1000 (* 3 height))}}
       {:label (str/capitalize (name k))
-                  :color [0 200 80]
-                  :height height
+       :color [0 200 80]
+       :height height
        :coords {:x 0 :y (- 1000 (* 4 height))}})))
 
 (defn add-rec-bar [{:keys [input-bus seconds]}]
@@ -72,18 +72,18 @@
           bar-config (get-rec-bar-config input-bus-key)
           total-time (* 1000 seconds)
           rec-bar (merge
-                    bar-config
-                    {:total-time total-time
-                     :end-time (+ now* total-time)
-                     :width 0})]
+                   bar-config
+                   {:total-time total-time
+                    :end-time (+ now* total-time)
+                    :width 0})]
       (swap!
-        state
-        (fn [s] (update
-                  s
-                  :rec-bars
-                  (fnil assoc {})
-                  input-bus-key
-                  rec-bar))))))
+       state
+       (fn [s] (update
+                s
+                :rec-bars
+                (fnil assoc {})
+                input-bus-key
+                rec-bar))))))
 
 (update {} :x (fnil assoc {}) :a 5)
 
@@ -93,15 +93,12 @@
   (add-rec-bar {:input-bus {:name "guitar-bus"} :seconds 5})
   (init))
 
-
 ;; impl
 ;;
 
 (def ^:private width 400)
 
 (def ^:private  height 1000)
-
-
 
 (defn- milliseconds-to-mm-ss [milliseconds]
   (let [seconds (/ milliseconds 1000)
@@ -116,8 +113,6 @@
   (shuffle [(+ 156 (rand-int 100))
             (rand-int 256)
             (rand-int 256)]))
-
-
 
 (comment
   (swap! state assoc :ui/inited? true)
@@ -150,36 +145,36 @@
 (defn- update-events [state-data]
   (let [now* (now)
         events (reduce
-                 (fn [evs {:keys [end-time start-time original-width] :as ev}]
-                   (let [remaining-time (- end-time now*)]
-                     (if (<= remaining-time 0)
-                       evs
-                       (conj evs
-                             (assoc ev
-                                    :width (max 0 (* original-width
-                                                     (try (/ remaining-time
-                                                             (- end-time start-time))
-                                                          (catch Exception _ 0)))))))))
-                 []
-                 (:events state-data))]
+                (fn [evs {:keys [end-time start-time original-width] :as ev}]
+                  (let [remaining-time (- end-time now*)]
+                    (if (<= remaining-time 0)
+                      evs
+                      (conj evs
+                            (assoc ev
+                                   :width (max 0 (* original-width
+                                                    (try (/ remaining-time
+                                                            (- end-time start-time))
+                                                         (catch Exception _ 0)))))))))
+                []
+                (:events state-data))]
     (assoc state-data :events events)))
 
 (defn- update-rec-bars [state-data]
   (let [now* (now)
         rec-bars (reduce
-                   (fn [bars [k {:keys [end-time total-time] :as bar}]]
-                     (let [remaining-time (- end-time now*)]
-                       (if (<= remaining-time 0)
+                  (fn [bars [k {:keys [end-time total-time] :as bar}]]
+                    (let [remaining-time (- end-time now*)]
+                      (if (<= remaining-time 0)
+                        bars
+                        (assoc
                          bars
-                         (assoc
-                           bars
-                           k (assoc bar
-                                    :width (try (max 0 (* width (/ (- total-time remaining-time)
-                                                                   total-time)))
-                                                (catch Exception _ 0)))))))
+                         k (assoc bar
+                                  :width (try (max 0 (* width (/ (- total-time remaining-time)
+                                                                 total-time)))
+                                              (catch Exception _ 0)))))))
 
-                   {}
-                   (:rec-bars state-data))]
+                  {}
+                  (:rec-bars state-data))]
     (assoc state-data :rec-bars rec-bars)))
 
 (update-rec-bars {:rec-bars {:guitar-bus {:end-time (+ 5000 (now))
@@ -194,7 +189,7 @@
   (q/text (:title @state) px px (- width px) title-height)
   (q/text-size 60)
   (q/text (milliseconds-to-mm-ss
-            (- (now) (:init-time @state)))
+           (- (now) (:init-time @state)))
           px
           title-height)
   (q/text-size 30))
@@ -205,13 +200,11 @@
   (let [avg-30s (-> @amp-analysis
                     :lin-weighted-amps
                     :avg-30s
-                    (or 0)
-                    )
+                    (or 0))
         avg-5s  (-> @amp-analysis
                     :lin-weighted-amps
                     :avg-5s
-                    (or 0)
-                    )]
+                    (or 0))]
     (q/text (format "30-LW~amp: %s/%s"
                     (round2 3 avg-30s)
                     (round2 2 (* 7 avg-30s)))

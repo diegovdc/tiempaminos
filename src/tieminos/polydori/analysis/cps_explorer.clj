@@ -30,11 +30,10 @@
   (swap! cs-tool assoc :max-arcs 200)
   (def polydori-ratio->degree
     (reduce
-      (fn [m {:keys [bounded-ratio degree]}]
-        (assoc m bounded-ratio degree))
-      {}
-      (:scale polydori-v2)))
-
+     (fn [m {:keys [bounded-ratio degree]}]
+       (assoc m bounded-ratio degree))
+     {}
+     (:scale polydori-v2)))
 
   (swap! current-key-index inc)         ;; TODO left at 14
 
@@ -60,9 +59,9 @@
         _ (println dekany-key "///" (count scale-degrees) scale-degrees)
         deg-fn (fn [deg]
                  (let [deg* (- (map-subscale-degs
-                                 29
-                                 scale-degrees
-                                 deg)
+                                29
+                                scale-degrees
+                                deg)
                                90)]
                    deg*))
         deg->set (fn [deg]
@@ -72,12 +71,10 @@
     (update-state cs-tool (->> scale
                                (remove #(= 256/171 (:bounded-ratio %)))) added-notes)
     (midi-in-event
-      :note-on (fn [{:keys [note velocity] :as ev}]
+     :note-on (fn [{:keys [note velocity] :as ev}]
+                (let [note* (deg-fn note)]
+                  (println note* ((juxt :bounded-ratio :sets) (deg->set note*)))
+                  (midi/midi-note-on sink note* velocity)))
+     :note-off (fn [{:keys [note] :as ev}]
                  (let [note* (deg-fn note)]
-                   (println note* ((juxt :bounded-ratio :sets) (deg->set note*)))
-                   (midi/midi-note-on sink note* velocity)))
-      :note-off (fn [{:keys [note] :as ev}]
-                  (let [note* (deg-fn note)]
-                    (midi/midi-note-off sink note*)))))
-
-  )
+                   (midi/midi-note-off sink note*))))))

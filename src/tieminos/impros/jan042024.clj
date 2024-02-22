@@ -89,8 +89,8 @@
   (mod 39 19)
   (let [scale meta-slendro
         degrees (concat #_(map #(+ -4 %) #{50 60 82 83})
-                        #_(map #(+ 10 (* 2 (count scale)) %) #{0 11})
-                        (map #(+ 16 (* 3 (count scale)) %) #{0 11}))
+                 #_(map #(+ 10 (* 2 (count scale)) %) #{0 11})
+                 (map #(+ 16 (* 3 (count scale)) %) #{0 11}))
         synths-degs (keys @synths)
         degs-to-remove (set/difference (set synths-degs) (set degrees))]
     (doseq [d degrees]
@@ -118,38 +118,38 @@
               :durs [3 1 3 1 3 2]
               :ratio 1/16
               :on-event (on-event
-                          (let [degrees [(at-i [0 5 -18]) 0 11 (at-i [0 5 0]) 0 14 (at-i [0 22 30])]
-                                freq (scale/deg->freq scale root
-                                                      (at-i degrees)
-                                                      :period 4)
-                                s (rand-nth [low short-plate2])
-                                oct (at-i [2 1 1 1 2])]
-                            (s :freq (* oct freq)
-                               :amp (* 0.5 (at-i [0.5]) (/ 1 oct))
-                               :atk (at-i [0.01 0.12])
-                               :dcy (* oct (at-i [1 1 1 1 0.2 2]))))))
+                         (let [degrees [(at-i [0 5 -18]) 0 11 (at-i [0 5 0]) 0 14 (at-i [0 22 30])]
+                               freq (scale/deg->freq scale root
+                                                     (at-i degrees)
+                                                     :period 4)
+                               s (rand-nth [low short-plate2])
+                               oct (at-i [2 1 1 1 2])]
+                           (s :freq (* oct freq)
+                              :amp (* 0.5 (at-i [0.5]) (/ 1 oct))
+                              :atk (at-i [0.01 0.12])
+                              :dcy (* oct (at-i [1 1 1 1 0.2 2]))))))
     (ref-rain :id :perc2
               :ref :perc
               :durs [1]
               :ratio 2
               :on-event (on-event
-                          (let [degrees (into (repeat 15 nil) (range 20 38 4))
-                                deg (at-i degrees)
-                                freq (when deg (scale/deg->freq scale root
-                                                                deg
+                         (let [degrees (into (repeat 15 nil) (range 20 38 4))
+                               deg (at-i degrees)
+                               freq (when deg (scale/deg->freq scale root
+                                                               deg
+                                                               :period 4))
+                               s (rand-nth [low short-plate2])
+                               oct (at-i [2])]
+                           (when deg
+                             (print "p")
+                             (s :freq (* oct freq)
+                                :amp (*  0.7 (at-i [0.5 0.8 0.5]) (/ 1 oct))
+                                :atk (at-i [0.2])
+                                :dcy (* oct (at-i [1 1 1 1 0.2 2])))
+                             (when (> (rand) 0.5)
+                               (s :freq (* oct (scale/deg->freq scale root
+                                                                (+ 1 deg)
                                                                 :period 4))
-                                s (rand-nth [low short-plate2])
-                                oct (at-i [2])]
-                            (when deg
-                              (print "p")
-                              (s :freq (* oct freq)
-                                 :amp (*  0.7 (at-i [0.5 0.8 0.5]) (/ 1 oct))
-                                 :atk (at-i [0.2])
-                                 :dcy (* oct (at-i [1 1 1 1 0.2 2])))
-                              (when (> (rand) 0.5)
-                                (s :freq (* oct (scale/deg->freq scale root
-                                                                 (+ 1 deg)
-                                                                 :period 4))
-                                   :amp (*  0.7 (at-i [0.5 0.8 0.5]) (/ 1 oct))
-                                   :atk (at-i [0.2])
-                                   :dcy (* oct (at-i [1 1 1 1 0.2 2]))))))))))
+                                  :amp (*  0.7 (at-i [0.5 0.8 0.5]) (/ 1 oct))
+                                  :atk (at-i [0.2])
+                                  :dcy (* oct (at-i [1 1 1 1 0.2 2]))))))))))

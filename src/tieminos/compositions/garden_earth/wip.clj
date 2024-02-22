@@ -42,7 +42,7 @@
                          :min-amp 0.8
                          :amp-lfo 0.01
                          :start 0 #_start
-                         :end 1 #_ end
+                         :end 1 #_end
                          :mix 1
                          :room 3
                          :damp 0.8

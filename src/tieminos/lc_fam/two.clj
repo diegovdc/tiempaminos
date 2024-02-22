@@ -79,15 +79,15 @@
     (mapv #(* ratio %) durs)))
 #_:clj-kondo/ignore
 (o/defsynth perc* [perc 0
-                 rate 1
-                 amp 1
-                 pan 0
-                 mix 0.3
-                 room 1]
+                   rate 1
+                   amp 1
+                   pan 0
+                   mix 0.3
+                   room 1]
   (o/out 0 (-> (o/play-buf 2 perc rate)
-             (* amp (o/env-gen (o/env-perc 1 2) :action o/FREE))
-             (o/free-verb mix room)
-             (o/pan2 pan))))
+               (* amp (o/env-gen (o/env-perc 1 2) :action o/FREE))
+               (o/free-verb mix room)
+               (o/pan2 pan))))
 
 #_:clj-kondo/ignore
 (defsynth lo [freq 100
@@ -111,7 +111,7 @@
          (-> (o/in in)
              (o/pan2 (o/lf-noise1:kr 0.5))
              (o/free-verb (o/lf-noise1:kr 0.1)
-                        (-> (o/lf-noise1:kr 0.5) (o/range-lin:kr room-min room-max))))))
+                          (-> (o/lf-noise1:kr 0.5) (o/range-lin:kr room-min room-max))))))
 #_:clj-kondo/ignore
 (comment
   (do

@@ -46,7 +46,7 @@
 (comment
 
   (do #_(reset! rec/bufs {})
-      (reset! rec/recording? false)
+   (reset! rec/recording? false)
       (reset! generated-bufkeys {}))
   (record-oceanoises)
   (stop))

@@ -6,11 +6,9 @@
             [time-time.standard :refer [now]]
             [taoensso.timbre :as timbre]))
 
-
 ;;;;;;;;;;;;;;;;;;;;
 ;;; Receive MIDI ;;;
 ;;;;;;;;;;;;;;;;;;;;
-
 
 (defonce synths (atom {}))
 
@@ -96,11 +94,9 @@
 
 (comment (defonce recv (init 7777)))
 
-
 ;;;;;;;;;;;;;;;;;
 ;;; Send MIDI ;;;
 ;;;;;;;;;;;;;;;;;
-
 
 (defonce midi-send-client (osc/osc-client "localhost" 7778))
 

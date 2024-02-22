@@ -6,7 +6,6 @@
 (o/defsynth rev [in 0 out 0 mix 0.5 room 0.8 damp 0.5 amp 1]
   (o/out out (* amp (o/free-verb (o/in in) mix room damp))))
 
-
 (comment
   ;; `rev` usage
   (o/defsynth sini [out 0]

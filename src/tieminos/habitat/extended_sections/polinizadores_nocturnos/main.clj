@@ -131,9 +131,10 @@
   (main/start-sequencer! polinizadores-nocturnos-main))
 
 (comment
+  ;; Interior de la flor Ndef
   (let [input-ks [:guitar :mic-1 :mic-2 :mic-3]
         selected-inputs (select-keys @inputs input-ks)
-        pan-freq 0.2 ;; 2 works well
+        pan-freq 0.2 ;; 2 works well for the interior, it has a nice beat to it.
         ]
     (ndef/ndef
      ::flor-base
@@ -173,13 +174,11 @@
 (comment
   ;; New version independent of sequencer
   (polinizadores-nocturnos
-    (atom (assoc main/context
-                 :dur-s 60
-                 :polinizadores-nocturnos/wave-emission-call-delay 500)))
-  )
+   (atom (assoc main/context
+                :dur-s 60
+                :polinizadores-nocturnos/wave-emission-call-delay 500))))
 
 (comment
-
 
   (timbre/set-level! :debug)
   (do (when @habitat-initialized?
@@ -187,28 +186,25 @@
         (reset! rec/bufs {})
         (main/stop-sequencer! hseq/context))
       (init!))
-  
-  
+
   (start-layer-recording! :guitar)
   (gp/stop)
 
-
   (open-inputs-with-rand-pan
-    {:inputs inputs
-     :preouts preouts})
+   {:inputs inputs
+    :preouts preouts})
+
   (do
     (start-layers-refrain! "guitar-bus")
     (start-layers-refrain! "mic-1-bus")
     (start-layers-refrain! "mic-2-bus")
     (start-layers-refrain! "mic-3-bus"))
 
-  (:name (:bus (:guitar @inputs)))
-  (-> @rec/bufs)
-  ;; TouchOSC
+;; TouchOSC
   (init :port 16180)
   (responder
-    (fn [{:keys [path args] :as msg}]
-      (let [args-map (args->map args)]
-        (case path
-          "/rec" (start-layer-recording! (:input args-map))
-          (println "Unknown path for message: " msg))))))
+   (fn [{:keys [path args] :as msg}]
+     (let [args-map (args->map args)]
+       (case path
+         "/rec" (start-layer-recording! (:input args-map))
+         (println "Unknown path for message: " msg))))))

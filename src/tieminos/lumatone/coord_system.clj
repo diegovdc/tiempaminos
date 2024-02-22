@@ -10,7 +10,6 @@
 ;;;;;;;;;; TODO Generate board from there
 ;; TODO use coordinate system to create lumatone mapping files (distribute notes, midi data and colors)
 
-
 (def board-base-coords
   "Basic coordinates (based on the first board) and x-axis length, using right most keys in the `x` axis, for every distinct `y`"
   ;; Left: (-4, 2), (-3, 3), (-3, 4), (-2, 5), (-2, 6), (-1, 7), (-1, 8), (0, 9), (0, 10)
@@ -275,28 +274,28 @@
        (group-by :board/id)
        (mapcat (fn [[board-id keys-data]]
                  (concat
-                   [(format "[Board%s]" board-id)]
-                   (mapcat (fn [{:keys [key key-value chan chan-value color cc-invert k-type]}]
-                             (let [key-exists? (> key-value -1)]
-                               (->> [(format-val key (if key-exists?
-                                                       key-value 0))
-                                     (format-val chan chan-value)
-                                     (format-val color "000000")
-                                     (when-not key-exists?
-                                       (format-val k-type 0))
-                                     cc-invert]
-                                    (remove nil?))))
-                           keys-data))))
+                  [(format "[Board%s]" board-id)]
+                  (mapcat (fn [{:keys [key key-value chan chan-value color cc-invert k-type]}]
+                            (let [key-exists? (> key-value -1)]
+                              (->> [(format-val key (if key-exists?
+                                                      key-value 0))
+                                    (format-val chan chan-value)
+                                    (format-val color "000000")
+                                    (when-not key-exists?
+                                      (format-val k-type 0))
+                                    cc-invert]
+                                   (remove nil?))))
+                          keys-data))))
        (str/join "\n")))
 
 (comment
   (spit "/Users/diego/Music/diego/lumatone/34_gen-13_oneirotonic-13-34_template.ltn"
         (ltn-data->ltn
-          (let [gen 13 period 34]
-            (make-ltn-data
-              {:offset 80
-               :period period
-               :xy-intervals ((generate-keyboard-types->xy-intervals gen period)
-                              [13 34])}))))
+         (let [gen 13 period 34]
+           (make-ltn-data
+            {:offset 80
+             :period period
+             :xy-intervals ((generate-keyboard-types->xy-intervals gen period)
+                            [13 34])}))))
 
   (generate-keyboard-types->xy-intervals 13 34))

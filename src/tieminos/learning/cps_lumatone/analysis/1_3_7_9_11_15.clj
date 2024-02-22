@@ -279,7 +279,7 @@
         archi-set (:archi-set (wilson-22-eik-midi-note->scale-note midi-note))]
     (if-not (pred archi-set)
       (do #_(println "Archiset not found" key-val chan-val)
-          "111111" #_color-val)
+       "111111" #_color-val)
       (-> archi-set
           color-map
           (str/replace "#" "")))))

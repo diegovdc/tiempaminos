@@ -83,10 +83,7 @@
      :mic-3/lavalier {:scarlett 7 :amp-trig/threshold :default}
      :scarlett/out 8})
 
-
   (def ps-ringz-amp (atom 1))
-  
-  
 
   (do
     (defn set-ps-ringz-amp!
@@ -106,17 +103,17 @@
                     :amp-regulator-handler)))
 
     (oe/defsynth amp-regulator-replier
-    [in 0
-     freq 2
-     reply-id 1]
-    (let [impulse (o/impulse freq)]
-      (o/send-reply  impulse
-                     "/amp-regulator"
-                     [(o/amplitude:kr (apply max (o/peak:ar
-                                                   (o/in:ar in 4)
-                                                   (o/delay2:kr impulse))))]
-                     reply-id)))
-  
+      [in 0
+       freq 2
+       reply-id 1]
+      (let [impulse (o/impulse freq)]
+        (o/send-reply  impulse
+                       "/amp-regulator"
+                       [(o/amplitude:kr (apply max (o/peak:ar
+                                                    (o/in:ar in 4)
+                                                    (o/delay2:kr impulse))))]
+                       reply-id)))
+
     ;; NOTE keep, only ps below
     (oe/defsynth ps-ringz
       [in 0
@@ -133,10 +130,10 @@
                                      (o/pitch-shift 0.1 ps1)
                                      (* 0.8)
                                      (#(o/pan-az 4 % (scu/lfo-kr 0.5 -1 1))))
-                               (-> sig
-                                   (o/pitch-shift 0.1 ps2)
-                                   #_(* 0.8)
-                                   (#(o/pan-az 4 % (scu/lfo-kr 0.5 -1 1))))
+                             (-> sig
+                                 (o/pitch-shift 0.1 ps2)
+                                 #_(* 0.8)
+                                 (#(o/pan-az 4 % (scu/lfo-kr 0.5 -1 1))))
                                (-> sig
                                    (o/ringz rz-freq 0.1)
                                    (* 0.07)
@@ -206,21 +203,16 @@
     (init-amp-regulator-receiver!)
 
     (def ar (amp-regulator-replier
-              {:group (groups/fx)
-               :in percussion-processes-main-out})))
+             {:group (groups/fx)
+              :in percussion-processes-main-out})))
 
   (open-inputs-with-rand-pan
-    {:inputs inputs
-     :preouts preouts})
-  
+   {:inputs inputs
+    :preouts preouts})
 
   (start-rec-loop3!
-    {:input-bus-fn (fn [_] (-> @inputs (select-keys [:guitar :mic-1 :mic-2 :mic-3]) vals (->> (map :bus))))
-     :durs (mapv (fn [_] (rrange 10 20)) (range 40))})
-
-  
-
-  
+   {:input-bus-fn (fn [_] (-> @inputs (select-keys [:guitar :mic-1 :mic-2 :mic-3]) vals (->> (map :bus))))
+    :durs (mapv (fn [_] (rrange 10 20)) (range 40))})
 
   (do
     (amp-trig/dereg-handler mic-1-ampt)

@@ -23,22 +23,21 @@
          root-freq 112}}]
   (let [scale (:scale cps)]
     (ref-rain
-      :id id
-      :durs [1]
-      :on-event (on-event
-                  (println (->> (at-i chords)
-                                (map #(+ %
-                                         (scale/deg->freq scale root-freq %
-                                                          {:period (rand-nth periods)} )) )))
-                  ))))
+     :id id
+     :durs [1]
+     :on-event (on-event
+                (println (->> (at-i chords)
+                              (map #(+ %
+                                       (scale/deg->freq scale root-freq %
+                                                        {:period (rand-nth periods)})))))))))
 
 (comment
   (gp/stop)
   (chords1
-    (let [cps (-> cps-19-31-43-55-79-91/hexanies first second cps-utils/+degrees)]
-      {:cps cps
-       :chords [(first (cps-utils/harmonic-triad-degrees cps 0))]
-       :note-octave-transpositions [0 1 2]})))
+   (let [cps (-> cps-19-31-43-55-79-91/hexanies first second cps-utils/+degrees)]
+     {:cps cps
+      :chords [(first (cps-utils/harmonic-triad-degrees cps 0))]
+      :note-octave-transpositions [0 1 2]})))
 
 (defn hacia-un-nuevo-universo-perc-refrain-v2p2
   "This version can handle rate chords (as a vector of rates)"
@@ -70,49 +69,49 @@
          refrain-ratio 1}}]
   (let [rates* (map (fn [r] (if (sequential? r) r [r])) rates)]
     (ref-rain
-      :id refrain-id
-      :durs (periodize-durs period durs)
-      :ratio refrain-ratio
-      :on-event (on-event
-                  (when-let [buf (buf-fn {:index index})]
-                    (when-not (silence? silence-thresh buf) ;; allow us to control silences by not playing
-                      (let [rate (at-i rates*)
-                            amp* (if amp-fn (amp-fn index) amp)]
-                        (doseq [r rate]
-                          (let [start 0 #_(rrange (rrange 0 0.5) 0.7)
-                                end 1 #_(+ start (rrange 0.05 0.3))
-                                a (weighted a-weights)
-                                trig-rate (+ 90 (rand-int 20))
-                                config {:group (groups/mid)
-                                        :buf buf
-                                        :a a
-                                        :d (/ (+ (/ a 2) (weighted d-weights))
-                                              2)
-                                        :r (+ (/ a 2) (weighted d-weights))
-                                        :d-level (weighted d-level-weights)
-                                        :rev-room (weighted room-weights)
-                                        :trig-rate 100
-                                        :grain-dur (/ 1 (/ trig-rate 2))
-                                        :amp-lfo (rrange 0.1 0.4)
-                                        :amp-lfo-min 0.95
-                                        :lpf-max (rrange 2000 10000)
-                                        :start start
-                                        :end end
-                                        :out out-bus
-                                        :pan (rrange -1 1)}]
+     :id refrain-id
+     :durs (periodize-durs period durs)
+     :ratio refrain-ratio
+     :on-event (on-event
+                (when-let [buf (buf-fn {:index index})]
+                  (when-not (silence? silence-thresh buf) ;; allow us to control silences by not playing
+                    (let [rate (at-i rates*)
+                          amp* (if amp-fn (amp-fn index) amp)]
+                      (doseq [r rate]
+                        (let [start 0 #_(rrange (rrange 0 0.5) 0.7)
+                              end 1 #_(+ start (rrange 0.05 0.3))
+                              a (weighted a-weights)
+                              trig-rate (+ 90 (rand-int 20))
+                              config {:group (groups/mid)
+                                      :buf buf
+                                      :a a
+                                      :d (/ (+ (/ a 2) (weighted d-weights))
+                                            2)
+                                      :r (+ (/ a 2) (weighted d-weights))
+                                      :d-level (weighted d-level-weights)
+                                      :rev-room (weighted room-weights)
+                                      :trig-rate 100
+                                      :grain-dur (/ 1 (/ trig-rate 2))
+                                      :amp-lfo (rrange 0.1 0.4)
+                                      :amp-lfo-min 0.95
+                                      :lpf-max (rrange 2000 10000)
+                                      :start start
+                                      :end end
+                                      :out out-bus
+                                      :pan (rrange -1 1)}]
 
-                            (doseq [synth-args [(assoc config
-                                                       :rate (float r)
-                                                       :interp (rand-nth [1 2 4])
-                                                       :amp (* amp* (rrange 0.2 1) (norm-amp buf)))
-                                                (assoc config
-                                                       :rate (* (rand-nth [2 3/2 5/4 7/4 1/2 1 1 1 1]) r)
-                                                       :interp (rand-nth [4])
-                                                       :amp (* amp* (rrange 0 0.7) (norm-amp buf)))]]
-                              (println "=============BUFF Duration" (:duration buf))
-                              (println "=============SYNTH Duration"
-                                       (apply + (vals (select-keys config [:a :d :r])))
-                                       (select-keys config [:a :d :r]))
-                              (on-play {:refrain/data data
-                                        :meta {:context/web-visualizer-fn-id web-visualizer-fn-id} ;; TODO
-                                        :synth-args synth-args} )))))))))))
+                          (doseq [synth-args [(assoc config
+                                                     :rate (float r)
+                                                     :interp (rand-nth [1 2 4])
+                                                     :amp (* amp* (rrange 0.2 1) (norm-amp buf)))
+                                              (assoc config
+                                                     :rate (* (rand-nth [2 3/2 5/4 7/4 1/2 1 1 1 1]) r)
+                                                     :interp (rand-nth [4])
+                                                     :amp (* amp* (rrange 0 0.7) (norm-amp buf)))]]
+                            (println "=============BUFF Duration" (:duration buf))
+                            (println "=============SYNTH Duration"
+                                     (apply + (vals (select-keys config [:a :d :r])))
+                                     (select-keys config [:a :d :r]))
+                            (on-play {:refrain/data data
+                                      :meta {:context/web-visualizer-fn-id web-visualizer-fn-id} ;; TODO
+                                      :synth-args synth-args})))))))))))

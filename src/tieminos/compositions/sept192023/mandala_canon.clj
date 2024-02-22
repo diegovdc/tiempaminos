@@ -15,7 +15,6 @@
    [time-time.converge :refer [converge]]
    [time-time.sequencing :refer [sequencer]]))
 
-
 (def sink (midi/midi-out "VirMIDI"))
 
 (defn algo-note [data] (malgo-note (merge {:sink sink
@@ -56,37 +55,37 @@
                     :bpm 120
                     :period 220})
          (map (fn [voice] (sequencer
-                            nome
-                            voice
-                            (fn [{:keys [tempo-index]} index]
-                              (let [dur (rrange 0.5 20)]
-                                (when-not (and (zero? index) (> (rand) 0.2))
-                                  (case tempo-index
-                                    0 (algo-note {:base-midi-chan 0
-                                                  :deg (wrap-at index degs)
-                                                  :dur dur
-                                                  :vel (rand-nth [1 30 50 10])})
-                                    1 (algo-note {:base-midi-chan 0
-                                                  :deg (* -1 (wrap-at index degs))
-                                                  :dur dur
-                                                  :vel (rand-nth [1 30 50 10])})
-                                    2 (algo-note {:base-midi-chan 1
-                                                  :deg (* -1 (- (wrap-at index degs) 3))
-                                                  :dur dur
-                                                  :vel (rand-nth [1 30 50 10])})
-                                    3 (algo-note {:base-midi-chan 1
-                                                  :deg (+ 3 (wrap-at index degs))
-                                                  :dur dur
-                                                  :vel (rand-nth [1 30 50 10])})
-                                    4 (doseq [d [(- (wrap-at index degs) 6)
-                                                 (- (wrap-at index degs) 3)]]
-                                        (algo-note {:base-midi-chan 2
-                                                    :deg d
-                                                    :dur dur
-                                                    :vel (rand-nth [1 30 50 10])}))
-                                    5 (algo-note {:base-midi-chan 2
-                                                  :deg (* -1 (wrap-at index degs))
-                                                  :dur dur
-                                                  :vel (rand-nth [1 30 50 10])}))))
-                              nil)
-                            {:repeat nil}))))))
+                           nome
+                           voice
+                           (fn [{:keys [tempo-index]} index]
+                             (let [dur (rrange 0.5 20)]
+                               (when-not (and (zero? index) (> (rand) 0.2))
+                                 (case tempo-index
+                                   0 (algo-note {:base-midi-chan 0
+                                                 :deg (wrap-at index degs)
+                                                 :dur dur
+                                                 :vel (rand-nth [1 30 50 10])})
+                                   1 (algo-note {:base-midi-chan 0
+                                                 :deg (* -1 (wrap-at index degs))
+                                                 :dur dur
+                                                 :vel (rand-nth [1 30 50 10])})
+                                   2 (algo-note {:base-midi-chan 1
+                                                 :deg (* -1 (- (wrap-at index degs) 3))
+                                                 :dur dur
+                                                 :vel (rand-nth [1 30 50 10])})
+                                   3 (algo-note {:base-midi-chan 1
+                                                 :deg (+ 3 (wrap-at index degs))
+                                                 :dur dur
+                                                 :vel (rand-nth [1 30 50 10])})
+                                   4 (doseq [d [(- (wrap-at index degs) 6)
+                                                (- (wrap-at index degs) 3)]]
+                                       (algo-note {:base-midi-chan 2
+                                                   :deg d
+                                                   :dur dur
+                                                   :vel (rand-nth [1 30 50 10])}))
+                                   5 (algo-note {:base-midi-chan 2
+                                                 :deg (* -1 (wrap-at index degs))
+                                                 :dur dur
+                                                 :vel (rand-nth [1 30 50 10])}))))
+                             nil)
+                           {:repeat nil}))))))

@@ -36,9 +36,7 @@
   (def t (tuner f (string->ratio 0)))
   (def t (tuner f 1))
   (o/ctl t :gate 0)
- (o/stop))
-
-
+  (o/stop))
 
 (cps->name* f)
 (def test-scale (atom nil))
@@ -87,23 +85,20 @@
 
   (when oxygen
     (midi-in-event
-      :midi-input oxygen
-      :note-on (fn [{:keys [note]}]
+     :midi-input oxygen
+     :note-on (fn [{:keys [note]}]
 
-                 (let [harmonic (some-> @test-scale
-                                        (nth (- note 48) nil)
-                                        first) ]
-                   (if harmonic
-                     (do (println "harmonic:" harmonic)
-                         (soft-saw2 :freq (* (/ f 32) harmonic
-                                             #_(rand-nth [1 2 3 4 5 6 7]))
-                                    :atk 1))
-                     (timbre/warn "Harmonic not found for midi note" note)))
-                 )
-      ))
+                (let [harmonic (some-> @test-scale
+                                       (nth (- note 48) nil)
+                                       first)]
+                  (if harmonic
+                    (do (println "harmonic:" harmonic)
+                        (soft-saw2 :freq (* (/ f 32) harmonic
+                                            #_(rand-nth [1 2 3 4 5 6 7]))
+                                   :atk 1))
+                    (timbre/warn "Harmonic not found for midi note" note))))))
 
-  (o/stop)
-  )
+  (o/stop))
 
 ;;  v2 TODO
 (let [f* 19]

@@ -57,7 +57,7 @@
                              :action o/FREE)
                   (circle-az :num-channels 4
                              :in (* 0.2 (+ #_(o/white-noise)
-                                           (o/mix (o/saw f))))
+                                         (o/mix (o/saw f))))
                              :pos (o/lf-saw 0.2))))))
   (def test (test-4chan-circle-az :dur 40))
   (o/ctl test :freq 800))

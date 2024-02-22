@@ -8,8 +8,6 @@
             [time-time.dynacan.players.gen-poly :as gp :refer [on-event ref-rain]]
             [time-time.standard :refer [wrap-at]]))
 
-
-
 (do
   (defn period [seconds durs]
     (let [ratio (/ seconds (apply + durs))]
@@ -18,7 +16,6 @@
   (defn periods [seconds & durs]
     (mapcat (partial period seconds) durs))
   (periods 1 [1] [1]))
-
 
 (do
   (o/defsynth h1 [freq 400
@@ -84,8 +81,7 @@
     (ref-rain :id ::b
               :durs (periods 2.7
                              [3 1 2 1 1 1 2 1/2 1/2 1 2]
-                             [1 3 2 1 1 1 2 1 2 1]
-                             )
+                             [1 3 2 1 1 1 2 1 2 1])
               :on-event (on-event
                          (case (wrap-at index [0 1 1])
                            0 (mapv h1 (wrap-at index harmonies))

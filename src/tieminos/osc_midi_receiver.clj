@@ -12,9 +12,8 @@
             (and (seq synth) (every? node? synth)))
     (swap! synths assoc (:note ev) synth)))
 
-
 (defn remove-synth [ctl ev]
-  (let [synth (@synths (:note ev)) ]
+  (let [synth (@synths (:note ev))]
     (cond
       (node? synth) (do (ctl synth :gate 0)
                         (swap! synths dissoc (:note ev)))
@@ -32,7 +31,7 @@
                               :auto-ctl? true}))
 
 (defn as-midi-msg [args]
-  (let [[note velocity chan] args] {:note note :vel velocity :chan chan}) )
+  (let [[note velocity chan] args] {:note note :vel velocity :chan chan}))
 (do
   (defn midi-event-listener [server]
     (osc/osc-listen
@@ -46,7 +45,7 @@
            "/note-on" ((gate-ctl :add) msg (note-on msg))
            "/note-off" (do (note-off msg)
                            ((gate-ctl :remove) msg))
-           (timbre/warn "OSC path not defined: " path ))))
+           (timbre/warn "OSC path not defined: " path))))
      :midi-event))
   (comment (midi-event-listener (recv :server))))
 
@@ -63,11 +62,10 @@
   (reset! midi-event-config
           {:note-on note-on
            :note-off note-off
-           :auto-ctl? auto-ctl?} ))
+           :auto-ctl? auto-ctl?}))
 
 (comment
   (defonce recv (init 7777)))
-
 
 (defonce midi-send-client (osc/osc-client "localhost" 7778))
 
@@ -109,11 +107,9 @@
   (send-note* 5000 63 16)
   (all-notes-off))
 
-
-
 (comment
   (require '[erv-fib-synth.synths :as synths])
   (midi-event :note-on (fn [msg] (synths/low)))
   (osc/osc-close (recv :server))
-  (midi-event :note-on println :note-off println ))
+  (midi-event :note-on println :note-off println))
 (comment (osc/osc-rm-all-listeners server))

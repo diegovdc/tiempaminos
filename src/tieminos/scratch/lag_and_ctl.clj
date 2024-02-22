@@ -6,10 +6,10 @@
 (comment
 
   (ndef/ndef ::sine
-      (let [freq 200]
-        (-> (o/sin-osc 200)
-            (* 0.2)
-            (o/pan2))))
+             (let [freq 200]
+               (-> (o/sin-osc 200)
+                   (* 0.2)
+                   (o/pan2))))
 
   (ndef/stop ::sine)
   (o/stop)
@@ -22,5 +22,4 @@
     [freq 200]
     (o/out 0 (* 0.2 (o/sin-osc (o/lag:kr 200 1)))))
 
-  (laggy-sine)
-  )
+  (laggy-sine))

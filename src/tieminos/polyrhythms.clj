@@ -11,8 +11,6 @@
   (def ps (o/load-samples "/home/diego/sc/taller-topologias-temporales-2019/Synths/drumKits/IAMM_Kits/**/*.wav"))
   (->> ps (map (juxt :id :name)) #_(filter #(-> % second (str/includes? "CONGA"))) println))
 
-
-
 (def scale
   (->> [1 3 5 7]
        (cps/->cps 2)
@@ -20,7 +18,7 @@
        (cps/bound-ratio 4)
        (cps/maps->data :bounded-ratio)
        :scale
-       #_ (#(cps/filter-scale % #{7}))))
+       #_(#(cps/filter-scale % #{7}))))
 
 (do
   (defn hexarhythm
@@ -41,15 +39,11 @@
           (map-indexed #(* %2 (wrap-at %1 mults))))))
   #_(println (hexarhythm #{1 3 5 7} [0 2 2 1 2 0 1] 4 [1])))
 
-
-
 (def melo (scale/stateful-interval->degree 0))
 (melo (wrap-at 2 [1 0 0 0 2]))
 
-
-
 (defn m
-  ([index intervals ] (m index intervals 30))
+  ([index intervals] (m index intervals 30))
   ([index intervals bound]
    (scale/deg->freq scale 100
                     (mod (melo (wrap-at index intervals)) bound))))
@@ -85,7 +79,6 @@
              (* 6 amp (o/env-gen (o/env-perc 1 2) :action o/FREE))
              (free-verb mix room)
              (pan2 pan))))
-
 
 (defn period [seconds durs]
   (let [ratio (/ seconds (apply + durs))]
@@ -225,7 +218,6 @@
                                          :pan (wrap-at index [-1 1])
                                          :amp (wrap-at index [20]))
                                       nil))))
-
 
   (ref-rain :id ::g
             :ref ::a5

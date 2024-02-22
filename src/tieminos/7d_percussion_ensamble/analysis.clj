@@ -14,7 +14,6 @@
 
 ;; PURPOSE look for a suitable harmonic path that traverses all of the 7 groups of hexanies (3 hexanies per group)
 
-
 (comment
 
   ;; input data, for reference
@@ -25,7 +24,6 @@
 ;;;; Steps
 ;; 1.DONE  add id and full names to hexanies; i.e. id :hx1.1 :hx1.1-1.3.19.9*7.21
 ;; 2. DONE match names in data structure
-
 
 #_"e.g" {:intersection #{:hx1.1 :hx1.2}
          :degrees/parent #{4 7 12}
@@ -38,10 +36,7 @@
 ;; 4. DONE make a summary map
 #_"e.g." {:hx1.3 [[:hx1.1 {:count 4}] [:hx3.3 {:count 4}]]} ; 3 is the number of intersections
 
-
-
 ;; Step 1
-
 
 (defn add-diatonic-hexany-id-and-name
   [index hexany]

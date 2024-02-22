@@ -39,28 +39,27 @@
   (o/stop)
 
   (def lattice-data (draw-lattice
-                      {:ratios (into #{} (map period-reduce
-                                              note-mappings))}))
+                     {:ratios (into #{} (map period-reduce
+                                             note-mappings))}))
 
   (def oxygen (get-oxygen!))
 
   (when oxygen
     (midi-in-event
-      :midi-input oxygen
-      :note-on (fn [ev]
-                 (let [ratio* (wrap-at (:note ev) note-mappings)
-                       ratio (* (inc (quot (- (:note ev) 48)
+     :midi-input oxygen
+     :note-on (fn [ev]
+                (let [ratio* (wrap-at (:note ev) note-mappings)
+                      ratio (* (inc (quot (- (:note ev) 48)
                                           12))
-                                ratio*)]
-                   (println (- (:note ev) 48)
-                            (quot (- (:note ev) 48)
-                                          12))
-                   (swap! lattice-data update :played-notes conj (period-reduce ratio))
-                   (harmonic (* root ratio) :amp (linexp* 0 127 0.5 3 (:velocity ev)))
-                   ))
-      :note-off (fn [ev]
-                  (let [ratio (period-reduce (wrap-at (:note ev) note-mappings))]
-                    (swap! lattice-data update :played-notes #(->> %
-                                                                   (remove (fn [r] (= r ratio)))
-                                                                   (into #{})))
-                    nil)))))
+                               ratio*)]
+                  (println (- (:note ev) 48)
+                           (quot (- (:note ev) 48)
+                                 12))
+                  (swap! lattice-data update :played-notes conj (period-reduce ratio))
+                  (harmonic (* root ratio) :amp (linexp* 0 127 0.5 3 (:velocity ev)))))
+     :note-off (fn [ev]
+                 (let [ratio (period-reduce (wrap-at (:note ev) note-mappings))]
+                   (swap! lattice-data update :played-notes #(->> %
+                                                                  (remove (fn [r] (= r ratio)))
+                                                                  (into #{})))
+                   nil)))))

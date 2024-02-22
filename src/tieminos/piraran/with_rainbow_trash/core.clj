@@ -141,51 +141,51 @@
                 (bow params)
                 #_(bow (-> params
 
-                         (assoc
-                           :amp 1
-                           :a (rrange 0.1 1)
-                           :rate 3/2
-                           :pan (rrange -1 1)
-                           :delay 3/7)))
+                           (assoc
+                            :amp 1
+                            :a (rrange 0.1 1)
+                            :rate 3/2
+                            :pan (rrange -1 1)
+                            :delay 3/7)))
                 #_(bow (-> params
-                         (update :amp * 0.5)
-                         (update :r * 2)
-                         (assoc :d (rrange 0.01 2)
-                                :rate (-> 6/5
-                                          (/ (rand-nth [1 2 3 4 5]))
-                                          (* (rand-nth [1 2 3 4 5])))
-                                :pan (rrange -1 1)
-                                :delay 5/7))))))
+                           (update :amp * 0.5)
+                           (update :r * 2)
+                           (assoc :d (rrange 0.01 2)
+                                  :rate (-> 6/5
+                                            (/ (rand-nth [1 2 3 4 5]))
+                                            (* (rand-nth [1 2 3 4 5])))
+                                  :pan (rrange -1 1)
+                                  :delay 5/7))))))
   (ref-rain
-    :id ::rainbow-trash3
+   :id ::rainbow-trash3
    :ref ::rainbow-trash
-    :durs [1]
-    :ratio 1/7
-    :on-event (on-event
-                (let [buf (-> @rec/bufs vals rand-nth)
-                      x (* 0.3 (rand))
-                      params {:group (groups/early)
-                              :trig-rate 3
-                              :grain-dur 1/40
-                              :buf buf
-                              :amp (* (rrange 0.1 0.5) (at-i [3 2 7 3 2 1 7]))
-                              :rate (* 5 (at-i [3 2 1 (at-i [4 3 5/4 5])]))
-                              :a 2
-                              :d 1/64
-                              :d-level (rand)
-                              :start (+ x 0.001)
-                              :end (+ x 0.002)
-                              :rev-room 3
-                              :rev-mix (rrange 0.5 1)
-                              :r 1/64
-                              :pan (rrange -1 1)
-                              :out rev-bus}]
-                  (bow params)
-                  #_(bow (-> params
+   :durs [1]
+   :ratio 1/7
+   :on-event (on-event
+              (let [buf (-> @rec/bufs vals rand-nth)
+                    x (* 0.3 (rand))
+                    params {:group (groups/early)
+                            :trig-rate 3
+                            :grain-dur 1/40
+                            :buf buf
+                            :amp (* (rrange 0.1 0.5) (at-i [3 2 7 3 2 1 7]))
+                            :rate (* 5 (at-i [3 2 1 (at-i [4 3 5/4 5])]))
+                            :a 2
+                            :d 1/64
+                            :d-level (rand)
+                            :start (+ x 0.001)
+                            :end (+ x 0.002)
+                            :rev-room 3
+                            :rev-mix (rrange 0.5 1)
+                            :r 1/64
+                            :pan (rrange -1 1)
+                            :out rev-bus}]
+                (bow params)
+                #_(bow (-> params
                            (update :amp * 0.1)
                            (update :rate #(-> %
-                                            (/ (rand-nth [1 2 3 4 5]))
-                                            (* (rand-nth [1 2 3 4 5]))))
+                                              (/ (rand-nth [1 2 3 4 5]))
+                                              (* (rand-nth [1 2 3 4 5]))))
                            (assoc :d (rrange 0.01 2)
 
                                   :pan (rrange -1 1)

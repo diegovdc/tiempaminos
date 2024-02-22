@@ -7,7 +7,6 @@
             [time-time.standard :refer [wrap-at]]
             [clojure.string :as str]))
 
-
 (def scale
   (->> [1 3 5 7]
        (cps/->cps 2)
@@ -15,7 +14,7 @@
        (cps/bound-ratio 4)
        (cps/maps->data :bounded-ratio)
        :scale
-       #_ (#(cps/filter-scale % #{7}))))
+       #_(#(cps/filter-scale % #{7}))))
 
 (do
   (defn hexarhythm
@@ -36,15 +35,11 @@
           (map-indexed #(* %2 (wrap-at %1 mults))))))
   (hexarhythm #{1 3 5 7} [0 2 2 1 2 0 1] 4 [1]))
 
-
-
 (def melo (scale/stateful-interval->degree 0))
 (melo (wrap-at 2 [1 0 0 0 2]))
 
-
-
 (defn m
-  ([index intervals ] (m index intervals 30))
+  ([index intervals] (m index intervals 30))
   ([index intervals bound]
    (scale/deg->freq scale 100
                     (mod (melo (wrap-at index intervals)) bound))))
@@ -92,8 +87,7 @@
                                          :perc (wrap-at index [cabasa])
                                          :room 1
                                          :amp (wrap-at index [0.5 1]))
-                                      nil
-                                      ))))
+                                      nil))))
 
   (ref-rain :id ::b4
             :durs (hexarhythm #{3} [2 1 2 1 2 1 2 1 1 0] 2 [1/2 1/4 1/2 1/4 1/4 1/4])
@@ -129,7 +123,6 @@
                                      :pan (wrap-at index [-1 0.3 1 0])
                                      :amp (wrap-at index [1.7 1 0.5 0.1 2]))
                                   nil)))
-
 
   (ref-rain :id ::g
             :ref ::a5

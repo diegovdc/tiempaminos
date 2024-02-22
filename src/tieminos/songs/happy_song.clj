@@ -17,7 +17,6 @@
   (o/recording-start "/home/diego/Desktop/happy-song-a-la-chiapaneca")
   (o/recording-stop)
 
-
   (add-watch osc/synths nil
              (fn [_ _ _ state]
                (->> (keys state)
@@ -53,5 +52,4 @@
       :deg-offset -60
       :get-pitch-class mpe/get-cps-pitch-class
       :midi-note (:note %)
-      :vel (:vel %)))
-  )
+      :vel (:vel %))))

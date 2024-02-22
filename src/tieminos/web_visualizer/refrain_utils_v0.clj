@@ -148,8 +148,7 @@
    :x (ms->px elapsed-ms)
    :y (freq->px freq)
    :color "lightgreen"
-   :meta meta
-   })
+   :meta meta})
 
 (def ^:private c-names
   [[1.0 "C-5"]

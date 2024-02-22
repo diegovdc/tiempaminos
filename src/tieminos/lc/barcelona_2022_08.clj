@@ -62,35 +62,34 @@
             :ratio 10
             :on-event (on-event
                        (do #_(println dur-ms)
-                           (algo-note :sink out-2
-                                      :dur dur-ms
-                                      :scale (:scale hex)
-                                      :base-freq 120
-                                      :get-pitch-class get-cps-pitch-class
-                                      :deg-offset -6
-                                      :midi-note [(at-index [7 4 8 6 9 10 13 5 11])
-                                                  #_(at-index [17 18 19 10])]
-                                      :vel (at-index [40 120 40 90])))))
+                        (algo-note :sink out-2
+                                   :dur dur-ms
+                                   :scale (:scale hex)
+                                   :base-freq 120
+                                   :get-pitch-class get-cps-pitch-class
+                                   :deg-offset -6
+                                   :midi-note [(at-index [7 4 8 6 9 10 13 5 11])
+                                               #_(at-index [17 18 19 10])]
+                                   :vel (at-index [40 120 40 90])))))
   (ref-rain :id :pad-2
             :durs [3 2 2 4 2 3 2]
             :tempo 131
             :ratio 6
             :on-event (on-event
                        (do #_(println dur-ms)
-                           (algo-note :sink out-2
-                                      :dur dur-ms
-                                      :scale (:scale hex)
-                                      :base-freq 120
-                                      :get-pitch-class get-cps-pitch-class
-                                      :deg-offset 8
-                                      :midi-note [(at-index [6 10 14 11 3 2])
-                                                  (at-index [10 5 11 3 2 15 5])]
-                                      :vel (at-index [120]))))))
+                        (algo-note :sink out-2
+                                   :dur dur-ms
+                                   :scale (:scale hex)
+                                   :base-freq 120
+                                   :get-pitch-class get-cps-pitch-class
+                                   :deg-offset 8
+                                   :midi-note [(at-index [6 10 14 11 3 2])
+                                               (at-index [10 5 11 3 2 15 5])]
+                                   :vel (at-index [120]))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;
 ;;;HEBDOMEKOTANY;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;
-
 
 (def hebdo (cps/make 3 [1 19 5 7 11 13 3]))
 (def hebdo-graph (-> hebdo
@@ -244,11 +243,9 @@
 
   (gp/stop))
 
-
 ;;;;;;;;;;;;;;
 ;; Cascade
 ;;;;;;;;;;;;;;
-
 
 (->> (cps/make 3 [47 53 59 67 71 79 89] :norm-fac (* 47 53 59))
      :scale
@@ -442,7 +439,7 @@
                                       (scale/deg->freq
                                        200
                                        (+ #_(at-index [0 0 0 1 11 1 11 2 12 3])
-                                          (at-index (reverse (range 10 21))))))
+                                        (at-index (reverse (range 10 21))))))
                            :amp-1 0.7 :amp-2 0.4 :amp-3 0.2
                            :amp   (at-index [1 0.5 0.7])
                            :atk   (at-index (concat (repeat 3 0.01)

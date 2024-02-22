@@ -78,7 +78,7 @@
   (osc/osc-send client "/holas" 1,2,3,4)
 
   (responder
-    (fn [{:keys [path args] :as msg}]
+   (fn [{:keys [path args] :as msg}]
      (let [args-map (args->map args)]
        (case path
          (println "Unknown path for message: " msg))))))

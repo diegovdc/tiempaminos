@@ -35,7 +35,6 @@
                      (* (o/env-gen (o/env-perc atk dcy) :action o/FREE))
                      (* amp))))
 
-
     (let [start (- (rand-int 20) 40)
           degs ((rand-nth [identity reverse shuffle])
                 (range start (+ start 40) (inc (rand-int 7))))

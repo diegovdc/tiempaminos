@@ -14,7 +14,6 @@
 ;;;; Finding dorian scales
 ;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-
 (do
   (defn all-rotations
     "Zero based rotations. `scale` is in cents"
@@ -123,14 +122,12 @@
     :scale
     +cents)
 
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; completing dorian modes from hexanies
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; dorian cents: [0 200 300 500 700 900 1000]
 ;; use this to find the dorian mode
-
 
 (-> polydori :subcps (get "2)4 of 4)7 1.15-3.7.19.21") :scale +cents)
 (def anti-dorico-1v1
@@ -156,13 +153,11 @@
 (-> dorico-1v2-interdeks)
 (-> ds/dorico-1v2)
 
-
 ;;;;;;;;;;;;;;;;;;
 ;;;; Harmonic Form
 ;;;;;;;;;;;;;;;;;
 
 ;; [[intersection-count total-dekanies]]
-
 
 (->> dorico-1v2-interdeks
      (sort-by first)
@@ -224,11 +219,9 @@
 
 (->> (cps/make 3  [3 7 15 19 21]))
 
-
 ;;;
 ;;;
 ;;;looking for where to transpose the scale so that one of the diatonic scales lands as close to 12edo as possible
-
 
 (->> dorian-hexanies-in-polydori)
 ;;
@@ -270,22 +263,21 @@
 
 (def dorian-hex-connections
   (->>
-    (for [source dorian-hexanies-in-polydori
-          target dorian-hexanies-in-polydori]
-      (let [intersection (set/intersection (set (:degrees source))
-                                           (set (:degrees target)))]
-        (cond
-          (= source target) nil
-          (zero? (count intersection)) nil
-          :else {(:name source) {:name (:name target)
-                                 :degrees intersection
-                                 :size (count intersection)}}
-          )))
-    (remove nil?)
-    (reduce (fn [acc m]
-              (update acc (ffirst m)
-                      (comp #(sort-by :size > %) conj)
-(first (vals m)))) {})))
+   (for [source dorian-hexanies-in-polydori
+         target dorian-hexanies-in-polydori]
+     (let [intersection (set/intersection (set (:degrees source))
+                                          (set (:degrees target)))]
+       (cond
+         (= source target) nil
+         (zero? (count intersection)) nil
+         :else {(:name source) {:name (:name target)
+                                :degrees intersection
+                                :size (count intersection)}})))
+   (remove nil?)
+   (reduce (fn [acc m]
+             (update acc (ffirst m)
+                     (comp #(sort-by :size > %) conj)
+                     (first (vals m)))) {})))
 
 (def hex-name->scale-index (into {} (map-indexed (fn [i name*] [name* i]) (sort (keys dorian-hex-connections)))))
 
@@ -313,10 +305,8 @@
       (select-keys ["diat4v3"
                     "diat5v2"
                     "diat3v3"
-                    "diat6v3"
-                    ])
+                    "diat6v3"])
       add-scale-index)
   (-> dorian-hex-connections
       (select-keys ["diat3v3"])
-      add-scale-index)
-  )
+      add-scale-index))

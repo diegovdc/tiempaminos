@@ -28,7 +28,6 @@
                                (remove  #(= % bus-keyword))
                                set))))
 
-
 ;; impl
 
 (def ^:private max-timespan-ms 30000)
@@ -111,23 +110,22 @@
 
        ;; run analisis
        (async/go-loop
-           []
-           (async/alt!
-             (async/timeout interval-ms) (do
-                                           (analyze-amps!)
-                                           (recur))
-             stop-chan1 nil))
+        []
+         (async/alt!
+           (async/timeout interval-ms) (do
+                                         (analyze-amps!)
+                                         (recur))
+           stop-chan1 nil))
 
        ;; remove old amp data
        (async/go-loop
-           []
-           (async/alt!
-             (async/timeout 1000) (do
-                                    (remove-old-amp-data!)
-                                    (recur))
-             stop-chan2 nil))
+        []
+         (async/alt!
+           (async/timeout 1000) (do
+                                  (remove-old-amp-data!)
+                                  (recur))
+           stop-chan2 nil))
        close-chans-fn!))))
-
 
 (defn stop-amp-analyzer!
   []

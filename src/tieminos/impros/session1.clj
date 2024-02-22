@@ -15,12 +15,11 @@
               (let [degree (- (:note msg) 36)
                     vel (:vel msg)]
                 #_(synth/low2 (scale/deg->freq hex1 200  degree)
-                            :atk 0.5
-                            :dcy 0.3
-                            :sust (linexp  1 127 0.8 0.01 vel)
-                            :rel 2
-                            :amp (linexp  1 127 0.01 0.7 vel))))))
-
+                              :atk 0.5
+                              :dcy 0.3
+                              :sust (linexp  1 127 0.8 0.01 vel)
+                              :rel 2
+                              :amp (linexp  1 127 0.01 0.7 vel))))))
 
 (comment
   ;; impro 2

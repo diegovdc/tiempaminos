@@ -34,9 +34,7 @@
   (->> eik :subcps keys sort
        (filter #(str/includes? % "3)4"))
        (filter #(str/includes? % "11"))
-       (filter #(str/includes? % "7"))
-       )
-  )
+       (filter #(str/includes? % "7"))))
 
 (def dekanies
   '("2)5 of 3)6 1-3.5.7.9.11"
@@ -116,14 +114,11 @@
       (filter (fn [_] (> (rand) trim%))
               chord))))
 
-
 (defn reverse-chord [chord]
   (if (> 0.7 (rand)) (reverse chord) chord))
 
 (comment
   (run-auto-scale dekanies :dekany :id :auto-dekanies))
-
-
 
 (comment
   "Explorar secuencias de 1 o 2 acordes, y/o de una serie de mas elementos pero menos densidad de notas.
@@ -268,8 +263,7 @@ El objetivos es que la flauta pueda tener su rol y no estar peleando por la aten
       (log-with-msg
        "Will darken"
        (run-auto-scale (mapcat #(repeat 3 %)
-                               [
-                                "3)4 of 3)6 1.3.5.9"
+                               ["3)4 of 3)6 1.3.5.9"
                                 "3)4 of 3)6 1.3.5.11"
                                 ;; "1)4 of 3)6 7.11-1.3.5.9"
                                 ;; "1)4 of 3)6 7.9-1.3.5.11"
@@ -317,8 +311,7 @@ El objetivos es que la flauta pueda tener su rol y no estar peleando por la aten
                    :durs [5 3 13]
                    :offset-weights {-10 60}
                    ;; :offset-weights {4 60, 5 10, 0 3, -4 60, -5 40, -10 5}
-                   :delay-weights {0 50, 200 30, 300 20, 400 40}
-                   )))
+                   :delay-weights {0 50, 200 30, 300 20, 400 40})))
   (defn tranquilo-agudo []
     (let [log-fn (const-log-fn
                   ["   2 3 | 1 2 "])]
@@ -336,7 +329,7 @@ El objetivos es que la flauta pueda tener su rol y no estar peleando por la aten
                    :max-vel 10
                    :dur+delay-factor -0.5
                    :durs [5 3 2] #_[3 2 2]
-                   :offset-weights {4 60, 5 10,}
+                   :offset-weights {4 60, 5 10}
                    :delay-weights {0 500, 200 30, 300 20})))
   #_(tranquilo-agudo))
 
@@ -365,8 +358,7 @@ El objetivos es que la flauta pueda tener su rol y no estar peleando por la aten
                                          :deg-offset -50
                                          :midi-note (msg :note)
                                          :vel (msg :velocity)))
-                 :note-off #(mpe-note-off midi-out-1 (% :note))))
-              )))
+                 :note-off #(mpe-note-off midi-out-1 (% :note)))))))
 
 (comment
   (midi-in-event

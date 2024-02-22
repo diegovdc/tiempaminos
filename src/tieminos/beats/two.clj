@@ -23,9 +23,8 @@
                [4 5 4 2 3 2 1 2 1 -1 -1 0 1 0 -1 2]
                [4 5 4 1 2 1 0 1 0 -2 -2 -1 1 0 -2 1] ;; variation of the above (not in recording)
                {:notes [-3 5 3 2 0 0 0 2 0 -1]
-                :durs [1.333 3 2/3 3/4 2 1.25 1 1 2]}
+                :durs [1.333 3 2/3 3/4 2 1.25 1 1 2]}])
 
-               ])
 (comment
   (midi-event
    :note-on (fn [msg]
@@ -38,25 +37,18 @@
                             :rel 2
                             :amp (linexp  1 127 0.01 0.7 vel)))))
 
-
-
-
-
-
-
-
   (o/stop))
 (comment
   (def s (synth/low 200 :dcy 10))
-  (o/ctl s :freq 800 ))
+  (o/ctl s :freq 800))
 (comment
   (o/recording-start "/home/diego/Desktop/canto.wav")
   (o/recording-stop)
-  (gp/stop )
+  (gp/stop)
 
   (let [melody (->> [-4 3 1 0 -1 -1 -1 0 -1]
                     (map #(scale/deg->freq hex1 400 %)))]
-    (gp/stop )
+    (gp/stop)
     (ref-rain :id ::a
               :durs (periods 5 [1.333 3 2/3 3/4 2 1.25 1 1 2])
               :on-event
@@ -79,7 +71,7 @@
                      [#{13 23} [-5 7 21]]
                      #_[#{7 13} [3  20]]
                      [#{5 13 23} [10 13 15 17]]
-                     [#{ 23} [11]]
+                     [#{23} [11]]
                      #_[#{5 13 23} [10 13 15 17]]
                      #_[#{13 23} [5 9]]
                      [#{5 13} [0 20 13 14]]
@@ -87,17 +79,15 @@
                      [#{5 13} [3 22]]
                      #_[#{7 1 23} [5]]
                      [#{1 13} [1 2 3]]
-                     #_[#{7 23} [12 15]]
-                     ]
+                     #_[#{7 23} [12 15]]]
                     #_(take 2)
                     (mapv (partial gen-chord hex1 200)))]
     (ref-rain :id ::g
               :ref ::c
               :durs (periods 2
                              #_[1 2 1 8]
-                             [1 2 1 8]
+                             [1 2 1 8])
 
-                             )
               :loop? true
               :on-event
               (on-event (let [notes   (wrap-at index melody)
@@ -122,5 +112,4 @@
                            (last notes)
                            :amp 0.03
                            :atk 0.1
-                           :dcy (+ 1 (* 3 dur)))))))
-  )
+                           :dcy (+ 1 (* 3 dur))))))))

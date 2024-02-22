@@ -60,7 +60,7 @@
   (def scale (:scale (neji/make 12 23)))
   (def scale (:scale (edo/from-pattern (repeat 31 1))))
   (midi-mpe/deg->mpe-note scale 200 (- 54 60))
-  (-> scale #_(nth 1) )
+  (-> scale #_(nth 1))
   (-> scale (nth 3) :bounded-ratio (* 200) sini)
   (osc/midi-event :note-on println)
   (defn get-note [midi-note]

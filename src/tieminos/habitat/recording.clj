@@ -219,8 +219,8 @@
   [buf-key section subsection input-name]
   (swap! bufs update buf-key
          assoc :rec/meta {:section section
-                                :subsection subsection
-                                :input-name input-name}))
+                          :subsection subsection
+                          :input-name input-name}))
 
 #_:clj-kondo/ignore
 (comment

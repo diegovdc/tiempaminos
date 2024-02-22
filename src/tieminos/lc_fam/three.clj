@@ -32,7 +32,6 @@
   (let [ratio (/ seconds (apply + durs))]
     (mapv #(* ratio %) durs)))
 
-
 (defsynth field [sample 1
                  freq 300
                  dur 5
@@ -44,7 +43,7 @@
   (o/out 0 (-> (* (play-buf 2 sample rate :start-pos start-pos)
                   (sin-osc freq :mul 0.3))
                (* amp
-                  #_(lf-tri (* mod* ) :mul 0.001)
+                  #_(lf-tri (* mod*) :mul 0.001)
                   (env-gen (envelope [0 1 0.5 0.5 0] [2 0.1 dur 2]) :action o/FREE))
                (pan2 (lf-noise1 (lf-noise1 (range-lin (lf-noise1 2) 0.1 2)))))))
 
@@ -72,8 +71,7 @@
                mix
                (pan2 (lf-noise1 0.2)))))
 
-(def hex (hexarhythm #{1 5 3} [1 2 2] 0 [1 1 1 1/2] ))
-
+(def hex (hexarhythm #{1 5 3} [1 2 2] 0 [1 1 1 1/2]))
 
 (comment
   (o/stop)
@@ -97,8 +95,8 @@
                               :scale
                               (#(cps/filter-scale % (wrap-at index
                                                              [#{1 7}
-                                                             #_ #{1 19 17}
-                                                             #_ #{13 51 19}]))))
+                                                              #_#{1 19 17}
+                                                              #_#{13 51 19}]))))
                    deg (- (rand 40) 10)
                    freq* (scale/deg->freq scale 1 deg)
                    freq (scale/deg->freq scale 300 deg)
@@ -113,5 +111,4 @@
                           :rate (/ freq* 2)
                           :start-pos (* 44100 (rand (:duration desert-at-night))))
                  1 (sin* freq freq* dur (rand 0.05))
-                 nil))))
-  )
+                 nil)))))

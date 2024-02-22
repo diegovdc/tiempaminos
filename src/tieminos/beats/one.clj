@@ -14,7 +14,7 @@
        (cps/bound-ratio 4)
        (cps/maps->data :bounded-ratio)
        :scale
-       #_ (#(cps/filter-scale % #{7}))))
+       #_(#(cps/filter-scale % #{7}))))
 
 (do
   (defn hexarhythm
@@ -35,15 +35,13 @@
           (map-indexed #(* %2 (wrap-at %1 mults))))))
   #_(println (hexarhythm #{1 3 5 7} [0 2 2 1 2 0 1] 4 [1])))
 
-
-
 (def melo (scale/stateful-interval->degree 0))
 (scale/deg->freq scale 60 (melo (rand-nth [1 -2])))
 
 (-> scale)
 
 (defn m
-  ([index intervals ] (m index intervals 30))
+  ([index intervals] (m index intervals 30))
   ([index intervals bound]
    (scale/deg->freq scale 100
                     (mod (melo (wrap-at index intervals)) bound))))
@@ -137,8 +135,8 @@
   (def reverbs
     (->> (range 10)
          (mapv (fn [_] (let [bus (audio-bus)]
-                        {:fx (reverb [:tail later-g] :in bus)
-                         :bus bus})))))
+                         {:fx (reverb [:tail later-g] :in bus)
+                          :bus bus})))))
   (->> snares (map (juxt :id :name)) #_(filter #(-> % second (str/includes? "CONGA"))) println)
   (->> hh (map (juxt :id :name)) #_(filter #(-> % second (str/includes? "CONGA"))) println)
   (ref-rain :id ::b
@@ -200,7 +198,7 @@
                (case (wrap-at index [0 0 0 1])
                  0 (sin* [:tail early-g] f f2 f3
                          :amp (+ 0.1 (rand 0.03))
-                       :atk 0.1 :dcy 0.3 :out rv-bus)
+                         :atk 0.1 :dcy 0.3 :out rv-bus)
                  1 (lo [:tail early-g] f2 f f3
                        :amp (+ 0.05)
                        :atk atk :dcy dcy :out rv-bus)

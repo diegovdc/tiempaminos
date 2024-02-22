@@ -17,9 +17,9 @@
 ;; common tones
 (let [all-cps (set (vals cps))]
   (map
-    (fn [[k hex-name]]
-      [k (filter #(all-cps (:name %)) (get dorian-hex-connections hex-name))])
-    cps))
+   (fn [[k hex-name]]
+     [k (filter #(all-cps (:name %)) (get dorian-hex-connections hex-name))])
+   cps))
 
 (def all-harmonies-data
   (let [used-degrees (-> dorian-hexanies-in-polydori-by-name
@@ -35,8 +35,8 @@
 
 (comment
   (draw-lattice
-    {:width 1200
-     :ratios (->> all-harmonies-data
-                  :ratios)
-     :text-type :factors})
+   {:width 1200
+    :ratios (->> all-harmonies-data
+                 :ratios)
+    :text-type :factors})
   :rcf)

@@ -5,11 +5,9 @@
    [overtone.libs.counters :refer [next-id]]
    [time-time.dynacan.players.gen-poly :as gp :refer [on-event ref-rain]]))
 
-
 ;; Create synths dynamically that can have different arities for envelopes and other parameters inputed as vectors etc.
 ;;
 ;; This may just be hack, but it seems to work, it doesn't even create new synths AFAIK
-
 
 (defmacro synthdef
   [name params body]

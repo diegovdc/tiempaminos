@@ -9,8 +9,6 @@
             [time-time.standard :refer [wrap-at]]
             [clojure.set :as set]))
 
-
-
 (do
   (defn period [seconds durs]
     (let [ratio (/ seconds (apply + durs))]
@@ -19,7 +17,6 @@
   (defn periods [seconds & durs]
     (mapcat (partial period seconds) durs))
   (periods 1 [1] [1]))
-
 
 (do
   (o/defsynth h1 [freq 400
@@ -82,8 +79,7 @@
   ([gens scale] (chord gens false scale))
   ([gens sub-harmonic? scale]
    (filter #(-> % :set (set/intersection gens)
-                ((if sub-harmonic? empty? not-empty))
-                ) scale)))
+                ((if sub-harmonic? empty? not-empty))) scale)))
 
 (comment
   (let [scale**
@@ -128,8 +124,6 @@
      (map :set)
      cps/cps-intervals)
 
-
-
 (comment
   (gp/stop)
 
@@ -161,30 +155,29 @@
                           [#{:b} [0 1 2 3 6 10]]
                           [#{:d} [0 1 2 3 7]]
                           [#{:a :d} [0 1 2 3]]])
-        #_ #_harmonies2 (mapv (partial gen-chord scale*)
-                              [[#{:a} [0]]
-                               [#{:a} [-1]]
-                               [#{:b} [1]]
-                               [#{:a} [2]]
-                               [#{:b} [3]]
-                               [#{:a} [8]]
-                               [#{:b} [9]]
-                               [#{:b} [10]]
-                               [#{:b} [11]]
-                               [#{:c} [10]]
-                               [#{:d} [0]]
-                               [#{:c} [1]]
-                               [#{:c} [2]]
-                               [#{:c} [3]]
-                               [#{:d} [2]]
-                               [#{:d} [3]]
-                               [#{:d} [1]]])]
+        #_#_harmonies2 (mapv (partial gen-chord scale*)
+                             [[#{:a} [0]]
+                              [#{:a} [-1]]
+                              [#{:b} [1]]
+                              [#{:a} [2]]
+                              [#{:b} [3]]
+                              [#{:a} [8]]
+                              [#{:b} [9]]
+                              [#{:b} [10]]
+                              [#{:b} [11]]
+                              [#{:c} [10]]
+                              [#{:d} [0]]
+                              [#{:c} [1]]
+                              [#{:c} [2]]
+                              [#{:c} [3]]
+                              [#{:d} [2]]
+                              [#{:d} [3]]
+                              [#{:d} [1]]])]
 
     (ref-rain :id ::b
               :durs (periods 2.7
                              [3 1 2 1 1 1 2 1/2 1/2 1 2]
-                             [1 3 2 1 1 1 2 1 2 1]
-                             )
+                             [1 3 2 1 1 1 2 1 2 1])
               :on-event (on-event
                          (case (wrap-at index [0 1 1])
                            0 (mapv h1 (wrap-at index harmonies))

@@ -74,8 +74,8 @@
                      :else (inc (quot (max 0 (- new-deg 127)) scale-size)))
           note (- new-deg (* chan scale-size))]
       (println {:new-deg new-deg
-       :note note
-       :chan chan})
+                :note note
+                :chan chan})
       {:new-deg new-deg
        :note note
        :chan chan}))
@@ -98,19 +98,19 @@
          offset 0
          base-midi-chan 0}}]
   (algo-note
-    (merge {:sink sink
-            :dur dur
-            :vel vel
-            :tempo tempo
-            :offset offset}
-           (midi-mapper scale-size
-                        base-midi-deg
-                        base-midi-chan
-                        (if-not (seq subscale)
-                          deg
-                          (map-subscale-degs scale-size
-                                             subscale
-                                             deg))))))
+   (merge {:sink sink
+           :dur dur
+           :vel vel
+           :tempo tempo
+           :offset offset}
+          (midi-mapper scale-size
+                       base-midi-deg
+                       base-midi-chan
+                       (if-not (seq subscale)
+                         deg
+                         (map-subscale-degs scale-size
+                                            subscale
+                                            deg))))))
 
 (comment
   (require '[time-time.dynacan.players.gen-poly :as gp])

@@ -8,7 +8,7 @@
     (o/out out (* 0.2 (o/sin-osc freq))))
 
   (o/defsynth revy [bus 0]
-    (o/replace-out bus [(* (o/sin-osc 2) (o/in bus)) ]))
+    (o/replace-out bus [(* (o/sin-osc 2) (o/in bus))]))
 
   (o/defsynth o0 [bus 0]
     (o/out 0 (o/in bus)))
@@ -22,5 +22,4 @@
 
   (o/demo (*  (o/sin-osc 300) (o/sin-osc 2)))
 
-  (o/stop)
-  )
+  (o/stop))

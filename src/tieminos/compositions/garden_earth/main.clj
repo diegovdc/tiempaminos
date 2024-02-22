@@ -29,8 +29,8 @@
 
   "
   [[60 #(do #_(reaper/rec)
-            (claro :set* #{11 7} :moments [:oscuro] :id :claro
-                   :vel-amp 1 :offset 3))]
+         (claro :set* #{11 7} :moments [:oscuro] :id :claro
+                :vel-amp 1 :offset 3))]
    [10 #(claro :set* #{11 7} :moments [:oscuro] :id :claro
                :vel-amp 1 :offset 2)]
    [8 #(claro :set* #{9 7} :moments [:oscuro] :id :claro
@@ -79,8 +79,7 @@
               :durs [10000 5000])]
    [10 #(do (stop :claro) (timbre/info "Ends Claro"))]
 
-
-   ;; opacar un poco más el sinte, seguir lo que esta en la segunda grabación de la prueba
+;; opacar un poco más el sinte, seguir lo que esta en la segunda grabación de la prueba
    ;; con granular hacer algunos juegos grabando la flauta
    ;; con synthdefs hacer algunos juegos paneándola
    ;; más variaciones de misterioso, donde se juege más con el registro y la densidad (menores densidades sobre todo... con el ataque -variación del sinte- estaría muy bien también)
@@ -88,7 +87,6 @@
    ;; faltan/quiero algunas notas agudas en la flauta, buscarlas
    ;; desarrollar diagrama de flujo de la señal de la flauta
    ;;    y a la par definir qué efectos quiero generar con ella
-
 
    [40 #(misterioso :id :misterioso)]
    #_[20 #(do (oscuro/sets-3-11-and-3-5 :moments [:claro] :vel-amp 1)

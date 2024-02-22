@@ -19,10 +19,8 @@
   (osc-debug false)
 
   (ndef/ndef ::trigy
-      (* 0.1 (o/sin-osc 100))
-      #_(o/poll:ar (o/impulse 10) (abs (lfo 1 -1 1))))
-
-
+             (* 0.1 (o/sin-osc 100))
+             #_(o/poll:ar (o/impulse 10) (abs (lfo 1 -1 1))))
 
   (o/on-event "/tr"
               (fn [data] (println data))
@@ -37,5 +35,5 @@
   (init!)
   (-> percussion-processes-main-out)
   (open-inputs-with-rand-pan
-    {:inputs inputs
-     :preouts preouts}))
+   {:inputs inputs
+    :preouts preouts}))

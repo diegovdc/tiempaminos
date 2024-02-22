@@ -20,12 +20,11 @@
 
 (comment
   (cps-utils/harmonic-triad-degrees
-    (second (nth (->> hexanies
-                      (into [])
-                      (sort-by first))
-                 @current-key-index))
-    0)
-  )
+   (second (nth (->> hexanies
+                     (into [])
+                     (sort-by first))
+                @current-key-index))
+   0))
 
 (comment
 
@@ -48,14 +47,13 @@
     #_(swap! current-key-index inc)
     (update-state cs-tool scale [])
 
-
     (when oxygen
       (midi-in-event
-        :midi-input oxygen
-        :note-on (fn [ev]
-                   (harmonic :freq (deg->freq scale
-                                              112
-                                              (- (:note ev) 40))
-                             :a (linexp* 0 127 4 0.5 (:velocity ev))
-                             :r 3
-                             :amp (linexp* 0 127 0.3 2 (:velocity ev))))))))
+       :midi-input oxygen
+       :note-on (fn [ev]
+                  (harmonic :freq (deg->freq scale
+                                             112
+                                             (- (:note ev) 40))
+                            :a (linexp* 0 127 4 0.5 (:velocity ev))
+                            :r 3
+                            :amp (linexp* 0 127 0.3 2 (:velocity ev))))))))

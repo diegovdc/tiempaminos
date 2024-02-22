@@ -56,23 +56,23 @@
   (o/stop)
 
   (def lattice-data (draw-lattice
-                      {:ratios (into #{} (map period-reduce (map second note-mappings)))}))
+                     {:ratios (into #{} (map period-reduce (map second note-mappings)))}))
 
   (def oxygen (get-oxygen!))
 
   (when oxygen
     (midi-in-event
-      :midi-input oxygen
-      :note-on (fn [ev]
-                 (if-let [ratio (note-mappings (:note ev))]
-                   (do
-                     (swap! lattice-data update :played-notes conj (period-reduce ratio))
-                     (harmonic (* root ratio) :amp (linexp* 0 127 0.5 3 (:velocity ev))))
-                   (timbre/error "Note not mapped" (:note ev))))
-      :note-off (fn [ev]
-                  (when (note-mappings (:note ev))
-                    (let [ratio (period-reduce (note-mappings (:note ev)))]
-                      (swap! lattice-data update :played-notes #(->> %
-                                                                     (remove (fn [r] (= r ratio)))
-                                                                     (into #{})))
-                      nil))))))
+     :midi-input oxygen
+     :note-on (fn [ev]
+                (if-let [ratio (note-mappings (:note ev))]
+                  (do
+                    (swap! lattice-data update :played-notes conj (period-reduce ratio))
+                    (harmonic (* root ratio) :amp (linexp* 0 127 0.5 3 (:velocity ev))))
+                  (timbre/error "Note not mapped" (:note ev))))
+     :note-off (fn [ev]
+                 (when (note-mappings (:note ev))
+                   (let [ratio (period-reduce (note-mappings (:note ev)))]
+                     (swap! lattice-data update :played-notes #(->> %
+                                                                    (remove (fn [r] (= r ratio)))
+                                                                    (into #{})))
+                     nil))))))

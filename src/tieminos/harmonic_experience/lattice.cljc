@@ -4,7 +4,6 @@
    [erv.lattice.v2 :refer [base-coords ratios->lattice-data]]
    [quil.core :as q]))
 
-
 (defn draw [text-type width height lattice-data]
   (fn []
     (let [{:keys [data edges min-x max-x min-y max-y period played-notes]
@@ -71,7 +70,6 @@
                            (str "/" denom-factors*)))
                     (str ratio)))
                 (+ (:x coords) 2) (- (:y coords) 0.4))))))
-
 
 (defn draw-lattice
   [{:keys [ratios width height text-type]

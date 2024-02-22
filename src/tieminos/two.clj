@@ -15,7 +15,7 @@
        (cps/bound-ratio 4)
        (cps/maps->data :bounded-ratio)
        :scale
-       #_ (#(cps/filter-scale % #{7}))))
+       #_(#(cps/filter-scale % #{7}))))
 
 (o/defsynth sip [freq 400 amp 0.5 pulse 1]
   (o/out 0 (o/pan2 (-> (o/mix [(o/sin-osc freq)
@@ -28,20 +28,14 @@
   (note-on (fn [n]
              (println "deg" (:note n) (:velocity n))
              (sip (scale/deg->freq scale 200 (+ 5 (:note n)))
-                  :amp (+ 1 (* 2 (/ (:velocity n) 127) ))))))
-
-
-
-
-
+                  :amp (+ 1 (* 2 (/ (:velocity n) 127)))))))
 
 (+ 1 1)
-
 
 (def melo (scale/stateful-interval->degree 0))
 
 (defn m
-  ([index intervals ] (m index intervals 30))
+  ([index intervals] (m index intervals 30))
   ([index intervals bound]
    (scale/deg->freq scale 100
                     (mod (melo (wrap-at index intervals)) bound))))
@@ -76,7 +70,7 @@
             :ref ::aa
             :durs [1/4 1/4 1/5]
             :ratio 1/6
-            :on-event (on-event (do (sipy (m index [1 2 -1 -1 1] )
+            :on-event (on-event (do (sipy (m index [1 2 -1 -1 1])
                                           :amp 0.5
                                           :pulse 5))))
   (ref-rain :id ::ee
@@ -95,11 +89,10 @@
                                   #_(case (wrap-at index [0 1 1 0 1 1])
                                       0 (sip (m index [1 -2 5 7 7 1 1 1 1 1] 70)
                                              :pulse (* 2 (r index)))
-                                      1  (sip2 (m index [1  -5 1 1 1 ] 35)
+                                      1  (sip2 (m index [1  -5 1 1 1] 35)
                                                (m index [1  5 -10  20] 35)
                                                :pulse (* 2 (r index)))
                                       nil))))
-
 
   (ref-rain :id ::aaa
             ::ref ::ee
@@ -112,7 +105,7 @@
                                        :amp (wrap-at 1 [0.5 0.3]))
                                1 (perc (ps 3)
                                        :rate (r (wrap-at index [1 7 5]))
-                                       :amp (wrap-at 1 [0.5 0.3 ]))
+                                       :amp (wrap-at 1 [0.5 0.3]))
                                2 (perc (ps 20)
                                        :rate (r (wrap-at index [1 7]))
                                        :amp (wrap-at 1 [0.5]))
@@ -132,7 +125,6 @@
                                      (perc (ps 13)
                                            :rate (r (wrap-at index [1 5 8]))
                                            :amp (wrap-at 1 [0.2])))
-                               nil ))))
+                               nil))))
 
-  (o/stop)
-  )
+  (o/stop))

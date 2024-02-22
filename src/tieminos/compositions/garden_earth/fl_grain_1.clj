@@ -34,12 +34,12 @@
        :on-event (on-event
                   (let [root (weighted {0 70  1 30})
                         intervals (weighted {[1] 1 [2 4] 1 [3] 1} #_{[1 10] 20
-                                             [3] 10
-                                             [4] 10
-                                             [-7] 10
-                                             [2 5] 30
+                                                                     [3] 10
+                                                                     [4] 10
+                                                                     [-7] 10
+                                                                     [2 5] 30
 
-                                             [-8] 50})
+                                                                     [-8] 50})
                         start (min 0 (rand 0.5))
                         end (min 1 (+ start (rand 1)))
                         dur* (max 0.05 (rand (weighted {10 70
@@ -60,7 +60,7 @@
                                :min-amp 0.8
                                :amp-lfo 0.01
                                :start 0 #_start
-                               :end 1 #_ end
+                               :end 1 #_end
                                :mix 1
                                :room 3
                                :damp 0.8
@@ -92,11 +92,7 @@
                :msg ""
                :on-end replay))))
 
-
-
-
 (comment
   (tuning-monitor
    (-> eik-notes (get "C+20") :bounded-ratio (* 440))
-   25 25
-   ))
+   25 25))

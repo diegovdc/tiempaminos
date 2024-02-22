@@ -111,7 +111,6 @@
                  {:synths @synths
                   :killed-synths @killed-synths})))))
 
-
     (testing "Can add a synth on the same note"
       (is (= {:synths {5 [{:i-am-synth 1} {:i-am-synth 3}]
                        6 [{:i-am-synth 2}]}

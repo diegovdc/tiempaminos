@@ -21,5 +21,4 @@
                                 :cs? false}
  "2)5 of 4)7 7.15-1.3.9.19.21" {:size 9
                                 :removed-notes [256/171]
-                                :cs? false}
- }
+                                :cs? false}}

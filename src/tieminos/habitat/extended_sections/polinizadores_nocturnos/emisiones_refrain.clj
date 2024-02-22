@@ -83,23 +83,23 @@
     (doseq [[k {:keys [bus]}] (select-keys @inputs [:guitar :mic-1 :mic-2 :mic-5 :mic-7])]
       (let [refrain-id (main-refrain-id-fn (name k))]
         (make-wave-emisions-refrain
-          {:refrain-id refrain-id
-           :refrain-durs (repeat total-waves wave-dur)
-           :wave-dur dur*
-           :multiplier-refrain-id-fn (fn [index]
-                                       (keyword "noche" (format "polinizadores-emision-de-señal-wave-multiplier-%s%s" (name k) index)))
-           :input bus
-           :texto-sonoro-input @texto-sonoro-rand-mixer-bus
-           :main-out (get-process-instrument-return k)
-           :multiplier-out multiplier-out
+         {:refrain-id refrain-id
+          :refrain-durs (repeat total-waves wave-dur)
+          :wave-dur dur*
+          :multiplier-refrain-id-fn (fn [index]
+                                      (keyword "noche" (format "polinizadores-emision-de-señal-wave-multiplier-%s%s" (name k) index)))
+          :input bus
+          :texto-sonoro-input @texto-sonoro-rand-mixer-bus
+          :main-out (get-process-instrument-return k)
+          :multiplier-out multiplier-out
            ;; To prevent creating too many emisions, we just use the `:guitar` ones, but because they all use the `multiplier-out`,
            ;; in theory it will contain the output of all the waves from all the inputs
-           :emision-refrain-configs (if (= k :guitar) emision-refrain-configs [])
-           :make-fuente-flor-señal-synth-params (fn [_]
-                                                  {:amp 0.6
-                                                   :conv-amp 1
-                                                   :amp-limit 0.6})
-           :assoc-refrain-to-context assoc-refrain-to-context
-           :context context
-           :call-delay wave-emission-call-delay})
+          :emision-refrain-configs (if (= k :guitar) emision-refrain-configs [])
+          :make-fuente-flor-señal-synth-params (fn [_]
+                                                 {:amp 0.6
+                                                  :conv-amp 1
+                                                  :amp-limit 0.6})
+          :assoc-refrain-to-context assoc-refrain-to-context
+          :context context
+          :call-delay wave-emission-call-delay})
         (assoc-refrain-to-context context [refrain-id])))))

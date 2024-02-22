@@ -31,11 +31,9 @@
 (comment
   (gen-chord (:scale (cps/make 2 [1 3 5 7]))
              200
-             [[1 3] [2 3 4]])
-  )
+             [[1 3] [2 3 4]]))
 
 ;; Range mapping https://github.com/supercollider/supercollider/blob/18c4aad363c49f29e866f884f5ac5bd35969d828/lang/LangSource/MiscInlineMath.h
-
 
 (defn linexp
   "Maps a value from a linear range to an exponential range"
