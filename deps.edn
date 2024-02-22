@@ -26,4 +26,8 @@
         thi.ng/color {:mvn/version "1.4.0"}
         ;; another interesting possibility, may offer other options
         ;; com.dean/interval-tree {:mvn/version  "0.1.2"}
-        }}
+        }
+ :aliases {:cljfmt {:deps {dev.weavejester/cljfmt {:git/tag "0.11.2",
+                                                   :git/sha "fb26b22f569724b05c93eb2502592dfc2de898c3",
+                                                   :git/url "https://github.com/weavejester/cljfmt.git"}}
+                    :ns-default cljfmt.tool}}}
