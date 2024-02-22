@@ -73,8 +73,6 @@
                 (+ (:x coords) 2) (- (:y coords) 0.4))))))
 
 
-
-
 (defn draw-lattice
   [{:keys [ratios width height text-type]
     :or {width 800
@@ -95,3 +93,10 @@
       :draw (#'draw (atom text-type) width height lattice-data)
       :size [width height])
     lattice-data))
+
+(defn update-ratios!
+  [lattice-data-atom new-ratios]
+  (swap! lattice-data-atom
+         merge
+         (ratios->lattice-data base-coords
+                               new-ratios)))
