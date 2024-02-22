@@ -15,14 +15,11 @@
    [tieminos.habitat.parts.noche :as noche]
    [tieminos.habitat.recording :as rec :refer [norm-amp]]
    [tieminos.habitat.routing
-    :refer [guitar-processes-main-out
-            inputs
-            percussion-processes-main-out
+    :refer [guitar-processes-main-out inputs percussion-processes-main-out
             preouts]]
-   [tieminos.habitat.scratch.sample-rec2
-    :refer [rising-upwards start-rec-loop!]]
    [tieminos.habitat.utils :refer [open-inputs-with-rand-pan]]
    [tieminos.overtone-extensions :as oe]
+   [tieminos.sc-utils.ndef.v1 :as ndef]
    [tieminos.sc-utils.synths.v1 :refer [lfo]]
    [tieminos.utils :refer [rrange]]
    [time-time.dynacan.players.gen-poly :as gp :refer [on-event ref-rain]]
@@ -88,8 +85,8 @@
         dur (/ (:duration buf) rate)
         amp   (* (rrand 0.01 0.25) (let [amp-norm (:amp-norm-mult buf)]
                                    ;; TODO check and improve
-                                   (cond (> amp-norm 5) (/ amp-norm 2)
-                                         :else amp-norm)))]
+                                     (cond (> amp-norm 5) (/ amp-norm 2)
+                                           :else amp-norm)))]
     (-> (sample-player* {:buf buf
                          :dur dur
                          :rate rate
@@ -104,87 +101,98 @@
   (defn start-layers-refrain!
     [bus-name-str]
     (ref-rain
-      :id (keyword "layers" bus-name-str)
-      :durs (map (fn [_] (rrand 3.0 8))
-                 (range 100))
-      :on-event (on-event
-                  (when-let [bufs (seq (->> @rec/bufs
-                                           vals
-                                           (filter #(and (-> % :rec/meta
-                                                             ((juxt :input-name :section :subsection))
-                                                             (= [bus-name-str "polinizadores-nocturnos" "layer"]))))))]
-                    (play-layer! (rand-nth bufs)))))))
-
-(->> @rec/bufs vals (map :rec/meta))
-
-(defn polinizadores-nocturnos*
-  [context]
-  (polinizadores-nocturnos context)
-
-  (subsequencer
-    :sequencer/polinizadores-nocturnos
-    context
-    (let [scale-1 (->> (cps/make 3 [9 13 15 21 27 31]) :scale)
-          make-sample-player-config (fn [scale]
-                                      {:buf-fn (fn [_] (-> @rec/bufs vals rand-nth))
-                                       :period-dur 20
-                                       :total-durs 20
-                                       :loop? true
-                                       :refrain-id :rising-upwards-loop
-                                       :synth-params (fn [{:keys [buf i]}]
-                                                       {:amp (* (rrange 0.2 1) (norm-amp buf))
-                                                        :rate (scale/deg->freq scale 1 (+ (mod i 43)))})})]
-      [[[52 22] (fn [_]
-                  (start-rec-loop!)
-                  (start-layers-refrain! "guitar-bus")
-                  (start-layers-refrain! "mic-1-bus")
-                  (start-layers-refrain! "mic-2-bus")
-                  (start-layers-refrain! "mic-3-bus"))]
-       #_[[53 0] (fn [_] (rising-upwards (make-sample-player-config scale-1)))]
-       [[55 0] (fn [_] #_(rising-upwards (-> (make-sample-player-config scale-1)
-                                           (assoc :period-dur 4))))]
-       [[55 10] (fn [_]
-                  #_(gp/stop :rising-upwards-loop)
-                  #_(reset! rec/bufs {}))]
-       [[57 0] (fn [_] #_(rising-upwards (make-sample-player-config scale-1)))]
-       [[59 0] (fn [_] #_(reset! rec/bufs {}))]
-       [[60 0] (fn [_] #_(rising-upwards (-> (make-sample-player-config scale-1)
-                                           (assoc :period-dur 4))))]
-       [[60 10] (fn [_] #_(rising-upwards (make-sample-player-config scale-1)))]
-       [[61 0] (fn [_]
-                 #_(reset! rec/bufs {})
-                 #_(rising-upwards (-> (make-sample-player-config scale-1)
-                                     (assoc :period-dur 4))))]
-       [[62 10] (fn [_]
-                  (gp/stop :rec-loop)
-                  (gp/stop ::layers)
-                 ( gp/stop :rising-upwards-loop))]])))
-
-(def polinizadores-nocturnos-main
-  ;; TODO revisar refrains de emision hay cosas raras (aumentos de volumen y saturación del servidor)
-  {:context (merge main/context {})
-   :sections [[[52 22] #'polinizadores-nocturnos*]
-              [[62 10] (fn [_] (println "end"))]]
-   :initial-sections #'polinizadores-nocturnos*
-   ;; :rec? true
-   })
+     :id (keyword "layers" bus-name-str)
+     :durs (map (fn [_] (rrand 3.0 8))
+                (range 100))
+     :on-event (on-event
+                (when-let [bufs (seq (->> @rec/bufs
+                                          vals
+                                          (filter #(and (-> % :rec/meta
+                                                            ((juxt :input-name :section :subsection))
+                                                            (= [bus-name-str "polinizadores-nocturnos" "layer"]))))))]
+                  (play-layer! (rand-nth bufs)))))))
 
 (comment
-  (reset! rec/recording? {})
-  (reset! rec/bufs {})
-  (main/start-sequencer! polinizadores-nocturnos-main)
-  (-> @hseq/context)
+  ;; Older version, tied to a sequencer
 
-  (timbre/set-level! :info)
+  (defn polinizadores-nocturnos*
+    [context]
+    (noche/polinizadores-nocturnos context))
+
+  (def polinizadores-nocturnos-main
+    ;; TODO revisar refrains de emision hay cosas raras (aumentos de volumen y saturación del servidor)
+    {:context (merge main/context {})
+     :sections [[[52 22] #'polinizadores-nocturnos*]
+                [[62 10] (fn [_] (println "end"))]]
+     :initial-sections #'polinizadores-nocturnos*
+     ;; :rec? true
+     })
+
+  (main/start-sequencer! polinizadores-nocturnos-main))
+
+(comment
+  (let [input-ks [:guitar :mic-1 :mic-2 :mic-3]
+        selected-inputs (select-keys @inputs input-ks)
+        pan-freq 0.2 ;; 2 works well
+        ]
+    (ndef/ndef
+     ::flor-base
+     (->> selected-inputs
+          (map (fn  [[k input]]
+                 (let [input-bus (:bus input)
+                       convolver-input (if (= k :guitar)
+                                         (->> input-ks (remove :guitar) (map (comp o/in :bus selected-inputs)) o/mix)
+                                         (-> selected-inputs :guitar :bus o/in))
+                       main-synth (-> (oe/circle-az :num-channels 4
+                                                    :in (o/in input-bus)
+                                                    :pos (lfo pan-freq -1 1)
+                                                    :width (lfo 0.2 1 4)
+                                                    :orientation 0)
+                                      (o/free-verb (lfo 0.2 0.2 1)
+                                                   (lfo 0.2 0.5 1)))
+                       convolver-synth (-> (o/convolution main-synth
+                                                             ;; TODO test amps
+                                                          (+ (o/delay-n (o/mix main-synth) 0.01 0.01)
+                                                             (* 0.7 (o/delay-n (o/mix main-synth) 0.02 0.02))
+                                                             (* 1.5 convolver-input))
+                                                          (/ 4096 2))
+                                           (o/hpf 300)
+                                           (o/free-verb 0.5 0.2)
+                                           (* 2 (lfo 2 0.5 1)))
+                       full-synth (-> (+ convolver-synth
+                                         main-synth
+                                         #_(o/free-verb main-synth
+                                                        (lfo 2 0.2 1)
+                                                        (lfo 2 0.5 3)))
+                                      (* 2)
+                                      (o/limiter 0.8 0.05))]
+                   full-synth)))
+          o/mix)))
+  :flor-ndef)
+
+(comment
+  ;; New version independent of sequencer
+  (polinizadores-nocturnos
+    (atom (assoc main/context
+                 :dur-s 60
+                 :polinizadores-nocturnos/wave-emission-call-delay 500)))
+  )
+
+(comment
+
+
+  (timbre/set-level! :debug)
   (do (when @habitat-initialized?
         (reset! rec/recording? {})
         (reset! rec/bufs {})
         (main/stop-sequencer! hseq/context))
       (init!))
-
+  
+  
   (start-layer-recording! :guitar)
   (gp/stop)
-  ;; only for testing
+
+
   (open-inputs-with-rand-pan
     {:inputs inputs
      :preouts preouts})

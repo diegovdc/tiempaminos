@@ -217,12 +217,12 @@
   (timbre/info "async-seq-call channels stoppped"))
 
 (defn sequence-call
-  "Prevent function calls from happening to close together.
+  "Prevent function calls from happening too close together.
   This is useful for example when calling the SC server with synthdefs that might saturate it if too close together and while things are playing."
   [timeout f]
   (if-let [chan (:seq-call-chan @async-channels)]
     (a/>!! chan {:f f :timeout timeout})
-    (timbre/error "`init-async-seq-call-loop!' has not been called"
+    (timbre/error "`init-async-seq-call-loop!` has not been called"
                   {:async-channels async-channels})))
 
 (comment

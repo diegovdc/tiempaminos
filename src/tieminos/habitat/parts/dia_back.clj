@@ -295,8 +295,9 @@
            input texto-sonoro-input main-out multiplier-out
            emision-refrain-configs
            make-fuente-flor-señal-synth-params
-           assoc-refrain-to-context context]
-    :or {make-fuente-flor-señal-synth-params (fn [_] {})}}]
+           assoc-refrain-to-context context call-delay]
+    :or {make-fuente-flor-señal-synth-params (fn [_] {})
+         call-delay 5000}}]
   (ref-rain
    :id refrain-id
    :durs refrain-durs
@@ -318,7 +319,7 @@
                                              :emision-refrain-configs emision-refrain-configs
                                              :dur wave-dur})
                                            (assoc-refrain-to-context context [multiplier-refrain-id]))]
-                (sequence-call 5000 emissions-refrain-fn)))))
+                (sequence-call call-delay emissions-refrain-fn)))))
 
 (defn dueto-con-polinizadores=pt1-emisión-de-señal-intercambio-de-energía
   "Comienza Diego.
