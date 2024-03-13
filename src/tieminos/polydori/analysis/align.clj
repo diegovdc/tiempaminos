@@ -22,14 +22,13 @@
   [ratios]
   (map (fn [r] [r (conv/ratio->cents r)]) ratios))
 
-(comment
-  (def rooted-hexanies
+(def rooted-hexanies
     (->> dorian-hexanies-in-polydori
          (filter (comp #{"diat2v2"
                          "diat3v2"
                          "diat5v2"
                          "diat4v2"
-                         "diat6v2"}
+                         "diat6v3"}
                        :name))
          (map (juxt :name
                     (comp
@@ -38,7 +37,10 @@
                      get-bounded-ratio
                      sort
                      :degrees)))))
-  (-> rooted-hexanies)
+
+(comment
+
+  (-> rooted-hexanies )
   (->> rooted-hexanies
        (mapcat second)
        set
