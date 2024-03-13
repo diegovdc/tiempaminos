@@ -39,13 +39,38 @@
                                         scale))
                                       degree)))
 
+
+(def sort-freq->chan-map
+  (memoize (fn [freq->chan-map]
+             (->> freq->chan-map
+                  (map first)
+                  (cons -1)
+                  sort
+                  (partition 2 1))) ))
+
+(defn freq->out
+  "The key of the `freq->chan-map` is the top freq limit.
+  All frequencies at or below this will go to the specified channel.
+  For the highest limit, all frequencies above it will also go to the same channel."
+  [freq->chan-map freq]
+  (let [sorted-list (sort-freq->chan-map freq->chan-map)]
+    (reduce
+      (fn [chan [lower higher]]
+        (if (< lower freq (inc higher))
+          (reduced (freq->chan-map higher))
+          chan))
+      (freq->chan-map (second (last sorted-list)))
+      sorted-list)))
+
+(def mfreq->out (memoize freq->out))
+
 (defn diat->polydori-degree
   [scale degree]
   (map-subscale-degs (count (:scale polydori-v2))
                      (:degrees
                       (nth
-                       dorian-hexanies-in-polydori
-                       scale))
+                        dorian-hexanies-in-polydori
+                        scale))
                      degree))
 
 (o/defsynth low
