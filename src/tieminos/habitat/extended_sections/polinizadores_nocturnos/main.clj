@@ -139,7 +139,8 @@
         (->> selected-inputs
              (map (fn  [[k input]]
                     (let [input-bus (:bus input)
-                          convolver-input (if (= k :guitar)
+                          guitar? (= k :guitar)
+                          convolver-input (if guitar?
                                             (->> input-ks (remove :guitar) (map (comp o/in :bus selected-inputs)) o/mix)
                                             (-> selected-inputs :guitar :bus o/in))
                           main-synth (-> (oe/circle-az :num-channels 4
@@ -151,7 +152,7 @@
                                                       (lfo 0.2 0.5 1)))
                           convolver-synth (-> (o/convolution main-synth
                                                              ;; TODO test amps
-                                                             (+ (o/delay-n (o/mix main-synth) 0.01 0.01)
+                                                             (+ (* (if guitar? 0 1) (o/delay-n (o/mix main-synth) 0.01 0.01))
                                                                 (* 0.7 (o/delay-n (o/mix main-synth) 0.02 0.02))
                                                                 (* 1.5 convolver-input))
                                                              (/ 4096 2))
@@ -163,7 +164,7 @@
                                             (o/free-verb main-synth
                                                          (lfo 2 0.2 1)
                                                          (lfo 2 0.5 3)))
-                                         (* 3)
+                                         (* (if guitar? 2 3))
                                          (o/limiter 0.8 0.05))]
                       full-synth)))
              o/mix)
@@ -178,7 +179,7 @@
                 :polinizadores-nocturnos/wave-emission-call-delay 500))))
 
 (comment
-
+  (o/demo (* 0.2 (o/sin-osc)))
   (timbre/set-level! :debug)
   (do (when @habitat-initialized?
         (reset! rec/recording? {})
