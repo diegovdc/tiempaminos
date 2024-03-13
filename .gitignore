@@ -23,6 +23,7 @@ recordings/*
 !recordings/.gitkeep
 !recordings/code
 samples/habitat_samples/test*
+samples/freesound/
 resources/*.wav
 .cider-repl-history
 # use (overtone.linter/emit!) to regenerate the configuration
