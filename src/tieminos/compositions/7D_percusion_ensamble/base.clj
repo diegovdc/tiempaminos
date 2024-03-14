@@ -24,7 +24,7 @@
   (* 2/3 (conv/midi->cps 62)))
 
 (defn bh
-  "Blackhole outs (starts on chan 3)"
+  "Blackhole outs (starts on chan 3 of Blackhole)"
   [out]
   (+ 22 out))
 
@@ -35,27 +35,33 @@
                       :base-midi-deg 60
                       :base-midi-chan 0}
                      config)))
+
 #_{:clj-kondo/ignore [:deprecated-var]}
-(def scales-list-map {:original dorian-hexanies-in-polydori
+(def subscales-list-map {:original dorian-hexanies-in-polydori
                       :sorted dorian-hexanies-in-polydori-1
                       :modal dorian-hexanies-in-polydori-2})
 
+(defn diat->polydori-degree
+  ([scale degree] (diat->polydori-degree scale degree :original))
+  ([scale degree & [type]]
+   (let [scales-list* (subscales-list-map type)
+         scales-list (or scales-list* (subscales-list-map :original))]
+     (when-not scales-list*
+       (timbre/error (format "Non-existent `type`: %s. Using `:original` instead." type)))
+     (map-subscale-degs (count (:scale polydori-v2))
+                        (:degrees
+                         (nth scales-list scale))
+                        degree))))
+
 (defn deg->freq
-  "NOTE: scale is a index to `scales-list`. `type` is the key of `scales-list-map`."
+  "NOTE: scale is an index to `scales-list`. `type` is the key of `scales-list-map`."
   [& {:keys [base-freq scale degree type]
       :or {base-freq root
            type :original}
       :as config}]
-  (let [scales-list* (scales-list-map type)
-        scales-list (or scales-list* (scales-list-map :original))]
-    (when-not scales-list*
-      (timbre/error (format "Non-existent `type`: %s. Using `:original` instead." type)))
-    (scale/deg->freq (:scale polydori-v2)
-                     base-freq
-                     (map-subscale-degs (count (:scale polydori-v2))
-                                        (:degrees
-                                         (nth scales-list scale))
-                                        degree))))
+  (scale/deg->freq (:scale polydori-v2)
+                   base-freq
+                   (diat->polydori-degree scale degree type)))
 
 (def sort-freq->chan-map
   (memoize (fn [freq->chan-map]
@@ -80,15 +86,6 @@
      sorted-list)))
 
 (def mfreq->out (memoize freq->out))
-
-(defn diat->polydori-degree
-  [scale degree]
-  (map-subscale-degs (count (:scale polydori-v2))
-                     (:degrees
-                      (nth
-                       dorian-hexanies-in-polydori
-                       scale))
-                     degree))
 
 (o/defsynth low
   [freq 85
