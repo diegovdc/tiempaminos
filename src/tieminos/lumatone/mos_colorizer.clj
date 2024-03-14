@@ -199,3 +199,25 @@
        make-ltn
        (spit "/Users/diego/Music/diego/lumatone/31-ET-oneirotonic-test3.ltn")))
 
+
+
+(comment
+  (def parsed-ltn
+    (parse-ltn (slurp "/Users/diego/Music/diego/lumatone/5_gen-11_kb4-9_template.ltn")))
+  (-> parsed-ltn)
+
+  (let [template-path "/Users/diego/Music/diego/lumatone/11_gen-5_kb2-5_template.ltn"]
+    (->> template-path
+
+      slurp
+      parse-ltn
+      (update-key-colors (partial color-fn2
+                                  (mos-degs-rings-with-gradient
+                                    (grad/cosine-schemes :green-magenta)
+                                    (->> (mos/make 11 5)
+                                         (drop 2)
+                                         (drop-last 1)))
+                                  0))
+      make-ltn
+      (spit (str/replace template-path #"_template" ""))))
+  )

@@ -12,15 +12,15 @@
 
 (deftest board-keys-test
   (testing "All 56 keys in the board are present"
-    (is (= (range 1 57) (sort (keys (board-keys 0))))))
+    (is (= (range 0 56) (sort (keys (board-keys 0))))))
   (testing "All coords are unique"
     (is (= 56 (count (set (vals (board-keys 0)))))))
   (testing "Boards' first keys"
-    (is (= [0 10] ((board-keys 0) 1)))
-    (is (= [5 8] ((board-keys 1) 1)))
-    (is (= [10 6] ((board-keys 2) 1)))
-    (is (= [15 4] ((board-keys 3) 1)))
-    (is (= [20 2] ((board-keys 4) 1)))))
+    (is (= [1 10] ((board-keys 0) 1)))
+    (is (= [6 8] ((board-keys 1) 1)))
+    (is (= [11 6] ((board-keys 2) 1)))
+    (is (= [16 4] ((board-keys 3) 1)))
+    (is (= [21 2] ((board-keys 4) 1)))))
 
 (deftest coord->board-key-test
   (testing "There are as many coords as keys on the lumatone"
