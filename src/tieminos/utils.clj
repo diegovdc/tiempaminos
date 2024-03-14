@@ -23,8 +23,9 @@
 (defn periods [seconds & durs]
   (mapcat (partial period seconds) durs))
 
-(defn gen-chord [scale fundamental [gens degs]]
+(defn gen-chord
   "Get a set of frequencies by passing in a cps scale, a fundamental and a vector with generators and degrees"
+  [scale fundamental [gens degs]]
   (let [scale** (->> scale (#(cps/filter-scale % gens)))]
     (map (partial scale/deg->freq scale** fundamental) degs)))
 
