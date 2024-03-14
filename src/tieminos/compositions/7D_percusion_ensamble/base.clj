@@ -19,7 +19,6 @@
 (def sink (midi/midi-out "VirMIDI"))
 (def iac2 (get-iac2!))
 
-
 (def root
   "195.7765119449384"
   (* 2/3 (conv/midi->cps 62)))
@@ -64,7 +63,7 @@
                   (map first)
                   (cons -1)
                   sort
-                  (partition 2 1))) ))
+                  (partition 2 1)))))
 
 (defn freq->out
   "The key of the `freq->chan-map` is the top freq limit.
@@ -73,12 +72,12 @@
   [freq->chan-map freq]
   (let [sorted-list (sort-freq->chan-map freq->chan-map)]
     (reduce
-      (fn [chan [lower higher]]
-        (if (< lower freq (inc higher))
-          (reduced (freq->chan-map higher))
-          chan))
-      (freq->chan-map (second (last sorted-list)))
-      sorted-list)))
+     (fn [chan [lower higher]]
+       (if (< lower freq (inc higher))
+         (reduced (freq->chan-map higher))
+         chan))
+     (freq->chan-map (second (last sorted-list)))
+     sorted-list)))
 
 (def mfreq->out (memoize freq->out))
 
@@ -87,8 +86,8 @@
   (map-subscale-degs (count (:scale polydori-v2))
                      (:degrees
                       (nth
-                        dorian-hexanies-in-polydori
-                        scale))
+                       dorian-hexanies-in-polydori
+                       scale))
                      degree))
 
 (o/defsynth low

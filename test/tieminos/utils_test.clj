@@ -38,25 +38,25 @@
   (testing "Resulting degrees are properly ordered"
     (is (true? (apply >
                       (mapv
-                        #(map-subscale-degs 29
-                                            [4 7 12 16 22 23]
-                                            %)
-                        (range 60 -60 -1)))))
+                       #(map-subscale-degs 29
+                                           [4 7 12 16 22 23]
+                                           %)
+                       (range 60 -60 -1)))))
     (is (true? (apply >
                       (mapv
-                        #(map-subscale-degs 29
-                                            [-4 7 12 16 22 23]
-                                            %)
-                        (range 60 -60 -1)))))
+                       #(map-subscale-degs 29
+                                           [-4 7 12 16 22 23]
+                                           %)
+                       (range 60 -60 -1)))))
     (is (true? (apply <
                       (mapv
-                        #(map-subscale-degs 29
-                                            [4 7 12 16 22 23]
-                                            %)
-                        (range -60 60 1)))))
+                       #(map-subscale-degs 29
+                                           [4 7 12 16 22 23]
+                                           %)
+                       (range -60 60 1)))))
     (is (true? (apply <
                       (mapv
-                        #(map-subscale-degs 29
-                                            [-4 7 12 16 22 23]
-                                            %)
-                        (range -60 60 1)))))))
+                       #(map-subscale-degs 29
+                                           [-4 7 12 16 22 23]
+                                           %)
+                       (range -60 60 1)))))))

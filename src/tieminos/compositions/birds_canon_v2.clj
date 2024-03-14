@@ -29,7 +29,7 @@
                 :sin-freq (* 240 (weighted {8 2
                                             4 1}))
                 :sin-amp (weighted {0 3
-                                    #_ #_(rrange 0.01 0.1) 4})
+                                    #_#_(rrange 0.01 0.1) 4})
                 :degs  (map (fn [_] (rrand -24 12))
                             (range (weighted {1 10
                                                ;; 2 1
@@ -142,7 +142,6 @@
     "https://freesound.org/people/arnaud%20coutancier/sounds/467096/"
     (o/load-sample "samples/freesound/413976__adrienpola__oropendolas-and-arrendajos-at-the-chagra-behind-nainekulodge-amazon.wav"))
 
-
   (def voice-offsets [0 1 -2 -4 -5 -7 -9 -10])
 
   (do
@@ -156,13 +155,13 @@
     (def canon
       (let [sample         birds-symphony
             max-sample-pos (-> sample :n-samples (* 0.9) int)]
-        (std! durs [1 9/8 3/2 10/4 7/4 11/4 14/11 #_ #_ #_17/11 17/10 17/8]
+        (std! durs [1 9/8 3/2 10/4 7/4 11/4 14/11 #_#_#_17/11 17/10 17/8]
               (int (* 0.618 (count durs)))
               (fn [data]
                 (on-event
-                  max-sample-pos
-                  sample
-                  panners
-                  voice-offsets
-                  data))
+                 max-sample-pos
+                 sample
+                 panners
+                 voice-offsets
+                 data))
               :loop? false)))))

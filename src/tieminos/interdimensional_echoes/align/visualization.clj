@@ -119,10 +119,10 @@
   (reaper/init)
   (let [size 125]
     (def lattice-atom (draw-lattice
-                        {:ratios (into #{} (concat rooted-hexanies-scale
-                                                   guitarrish-polydori-ratios))
-                         :width (* 16 size)
-                         :height (* 9 size)})))
+                       {:ratios (into #{} (concat rooted-hexanies-scale
+                                                  guitarrish-polydori-ratios))
+                        :width (* 16 size)
+                        :height (* 9 size)})))
 
   (-> @lattice-atom)
   (erv.utils.core/factors 57)
@@ -133,31 +133,31 @@
   (reaper/stop)
 
   (midi-in-event
-    {:midi-input iac2
-     :note-on (fn [{:keys [note channel]}]
-                (let [[hex-name color] (case channel
-                                         0 ["diat6v3" [160, 21, 64]]
-                                         1 ["diat4v2" [27, 162, 24]]
-                                         2 ["diat3v2" [51, 62, 212]]
-                                         3 ["diat5v2" [253, 1, 0]]
-                                         4 ["diat2v2" [247, 105, 21]]
-                                         5 ["diat2v2" [238, 222, 4]]
-                                         nil)]
-                  (if (= 6 channel) ;; guitarrish, uses polydori
-                    (do
-                      (println "PDN" note)
-                      (add-ratio lattice-atom polydori-deg->ratio polydori-degs note channel [25 215 153]))
-                    (add-ratio lattice-atom (rooted-hexanies-name->deg->ratio hex-name) hex-degs note channel color))))
-     :note-off (fn [{:keys [note channel]}]
-                 (let [hex-name (case channel
-                                  0 "diat6v3"
-                                  1 "diat4v2"
-                                  2 "diat3v2"
-                                  3 "diat5v2"
-                                  4 "diat2v2"
-                                  5 "diat2v2"
-                                  nil)]
-                   (if hex-name
-                     (remove-ratio lattice-atom (rooted-hexanies-name->deg->ratio hex-name) hex-degs note channel)
-                     (remove-ratio lattice-atom polydori-deg->ratio polydori-degs note channel))))
-     :auto-ctl false}))
+   {:midi-input iac2
+    :note-on (fn [{:keys [note channel]}]
+               (let [[hex-name color] (case channel
+                                        0 ["diat6v3" [160, 21, 64]]
+                                        1 ["diat4v2" [27, 162, 24]]
+                                        2 ["diat3v2" [51, 62, 212]]
+                                        3 ["diat5v2" [253, 1, 0]]
+                                        4 ["diat2v2" [247, 105, 21]]
+                                        5 ["diat2v2" [238, 222, 4]]
+                                        nil)]
+                 (if (= 6 channel) ;; guitarrish, uses polydori
+                   (do
+                     (println "PDN" note)
+                     (add-ratio lattice-atom polydori-deg->ratio polydori-degs note channel [25 215 153]))
+                   (add-ratio lattice-atom (rooted-hexanies-name->deg->ratio hex-name) hex-degs note channel color))))
+    :note-off (fn [{:keys [note channel]}]
+                (let [hex-name (case channel
+                                 0 "diat6v3"
+                                 1 "diat4v2"
+                                 2 "diat3v2"
+                                 3 "diat5v2"
+                                 4 "diat2v2"
+                                 5 "diat2v2"
+                                 nil)]
+                  (if hex-name
+                    (remove-ratio lattice-atom (rooted-hexanies-name->deg->ratio hex-name) hex-degs note channel)
+                    (remove-ratio lattice-atom polydori-deg->ratio polydori-degs note channel))))
+    :auto-ctl false}))

@@ -191,13 +191,13 @@
       (when (> (rand) 0.4)
         (play-sample {:out mixed-main-out})
         (ps-ringz {:group (groups/mid)
-                 :in in
-                 :ps1 3/2
-                 :ps2 (* (rand-nth [1 8/7 11/8 7/4]) (rand-nth [1/4 11/32 4/11 13/32]))
-                 :rz-freq (* (rand-nth [200 250 300])
-                             (rand-nth [1 2 3 4 #_5]))
-                 :amp @ps-ringz-amp
-                 :out percussion-processes-main-out}))))
+                   :in in
+                   :ps1 3/2
+                   :ps2 (* (rand-nth [1 8/7 11/8 7/4]) (rand-nth [1/4 11/32 4/11 13/32]))
+                   :rz-freq (* (rand-nth [200 250 300])
+                               (rand-nth [1 2 3 4 #_5]))
+                   :amp @ps-ringz-amp
+                   :out percussion-processes-main-out}))))
 
   (do
     (def mic-1-ampt (reg-amp-trigger {:in (-> @inputs :mic-1 :bus)

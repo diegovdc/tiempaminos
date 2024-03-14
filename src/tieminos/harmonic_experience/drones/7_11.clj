@@ -1,51 +1,82 @@
 (ns tieminos.harmonic-experience.drones.7-11
   "Experiment with ratios related to 7 and 11"
   (:require
-   [erv.scale.core :as scale]
-   [erv.utils.conversions :refer [midi->cps ratio->cents]]
+   [erv.constant-structures.graphics :refer [init-cs-tool! update-state]]
+   [erv.utils.conversions :refer [midi->cps]]
    [erv.utils.core :refer [period-reduce]]
+   [erv.utils.ratios :refer [ratios->scale]]
    [overtone.core :as o]
-   [tieminos.harmonic-experience.drones.sounds :refer [drone drone2 harmonic sine]]
-   [tieminos.harmonic-experience.lattice :refer [draw-lattice]]
-   [tieminos.math.utils :refer [linexp*]]
-   [tieminos.midi.core :refer [get-oxygen! midi-in-event]]
+   [tieminos.harmonic-experience.drones.sounds :refer [drone drone2 harmonic]]
+   [tieminos.lattice.v1.lattice :refer [add-played-ratio draw-lattice remove-played-ratio]]
+   [tieminos.midi.core :refer [get-lumatone! midi-in-event]]
    [tieminos.utils :refer [wrap-at]]))
 
 (def root (midi->cps 45))
-(do
-  (def note-mappings (->> [1
-                           7/4
-                           11/8
-                           11/7
-                           8/7
-                           14/11
-                           16/11
-                           49/32
-                           121/64
-                           77/64
-                           128/77
-                           128/121]
-                          set
-                          (map period-reduce)
-                          sort))
-  (->> note-mappings)
 
-  (ratio->cents 77/64)
-  #_(update-ratios! lattice-data
-                    (into #{} (map period-reduce
-                                   note-mappings))))
+(def scale-11-tones (ratios->scale [1
 
-128/121
-8/7
-77/64
-14/11
-11/8
-16/11
-49/32
-11/7
-128/77
-7/4
-121/64
+                                    7
+                                    11
+
+                                    1/7
+                                    1/11
+
+                                    11/7
+                                    7/11
+
+                                    (* 7 11)
+                                    (/ 1 (* 7 11))
+
+                                    (* 11 11)
+                                    (/ 1 (* 11 11))]))
+(comment
+  (-> scale-11-tones)
+  (update-state cs-tool
+                scale-11-tones
+                [])
+  (update-ratios! lattice-data
+                  (map :bounded-ratio scale-11-tones)))
+
+(def scale-15-tones (ratios->scale [1
+
+                                    7
+                                    11
+
+                                    11/7
+                                    7/11
+
+                                    1/7
+                                    1/11
+
+                                    (* 7 11)
+                                    (/ 1 (* 7 11))
+
+                                    (* 11 11)
+                                    (/ 1 (* 11 11))
+
+                                    (* 7 7 7)
+                                    (/ 1 (* 7 7 7))
+                                    (* 7 7 7 11)
+                                    (/ 1 (* 7 7 7 11))]))
+
+(def note-mappings (map :bounded-ratio scale-11-tones))
+
+(comment
+  (update-ratios! lattice-data
+                  (map :bounded-ratio scale-11-tones))
+
+  (def cs-tool (init-cs-tool! (ratios->scale note-mappings) []))
+  (update-state cs-tool
+                scale-11-tones
+
+                (->> [#_(* 1/7 11/7)
+                      #_(* 1/7 1/7)]
+                     ratios->scale
+                     (map :bounded-ratio))))
+
+(def deg->ratio (into {} (map-indexed
+                          (fn [i {:keys [bounded-ratio]}] [i bounded-ratio])
+                          scale-11-tones)))
 
 (comment
   (def sa (drone root))
@@ -61,26 +92,29 @@
   (o/ctl h :gate 0)
   (o/stop)
 
-  (def lattice-data (draw-lattice
+  (def lattice-atom (draw-lattice
                      {:ratios (into #{} (map period-reduce
                                              note-mappings))}))
 
-  (def oxygen (get-oxygen!))
+  (def oxygen #_(get-oxygen!)
+    (get-lumatone!))
 
   (when oxygen
-    (let [scale (map (fn [r] {:bounded-ratio r :bounding-period 2}) note-mappings)]
-      (midi-in-event
-       :midi-input oxygen
-       :note-on (fn [ev]
-                  (let [ratio (wrap-at (:note ev) note-mappings)
-                        deg (- (:note ev) 49)
-                        freq (scale/deg->freq scale root deg)]
+    (midi-in-event
+     :midi-input oxygen
+     :note-on (fn [{:keys [note channel]}]
+                (let [deg (deg->ratio (- note 45))]
 
-                    (swap! lattice-data update :played-notes conj ratio)
-                    (harmonic freq :amp (linexp* 0 127 0.5 3 (:velocity ev)))))
-       :note-off (fn [ev]
-                   (let [ratio (period-reduce (wrap-at (:note ev) note-mappings))]
-                     (swap! lattice-data update :played-notes #(->> %
-                                                                    (remove (fn [r] (= r ratio)))
-                                                                    (into #{})))
-                     nil))))))
+                  (add-played-ratio lattice-atom
+                                    {:ratio deg
+                                     :group-id channel
+                                     :color [25 215 153]})
+                  #_(harmonic freq :amp (linexp* 0 127 0.5 3 (:velocity ev)))))
+     :note-off (fn [{:keys [note channel]}]
+                 (let [deg (deg->ratio (- note 45))]
+                   (remove-played-ratio lattice-atom
+                                        {:ratio deg
+                                         :group-id channel
+                                         :color [25 215 153]})
+
+                   nil)))))

@@ -34,18 +34,18 @@
                         (range -60 60)))))
   (testing "`:original` and  `:modal` play the same notes as `:sorted`, but perhaps not inn the same order (depending on the `scale-index`). The `frequencies` of every note is 3 (disregarding the octave) as it is played once in each `:type`."
     (is (every?
-          #(= % [3 3 3 3 3 3])
-          (->> (range (count dorian-hexanies-in-polydori-2))
-               (map
-                 (fn [scale-index]
-                   (->> (range 6)
-                        (mapcat (fn [degree]
-                                  (let [o (deg->freq :base-freq 1 :scale scale-index :degree degree
-                                                     :type :original)
-                                        m (deg->freq :base-freq 1 :scale scale-index :degree degree
-                                                     :type :modal)
-                                        s (deg->freq :base-freq 1 :scale scale-index :degree degree
-                                                     :type :sorted)]
-                                    (map period-reduce [o m s]))))
-                        (frequencies)
-                        vals))))))))
+         #(= % [3 3 3 3 3 3])
+         (->> (range (count dorian-hexanies-in-polydori-2))
+              (map
+               (fn [scale-index]
+                 (->> (range 6)
+                      (mapcat (fn [degree]
+                                (let [o (deg->freq :base-freq 1 :scale scale-index :degree degree
+                                                   :type :original)
+                                      m (deg->freq :base-freq 1 :scale scale-index :degree degree
+                                                   :type :modal)
+                                      s (deg->freq :base-freq 1 :scale scale-index :degree degree
+                                                   :type :sorted)]
+                                  (map period-reduce [o m s]))))
+                      (frequencies)
+                      vals))))))))

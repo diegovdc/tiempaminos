@@ -28,7 +28,6 @@
     (q/translate (- (/ (+ max-x min-x) 2))
                  (- (/ (+ max-y min-y) 2)))
 
-
     (q/fill 255)
     (q/stroke-weight 0.2)
     (doseq [edge edges]
@@ -87,24 +86,22 @@
 
 (comment
   (def lattice-atom (draw-lattice
-                      {:ratios (into #{} [1 3/2 5/4])}))
-
+                     {:ratios (into #{} [1 3/2 5/4])}))
 
   (add-played-ratio lattice-atom {:ratio 1 :group-id 0 :color [200 0 0]})
   (remove-played-ratio lattice-atom {:ratio 1 :group-id 1})
-  (add-played-ratio lattice-atom {:ratio 1 :group-id 1 :color [0 200 0]})
-  )
+  (add-played-ratio lattice-atom {:ratio 1 :group-id 1 :color [0 200 0]}))
 
 (defn add-played-ratio*
   [lattice-data {:keys [_group-id ratio _color]
                  :as ratio-data}]
   (update-in
-    lattice-data
-    [:played-notes ratio]
-    (fn [data]
-      (->> ((fnil conj []) data ratio-data)
-           (map-indexed (fn [i ratio-data] (assoc ratio-data :index i)))
-           (into [])))))
+   lattice-data
+   [:played-notes ratio]
+   (fn [data]
+     (->> ((fnil conj []) data ratio-data)
+          (map-indexed (fn [i ratio-data] (assoc ratio-data :index i)))
+          (into [])))))
 
 (defn add-played-ratio
   [lattice-atom {:keys [_group-id _ratio _color]
@@ -121,11 +118,11 @@
   [lattice-data {:keys [group-id ratio]
                  :as _ratio-data}]
   (update-in
-    lattice-data
-    [:played-notes ratio]
-    (fn [data]  (->> data
-                     (remove-first #(= (:group-id %) group-id))
-                     (map-indexed (fn [i ratio-data] (assoc ratio-data :index i)))))))
+   lattice-data
+   [:played-notes ratio]
+   (fn [data]  (->> data
+                    (remove-first #(= (:group-id %) group-id))
+                    (map-indexed (fn [i ratio-data] (assoc ratio-data :index i)))))))
 
 (defn remove-played-ratio
   [lattice-atom {:keys [_group-id _ratio]

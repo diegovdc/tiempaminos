@@ -95,11 +95,10 @@
           (range)
           dorian-hexanies))
 
-
 (def dorian-hexanies-in-polydori-1
   #_{:clj-kondo/ignore [:deprecated-var]}
   (->> dorian-hexanies-in-polydori
-       (map #(update % :degrees sort))) )
+       (map #(update % :degrees sort))))
 
 (defn- modal-sort
   "Will respell the `degrees` by keeping the lowest note in place, and the higher notes (coming before it)
@@ -111,15 +110,14 @@
   (let [min-deg (apply min degrees)
         down-degs (take-while #(> % min-deg) degrees)
         kept-degs (drop-while #(> % min-deg) degrees)]
-    (concat (map #(- % scale-size) down-degs) kept-degs))
-  )
+    (concat (map #(- % scale-size) down-degs) kept-degs)))
 
 (def dorian-hexanies-in-polydori-2
   #_{:clj-kondo/ignore [:deprecated-var]}
   (->> dorian-hexanies-in-polydori
        (map #(update % :degrees
                      (fn [degrees] (modal-sort (count (:scale polydori-v2))
-                                               degrees))))) )
+                                               degrees))))))
 
 (def dorian-hexanies-in-polydori-by-name
   (reduce (fn [m hx] (assoc m (:name hx) hx))

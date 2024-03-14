@@ -74,8 +74,8 @@
                      :else (inc (quot (max 0 (- new-deg 127)) scale-size)))
           note (- new-deg (* chan scale-size))]
       #_(println {:new-deg new-deg
-                :note note
-                :chan chan})
+                  :note note
+                  :chan chan})
       {:new-deg new-deg
        :note note
        :chan chan}))

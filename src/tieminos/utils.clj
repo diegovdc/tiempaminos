@@ -108,7 +108,6 @@
   [hz]
   (/ 1000 hz))
 
-
 (defn map-subscale-degs
   "Use `scale-size` and `subscale-degs` to calculate a degree
   from the subscale in the parent scale to allow for playing with the degrees in different periods.
