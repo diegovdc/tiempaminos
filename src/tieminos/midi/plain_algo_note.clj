@@ -67,13 +67,13 @@
   The `base-midi-deg` must be a midi note that correspondes to the first degree of the provided scale.
   The `base-midi-chan` is the channel that refers to the given `base-midi-deg`."
     [scale-size base-midi-deg base-midi-chan scale-deg]
-    (println scale-size base-midi-deg base-midi-chan scale-deg)
+    #_(println scale-size base-midi-deg base-midi-chan scale-deg)
 
     (let [new-deg  (+ base-midi-deg scale-deg)
           chan (cond (neg? (- new-deg 127)) 0
                      :else (inc (quot (max 0 (- new-deg 127)) scale-size)))
           note (- new-deg (* chan scale-size))]
-      (println {:new-deg new-deg
+      #_(println {:new-deg new-deg
                 :note note
                 :chan chan})
       {:new-deg new-deg
