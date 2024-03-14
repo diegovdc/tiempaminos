@@ -30,4 +30,9 @@
  :aliases {:cljfmt {:deps {dev.weavejester/cljfmt {:git/tag "0.11.2",
                                                    :git/sha "fb26b22f569724b05c93eb2502592dfc2de898c3",
                                                    :git/url "https://github.com/weavejester/cljfmt.git"}}
-                    :ns-default cljfmt.tool}}}
+                    :ns-default cljfmt.tool}
+           :test {:extra-paths ["test"]
+                    :extra-deps {io.github.cognitect-labs/test-runner
+                                 {:git/tag "v0.5.1" :git/sha "dfb30dd"}}
+                    :main-opts ["-m" "cognitect.test-runner"]
+                    :exec-fn cognitect.test-runner.api/test}}}
