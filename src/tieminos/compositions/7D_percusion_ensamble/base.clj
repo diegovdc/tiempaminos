@@ -5,6 +5,7 @@
    [overtone.core :as o]
    [overtone.midi :as midi]
    [taoensso.timbre :as timbre]
+   [tieminos.core]
    [tieminos.midi.core :refer [get-iac2!]]
    [tieminos.midi.plain-algo-note :refer [malgo-note]]
    [tieminos.polydori.analysis.dorian-hexanies
@@ -16,7 +17,15 @@
    [time-time.dynacan.players.gen-poly :as gp :refer [ref-rain]]
    [time-time.standard :refer [rrand]]))
 
-(def sink (midi/midi-out "VirMIDI"))
+(comment
+  (midi/midi-devices )
+  (midi/midi-out "VirMIDI")
+  (midi/midi-out "Bus 3")
+  )
+(def surge-suave (midi/midi-out "VirMIDI"))
+(def ssuave surge-suave)
+(def plasmonic-bell (midi/midi-out "Bus 3"))
+(def pbell plasmonic-bell)
 (def iac2 (get-iac2!))
 
 (def root
@@ -29,12 +38,20 @@
   (+ 22 out))
 
 (defn my-malgo
-  [config]
-  (malgo-note (merge {:sink sink
-                      :scale-size 29
-                      :base-midi-deg 60
-                      :base-midi-chan 0}
-                     config)))
+  [{:keys [sinks] :as config}]
+
+  (let [defaults {:sink surge-suave
+                  :scale-size 29
+                  :base-midi-deg 60
+                  :base-midi-chan 0}]
+
+    (if-not (seq sinks)
+      (malgo-note (merge defaults config))
+      (doseq [sink sinks]
+        (malgo-note (-> defaults
+                        (merge config)
+                        (dissoc :sinks)
+                        (assoc :sink sink)))))))
 
 #_{:clj-kondo/ignore [:deprecated-var]}
 (def subscales-list-map {:original dorian-hexanies-in-polydori
@@ -47,7 +64,9 @@
    (let [scales-list* (subscales-list-map type)
          scales-list (or scales-list* (subscales-list-map :original))]
      (when-not scales-list*
-       (timbre/error (format "Non-existent `type`: %s. Using `:original` instead." type)))
+       (timbre/error (ex-info (format "Non-existent `type`: %s. Using `:original` instead.
+If using `mdeg->freq` this may show up only once because it is memoized, even if the unintended value is being used more than once." type)
+                              {:scale scale :degree degree :type type})))
      (map-subscale-degs (count (:scale polydori-v2))
                         (:degrees
                          (nth scales-list scale))
@@ -63,6 +82,8 @@
                    base-freq
                    (diat->polydori-degree scale degree type)))
 
+(def mdeg->freq (memoize deg->freq))
+
 (def sort-freq->chan-map
   (memoize (fn [freq->chan-map]
              (->> freq->chan-map
@@ -71,21 +92,26 @@
                   sort
                   (partition 2 1)))))
 
+(def default-out-map {120 (bh 0)
+                      960 (bh 2)
+                      3840 (bh 4)})
+
 (defn freq->out
   "The key of the `freq->chan-map` is the top freq limit.
   All frequencies at or below this will go to the specified channel.
   For the highest limit, all frequencies above it will also go to the same channel."
-  [freq->chan-map freq]
-  (let [sorted-list (sort-freq->chan-map freq->chan-map)]
-    (reduce
-     (fn [chan [lower higher]]
-       (if (< lower freq (inc higher))
-         (reduced (freq->chan-map higher))
-         chan))
-     (freq->chan-map (second (last sorted-list)))
-     sorted-list)))
+  ([freq] (freq->out default-out-map freq))
+  ([freq->chan-map freq]
+   (let [sorted-list (sort-freq->chan-map freq->chan-map)]
+     (reduce
+       (fn [chan [lower higher]]
+         (if (< lower freq (inc higher))
+           (reduced (freq->chan-map higher))
+           chan))
+       (freq->chan-map (second (last sorted-list)))
+       sorted-list))))
 
-(def mfreq->out (memoize freq->out))
+(def out (memoize freq->out))
 
 (o/defsynth low
   [freq 85
@@ -118,10 +144,12 @@
 (def synths (map #(partial % (groups/early)) [low short-plate]))
 
 (defn init! []
+  (when (o/server-disconnected?)
+      (tieminos.core/connect))
   (groups/init-groups!))
 
 (def mempan
-  (memoize (fn [deg-mod]
+  (memoize (fn [_deg-mod]
              (rrand -1.0 1))))
 
 (defn sub-rain
