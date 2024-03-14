@@ -2,7 +2,7 @@
   (:require
    [clojure.data.generators :refer [weighted]]
    [tieminos.compositions.7D-percusion-ensamble.base
-    :refer [bh deg->freq diat->polydori-degree init! mempan my-malgo sink
+    :refer [bh deg->freq diat->polydori-degree init! mempan my-malgo root sink
             synths]]
    [tieminos.midi.core :refer [all-notes-off]]
    [tieminos.utils :refer [rrange]]
@@ -32,7 +32,7 @@
                 (let [synth (rand-nth synths)
                       deg (degs at-i)]
                   (synth
-                   :freq (deg->freq :base-freq 200 :scale 0 :degree deg)
+                   :freq (deg->freq :base-freq root :scale 0 :degree deg)
                    :mod-freq (rrand 6000 10000)
                    :pan (mempan (mod deg 2))
                    ;; :amp (rrange 0.5 0.8)
@@ -40,7 +40,7 @@
 
                   #_(when (or #_true (#{1 3} (mod (inc index) 5)))
                       (synth
-                       :freq (deg->freq :base-freq 200 :scale 2 :degree deg)
+                       :freq (deg->freq :base-freq root :scale 2 :degree deg)
                        :mod-freq (rrand 6000 10000)
                        :amp (rrange 0.5 0.8)
                        :out (bh 0))))))
@@ -98,7 +98,7 @@
                 (let [synth (rand-nth synths)
                       deg (degs at-i 2)]
                   (synth
-                   :freq (deg->freq :base-freq 200 :scale 0 :degree deg)
+                   :freq (deg->freq :base-freq root :scale 0 :degree deg)
                    :mod-freq (rrand 6000 10000)
                    :pan (mempan (mod deg 2))
                    :amp (rrange 0.5 0.8)
@@ -106,7 +106,7 @@
 
                   (when (or true (#{1 3} (mod (inc index) 5)))
                     (synth
-                     :freq (deg->freq :base-freq 200 :scale 2 :degree deg)
+                     :freq (deg->freq :base-freq root :scale 2 :degree deg)
                      :mod-freq (rrand 6000 10000)
                      :amp (rrange 0.5 0.8)
                      :out (bh 0))))))

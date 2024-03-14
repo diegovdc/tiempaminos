@@ -19,6 +19,11 @@
 (def sink (midi/midi-out "VirMIDI"))
 (def iac2 (get-iac2!))
 
+
+(def root
+  "195.7765119449384"
+  (* 2/3 (conv/midi->cps 62)))
+
 (defn bh
   "Blackhole outs (starts on chan 3)"
   [out]
