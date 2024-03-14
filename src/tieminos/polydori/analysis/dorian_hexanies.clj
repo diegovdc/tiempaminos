@@ -62,8 +62,15 @@
            (map (juxt :euclidean-distance :factors :cents)))
       #_count))
 
-(def dorian-hexanies-in-polydori
-  "A vector of maps each with the hexany `:sets` and the `:degrees` of the notes in `polydori-v2`
+(def ^:deprecated
+  dorian-hexanies-in-polydori
+  "DEPRECATED because `:degrees` are not ordered,
+  however the dissorder does produce certain interesting patterns in the 7D Percussion Ensemble piece,
+  so kept here and not fixed for creative purposes.
+
+  Use:`dorian-hexanies-in-polydori-1` and `dorian-hexanies-in-polydori-2`
+
+  A vector of maps each with the hexany `:sets` and the `:degrees` of the notes in `polydori-v2`
   NOTE: do use `polydori-v2` as it's degrees differ from `polydori`"
   (mapcat (fn [i [_ factors]]
             (let [f-set (set factors)
@@ -88,39 +95,54 @@
           (range)
           dorian-hexanies))
 
+
+(def dorian-hexanies-in-polydori-1
+  #_{:clj-kondo/ignore [:deprecated-var]}
+  (->> dorian-hexanies-in-polydori
+       (map #(update % :degrees sort))) )
+
+(defn- modal-sort
+  "Will respell the `degrees` by keeping the lowest note in place, and the higher notes (coming before it)
+  will be lowered to the octave below.
+
+  NOTE: Assumes a vector of degrees whose range is <= than `scale-size` and
+  which if rotated would produce an ascending sorted vector."
+  [scale-size degrees]
+  (let [min-deg (apply min degrees)
+        down-degs (take-while #(> % min-deg) degrees)
+        kept-degs (drop-while #(> % min-deg) degrees)]
+    (concat (map #(- % scale-size) down-degs) kept-degs))
+  )
+
+(def dorian-hexanies-in-polydori-2
+  #_{:clj-kondo/ignore [:deprecated-var]}
+  (->> dorian-hexanies-in-polydori
+       (map #(update % :degrees
+                     (fn [degrees] (modal-sort (count (:scale polydori-v2))
+                                               degrees))))) )
+
 (def dorian-hexanies-in-polydori-by-name
   (reduce (fn [m hx] (assoc m (:name hx) hx))
           {}
-          dorian-hexanies-in-polydori))
+          dorian-hexanies-in-polydori-2))
 
-(->> dorian-hexanies)
-(->> dorian-hexanies-in-polydori (map (juxt :name (comp sort :degrees))))
-(polydori-set->deg #{1 15 21 9})
-(-> dorian-hexanies-in-polydori
-    (nth 2))
-(-> (:scale polydori-v2)
-    (->> (filter #(-> % :sets (contains? #{1 15 21 9}))))
-    #_(nth 22))
+(comment
+  (->> (cps/make 4 [1 3 9 19 15 21 7])
+       cps/+all-subcps
+       :subcps)
 
-(-> dorian-hexanies)
-
-(:scale (cps/make 4 [1 3 9 19 15 21 7]))
-(->> (cps/make 4 [1 3 9 19 15 21 7])
-     cps/+all-subcps
-     :subcps)
-
-(-> (cps/make 4 [1 3 9 19 15 21 7] :norm-fac 315 #_(* 49/3 513))
-    cps/+all-subcps
-    :subcps
-    ;; keys
-    (select-keys '("2)4 of 4)7 1.15-3.7.19.21"
-                   "2)4 of 4)7 9.15-3.7.19.21"
-                   "2)4 of 4)7 1.9-3.7.19.21"))
-    seq
-    (nth 0)
-    second
-    :scale
-    +cents)
+  (-> (cps/make 4 [1 3 9 19 15 21 7] :norm-fac 315 #_(* 49/3 513))
+      cps/+all-subcps
+      :subcps
+      ;; keys
+      (select-keys '("2)4 of 4)7 1.15-3.7.19.21"
+                     "2)4 of 4)7 9.15-3.7.19.21"
+                     "2)4 of 4)7 1.9-3.7.19.21"))
+      seq
+      (nth 0)
+      second
+      :scale
+      +cents))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; completing dorian modes from hexanies

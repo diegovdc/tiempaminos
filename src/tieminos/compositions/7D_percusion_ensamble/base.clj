@@ -1,16 +1,19 @@
 (ns tieminos.compositions.7D-percusion-ensamble.base
   (:require
    [erv.scale.core :as scale]
+   [erv.utils.conversions :as conv]
    [overtone.core :as o]
    [overtone.midi :as midi]
+   [taoensso.timbre :as timbre]
    [tieminos.midi.core :refer [get-iac2!]]
    [tieminos.midi.plain-algo-note :refer [malgo-note]]
    [tieminos.polydori.analysis.dorian-hexanies
-    :refer [dorian-hexanies-in-polydori]]
+    :refer [dorian-hexanies-in-polydori dorian-hexanies-in-polydori-1
+            dorian-hexanies-in-polydori-2]]
    [tieminos.polydori.scale :refer [polydori-v2]]
    [tieminos.sc-utils.groups.v1 :as groups]
    [tieminos.utils :refer [map-subscale-degs]]
-   [time-time.dynacan.players.gen-poly :as gp :refer [on-event ref-rain]]
+   [time-time.dynacan.players.gen-poly :as gp :refer [ref-rain]]
    [time-time.standard :refer [rrand]]))
 
 (def sink (midi/midi-out "VirMIDI"))
@@ -28,17 +31,27 @@
                       :base-midi-deg 60
                       :base-midi-chan 0}
                      config)))
+#_{:clj-kondo/ignore [:deprecated-var]}
+(def scales-list-map {:original dorian-hexanies-in-polydori
+                      :sorted dorian-hexanies-in-polydori-1
+                      :modal dorian-hexanies-in-polydori-2})
 
-(defn deg->freq [& {:keys [base-freq scale degree]}]
-  (scale/deg->freq (:scale polydori-v2)
-                   base-freq
-                   (map-subscale-degs (count (:scale polydori-v2))
-                                      (:degrees
-                                       (nth
-                                        dorian-hexanies-in-polydori
-                                        scale))
-                                      degree)))
-
+(defn deg->freq
+  "NOTE: scale is a index to `scales-list`. `type` is the key of `scales-list-map`."
+  [& {:keys [base-freq scale degree type]
+      :or {base-freq root
+           type :original}
+      :as config}]
+  (let [scales-list* (scales-list-map type)
+        scales-list (or scales-list* (scales-list-map :original))]
+    (when-not scales-list*
+      (timbre/error (format "Non-existent `type`: %s. Using `:original` instead." type)))
+    (scale/deg->freq (:scale polydori-v2)
+                     base-freq
+                     (map-subscale-degs (count (:scale polydori-v2))
+                                        (:degrees
+                                         (nth scales-list scale))
+                                        degree))))
 
 (def sort-freq->chan-map
   (memoize (fn [freq->chan-map]
