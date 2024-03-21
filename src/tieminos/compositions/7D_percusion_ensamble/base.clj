@@ -92,9 +92,11 @@ If using `mdeg->freq` this may show up only once because it is memoized, even if
                   sort
                   (partition 2 1)))))
 
-(def default-out-map {120 (bh 0)
-                      960 (bh 2)
-                      3840 (bh 4)})
+(def default-out-map {130 (bh 0)
+                      523 (bh 2)
+                      1046 (bh 4)
+                      2092 (bh 6)})
+
 
 (defn freq->out
   "The key of the `freq->chan-map` is the top freq limit.

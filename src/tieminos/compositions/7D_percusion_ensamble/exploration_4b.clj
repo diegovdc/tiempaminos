@@ -3,7 +3,7 @@
   (:require
    [clojure.data.generators :refer [weighted]]
    [tieminos.compositions.7D-percusion-ensamble.base
-    :refer [bh deg->freq diat->polydori-degree init! mempan my-malgo sink synths sub-rain]]
+    :refer [bh deg->freq diat->polydori-degree init! mempan my-malgo surge-suave synths sub-rain]]
    [tieminos.midi.core :refer [all-notes-off]]
    [tieminos.utils :refer [rrange]]
    [time-time.dynacan.players.gen-poly :as gp :refer [on-event ref-rain]]
@@ -12,7 +12,7 @@
 (comment
   (init!)
   (gp/stop)
-  (all-notes-off sink))
+  (all-notes-off surge-suave))
 
 (comment
   :start-section-1
