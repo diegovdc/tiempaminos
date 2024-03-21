@@ -2,8 +2,8 @@
   (:require
    [clojure.data.generators :refer [weighted]]
    [tieminos.compositions.7D-percusion-ensamble.base
-    :refer [deg->freq diat->polydori-degree init! mempan my-malgo out pbell
-            root ssuave surge-suave synths]]
+    :refer [vel deg->freq diat->polydori-degree init! mempan my-malgo out
+            pbell root ssuave surge-suave synths]]
    [tieminos.midi.core :refer [all-notes-off]]
    [tieminos.utils :refer [rrange]]
    [time-time.dynacan.players.gen-poly :as gp :refer [on-event ref-rain]]
@@ -173,6 +173,7 @@
 (comment
   :transition-1
   (gp/stop ::transition-1)
+  ;; on reaper, increase "Reverb deeper" send to about half
   (let [deg* (fn [at-i]
                (+ 12
                   (at-i [0 6])
@@ -183,7 +184,7 @@
                          #_(at-i [4])
                          #_(at-i [6 15 10 6])
                          #_(at-i [3 3 8 9])])))
-        scalew {6 1 9 0 10 0}
+        scalew {6 1 9 2 10 0}
         play? (fn [i]
                 (#{0 #_1 2 #_3 5 #_6 8 #_9 10} (mod i 11))
                 1)
@@ -215,53 +216,110 @@
                      :pan (weighted {(rrange -1 -0.8) 5
                                      (rrange 0.8 1) 5
                                      (rrange -08. 0.8) 1})
-                     :out (out f1))))))))
+                     :out (out f1)))))))
+
+  ;; transition 1 - last state, to play with ::3 (next section)
+  (let [deg* (fn [at-i] (+ 12 (at-i [0 6]) (at-i [#_(at-i [0 5 5]) 2 (at-i [1 -7]) #_(at-i [8 2 8]) #_(at-i [4]) #_(at-i [6 15 10 6]) #_(at-i [3 3 8 9])]))) scalew {6 1 9 2 10 0} play? (fn [i] (#{0 #_1 2 #_3 5 #_6 8 #_9 10} (mod i 11)) 1) amp-range #(rrand 0.01 0.2) atk-range #(rrand 0.01 0.1) dcy #(rrand 0.1 3)] (ref-rain :id ::transition-1 :durs #_[2 1 2 2 2 2 2 2] [3 3 3 3 3 1 11 1 1 3 3 3 11 3 3 3 3] #_[3 3 3 3 11 3 1 11 1 1 3 3 11 3 11 3 3 3 3] #_[1 1 1 1 1 1 1 11 1 1 11 1 1 1 1 1 1] #_[1] :ratio 1/9 :ref ::1 :on-event (on-event (let [synth (rand-nth synths) deg (deg* at-i) scale-1 (weighted scalew) f1 (deg->freq :base-freq 200 :scale scale-1 :degree deg)] (when (play? i) (synth :freq f1 :mod-freq (rrand 6000 10000) :amp (amp-range) :atk (atk-range) :dcy (dcy) :pan (weighted {(rrange -1 -0.8) 5 (rrange 0.8 1) 5 (rrange -08. 0.8) 1}) :out (out f1))))))))
 
 (comment
   :third-section
+  ;; buen momento para echar un solo
+  (let [scale-1 (atom 9)
+        scale-2 (atom 6)
+        scale-1w {0 0 6 4 9 7}
+        scale-2w {2 0 6 4 9 0}
 
-  (ref-rain
-   :id ::3 :durs [3 2 2 3 2 2 3 2 2 3] :ratio 1/9
-   :on-event (on-event
-              (let [synth (rand-nth synths)
-                    deg (at-i [(at-i [0 5])
-                               (at-i [2])
-                               #_(at-i [1 -7])
-                               (at-i [8])
-                               #_(at-i [4 7 5])
-                               #_(at-i [6 15 10 6])
-                               #_(at-i [3 3 8 9])])
-                    scale-1 (weighted {0 0 6 0 9 7})
-                    scale-2 (weighted {2 0 6 4 9 0})
-                    f1 (deg->freq :base-freq 200 :scale scale-1 :degree deg)
-                    f2 (deg->freq :base-freq (at-i [100 50 400]) :scale scale-2 :degree deg)]
-                (when (> (rand) 0.3)
-                  (synth
-                   :freq f1
-                   :mod-freq (rrand 6000 10000)
-                   :amp (rrand 0.1 0.1 #_0.3)
-                      ;; NOTE use attack to make padd
-                      ;; :atk (rrand 0.01 2)
-                   :dcy 3
-                   :out (out f1)))
-                (when (or (#{3 6} (mod index 5)))
-                  (synth
-                   :freq f2
-                   :mod-freq (rrand 6000 10000)
-                   :amp (rrand 0.1 0.1 #_0.7)
-                      ;; :atk (rrand 0.01 5)
-                   :dcy 3
-                   :out f2))
-                #_(when (> (rand) 0.4)
-                    (my-malgo {:deg (diat->polydori-degree scale-1 (+ 0 (at-i [2 3 3 2 3]) (weighted {0 5 4 4 -4 4}) deg)) :dur (weighted {0.1 9 2 5 3 1}) :vel 100}))
-                #_(when (> (rand) 0.4)
-                    (my-malgo {:deg (diat->polydori-degree scale-2 (+ -2 (at-i [2 2 3 2 3]) (weighted {0 5 4 4 -4 4}) deg)) :dur (weighted {0.1 5 1 5 4 2}) :vel 60}))
-                #_(if (> (rand) 0.7)
-                      ;; NOTE keep vel 10 at first
 
-                    (my-malgo {:deg (diat->polydori-degree scale-2 (+ 6 (at-i [2 2 3 2 3]) (weighted {0 5 4 4 -4 4}) deg)) :dur (weighted {0.1 9 1 5}) :vel (at-i [10 30 60])})
-                      ;; FIXME has a -2 midi note
-                    #_(my-malgo {:deg (diat->polydori-degree 1 (+ 7
-                                                                  (at-i [-6 -12 6 0 0 0]) ;; NOTE add later
-                                                                  (weighted {0 5 4 4 -4 4}) deg)) :dur (weighted {0.1 9 1 5 2 5}) :vel (at-i [10 30])}))
-                #_(my-malgo {:base-midi-chan (case deg -7 1 0) :deg deg :dur 0.1 :vel 100})))))
+        ;;
+        pad? true
+        bprob 0.7 ;; 0.3 is good
+        midprob 0.]
+    (ref-rain
+      :id ::3 :durs [3 2 2 3 2 2 3 2 2 3] :ratio 1/9
+      :on-event (on-event
+                  (let [synth (rand-nth synths)
+                        deg (at-i [(at-i [0 5])
+                                   (at-i [2])
+                                   #_(at-i [1 -7])
+                                   (at-i [8])
+                                   (at-i [4 7 5])
+                                   (at-i [6 15 10 6])
+                                   #_(at-i [3 3 8 9])])
+                        f1 (deg->freq :base-freq 200 :scale @scale-1 :degree deg)
+                        f2 (deg->freq :base-freq (at-i [100 50 400]) :scale @scale-2 :degree deg)]
+                    ;; set scales
+                    (reset! scale-1 (weighted scale-1w))
+                    (reset! scale-2 (weighted scale-2w))
+
+                    (when (> (rand) 0.4)
+                      (synth
+                        :freq f1
+                        :mod-freq (rrand 6000 10000)
+                        :amp (rrand 0.05 0.1)
+                        :dcy 3
+                        :out (out f1))
+                      (when pad?
+                        (synth
+                          :freq f1
+                          :mod-freq (rrand 6000 10000)
+                          :amp (rrand 0.1 0.1 #_0.3)
+                          ;; NOTE use attack to make padd
+                          :atk (rrand 0.01 2)
+                          :dcy 3
+                          :out (out f1))))
+                    (when (or (#{3 6} (mod index 5)))
+                      (synth
+                        :freq f2
+                        :mod-freq (rrand 6000 10000)
+                        :amp (rrand 0.1 0.1 #_0.7)
+                        ;; :atk (rrand 0.01 5)
+                        :dcy 3
+                        :out f2))
+
+                    #_(if (> (rand) 0.7)
+                        ;; NOTE keep vel 10 at first
+
+                        (my-malgo {:deg (diat->polydori-degree scale-2 (+ 6 (at-i [2 2 3 2 3]) (weighted {0 5 4 4 -4 4}) deg)) :dur (weighted {0.1 9 1 5}) :vel (at-i [10 30 60])})
+                        ;; FIXME has a -2 midi note
+                        #_(my-malgo {:deg (diat->polydori-degree 1 (+ 7
+                                                                      (at-i [-6 -12 6 0 0 0]) ;; NOTE add later
+                                                                      (weighted {0 5 4 4 -4 4}) deg)) :dur (weighted {0.1 9 1 5 2 5}) :vel (at-i [10 30])}))
+                    #_(my-malgo {:base-midi-chan (case deg -7 1 0) :deg deg :dur 0.1 :vel 100}))))
+    (ref-rain
+      :id ::3-bass
+      :ref ::3
+      ;; TODO send this to it's own sink, a suave-like bass with a bit more distortion or something like that
+      :on-event (on-event
+                  (let [deg (at-i [(at-i [0 5])
+                                   (at-i [2])
+                                   #_(at-i [1 -7])
+                                   (at-i [8])
+                                   (at-i [4 7 5])
+                                   (at-i [6 15 10 6])
+                                   #_(at-i [3 3 8 9])])]
+                    (when (> bprob (rand))
+                      (my-malgo {:deg (diat->polydori-degree @scale-1
+                                                             (+ -8 (at-i [2 3 3 2 3])
+                                                                (weighted {0 5 4 4 -4 4}) deg))
+                                 :dur (weighted {0.1 9 2 5 3 1})
+                                 :vel (vel (* 1.2 (at-i [70 80 85 60 55])))})))))
+    (ref-rain
+      :id ::3-mid
+      :ref ::3
+      :on-event (on-event
+                  (let [deg (at-i [(at-i [0 5])
+                                   (at-i [2])
+                                   #_(at-i [1 -7])
+                                   (at-i [8])
+                                   (at-i [4 7 5])
+                                   (at-i [6 15 10 6])
+                                   (at-i [3 3 8 9])])]
+                    (when (> midprob (rand))
+                      (my-malgo {:deg (diat->polydori-degree
+                                        @scale-2
+                                        (+ (weighted {-2 7 4 1 6 1})
+                                           (at-i [2 2 3 2 3])
+                                           (weighted {0 5 4 4 -4 4})
+                                           deg))
+                                 :dur (weighted {0.1 5 1 5 4 2})
+                                 :vel (vel (* 60 (at-i [1 0.8 0.7 0.6 0.7])))})))))))

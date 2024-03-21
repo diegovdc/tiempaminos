@@ -163,3 +163,12 @@ If using `mdeg->freq` this may show up only once because it is memoized, even if
                      :ratio ratio
                      :on-event on-event}
               ref (assoc :ref ref))))
+
+
+(defn vel
+  "Ensure valid midi velocity"
+  [vel]
+  (-> vel
+      int
+      (min 127)
+      (max 0)))
