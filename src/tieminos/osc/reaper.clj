@@ -16,6 +16,9 @@
 (defn stop [] (osc/osc-send @osc-client "/stop"))
 (defn rec [] (osc/osc-send @osc-client "/record"))
 
+(defn set-vol [track vol]
+  (osc/osc-send @osc-client (format "/track/%s/volume" track) (float vol) ))
+
 (defn basic-insert-marker
   "This is a very simple way to insert markers. It may produce duplicate markers"
   [marker-name]

@@ -152,19 +152,19 @@
                                                    (lfo 0.2 0.5 1)))
                        convolver-synth (-> (o/convolution main-synth
                                                              ;; TODO test amps
-                                                          (+ (* (if guitar? 0 1) (o/delay-n (o/mix main-synth) 0.01 0.01))
+                                                          (+ (* (o/delay-n (o/mix main-synth) 0.01 0.01))
                                                              (* 0.7 (o/delay-n (o/mix main-synth) 0.02 0.02))
                                                              (* 1.5 convolver-input))
                                                           (/ 4096 2))
-                                           (o/hpf 300)
+                                           #_(o/hpf 300)
                                            (o/free-verb 0.5 0.2)
                                            (* 2 (lfo 2 0.5 1)))
                        full-synth (-> (+ convolver-synth
                                          main-synth
                                          (o/free-verb main-synth
                                                       (lfo 2 0.2 1)
-                                                      (lfo 2 0.5 3)))
-                                      (* (if guitar? 2 3))
+                                                      (lfo 2 0.1 0.5)))
+                                      (* (if guitar? 2 8))
                                       (o/limiter 0.8 0.05))]
                    full-synth)))
           o/mix)
