@@ -172,6 +172,54 @@
   :flor-ndef)
 
 (comment
+  (ndef/stop ::flor-suave)
+  ;; Interior de la flor Ndef
+  (let [input-ks [:guitar :mic-1 :mic-2 :mic-3]
+        selected-inputs (select-keys @inputs input-ks)
+        pan-freq 2 ;; 2 works well for the interior, it has a nice beat to it.
+        ]
+    (ndef/ndef
+     ::flor-suave
+     (->> selected-inputs
+          (map (fn  [[k input]]
+                 (let [input-bus (:bus input)
+                       guitar? (= k :guitar)
+                       convolver-input (if guitar?
+                                         (->> input-ks (remove #(= % :guitar)) (map (comp o/in :bus selected-inputs)) o/mix)
+                                         (-> selected-inputs :guitar :bus o/in))
+                       in* (o/in input-bus)
+                       main-synth (* 1.2 (oe/circle-az :num-channels 4
+                                                       :in in*
+                                                       :pos (lfo pan-freq -1 1)
+                                                       :width (lfo 0.2 1 4)
+                                                       :orientation 0))
+                       convolver-synth (-> (o/convolution in*
+                                                          (o/mix [(* (lfo 2 0.3 0.8) (o/delay-n (o/pitch-shift in* 0.2 1/2) 0.01 0.01))
+                                                                  (* (lfo 2 0.3 0.8) (o/delay-n (o/pitch-shift in* 0.2 3/4) 0.03 0.03))
+                                                                  (* (lfo 2 0.3 0.8) (o/delay-n (o/pitch-shift in* 0.2 1/4) 0.02 0.02))
+                                                                  (* 2 convolver-input)])
+                                                          (/ 4096 1/2))
+                                           (#(oe/circle-az :num-channels 4
+                                                           :in %
+                                                           :pos (lfo pan-freq -1 1)
+                                                           :width (lfo 0.2 1 4)
+                                                           :orientation 0))
+                                           #_(o/hpf 300)
+                                           #_(o/free-verb 0.5 0.2)
+                                           (* 2))
+                       full-synth (-> (+ convolver-synth main-synth)
+                                      (o/free-verb
+                                       (lfo 2 0.2 1)
+                                       (lfo 2 0.1 0.5)
+                                       1)
+                                      (* 5 (if guitar? 1.2 1))
+                                      (o/limiter 0.9 0.05))]
+                   full-synth)))
+          o/mix)
+     {:out mixed-main-out}))
+  :flor-ndef)
+
+(comment
   ;; New version independent of sequencer
   (polinizadores-nocturnos
    (atom (assoc main/context
