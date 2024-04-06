@@ -68,9 +68,10 @@
 
 (defn run-rec
   "NOTE: `input-bus` may be `nil`. This will use `o/sound-in` 0"
-  [bufs-atom buf-key seconds input-bus & {:keys [progress-bar?]}]
+  [bufs-atom buf-key seconds input-bus & {:keys [progress-bar? print-info?]
+                                          :or {print-info? true}}]
 
-  (println (format "\nStarting!\n\n%s seconds" seconds))
+  (when print-info? (println (format "\nStarting!\n\n%s seconds" seconds)))
   (let [progress-range "0%                                  100%"
         durs (repeat 40 (/ 1 (count progress-range)))
         progress-bar-fn (when progress-bar?
@@ -98,39 +99,41 @@
 
 (defn start-recording
   "NOTE: `input-bus` may be `nil`. See `run-rec`."
-  [& {:keys [bufs-atom buf-key seconds msg on-end countdown input-bus bpm _progress-bar? on-rec-start]
+  [& {:keys [bufs-atom buf-key seconds msg on-end countdown input-bus bpm _progress-bar? on-rec-start print-info?]
       :or {on-end (fn [_buf-key] nil)
            countdown 3
-           bpm 60}
+           bpm 60
+           print-info? true}
       :as rec-config}]
   (ref-rain
-   :id (keyword "recording" (str "start-recording"
-                                 (name-buf-key buf-key)))
-   :tempo bpm
-   :loop? false
-   :durs (conj (vec (repeat countdown (seconds->dur 1 bpm)))
-               (seconds->dur seconds bpm)
-               1)
-   :on-event (on-event
-              (do
-                (when (zero? index)
-                  (timbre/info (str msg " \n buf-key: " buf-key))
-                  (println "Countdown:"))
+    :id (keyword "recording" (str "start-recording"
+                                  (name-buf-key buf-key)))
+    :tempo bpm
+    :loop? false
+    :durs (conj (vec (repeat countdown (seconds->dur 1 bpm)))
+                (seconds->dur seconds bpm)
+                1)
+    :on-event (on-event
+                (do
+                  (when  (zero? index)
+                    (timbre/info (str msg ": " buf-key))
+                    (when print-info? (println "Countdown:")))
 
-                (cond (> (- countdown index) 0)
-                      (do (print (str (- countdown index) "... "))
+                  (cond (> (- countdown index) 0)
+                        (when print-info?
+                          (print (str (- countdown index) "... "))
                           (flush))
 
-                      (= countdown index)
-                      (do (reset! recording? true)
-                          (run-rec bufs-atom buf-key seconds input-bus rec-config)
-                          (when on-rec-start
-                            (on-rec-start rec-config)))
+                        (= countdown index)
+                        (do (reset! recording? true)
+                            (run-rec bufs-atom buf-key seconds input-bus rec-config)
+                            (when on-rec-start
+                              (on-rec-start rec-config)))
 
-                      :else
-                      (do (println "Done!")
-                          (reset! recording? false)
-                          (on-end buf-key)))))))
+                        :else
+                        (do (when print-info? (println "Done!"))
+                            (reset! recording? false)
+                            (on-end buf-key)))))))
 
 (def default-samples-path
   (str (System/getProperty "user.dir")

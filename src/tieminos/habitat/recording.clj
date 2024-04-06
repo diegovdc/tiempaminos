@@ -19,28 +19,30 @@
   (atom {}))
 
 (defn rec-input
-  [{:keys [section subsection input-name input-bus dur-s on-end msg countdown on-rec-start]
+  [{:keys [section subsection input-name input-bus dur-s on-end msg countdown on-rec-start print-info?]
     :or {on-end (fn [& _args])
          msg "Recording"
-         countdown 0}}]
+         countdown 0
+         print-info? true}}]
   (let [input-kw (-> input-bus :name keyword)]
     (if (get @recording? input-kw)
       (timbre/warn "Input bus already recording: " input-kw)
       (do
         (swap! recording? assoc input-kw true)
         (start-recording
-         :bufs-atom bufs
-         :buf-key (make-buf-key! section subsection input-name)
-         :input-bus input-bus
-         :seconds dur-s
-         :msg msg
-         :on-end (fn [buf-key]
-                   (swap! recording? assoc input-kw false)
-                   (add-analysis dur-s buf-key input-bus)
-                   (add-meta buf-key section subsection input-name)
-                   (on-end buf-key))
-         :countdown countdown
-         :on-rec-start on-rec-start)))))
+          :bufs-atom bufs
+          :buf-key (make-buf-key! section subsection input-name)
+          :input-bus input-bus
+          :seconds dur-s
+          :msg msg
+          :print-info? print-info?
+          :on-end (fn [buf-key]
+                    (swap! recording? assoc input-kw false)
+                    (add-analysis dur-s buf-key input-bus)
+                    (add-meta buf-key section subsection input-name)
+                    (on-end buf-key))
+          :countdown countdown
+          :on-rec-start on-rec-start)))))
 
 (def habitat-samples-path (str (System/getProperty "user.dir")
                                "/samples/habitat_samples/"))

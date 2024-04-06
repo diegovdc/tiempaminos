@@ -38,14 +38,15 @@
                                                 :out bus})}])))
        (into {})))
 
-(defn rec&play [bus dur-s on-end]
-  (rec-input {:section "amanecer"
-              :subsection "ide"
-              :input-name (:name bus)
-              :input-bus bus
-              :dur-s dur-s
-              :on-end on-end
-              :on-rec-start add-rec-bar}))
+(defn rec&play [bus dur-s on-end & [rec-input-config]]
+  (rec-input (merge {:section "amanecer"
+                     :subsection "ide"
+                     :input-name (:name bus)
+                     :input-bus bus
+                     :dur-s dur-s
+                     :on-end on-end
+                     :on-rec-start add-rec-bar}
+                    rec-input-config)))
 
 (oe/defsynth s1
   [buf 0
@@ -144,7 +145,8 @@
 (defn start-rec-loop2!
   "Calls an input-bus-fn to get a bus for recording."
   [{:keys [input-bus-fn
-           durs]
+           durs
+           rec-input-config]
     :or {durs (mapv (fn [_] (rrange 3 10)) (range 40))}}]
   (ref-rain
    :id :rec-loop2
@@ -152,12 +154,14 @@
    :on-event (on-event
               (rec&play (input-bus-fn {:index index})
                         (max 0.01 (- dur-s 0.1)) ;; prevent the `recording?` pred to fail by just a few ms of overlap
-                        (fn [_])))))
+                        (fn [_])
+                        rec-input-config))))
 
 (defn start-rec-loop3!
   "Calls an input-bus-fn to get a vector or busses for recording. Records all inputs simultaneously and with the same duration."
   [{:keys [input-bus-fn
-           durs]
+           durs
+           rec-input-config]
     :or {durs (mapv (fn [_] (rrange 3 10)) (range 40))}}]
   (ref-rain
    :id :rec-loop3
@@ -167,7 +171,8 @@
                 (doseq [bus buses]
                   (rec&play bus
                             (max 0.01 (- dur-s 0.1)) ;; prevent the `recording?` pred to fail by just a few ms of overlap
-                            (fn [_])))))))
+                            (fn [_])
+                            rec-input-config))))))
 (defn start-rec-loop4!
   "Records all inputs asynchronously and with (potentially) different durations.
 

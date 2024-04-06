@@ -59,7 +59,9 @@
 
 (defonce habitat-initialized? (atom false))
 
-(defn init! []
+(defn init!
+  [& {:keys [_add-custom-groups-fn]
+      :as init-config}]
   (when-not @habitat-initialized?
     (when (o/server-disconnected?)
       (tieminos.core/connect))
@@ -67,7 +69,7 @@
     (habitat-osc/init)
     (init-async-seq-call-loop!)
     (reset! current-panners {})
-    (groups/init-groups!)
+    (groups/init-groups! init-config)
     (init-buses-and-input-vars!)
     (init-preouts! @inputs)
     (init-main-fx!)

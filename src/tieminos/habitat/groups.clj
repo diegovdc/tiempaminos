@@ -21,7 +21,9 @@
   ([pos] [pos (:preouts @groups)]))
 (defn fx [] [:tail (:fx @groups)])
 
-(defn init-groups! []
+(defn init-groups!
+  "`add-custom-groups-fn` (optional) takes the default groups map and returns a new groups map"
+  [& {:keys [add-custom-groups-fn]}]
   (let [main (o/group "habitat main")
         early (o/group :head main)
         mid (o/group :after early)
@@ -30,13 +32,14 @@
         preouts (o/group :after panners)
         fx (o/group "fx" :after preouts)]
     (reset! groups
-            {:main main
-             :early early
-             :mid mid
-             :mid-midi-synths mid-midi-synths
-             :panners panners
-             :preouts preouts
-             :fx fx})))
+            (cond-> {:main main
+                     :early early
+                     :mid mid
+                     :mid-midi-synths mid-midi-synths
+                     :panners panners
+                     :preouts preouts
+                     :fx fx}
+              (fn? add-custom-groups-fn) add-custom-groups-fn))))
 
 (comment
   (init-groups!))
