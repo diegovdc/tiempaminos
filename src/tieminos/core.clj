@@ -83,6 +83,26 @@
          (= level-name "debug") (warn-on-debug ns-name)
          :else true))
 
+(defn- take-ns-element-initials
+  [ns-element]
+  (->> (str/split ns-element #"-")
+       (mapv #(take 3 %))
+       (map str/join)
+       (str/join "-")))
+
+(defn- short-ns [ns-str]
+  (let [ns-path (str/split ns-str #"\.")
+        head (->> (drop-last 1 ns-path)
+                  (map take-ns-element-initials)
+                  (str/join "."))]
+    (format "%s.%s" head (last ns-path))))
+
+(comment
+  (take-ns-element-initials "extended-sections")
+  (short-ns "tieminos.habitat.extended-sections.hacia-un-nuevo-universo.scratch.amp-trig"))
+
+(def ^:private short-ns? true)
+
 (timbre/merge-config!
  {:output-fn
   #_timbre/default-output-fn
@@ -93,7 +113,7 @@
         (str
          (-> (force timestamp_) (str/split #" ") second) " "
          (str/upper-case (first (name level)))  " "
-         "[" (or ?ns-str ?file "?") ":" (or ?line "?") "] - "
+         "[" (cond-> (or ?ns-str ?file "?") short-ns? short-ns) ":" (or ?line "?") "] - "
          (force msg_)
          (when-let [err ?err]
            (str "\n" (timbre/stacktrace err)))))))})
