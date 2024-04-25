@@ -24,7 +24,7 @@
   [in 0
    thresh 0.1]
   (let [sig (o/in in)
-        amp (o/lag2 (o/amplitude sig 0.01 0.2) 0.1)
+        amp (o/lag2 (o/amplitude sig 0.01 0.2) 0.3)
         trig (> amp thresh)]
     (o/send-trig:ar trig 0 amp)))
 
