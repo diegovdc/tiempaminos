@@ -228,3 +228,35 @@
 
   (doseq [x (range 5)]
     (sequence-call 100 #(println x))))
+
+(defn throttle
+  "Will imediately call a function and then wait for `time-ms` to call it again, if it was called in the interim.
+  The second call will use the latest value with which the function was called."
+  [f time-ms]
+  (let [c (a/chan (a/sliding-buffer 1))]
+    (a/go-loop []
+      (apply f (a/<! c))
+      (a/<! (a/timeout time-ms))
+      (recur))
+    (fn [& args]
+      (a/put! c (or args [])))))
+(comment
+  (def tprint (throttle #(println "hola" %) 2000))
+  (doseq [x (range 6)] (tprint x)))
+
+
+(defn throttle2
+  "Like throttle, but after a call, it will discard all calls effectuated during the `time-ms` waiting period."
+  [f time-ms]
+  (let [c (a/chan (a/sliding-buffer 1))]
+    (a/go-loop []
+      (apply f (a/<! c))
+      (a/<! (a/timeout time-ms))
+      (a/<! c) ;; discard any value put into the chan while throttling was active
+      (recur))
+    (fn [& args]
+      (a/put! c (or args [])))))
+
+(comment
+  (def tprint2 (throttle2 #(println "hola" %) 2000))
+  (doseq [x (range 6)] (tprint2 x)))
