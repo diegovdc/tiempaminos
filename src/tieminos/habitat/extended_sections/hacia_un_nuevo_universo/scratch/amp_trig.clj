@@ -168,38 +168,46 @@
                                  (o/pitch-shift 0.1 ps1)
                                  (* 0.8)
                                  (#(o/pan-az 4 % (scu/lfo-kr 0.5 -1 1))))
-                         (-> sig
-                             (o/pitch-shift 0.1 ps2)
-                             #_(* 0.8)
-                             (#(o/pan-az 4 % (scu/lfo-kr 0.5 -1 1))))
+                           (-> sig
+                               (o/pitch-shift 0.1 ps2)
+                               #_(* 0.8))
                            (-> sig
                                (o/pitch-shift 0.1 (* 2/3 ps2))
-                               (* 0.8)
-                               (#(o/pan-az 4 % (scu/lfo-kr 0.5 -1 1))))
+                               (* 0.8))
                            #_(-> sig
                                  (o/ringz rz-freq 2)
                                  (* 0.07 (scu/lfo-kr 9 0.2 0.7))
                                  #_(#(o/compander % % 0.6 1 1/5))
                                  #_(o/limiter 0.7 0.005)
                                  #_(o/lpf 8000)
-                                 (#(o/pan-az 4 % (scu/lfo-kr (scu/lfo-kr 2 1 5) -1 1)))))]
-               (-> (+ sig2
+                                 (#(o/pan-az 4 % (scu/lfo-kr (scu/lfo-kr 2 1 5) -1 1)))))
+                   sig2* (o/pan-az 4 (+ (* 0.5 sig) sig2) (scu/lfo-kr 0.5 -1 1))
+                   reson (-> sig2
+                             (o/delay-n 0.01 0.01)
+                             (o/bpf rz-freq (scu/lfo-kr 3 0.1 0.5))
+                             #_(o/free-verb (scu/lfo-kr 2 0.4 0.7)
+                                            (scu/lfo-kr 5 1 2)
+                                            (scu/lfo-kr 3 0 1))
+                             (* 4)
+                             (#(o/pan-az 4 % (scu/lfo-kr 5 -1 1))))]
+               (-> (+ sig2* reson
                       #_(-> sig2
                             (o/comb-l 0.2 (scu/lfo-kr 1 0.15 0.2) 1)
                             (o/pitch-shift 0.1 ps2 0 0.0001)
                             (* 0.5 (o/env-gen (o/env-perc 2 1  0.2 0.7)))))
-                   (o/limiter (o/db->amp -6) 0.05)
                    (o/free-verb (scu/lfo-kr 2 0.4 0.7) 2 0)
-                   (* (o/lag amp 0.1) (o/env-gen (o/envelope [0 e1 e2 e3 0.6 0]
-                                                             [0.3 0.5 1.5 4 2])
-                                                 :time-scale time-scale
-                                                 :action o/FREE))))))
+                   (* (o/lag amp (o/rand 1 2))
+                      (o/env-gen (o/envelope [0 (* 0.7 e1) e1 e2 e3 0.6 0.25 0]
+                                             [0.1 0.2 0.5 1.5 4 6 4])
+                                 :time-scale time-scale
+                                 :action o/FREE))
+                   (o/limiter (o/db->amp -6) 0.05)))))
 
 (defn ps-ringz** [params]
   (timbre/info "###" :ps-ringz/actual-call "###")
   (ps-ringz* params))
 
-(def ps-ringz (throttle2 ps-ringz** 1000))
+(def ps-ringz (throttle2 ps-ringz** 100))
 
 (defn mic-1-amp-trig-handler
   [{:keys [args]}]
@@ -208,6 +216,9 @@
              :in (:in-bus args)
              :ps1 3/2
              :ps2 (* (rand-nth [1 8/7 11/8 7/4]) (rand-nth [1/4 11/32 4/11 13/32]))
+             :rz-freq (+ (rrand -0.2 0.2)
+                         (* (rand-nth [200 250 300])
+                            (rand-nth [1 2 3 4 #_5])))
              :amp @ps-ringz-amp
              :time-scale (rand-nth [1/2 1 3/2])
              :out percussion-processes-main-out}))
@@ -219,8 +230,11 @@
              :in (:in-bus args)
              :ps1 3/2
              :ps2 (* (rand-nth [1 8/7 11/8 7/4]) (rand-nth [1/4 11/32 4/11 13/32]))
+             :rz-freq (+ (rrand -0.2 0.2)
+                         (* (rand-nth [200 250 300])
+                            (rand-nth [2 3 7/2 #_5])))
              :amp @ps-ringz-amp
-             :time-scale (rand-nth [1/2 1 3/2])
+             ;; :time-scale (rand-nth [1/2 1 3/2])
              :out percussion-processes-main-out}))
 
 (defn mic-3-amp-trig-handler
@@ -232,14 +246,19 @@
              :in (:in-bus args)
              :ps1 3/2
              :ps2 (* (rand-nth [1 8/7 11/8 7/4]) (rand-nth [1/4 11/32 4/11 13/32]))
+             :rz-freq (+ (rrand -0.2 0.2)
+                         (* (rand-nth [200 250 299])
+                            (rand-nth [2 3 4 #_5 11/8])))
              :amp @ps-ringz-amp
-             :time-scale (rand-nth [1/2 1 3/2])
+             ;; :time-scale (rand-nth [1/2 1 3/2])
              :out percussion-processes-main-out}))
 (comment
   (ps-ringz {:group (ringz-group)
              :in (-> @inputs :mic-3 :bus)
              :ps1 3/2
              :ps2 (* (rand-nth [1 8/7 11/8 7/4]) (rand-nth [1/4 11/32 4/11 13/32]))
+             :rz-freq (* (rand-nth [200 251 300])
+                         (rand-nth [1 2 3 4 #_5]))
              :amp @ps-ringz-amp
              :time-scale (rand-nth [1/2 1 3/2])
              :out percussion-processes-main-out}))
@@ -295,20 +314,20 @@
                                        :handler #'guitar-amp-trig-handler
                                        :thresh (o/db->amp -25)
                                        :handler-args {:in-bus ps-ringz-4ins-bus}})))
-  (comment
-    ;; Amp trigger controls
+  ;; Amp trigger controls
 
-    (o/ctl ps-ringz-4ins* :guitar-amp 1)
-    (o/ctl mic-1-ampt :thresh (o/db->amp -30))
-    (o/ctl mic-2-ampt :thresh (o/db->amp -30))
-    (o/ctl mic-3-ampt :thresh (o/db->amp -30))
-    (o/ctl guitar-ampt :thresh (o/db->amp -25))
+  (o/ctl ps-ringz-4ins* :guitar-amp 2)
+  (o/ctl mic-1-ampt :thresh (o/db->amp -30))
+  (o/ctl mic-2-ampt :thresh (o/db->amp -30))
+  (o/ctl mic-3-ampt :thresh (o/db->amp -30))
+  (o/ctl guitar-ampt :thresh (o/db->amp -25))
 
-;; Amp regulator
-    (reset! ps-ringz-amp-reg-scale 12)
-    (reset! ps-ringz-amp-reg-thresh (o/db->amp -32)) ;; perhaps -20 is good, need to test more
-    (reset! log-amp-peak-db? true)
-    (reset! log-amp-peak-db? false))
+  ;; Amp regulator
+  (reset! ps-ringz-amp-reg-scale 2)
+  (reset! ps-ringz-amp-reg-thresh (o/db->amp -20)) ;; perhaps -20 is good, need to test more
+
+  (reset! log-amp-peak-db? true)
+  (reset! log-amp-peak-db? false)
 
   (do
     ;; prevent doubling of synths
@@ -327,16 +346,16 @@
     (init-amp-regulator-receiver!)
 
     (def ar (amp-regulator-replier
-             (groups/fx)
-             :in amp-regulator-ins-bus
-             :replyRate 5
-             :peakLag 1)))
+              (groups/fx)
+              :in amp-regulator-ins-bus
+              :replyRate 5
+              :peakLag 1)))
 
   (open-inputs-with-rand-pan
-   {:inputs inputs
-    :preouts preouts})
+    {:inputs inputs
+     :preouts preouts})
 
   (start-rec-loop3!
-   {:input-bus-fn (fn [_] (-> @inputs (select-keys [:guitar :mic-1 :mic-2 :mic-3]) vals (->> (map :bus))))
-    :durs (mapv (fn [_] (rrange 10 20)) (range 40))
-    :rec-input-config {:print-info? false}}))
+    {:input-bus-fn (fn [_] (-> @inputs (select-keys [:guitar :mic-1 :mic-2 :mic-3]) vals (->> (map :bus))))
+     :durs (mapv (fn [_] (rrange 10 20)) (range 40))
+     :rec-input-config {:print-info? false}}))
