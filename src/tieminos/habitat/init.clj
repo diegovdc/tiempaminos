@@ -1,5 +1,6 @@
 (ns tieminos.habitat.init
   (:require
+   [clojure.set :as set]
    [overtone.core :as o]
    [taoensso.timbre :as timbre]
    [tieminos.core]
@@ -66,7 +67,7 @@
     (when (o/server-disconnected?)
       (tieminos.core/connect))
     (reaper/init)
-    (habitat-osc/init)
+    (habitat-osc/init (set/rename-keys init-config {:osc/port :port}))
     (init-async-seq-call-loop!)
     (reset! current-panners {})
     (groups/init-groups! init-config)

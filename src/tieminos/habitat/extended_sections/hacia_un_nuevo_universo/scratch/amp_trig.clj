@@ -2,6 +2,7 @@
   (:require
    [clojure.data.generators :refer [weighted]]
    [overtone.core :as o]
+   [overtone.osc :as osc]
    [taoensso.timbre :as timbre]
    [tieminos.habitat.amp-trigger :as amp-trig :refer [reg-amp-trigger]]
    [tieminos.habitat.extended-sections.hacia-un-nuevo-universo.scsyndefs.core :refer [amp-regulator-replier]]
@@ -9,16 +10,19 @@
    [tieminos.habitat.init :refer [habitat-initialized? init!]]
    [tieminos.habitat.main :as main]
    [tieminos.habitat.main-sequencer :as hseq]
+   [tieminos.habitat.osc :refer [args->map]]
+   [tieminos.habitat.osc :as habitat-osc]
+   [tieminos.habitat.panners :refer [panner panner-rate stop-panner!]]
    [tieminos.habitat.recording :as rec :refer [silence?]]
-   [tieminos.habitat.routing :refer [inputs main-returns mixed-main-out
-                                     percussion-processes-main-out preouts]]
+   [tieminos.habitat.routing :refer [get-input-bus inputs main-returns
+                                     mixed-main-out percussion-processes-main-out
+                                     preouts]]
    [tieminos.habitat.scratch.sample-rec2 :refer [amanecer*guitar-clouds-2
                                                  start-rec-loop3!]]
-   [tieminos.habitat.utils :refer [open-inputs-with-rand-pan]]
    [tieminos.math.utils :refer [hyperbolic-decay]]
    [tieminos.overtone-extensions :as oe]
    [tieminos.sc-utils.synths.v1 :as scu]
-   [tieminos.utils :refer [rrange throttle2]]
+   [tieminos.utils :refer [iter-async-call2 rrange throttle2]]
    [time-time.standard :refer [rrand]]))
 
 (defn get-rand-buf []
@@ -164,33 +168,18 @@
    e3 0.65
    out 0]
   (o/out out (let [sig (o/in in 1)
-                   sig2 (+ #_(-> sig
-                                 (o/pitch-shift 0.1 ps1)
-                                 (* 0.8)
-                                 (#(o/pan-az 4 % (scu/lfo-kr 0.5 -1 1))))
-                           (-> sig
-                               (o/pitch-shift 0.1 ps2)
-                               #_(* 0.8))
-                           (-> sig
-                               (o/pitch-shift 0.1 (* 2/3 ps2))
-                               (* 0.8))
-                           #_(-> sig
-                                 (o/ringz rz-freq 2)
-                                 (* 0.07 (scu/lfo-kr 9 0.2 0.7))
-                                 #_(#(o/compander % % 0.6 1 1/5))
-                                 #_(o/limiter 0.7 0.005)
-                                 #_(o/lpf 8000)
-                                 (#(o/pan-az 4 % (scu/lfo-kr (scu/lfo-kr 2 1 5) -1 1)))))
-                   sig2* (o/pan-az 4 (+ (* 0.5 sig) sig2) (scu/lfo-kr 0.5 -1 1))
+                   sig2 (+ (-> sig (o/pitch-shift 0.1 ps2))
+
+                           (-> sig (o/pitch-shift 0.1 ps1)
+                               (* 0.8)))
+                   sig2* (o/pan-az 4 (+ (* 0.25 sig) sig2) (scu/lfo-kr 0.5 -1 1))
                    reson (-> sig2
                              (o/delay-n 0.01 0.01)
-                             (o/bpf rz-freq (scu/lfo-kr 3 0.1 0.5))
-                             #_(o/free-verb (scu/lfo-kr 2 0.4 0.7)
-                                            (scu/lfo-kr 5 1 2)
-                                            (scu/lfo-kr 3 0 1))
+                             (o/bpf rz-freq (scu/lfo-kr 3 0.25 0.5))
                              (* 4)
                              (#(o/pan-az 4 % (scu/lfo-kr 5 -1 1))))]
-               (-> (+ sig2* reson
+               (-> (+ sig2*
+                      reson
                       #_(-> sig2
                             (o/comb-l 0.2 (scu/lfo-kr 1 0.15 0.2) 1)
                             (o/pitch-shift 0.1 ps2 0 0.0001)
@@ -220,7 +209,7 @@
                          (* (rand-nth [200 250 300])
                             (rand-nth [1 2 3 4 #_5])))
              :amp @ps-ringz-amp
-             :time-scale (rand-nth [1/2 1 3/2])
+             ;; :time-scale (rand-nth [1/2 1 3/2])
              :out percussion-processes-main-out}))
 
 (defn mic-2-amp-trig-handler
@@ -234,7 +223,7 @@
                          (* (rand-nth [200 250 300])
                             (rand-nth [2 3 7/2 #_5])))
              :amp @ps-ringz-amp
-             ;; :time-scale (rand-nth [1/2 1 3/2])
+             :time-scale (rand-nth [1/2 1 3/2])
              :out percussion-processes-main-out}))
 
 (defn mic-3-amp-trig-handler
@@ -248,9 +237,9 @@
              :ps2 (* (rand-nth [1 8/7 11/8 7/4]) (rand-nth [1/4 11/32 4/11 13/32]))
              :rz-freq (+ (rrand -0.2 0.2)
                          (* (rand-nth [200 250 299])
-                            (rand-nth [2 3 4 #_5 11/8])))
+                            (rand-nth [2 3 #_4 #_5 11/8])))
              :amp @ps-ringz-amp
-             ;; :time-scale (rand-nth [1/2 1 3/2])
+             :time-scale (rand-nth [1/2 1 3/2])
              :out percussion-processes-main-out}))
 (comment
   (ps-ringz {:group (ringz-group)
@@ -258,7 +247,7 @@
              :ps1 3/2
              :ps2 (* (rand-nth [1 8/7 11/8 7/4]) (rand-nth [1/4 11/32 4/11 13/32]))
              :rz-freq (* (rand-nth [200 251 300])
-                         (rand-nth [1 2 3 4 #_5]))
+                         (rand-nth [1 2 3 #_4 #_5]))
              :amp @ps-ringz-amp
              :time-scale (rand-nth [1/2 1 3/2])
              :out percussion-processes-main-out}))
@@ -269,13 +258,123 @@
   (play-sample {:group (groups/mid)
                 :out mixed-main-out}))
 
+(defn open-inputs-with-rand-pan*
+  "`inputs` and `preouts` are atoms.
+  `config` is a map where the key is the input key and the value is a `panner` config"
+  [{:keys [inputs preouts] :as _context}
+   config]
+  (doseq [input @inputs]
+    (let [[k {:keys [bus]}] input
+          rate* (:rate (k config))
+          rate (or rate* (rrange 0.1 0.5))]
+      (panner (merge {:in bus
+                      :type :rand
+                      :out (:bus (k @preouts))
+                      ;; TODO is amp something that is wanted?
+                      :amp 0.5}
+                     (k config)))
+      (panner-rate (merge {:in bus
+                           :rate rate
+                           :max 1})))))
+
+(defn stop-panned-inputs!
+  []
+  (doseq [[k] @inputs]
+    (stop-panner! (get-input-bus k))))
+
 (comment
+  (get-input-bus :guitar)
+  (panner-rate {:in (get-input-bus :guitar)
+                :rate (rrange 0.1 0.5)
+                :max 0.5}))
+
+(comment)
+
+(defn- slide-fader
+  [{:keys [initial-fader-pos
+           target-fader-pos
+           increment
+           wait-on-traget-pos-ms
+           update-fader-pos-fn]
+    :or {update-fader-pos-fn (fn [pos finished?] (println "slide-fader" pos finished?))}}]
+  (iter-async-call2 120 (let [current-fader-pos (atom initial-fader-pos)
+                              waiting-timestamp (atom nil)
+                              direction (atom :down)]
+                          (fn [{:keys [stop-chan-fn]}]
+                            (case @direction
+                              :down (do (reset! current-fader-pos (max target-fader-pos (- @current-fader-pos increment)))
+                                        (update-fader-pos-fn @current-fader-pos false)
+                                        (cond
+                                          (and (= @current-fader-pos target-fader-pos)
+                                               (nil? @waiting-timestamp))
+                                          #_{:clj-kondo/ignore [:redundant-do]}
+                                          (do (reset! waiting-timestamp (o/now))
+                                              #_(println "waiting" @waiting-timestamp)
+                                              #_(flush))
+
+                                          (and (= @current-fader-pos target-fader-pos)
+                                               (> (- (o/now) wait-on-traget-pos-ms) @waiting-timestamp))
+                                          (do (reset! current-fader-pos target-fader-pos)
+                                              (reset! direction :up)
+                                              (reset! waiting-timestamp (o/now)))
+                                          :else nil))
+
+                              :up (do (reset! current-fader-pos (min initial-fader-pos (+ @current-fader-pos increment)))
+                                      (update-fader-pos-fn @current-fader-pos false)
+                                      #_(println "x" @current-fader-pos)
+                                      #_(flush)
+                                      (when (= @current-fader-pos initial-fader-pos)
+                                        (update-fader-pos-fn @current-fader-pos true)
+                                        #_(println "stopping" (- (o/now) @waiting-timestamp))
+                                        #_(flush)
+                                        (stop-chan-fn))))))))
+(let [running? (atom false)]
+  (defn lower-mic-group-volume!
+    [reaper-osc-client]
+    (when-not @running?
+      (timbre/info "Lowering mic group volume on Reaper")
+      (reset! running? true)
+      (slide-fader
+       {:initial-fader-pos 0.716 ;; ca.0db
+        :target-fader-pos 0.48   ;; ca.-12db
+        :increment 0.015
+        :wait-on-traget-pos-ms 10000
+        :update-fader-pos-fn (fn [pos finished?]
+                               (osc/osc-send reaper-osc-client "/track/3/volume" (float pos))
+                               (when finished? (reset! running? false)))}))))
+
+(comment
+  ;; OSC interactions
+  ;; receving port should be 16180
+  (def reaper-osc-client (habitat-osc/make-reaper-osc-client))
+  (habitat-osc/responder
+   (fn [{:keys [path args] :as msg}]
+     (let [args-map (args->map args)
+           press? (= 1.0 (first args))]
+       (case path
+         "/Sections/section1" (when press? (println "INiting section1"))
+         "/Sections/section2" (when press? (println "INiting section2"))
+         "/Sections/section3" (when press? (println "INiting section3"))
+         "/feedback-panic" (when press? (lower-mic-group-volume! reaper-osc-client))
+         (println "Unknown path for message: " msg args-map)))))
+
+  ;; Init proceedure
   (when @habitat-initialized?
     (reset! rec/recording? {})
     (main/stop-sequencer! hseq/context)
     (reset! rec/bufs {})
     (reset! amp-trig/handlers {}))
   (init! {:add-custom-groups-fn add-ringz-group})
+
+  (open-inputs-with-rand-pan*
+   {:inputs inputs
+    :preouts preouts}
+   {}
+   #_{:guitar {:amp 1
+               :type :clockwise
+               :rate 1}})
+
+  #_(stop-panned-inputs!)
 
   (do ;; Amp triggers
     ;; NOTE IMPORTANT do not forget to add the `add-ringz-group` `:add-custom-groups-fn`
@@ -323,8 +422,8 @@
   (o/ctl guitar-ampt :thresh (o/db->amp -25))
 
   ;; Amp regulator
-  (reset! ps-ringz-amp-reg-scale 2)
-  (reset! ps-ringz-amp-reg-thresh (o/db->amp -20)) ;; perhaps -20 is good, need to test more
+  (reset! ps-ringz-amp-reg-scale 8)
+  (reset! ps-ringz-amp-reg-thresh (o/db->amp -32)) ;; perhaps -20 is good, need to test more
 
   (reset! log-amp-peak-db? true)
   (reset! log-amp-peak-db? false)
@@ -346,16 +445,12 @@
     (init-amp-regulator-receiver!)
 
     (def ar (amp-regulator-replier
-              (groups/fx)
-              :in amp-regulator-ins-bus
-              :replyRate 5
-              :peakLag 1)))
-
-  (open-inputs-with-rand-pan
-    {:inputs inputs
-     :preouts preouts})
+             (groups/fx)
+             :in amp-regulator-ins-bus
+             :replyRate 5
+             :peakLag 1)))
 
   (start-rec-loop3!
-    {:input-bus-fn (fn [_] (-> @inputs (select-keys [:guitar :mic-1 :mic-2 :mic-3]) vals (->> (map :bus))))
-     :durs (mapv (fn [_] (rrange 10 20)) (range 40))
-     :rec-input-config {:print-info? false}}))
+   {:input-bus-fn (fn [_] (-> @inputs (select-keys [:guitar :mic-1 :mic-2 :mic-3]) vals (->> (map :bus))))
+    :durs (mapv (fn [_] (rrange 10 20)) (range 40))
+    :rec-input-config {:print-info? false}}))

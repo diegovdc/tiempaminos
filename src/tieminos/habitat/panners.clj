@@ -76,13 +76,14 @@
 (defn get-current-panner [in]
   (let [in* (input-number->bus in)]
     (get @current-panners in*)))
-
+(-> @current-panners)
 (defn stop-panner!
   [in]
   (let [in* (input-number->bus in)
         current-panner (get @current-panners in*)]
-    (try (when (:synth current-panner)
-           (o/ctl (:synth current-panner) :gate 0))
+    (try (if (:synth current-panner)
+           (o/ctl (:synth current-panner) :gate 0)
+           (timbre/warn "No panner to stop with:" in))
          (catch Exception e (timbre/error e)))
     (swap! current-panners dissoc in*)))
 
@@ -145,4 +146,5 @@
 (defn panner-rate [{:keys [in rate max]
                     :or {max 1.5} :as _args}]
   (let [panner (get-in @current-panners [(input-number->bus in) :synth])]
+    (println panner in (* max rate))
     (ctl-synth panner :rate (* max rate))))
