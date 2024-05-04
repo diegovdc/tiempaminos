@@ -163,6 +163,10 @@
 (defn bus->bus-name [bus]
   (-> bus :name (str/replace #"-bus" "")))
 
+(defn get-input-bus
+  [k]
+  (-> @inputs k :bus))
+
 ;;;;;;;;;;;;;;;;
 ;;; Texto Sonoro
 
@@ -239,6 +243,7 @@
 (defn get-mixed-instrument-return
   []
   mixed-main-out)
+
 
 (defn init-preouts!
   "Note that no preout is initialized for the `:texto-sonoro`"

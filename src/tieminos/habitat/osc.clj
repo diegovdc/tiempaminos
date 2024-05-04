@@ -41,7 +41,9 @@
   "The `::default` keyword is an identifier, so calling responder with different functions will overwrite the previous function.
   See usage example at the top of the file."
   [f]
-  (osc/osc-listen @osc-server f ::defaults))
+  (if-not @osc-server
+    (throw (ex-info "You must `init` the `osc-server` first" {}))
+    (osc/osc-listen @osc-server f ::defaults)))
 
 (defn args->map [args]
   (try
@@ -69,16 +71,19 @@
                            ;; ensure it doesn't go beyond stated max, if value is > 1
                            (min max*)))))
 
+(defn make-reaper-osc-client
+  []
+  (osc/osc-client (get-local-host) 65432))
+
 (comment
-  (init :port 9129)
+  (init)
   (reset! osc-server nil)
   (-> @osc-server)
-  (def client (osc/osc-client (get-local-host) 2666))
-  (def client (osc/osc-client (get-local-host) 9129))
+  (def client (osc/osc-client (get-local-host) 16180))
   (osc/osc-send client "/holas" 1,2,3,4)
 
   (responder
-   (fn [{:keys [path args] :as msg}]
-     (let [args-map (args->map args)]
-       (case path
-         (println "Unknown path for message: " msg))))))
+    (fn [{:keys [path args] :as msg}]
+      (let [args-map (args->map args)]
+        (case path
+          (println "Unknown path for message: " msg))))))
