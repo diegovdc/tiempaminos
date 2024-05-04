@@ -175,14 +175,16 @@
          stop-chan (timbre/debug "Stopping iter-async-call2...")))
      ;; memoize to prevent a subsequent call from stopping the thread
      stop-chan-fn)))
-
+(/ 0.71 30)
 (comment
   (def stop-me (iter-async-call 1000 #(do (println "hola" %)
                                           (flush))))
   (def stop-me2 (iter-async-call 500 #(do (println "adios" %)
                                           (flush))))
   (stop-me)
-  (stop-me2))
+  (stop-me2)
+
+  (-> @async-channels))
 
 (defonce async-channels (atom {}))
 
@@ -230,6 +232,7 @@
     (sequence-call 100 #(println x))))
 
 (defn throttle
+  ;; NOTE Seems to be like `sequence-call` but better
   "Will imediately call a function and then wait for `time-ms` to call it again, if it was called in the interim.
   The second call will use the latest value with which the function was called."
   [f time-ms]
