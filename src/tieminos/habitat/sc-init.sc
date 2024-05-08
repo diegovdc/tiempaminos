@@ -10,7 +10,7 @@ s.options.maxLogins = 8;
 o.numInputBusChannels = 32;
 o.numOutputBusChannels = 58;
 s.latency = 0.01;
-// s.options.sampleRate = 48000;
+// s.options.sampleRate = 48000; // would be nice to use but increases latency to a more noticeable level
 s.waitForBoot({
 	().play;
 	s.makeGui; // `l` to show meter https://doc.sccode.org/Classes/Server.html
