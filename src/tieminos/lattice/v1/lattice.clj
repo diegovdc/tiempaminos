@@ -9,10 +9,10 @@
         {:keys [data edges min-x max-x min-y max-y period played-notes]} lattice-data*
         x-length (->> [min-x max-x]
                       (map #(Math/abs %))
-                      (apply +))
+                      (apply + 1)) ;; prevent div by zero below
         y-length (->> [min-y max-y]
                       (map #(Math/abs %))
-                      (apply +))
+                      (apply + 1)) ;; prevent div by zero below
         cx (/ width 2)
         cy (/ height 2)
         zoom (* 0.7 (min (/ width x-length)
@@ -40,8 +40,10 @@
     (doseq [{:keys [coords ratio]} data]
       (when-let [notes (seq (played-notes ratio))]
         ;; TODO using reverse may not be too performant
-        (doseq [{:keys [index color]} (reverse notes)]
-          (q/stroke-weight (+ 3.5 (* index 2)))
+        (doseq [{:keys [index color stroke-weight]
+                 :or {color [170 0 80]
+                      stroke-weight 3.5}} (reverse notes)]
+          (q/stroke-weight (+ stroke-weight (* index 2)))
           (apply q/stroke color)
           (q/point (:x coords) (:y coords))))
       (q/point (:x coords) (:y coords))

@@ -36,7 +36,7 @@
 (-> rooted-hexanies)
 
 (do
-  (def midi->ratio
+  (def ^:private midi->ratio
     (memoize (fn [ref-note midi-note deg->ratio-map degs]
                (deg->ratio-map (nth degs (mod (- midi-note ref-note) (count degs)))))))
   #_(midi->ratio 60 57 polydori-deg->ratio hex-degs)

@@ -13,7 +13,7 @@
 ;;
 ;;
 
-(def ratios->scale
+(def ^:private ratios->scale
   (memoize (fn [ratios period]
              (->> ratios
                   ;; ensure something copied or read from a scala file will work fine i.e. 2/1 will be converted to 1
