@@ -159,12 +159,14 @@
 
 (defn start-rec-loop3!
   "Calls an input-bus-fn to get a vector or busses for recording. Records all inputs simultaneously and with the same duration."
-  [{:keys [input-bus-fn
+  [{:keys [id
+           input-bus-fn
            durs
            rec-input-config]
-    :or {durs (mapv (fn [_] (rrange 3 10)) (range 40))}}]
+    :or {id :rec-loop3
+         durs (mapv (fn [_] (rrange 3 10)) (range 40))}}]
   (ref-rain
-   :id :rec-loop3
+   :id id
    :durs durs
    :on-event (on-event
               (let [buses (input-bus-fn {:index index})]

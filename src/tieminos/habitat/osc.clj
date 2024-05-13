@@ -75,6 +75,10 @@
   []
   (osc/osc-client (get-local-host) 65432))
 
+(defn make-internal-osc-client
+  []
+  (osc/osc-client (get-local-host) 16180))
+
 (comment
   (init)
   (reset! osc-server nil)

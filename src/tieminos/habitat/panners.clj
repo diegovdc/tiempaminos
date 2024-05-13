@@ -93,8 +93,11 @@
   (->> @current-panners
        keys))
 
-(defn panner [{:keys [in type out]
-               :or {amp 1} :as args}]
+(defn panner
+  "Creates a panner. If a panner for the `input` already exists then it creates a new instance and closes the gate of the previous panner.
+  So there should always be one active panner for every input (except of course for the fadeout of the old panner)"
+  [{:keys [in type out]
+    :as args}]
   (when-not (or in out)
     (throw (ex-info "Can not modify panner, data missing"
                     args)))
@@ -146,5 +149,4 @@
 (defn panner-rate [{:keys [in rate max]
                     :or {max 1.5} :as _args}]
   (let [panner (get-in @current-panners [(input-number->bus in) :synth])]
-    (println panner in (* max rate))
     (ctl-synth panner :rate (* max rate))))
