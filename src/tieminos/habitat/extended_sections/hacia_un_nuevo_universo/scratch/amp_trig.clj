@@ -37,6 +37,9 @@
        (#(when (seq %) (rand-nth %)))))
 
 (defonce play-sample? (atom false))
+(comment
+  (reset! play-sample? false)
+  )
 (defn play-sample
   [{:keys [out]}]
   (when play-sample?
@@ -207,7 +210,9 @@
     (rand-nth ratios)))
 
 (defonce ps2-ratios-index (atom 0))
-(-> @ps2-ratios-index)
+(comment
+  (-> @ps2-ratios-index)
+  (reset! ps2-ratios-index 6))
 
 (defn- get-ps-ratio!
   []
