@@ -1,4 +1,4 @@
-(ns tieminos.habitat.extended-sections.hacia-un-nuevo-universo.scratch.amp-trig
+(ns tieminos.habitat.extended-sections.hacia-un-nuevo-universo.main-4ch
   (:require
    [clojure.data.generators :refer [weighted]]
    [overtone.core :as o]
