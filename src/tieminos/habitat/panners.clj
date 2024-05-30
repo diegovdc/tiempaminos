@@ -27,6 +27,26 @@
              (* amp (o/env-gen (o/env-adsr a 1 1 release :curve -0.5)
                                gate
                                :action o/FREE)))))
+
+(defsynth rand-pan8
+  [in 0
+   out 0
+   amp 1
+   rate 0.1
+   release 2
+   width 2
+   a 2
+   orientation 0.5
+   gate 1]
+  (o/out out
+         (-> (oe/circle-az :num-channels 8
+                           :in (o/in in)
+                           :pos (o/lf-noise1 rate)
+                           :width width
+                           :orientation orientation)
+             (* amp (o/env-gen (o/env-adsr a 1 1 release :curve -0.5)
+                               gate
+                               :action o/FREE)))))
 (defsynth rand-pan4v2
   [in 0
    out 0
@@ -135,7 +155,13 @@
                                   (merge {:group (groups/panners)
                                           :in in*
                                           :out out*}
-                                         args*)))]
+                                         args*))
+                     ;; octophonic
+                     :rand8 (rand-pan8
+                             (merge {:group (groups/panners)
+                                     :in in*
+                                     :out out*}
+                                    args*)))]
 
     (try (when (:synth current-panner)
            (o/ctl (:synth current-panner) :gate 0))

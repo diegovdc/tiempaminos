@@ -9,7 +9,7 @@
    [tieminos.habitat.panners :refer [circle-pan-4ch current-panners]]
    [tieminos.habitat.reactivity.amp :refer [init-amp-analyzer!]]
    [tieminos.habitat.recording :refer [start-signal-analyzer]]
-   [tieminos.habitat.routing
+   [tieminos.habitat.routing :as routing
     :refer [guitar-bus init-buses-and-input-vars! init-preouts!
             init-recordable-inputs! init-texto-sonoro-rand-mixer-synth! input inputs
             main-returns mic-1-bus mic-2-bus mic-3-bus mic-4-bus preouts recordable-outputs
@@ -61,7 +61,8 @@
 (defonce habitat-initialized? (atom false))
 
 (defn init!
-  [& {:keys [_add-custom-groups-fn]
+  [& {:keys [_add-custom-groups-fn return-n-chans]
+      :or {return-n-chans 4}
       :as init-config}]
   (when-not @habitat-initialized?
     (when (o/server-disconnected?)
@@ -70,16 +71,17 @@
     (habitat-osc/init (set/rename-keys init-config {:osc/port :port}))
     (init-async-seq-call-loop!)
     (reset! current-panners {})
+    (reset! routing/return-n-chans return-n-chans)
     (groups/init-groups! init-config)
     (init-buses-and-input-vars!)
-    (init-preouts! @inputs)
-    (init-main-fx!)
+    (init-preouts! @inputs return-n-chans)
+    (init-main-fx!) ;; TODO make octophonic versions
     (init-inputs! @inputs)
     (init-texto-sonoro-rand-mixer-synth! @special-inputs)
     (init-recordable-inputs! main-returns)
     (init-analyzers! @inputs @recordable-outputs)
     (reset! habitat-initialized? true))
-  (timbre/info "Habitat initialized!")
+  (timbre/info (format "Habitat initialized! (%s channels)" return-n-chans))
   {:inputs (keys @inputs)})
 
 (-> @preouts :guitar :bus)

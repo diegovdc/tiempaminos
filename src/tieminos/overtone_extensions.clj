@@ -61,3 +61,45 @@
                              :pos (o/lf-saw 0.2))))))
   (def test (test-4chan-circle-az :dur 40))
   (o/ctl test :freq 800))
+
+(defn- circle-az-8ch*
+  [pan-az-out]
+  (let [[a b c d e f g h]
+        pan-az-out]
+    [a b d f h g e c]))
+
+(defn circle-az-8ch
+  "4-channel circular az panning.
+  Using `:orientation` `0` as default is a good idea:
+  that way single channels will lie at:
+  `-1`: back right
+  `-0.5`: back left
+  `0`: front left
+  `0.5`: front right
+
+  A minimum `:width` of around `1.3` is good for panning from single channel to single channel.
+  Maximum `:width` should be `4` otherwise artifacts may be produced."
+  [& {:keys [_num-channels _in _pos _level _width _orientation]
+      :as pan-az-args}]
+  (circle-az-8ch* (apply o/pan-az (flatten (seq (assoc pan-az-args :num-channels 8))))))
+
+(comment
+  (require '[tieminos.habitat.routing :refer [reaper-returns]])
+  (o/stop)
+  (defsynth test-8chan-circle-az
+    [freq 200
+     dur 20]
+    (let [f (mapv #(* % freq) [1 1.2 1.34 1.5])]
+      (o/out (reaper-returns 1)
+             (* (o/env-gen (o/envelope [0 1 1 0]
+                                       (map #(* % dur) [0.2 0.6 0.2]))
+                           :action o/FREE)
+                (circle-az-8ch {:in (* 0.2 (+ #_(o/white-noise)
+                                              (o/mix (o/saw f))))
+                                :pos (o/lf-saw 0.3)})))))
+  (def test (test-8chan-circle-az :dur 10 :freq (* (rand-nth [1 2 3 4]) 200)))
+  (defsynth sini []
+    (o/out 0 (* 0.2 (o/sin-osc))))
+  (sini)
+  (o/stop)
+  (o/ctl test :freq 800))
