@@ -164,26 +164,111 @@
                      (* mic-3-amp (o/in mic-3 1))
                      (* guitar-amp (o/in guitar 1))])))
 
-(oe/defsynth ps-ringz*
+(def pos-dif "of 8-channel pan-az" 0.25)
+
+(def chan-pos*
+  "`pan-az` positions fro 8-channels.
+  NOTE positions increment by `0.25`"
+  #_(into {} (map-indexed
+              (fn [i x]
+                [(keyword (str "chan" (inc i)))
+                 (+ -0.125 (* x pan-az-pos-dif))])
+              (range 8)))
+  {:chan1 -0.125
+   :chan2 0.125
+   :chan3 0.375
+   :chan4 0.625
+   :chan5 0.875
+   :chan6 1.125
+   :chan7 1.375
+   :chan8 1.625})
+
+(defn chan-pos
+  ([chan-pos-k] (chan-pos chan-pos-k 0))
+  ([chan-pos-k offset]
+   (+ (chan-pos* chan-pos-k)
+      (* pos-dif offset))))
+
+;; TODO move to panners file
+(defn linear-path
+  "Calculate `:start` and `:end` positions of a linear path with `pan-az`"
+  [pos-diff ;; pan-az position differential between channels
+   pos      ;; initial-position
+   length   ;; channels to traverse (positive goes right)
+   ]
+  {:start-pos pos
+   :end-pos (+ pos (* length pos-diff))})
+
+(def linear-8ch-path (partial linear-path pos-dif))
+
+(linear-8ch-path (chan-pos :chan1) -8)
+
+(comment
+  ;; NOTE PanAZ 8 notes 2024-06-06
+  ;; -0.125 - channel 1 - currently 1/8 to the left on the binaural
+  ;; 0.125 - channel 2
+  ;; 0.375 - channel 3
+  ;; 0.625 - channel 4
+  ;; 0.875 - channel 5
+  ;; 1.125 - channel 6
+  ;; 1.375 - channel 7
+  ;; 1.625 - channel 8
+  ;;
+  (do
+    (oe/defsynth trayect
+      [out 0
+       freq 200
+       amp 0.2
+       start-pos -1
+       end-pos 1
+       pan-dur 1]
+      (o/out out (* (o/pan-az 8
+                              (* amp (o/saw 200))
+                              (o/env-gen (o/envelope [start-pos end-pos] [pan-dur] -1)))
+                    (o/env-gen (o/envelope [0 1 0.2 0] [0.3 pan-dur 0.4])
+                               :action o/FREE))))
+
+    (def t (trayect
+            (merge {:out (routing/get-percussion-processes-main-out)
+
+                     ;; :start-pos -1
+                     ;; :end-pos 20
+                    :pan-dur 10}
+                   (linear-8ch-path (chan-pos :chan1) 16)))))
+  (o/ctl t :pos (+ -0.125 (* 4 0.25)))
+  (o/stop))
+
+(oe/defsynth ps-ringz-rand*
+  ;; ps-ringz with rand pan
   [in 0
    ps1 1
    ps2 1
    rz-freq 200
    amp 1
+   original-sig-amp 0.25
    time-scale 1
    e1 1
    e2 0.8
    e3 0.65
+   pan1-lfo 0.5
+   pan2-lfo 5
+   pan1-width 1.8
+   pan2-width 1.8
+   pos-min -1
+   pos-max 1
    out 0]
   (o/out out (let [sig (o/in in 1)
                    sig2 (+ (-> sig (o/pitch-shift 0.05 ps2))
                            (-> sig (o/pitch-shift 0.05 ps1)
                                (* 0.8)))
-                   sig2* (o/pan-az 8 (+ (* 0.25 sig) sig2) (scu/lfo-kr 0.5 -1 1) 1.8)
-                   reson (-> (+ sig2 (* 0.25 sig))
+                   sig2* (o/pan-az 8
+                                   (+ (* original-sig-amp sig) sig2)
+                                   (scu/lfo-kr pan1-lfo pos-min pos-max)
+                                   pan1-width)
+                   reson (-> (+ sig2 (* original-sig-amp sig))
                              (o/bpf rz-freq (scu/lfo-kr 3 0.25 0.5))
                              (* 2.5)
-                             (#(o/pan-az 8 % (scu/lfo-kr 5 -1 1) 1.8)))]
+                             (#(o/pan-az 8 % (scu/lfo-kr pan2-lfo pos-min pos-max) pan2-width)))]
                (-> (+ sig2*
                       reson
                       #_(-> sig2
@@ -198,11 +283,11 @@
                                  :action o/FREE))
                    (o/limiter (o/db->amp -6) 0.05)))))
 
-(defn ps-ringz** [params]
+(defn ps-ringz-rand** [params]
   (timbre/info "###" :ps-ringz/actual-call "###")
-  (ps-ringz* params))
+  (ps-ringz-rand* params))
 
-(def ps-ringz (throttle2 ps-ringz** 100))
+(def ps-ringz-rand (throttle2 ps-ringz-rand** 100))
 
 (defn- rand-ratio [ratios]
   (if (map? ratios)
@@ -236,46 +321,46 @@
 (defn mic-1-amp-trig-handler
   [{:keys [args]}]
   (timbre/info :trig/mic-1)
-  (ps-ringz {:group (ringz-group)
-             :in (:in-bus args)
-             :ps1 3/2
-             :ps2 (get-ps-ratio!)
-             :rz-freq (+ (rrand -0.2 0.2)
-                         (* (rand-nth [200 250 300])
-                            (rand-nth [1 2 3 4 5])))
-             :amp @ps-ringz-amp
+  (ps-ringz-rand {:group (ringz-group)
+                  :in (:in-bus args)
+                  :ps1 3/2
+                  :ps2 (get-ps-ratio!)
+                  :rz-freq (+ (rrand -0.2 0.2)
+                              (* (rand-nth [200 250 300])
+                                 (rand-nth [1 2 3 4 5])))
+                  :amp @ps-ringz-amp
              ;; :time-scale (rand-nth [1/2 1 3/2])
-             :out (routing/get-percussion-processes-main-out)}))
+                  :out (routing/get-percussion-processes-main-out)}))
 
 (defn mic-2-amp-trig-handler
   [{:keys [args]}]
   (timbre/info :trig/mic-2)
-  (ps-ringz {:group (ringz-group)
-             :in (:in-bus args)
-             :ps1 3/2
-             :ps2 (get-ps-ratio!)
-             :rz-freq (+ (rrand -0.2 0.2)
-                         (* (rand-nth [200 250 300])
-                            (rand-nth [2 3 7/2 5])))
-             :amp @ps-ringz-amp
-             :time-scale (rand-nth [1/2 1 3/2])
-             :out (routing/get-percussion-processes-main-out)}))
+  (ps-ringz-rand {:group (ringz-group)
+                  :in (:in-bus args)
+                  :ps1 3/2
+                  :ps2 (get-ps-ratio!)
+                  :rz-freq (+ (rrand -0.2 0.2)
+                              (* (rand-nth [200 250 300])
+                                 (rand-nth [2 3 7/2 5])))
+                  :amp @ps-ringz-amp
+                  :time-scale (rand-nth [1/2 1 3/2])
+                  :out (routing/get-percussion-processes-main-out)}))
 
 (defn mic-3-amp-trig-handler
   [{:keys [_in args]}]
   (timbre/info :trig/mic-3 args)
   (play-sample {:group (groups/mid) ;; only when `play-sample?' is true
                 :out mixed-main-out})
-  (ps-ringz {:group (ringz-group)
-             :in (:in-bus args)
-             :ps1 3/2
-             :ps2 (get-ps-ratio!)
-             :rz-freq (+ (rrand -0.2 0.2)
-                         (* (rand-nth [200 250 299])
-                            (rand-nth [2 3 4 5 11/8])))
-             :amp @ps-ringz-amp
-             :time-scale (rand-nth [1/2 1 3/2])
-             :out (routing/get-percussion-processes-main-out)}))
+  (ps-ringz-rand {:group (ringz-group)
+                  :in (:in-bus args)
+                  :ps1 3/2
+                  :ps2 (get-ps-ratio!)
+                  :rz-freq (+ (rrand -0.2 0.2)
+                              (* (rand-nth [200 250 299])
+                                 (rand-nth [2 3 4 5 11/8])))
+                  :amp @ps-ringz-amp
+                  :time-scale (rand-nth [1/2 1 3/2])
+                  :out (routing/get-percussion-processes-main-out)}))
 
 (comment
   (mic-3-amp-trig-handler {:args {:in-bus (-> @inputs first second)}}))
@@ -436,7 +521,7 @@
     :preouts preouts}
    {}
    #_{:guitar {:amp 1
-             ;; :type :clockwise
+                ;; :type :clockwise
                :rate 2}})
 
   #_(stop-panned-inputs!)
@@ -480,7 +565,7 @@
                                        :handler-args {:in-bus ps-ringz-4ins-bus}})))
   ;; Amp trigger controls
 
-  (o/ctl ps-ringz-4ins* :guitar-amp 1.2)
+  (o/ctl ps-ringz-4ins* :guitar-amp (o/db->amp 4.5)) ;; 3 - 6
   (o/ctl mic-1-ampt :thresh (o/db->amp -30))
   (o/ctl mic-2-ampt :thresh (o/db->amp -30)) ;; TODO may need to change this
   (o/ctl mic-3-ampt :thresh (o/db->amp -30))

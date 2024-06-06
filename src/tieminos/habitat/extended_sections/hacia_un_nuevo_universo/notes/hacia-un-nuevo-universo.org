@@ -1,6 +1,7 @@
 * TODO Clarify threshold levels for Milo and have a strategy for setting them on different scenarios
 * 2.2.30 - constellation tests
 ** TODO in general fix the balance between the clean and processed outputs of the guitar. Processed seems too low, but then the clean output may need to be reduced a little bit.
+** TODO Remove UAD plugins in Mics 2 and 3 to reduce latency
 ** part 2
 *** TODO In this part the guitar needs to be fed at a higher volume to the process, as it can barely be heard in there and is fully masked by the clean output
 *** #5 works great

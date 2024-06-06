@@ -95,7 +95,7 @@
               (o/pan-az :num-channels 8
                         :in (o/lpf (o/saw freq) 2000)
                         :pos (o/mouse-x:kr 0 2)
-                        :width 1))))
+                        :width 2))))
   (def test (test-8chan-circle-az :dur 10 :freq (* (rand-nth [1 2 3 4]) 200)))
   (o/stop)
   (defsynth sini2
@@ -110,5 +110,9 @@
                 (* 0.2 (o/sin-osc))]))
   (sini2 :out
          (reaper-returns 6))
+  (defsynth balance-test [out 0]
+    (o/out out (* 0.5 (o/pink-noise))))
+  (def b (balance-test))
+  (o/ctl b :out 1)
   (o/stop)
   (o/ctl test :freq 800))
