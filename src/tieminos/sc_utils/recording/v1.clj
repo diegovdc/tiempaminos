@@ -106,34 +106,34 @@
            print-info? true}
       :as rec-config}]
   (ref-rain
-    :id (keyword "recording" (str "start-recording"
-                                  (name-buf-key buf-key)))
-    :tempo bpm
-    :loop? false
-    :durs (conj (vec (repeat countdown (seconds->dur 1 bpm)))
-                (seconds->dur seconds bpm)
-                1)
-    :on-event (on-event
-                (do
-                  (when  (zero? index)
-                    (timbre/info (str msg ": " buf-key))
-                    (when print-info? (println "Countdown:")))
+   :id (keyword "recording" (str "start-recording"
+                                 (name-buf-key buf-key)))
+   :tempo bpm
+   :loop? false
+   :durs (conj (vec (repeat countdown (seconds->dur 1 bpm)))
+               (seconds->dur seconds bpm)
+               1)
+   :on-event (on-event
+              (do
+                (when  (zero? index)
+                  (timbre/info (str msg ": " buf-key))
+                  (when print-info? (println "Countdown:")))
 
-                  (cond (> (- countdown index) 0)
-                        (when print-info?
-                          (print (str (- countdown index) "... "))
-                          (flush))
+                (cond (> (- countdown index) 0)
+                      (when print-info?
+                        (print (str (- countdown index) "... "))
+                        (flush))
 
-                        (= countdown index)
-                        (do (reset! recording? true)
-                            (run-rec bufs-atom buf-key seconds input-bus rec-config)
-                            (when on-rec-start
-                              (on-rec-start rec-config)))
+                      (= countdown index)
+                      (do (reset! recording? true)
+                          (run-rec bufs-atom buf-key seconds input-bus rec-config)
+                          (when on-rec-start
+                            (on-rec-start rec-config)))
 
-                        :else
-                        (do (when print-info? (println "Done!"))
-                            (reset! recording? false)
-                            (on-end buf-key)))))))
+                      :else
+                      (do (when print-info? (println "Done!"))
+                          (reset! recording? false)
+                          (on-end buf-key)))))))
 
 (def default-samples-path
   (str (System/getProperty "user.dir")

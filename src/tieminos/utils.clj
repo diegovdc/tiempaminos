@@ -247,7 +247,6 @@
   (def tprint (throttle #(println "hola" %) 2000))
   (doseq [x (range 6)] (tprint x)))
 
-
 (defn throttle2
   "Like throttle, but after a call, it will discard all calls effectuated during the `time-ms` waiting period."
   [f time-ms]
