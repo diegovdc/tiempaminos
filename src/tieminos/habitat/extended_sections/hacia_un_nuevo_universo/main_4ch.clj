@@ -38,8 +38,7 @@
 
 (defonce play-sample? (atom false))
 (comment
-  (reset! play-sample? false)
-  )
+  (reset! play-sample? false))
 (defn play-sample
   [{:keys [out]}]
   (when play-sample?

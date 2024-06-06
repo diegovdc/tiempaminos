@@ -1,4 +1,12 @@
 * TODO Clarify threshold levels for Milo and have a strategy for setting them on different scenarios
+* 2.2.30 - constellation tests
+** TODO in general fix the balance between the clean and processed outputs of the guitar. Processed seems too low, but then the clean output may need to be reduced a little bit.
+** part 2
+*** TODO In this part the guitar needs to be fed at a higher volume to the process, as it can barely be heard in there and is fully masked by the clean output
+*** #5 works great
+*** #3
+*** #4
+*** #6
 * 2.2.28
 *Added harmonic constellations*
 Adds controls for switching harmonies and controls for playing samples

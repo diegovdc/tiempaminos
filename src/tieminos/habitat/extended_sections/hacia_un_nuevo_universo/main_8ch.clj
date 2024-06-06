@@ -39,8 +39,7 @@
 
 (defonce play-sample? (atom false))
 (comment
-  (reset! play-sample? false)
-  )
+  (reset! play-sample? false))
 (defn play-sample
   [{:keys [out]}]
   (when play-sample?
@@ -143,12 +142,12 @@
    mixed 0
    non-recordable 0
    out 0]
-  (o/out out (o/mix [(o/in guitar 4)
-                     (o/in percussion 4)
-                     (o/in guitar-processes 4)
-                     (o/in percussion-processes 4)
-                     (o/in mixed 4)
-                     (o/in non-recordable 4)])))
+  (o/out out (o/mix [(o/in guitar 8)
+                     (o/in percussion 8)
+                     (o/in guitar-processes 8)
+                     (o/in percussion-processes 8)
+                     (o/in mixed 8)
+                     (o/in non-recordable 8)])))
 
 (oe/defsynth ps-ringz-4ins
   [mic-1 0
@@ -180,11 +179,11 @@
                    sig2 (+ (-> sig (o/pitch-shift 0.05 ps2))
                            (-> sig (o/pitch-shift 0.05 ps1)
                                (* 0.8)))
-                   sig2* (o/pan-az 8 (+ (* 0.25 sig) sig2) (scu/lfo-kr 0.5 -1 1))
+                   sig2* (o/pan-az 8 (+ (* 0.25 sig) sig2) (scu/lfo-kr 0.5 -1 1) 1.8)
                    reson (-> (+ sig2 (* 0.25 sig))
                              (o/bpf rz-freq (scu/lfo-kr 3 0.25 0.5))
                              (* 2.5)
-                             (#(o/pan-az 8 % (scu/lfo-kr 5 -1 1))))]
+                             (#(o/pan-az 8 % (scu/lfo-kr 5 -1 1) 1.8)))]
                (-> (+ sig2*
                       reson
                       #_(-> sig2
@@ -437,12 +436,12 @@
     :preouts preouts}
    {}
    #_{:guitar {:amp 1
-               :type :clockwise
-               :rate 1}})
+             ;; :type :clockwise
+               :rate 2}})
 
   #_(stop-panned-inputs!)
 
-   (do ;; Amp triggers
+  (do ;; Amp triggers
     ;; NOTE IMPORTANT do not forget to add the `add-ringz-group` `:add-custom-groups-fn`
     ;; to the `init!` function's config
 
@@ -500,22 +499,22 @@
     (try (o/kill amp-reg-ins) (o/kill ar) (catch Exception _ nil))
 
     ;; FIXME this must be 8 channels as well as the ins
-    (def amp-regulator-ins-bus (o/audio-bus 4 "amp-regulator-ins-bus"))
+    (def amp-regulator-ins-bus (o/audio-bus 8 "amp-regulator-ins-bus"))
     (def amp-reg-ins (amp-regulator-ins {:group (groups/fx)
-                                         :guitar (:guitar main-returns)
-                                         :percussion (:percussion main-returns)
-                                         :guitar-processes (:guitar-processes main-returns)
-                                         :percussion-processes (:percussion-processes main-returns)
-                                         :mixed (:mixed main-returns)
-                                         :non-recordable (:non-recordable main-returns)
+                                         :guitar (routing/get-guitar-main-out)
+                                         :percussion (routing/get-percussion-main-out)
+                                         :guitar-processes (routing/get-guitar-processes-main-out)
+                                         :percussion-processes (routing/get-percussion-processes-main-out)
+                                         :mixed (routing/get-mixed-main-out)
+                                         :non-recordable (routing/get-non-recordable-main-out)
                                          :out amp-regulator-ins-bus}))
     (init-amp-regulator-receiver!)
 
     (def ar (amp-regulator-replier
-              (groups/fx)
-              :in amp-regulator-ins-bus
-              :replyRate 5
-              :peakLag 1)))
+             (groups/fx)
+             :in amp-regulator-ins-bus
+             :replyRate 5
+             :peakLag 1)))
 
   (start-rec-loop3!
    {:id ::rec-loop

@@ -8,7 +8,7 @@ o.memSize= 512000*20;
 o.maxNodes=128*1024;
 s.options.maxLogins = 8;
 o.numInputBusChannels = 32;
-o.numOutputBusChannels = 58;
+o.numOutputBusChannels = 84;
 s.latency = 0.01;
 // s.options.sampleRate = 48000; // would be nice to use but increases latency to a more noticeable level
 s.waitForBoot({

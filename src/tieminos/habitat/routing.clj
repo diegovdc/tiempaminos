@@ -19,16 +19,16 @@
 (def return-n-chans (atom 4))
 
 #_(def reaper-returns ;; previous version
-  "Returns map, numbered after the returns in reaper i.e. 1 based numbers"
-  (let [starting-chan 33 ;; previous channels belong to the outputs of the instruments from reaper that go into SC
-        n-chans @n-chans
-        total-returns 6
-        return-outs (range starting-chan
-                           (+ starting-chan
-                              (* n-chans total-returns))
-                           n-chans)]
-    (println n-chans)
-    (into {} (map-indexed (fn [i out] [(inc i) out]) return-outs))))
+    "Returns map, numbered after the returns in reaper i.e. 1 based numbers"
+    (let [starting-chan 33 ;; previous channels belong to the outputs of the instruments from reaper that go into SC
+          n-chans @n-chans
+          total-returns 6
+          return-outs (range starting-chan
+                             (+ starting-chan
+                                (* n-chans total-returns))
+                             n-chans)]
+      (println n-chans)
+      (into {} (map-indexed (fn [i out] [(inc i) out]) return-outs))))
 
 (defn reaper-returns
   [return]
@@ -39,8 +39,7 @@
 (comment
   (-> reaper-returns)
   (reset! return-n-chans 8)
-  (reaper-returns 5)
-  )
+  (reaper-returns 5))
 
 ;; TODO eventually remove
 (def clean-return (reaper-returns 1))
@@ -277,7 +276,6 @@
 (defn get-mixed-instrument-return
   []
   (get-mixed-main-out))
-
 
 (defn init-preouts!
   "Note that no preout is initialized for the `:texto-sonoro`"

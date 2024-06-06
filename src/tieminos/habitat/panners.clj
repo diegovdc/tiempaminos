@@ -39,11 +39,11 @@
    orientation 0.5
    gate 1]
   (o/out out
-         (-> (oe/circle-az :num-channels 8
-                           :in (o/in in)
-                           :pos (o/lf-noise1 rate)
-                           :width width
-                           :orientation orientation)
+         (-> (oe/circle-az-8ch :num-channels 8
+                               :in (o/in in)
+                               :pos (o/lf-noise1 rate)
+                               :width width
+                               :orientation orientation)
              (* amp (o/env-gen (o/env-adsr a 1 1 release :curve -0.5)
                                gate
                                :action o/FREE)))))
