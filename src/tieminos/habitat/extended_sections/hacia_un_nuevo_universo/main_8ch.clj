@@ -364,12 +364,23 @@
 
 (comment
   (mic-3-amp-trig-handler {:args {:in-bus (-> @inputs first second)}}))
-
+(declare section)
 (defn guitar-amp-trig-handler
   [{:keys [in args]}]
   (timbre/info :trig/guitar)
   (play-sample {:group (groups/mid) ;; only when `play-sample?' is true
-                :out (routing/get-mixed-main-out)}))
+                :out (routing/get-mixed-main-out)})
+  (when (= @section :s2)
+    (ps-ringz-rand {:group (ringz-group)
+                    :in (:in-bus args)
+                    :ps1 3/2
+                    :ps2 (get-ps-ratio!)
+                    :rz-freq (+ (rrand -0.2 0.2)
+                                (* (rand-nth [200 250 299])
+                                   (rand-nth [2 3 4 5 11/8])))
+                    :amp @ps-ringz-amp
+                    :time-scale (rand-nth [1/2 1 3/2])
+                    :out (routing/get-percussion-processes-main-out)})))
 
 (defn open-inputs-with-rand-pan*
   "`inputs` and `preouts` are atoms.
@@ -441,20 +452,32 @@
                                         #_(println "stopping" (- (o/now) @waiting-timestamp))
                                         #_(flush)
                                         (stop-chan-fn))))))))
+
 (let [running? (atom false)]
   (defn lower-mic-group-volume!
-    [reaper-osc-client]
-    (when-not @running?
-      (timbre/info "Lowering mic group volume on Reaper")
-      (reset! running? true)
-      (slide-fader
-       {:initial-fader-pos 0.716 ;; ca.0db
-        :target-fader-pos 0.48   ;; ca.-12db
-        :increment 0.015
-        :wait-on-traget-pos-ms 10000
-        :update-fader-pos-fn (fn [pos finished?]
-                               (osc/osc-send reaper-osc-client "/track/3/volume" (float pos))
-                               (when finished? (reset! running? false)))}))))
+    ;; fader positions: `0.653` -3db, `0.593` -6db, `0.48` -12db
+    ([reaper-osc-client] (lower-mic-group-volume! reaper-osc-client {}))
+    ([reaper-osc-client config]
+     (when-not @running?
+       (timbre/info "Lowering mic group volume on Reaper")
+       (reset! running? true)
+       (slide-fader
+        (merge {:initial-fader-pos 0.716 ;; ca.0db
+                :target-fader-pos 0.48   ;; ca.-12db
+                :increment 0.015
+                :wait-on-traget-pos-ms 10000
+                :update-fader-pos-fn (fn [pos finished?]
+                                       (osc/osc-send reaper-osc-client "/track/3/volume" (float pos))
+                                       (when finished? (reset! running? false)))}
+               config))))))
+
+(comment
+  (osc/osc-send reaper-osc-client "/track/3/volume" (float 0.653))
+
+  (mic-1-amp-trig-handler
+   {:in-bus ps-ringz-4ins-bus}))
+
+(defonce section (atom :s1))
 
 (comment
   ;; OSC interactions
@@ -472,21 +495,41 @@
            press? (= 1.0 (first args))]
        (case path
          "/Sections/section1" (when press?
-                                (timbre/info "Initing section #1")
+                                (timbre/info "S1")
+                                (reset! section :s1)
                                 (open-inputs-with-rand-pan*
                                  {:inputs inputs
                                   :preouts preouts}
-                                 {}))
+                                 {})
+                                (ps-ringz-rand {:group (ringz-group)
+                                                :in ps-ringz-4ins-bus
+                                                :ps1 3/2
+                                                :ps2 (get-ps-ratio!)
+                                                :rz-freq (+ (rrand -0.2 0.2)
+                                                            (* (rand-nth [200 250 300])
+                                                               (rand-nth [1 2 3 4 5])))
+                                                :amp @ps-ringz-amp
+                                                :time-scale 3
+                                                :out (routing/get-percussion-processes-main-out)}))
          "/Sections/section2" (when press?
-                                (timbre/info "Initing section #2")
+                                (timbre/info "S2")
+                                (reset! section :s2)
                                 (open-inputs-with-rand-pan*
                                  {:inputs inputs
                                   :preouts preouts}
-                                 {:guitar {:rate (rrange 1 3)}
-                                  :mic-1 {:rate (rrange 1 3)}
-                                  :mic-2 {:rate (rrange 1 3)}
-                                  :mic-3 {:rate (rrange 1 3)}}))
-         "/Sections/section3" (when press? (println "INiting section3"))
+                                 {:guitar {:mix 0.5
+                                           :room 2}}))
+         "/Sections/section3" (when press?
+                                (timbre/info "S3")
+                                (reset! section :s3)
+                                (open-inputs-with-rand-pan*
+                                 {:inputs inputs
+                                  :preouts preouts}
+                                 {:mic-1 {:amp (o/db->amp 15)
+                                          :rate 0
+                                          :width 4
+                                          :mix 1
+                                          :room 1}}))
          "/Sections/play-sample" (if press?
                                    (do
                                      (timbre/info "Starting sampler")
@@ -502,11 +545,16 @@
                                      (reset! play-sample? false)))
 
          "/Sections/ps2-ratios-index" (let [index (first args)]
-                                        (println "Setting ratio" index)
+                                        (timbre/info "Setting ratio" index)
                                         (if (int? index)
                                           (reset! ps2-ratios-index index)
                                           (timbre/error "Cannot set ps2-ratios-index" {:args args})))
-         "/feedback-panic" (when press? (lower-mic-group-volume! reaper-osc-client))
+         "/feedback-panic" (when press? (timbre/info "Feedback Panic")
+                                 (lower-mic-group-volume! reaper-osc-client))
+         "/feedback-control" (when press? (timbre/info "Feedback Control")
+                                   (lower-mic-group-volume! reaper-osc-client
+                                                            {:target-fader-pos 0.593 ;; -6db
+                                                             :wait-on-traget-pos-ms 12000}))
          (timbre/warn "Unknown path for message: " msg args-map)))))
   ;; Init proceedure
   (when @habitat-initialized?
@@ -520,15 +568,7 @@
   (open-inputs-with-rand-pan*
    {:inputs inputs
     :preouts preouts}
-   #_{}
-   {:mic-1 {:amp (o/db->amp 15)
-            :rate 0
-            :width 4
-            :mix 1
-            :room 1}}
-   #_{:guitar {:amp 1
-                ;; :type :clockwise
-               :rate 2}})
+   {})
 
   #_(stop-panned-inputs!)
 
@@ -612,7 +652,7 @@
   (o/ctl mic-1-ampt :thresh (o/db->amp -30))
   (o/ctl mic-2-ampt :thresh (o/db->amp -38)) ;; TODO may need to change this
   (o/ctl mic-3-ampt :thresh (o/db->amp -20))
-  (o/ctl guitar-ampt :thresh (o/db->amp -25))
+  (o/ctl guitar-ampt :thresh (o/db->amp -18))
 
   ;; Amp regulator
   (reset! ps-ringz-amp-reg-scale 8)
