@@ -1,4 +1,9 @@
 * TODO Clarify threshold levels for Milo and have a strategy for setting them on different scenarios
+* TODO Micro 1 EQ boost lows on second and third section
+** TODO Also increase transposition probability to low notes on that section
+* TODO Gong, third section lows in third section at the bottom
+* TODO Gong subbass throughout
+* TODO Ajustar width del paneo, incrementarlo
 * 2.2.30 - constellation tests
 ** TODO in general fix the balance between the clean and processed outputs of the guitar. Processed seems too low, but then the clean output may need to be reduced a little bit.
 ** TODO Remove UAD plugins in Mics 2 and 3 to reduce latency

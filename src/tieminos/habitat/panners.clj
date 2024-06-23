@@ -34,9 +34,11 @@
    amp 1
    rate 0.1
    release 2
-   width 2
+   width 3
    a 2
    orientation 0.5
+   mix 0
+   room 1
    gate 1]
   (o/out out
          (-> (oe/circle-az-8ch :num-channels 8
@@ -44,6 +46,7 @@
                                :pos (o/lf-noise1 rate)
                                :width width
                                :orientation orientation)
+             (o/free-verb mix room)
              (* amp (o/env-gen (o/env-adsr a 1 1 release :curve -0.5)
                                gate
                                :action o/FREE)))))
