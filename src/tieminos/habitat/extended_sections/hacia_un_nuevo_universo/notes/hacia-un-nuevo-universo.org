@@ -1,4 +1,56 @@
+* Tunel cuántico / Bardó
+** TODO Rerenderizar todos los audios
+** TODO Compartirlos
+** TODO Organizar cronológicamente (en tabla de excel)
+*** TODO Organización por estratos o fases temporales del código
+Agrupar por bloques secuenciales de sesiones donde opera más o menos el mismo código o el mismo resultado estético
+*** TODO Marcar partes específicas del cada track
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 * TODO Clarify threshold levels for Milo and have a strategy for setting them on different scenarios
+* TODO investigar 2.2.12
 * TODO Micro 1 EQ boost lows on second and third section
 ** TODO Also increase transposition probability to low notes on that section
 * TODO Gong, third section lows in third section at the bottom
