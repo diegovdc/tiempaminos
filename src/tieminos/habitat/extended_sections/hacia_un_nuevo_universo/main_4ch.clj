@@ -1,4 +1,4 @@
-(ns tieminos.habitat.extended-sections.hacia-un-nuevo-universo.scratch.amp-trig
+(ns tieminos.habitat.extended-sections.hacia-un-nuevo-universo.main-4ch
   (:require
    [clojure.data.generators :refer [weighted]]
    [overtone.core :as o]
@@ -22,7 +22,8 @@
    [tieminos.math.utils :refer [hyperbolic-decay]]
    [tieminos.overtone-extensions :as oe]
    [tieminos.sc-utils.synths.v1 :as scu]
-   [tieminos.utils :refer [iter-async-call2 rrange throttle2]]
+   [tieminos.utils :refer [iter-async-call2 rrange throttle2 wrap-at]]
+   [time-time.dynacan.players.gen-poly :as gp]
    [time-time.standard :refer [rrand]]))
 
 (defn get-rand-buf []
@@ -35,43 +36,48 @@
        (take 2)
        (#(when (seq %) (rand-nth %)))))
 
-(defn play-sample [{:keys [out]}]
-  (let [buf (get-rand-buf)
-        trig-rate (weighted {40 2 100 5 80 2})
-        start (rrand 0 0.9)
-        end (rrand (+ start 0.01) 1)]
-    (when buf
-      (amanecer*guitar-clouds-2 {:group (groups/mid)
-                                 :buf buf
-                                 :a (weighted {3 3
-                                               5 1
-                                               0.2 1})
-                                 :d (weighted {3 3
-                                               5 1
-                                               0.1 1})
-                                 :r (weighted {3 3
-                                               5 1
-                                               2 1
-                                               1 0.5})
-                                 :rate (weighted {1/2  2
-                                                  1    5
-                                                  3/2  5
-                                                  2    3
-                                                  11/4 2
-                                                  7/4  3})
-                                 :d-level (weighted {0.7 2 0.5 5 0.1 2})
-                                 :rev-room (rrand 2 12)
-                                 :trig-rate trig-rate
-                                 :grain-dur (/ 1 (/ trig-rate 2))
-                                 :amp-lfo (rrange 0.1 0.4)
-                                 :amp-lfo-min 0.95
-                                 :amp (weighted {1 1 0.5 5 0.7 3 0.8 2 0.9 1})
-                                 :lpf-min 300
-                                 :lpf-max (rrange 2000 10000)
-                                 :start start
-                                 :end end
-                                 :out out
-                                 :pan (rrange -1 1)}))))
+(defonce play-sample? (atom false))
+(comment
+  (reset! play-sample? false))
+(defn play-sample
+  [{:keys [out]}]
+  (when play-sample?
+    (let [buf (get-rand-buf)
+          trig-rate (weighted {40 2 100 5 80 2})
+          start (rrand 0 0.9)
+          end (rrand (+ start 0.01) 1)]
+      (when buf
+        (amanecer*guitar-clouds-2 {:group (groups/mid)
+                                   :buf buf
+                                   :a (weighted {3 3
+                                                 5 1
+                                                 0.2 1})
+                                   :d (weighted {3 3
+                                                 5 1
+                                                 0.1 1})
+                                   :r (weighted {3 3
+                                                 5 1
+                                                 2 1
+                                                 1 0.5})
+                                   :rate (weighted {1/2  2
+                                                    1    5
+                                                    3/2  5
+                                                    2    3
+                                                    11/4 2
+                                                    7/4  3})
+                                   :d-level (weighted {0.7 2 0.5 5 0.1 2})
+                                   :rev-room (rrand 2 12)
+                                   :trig-rate trig-rate
+                                   :grain-dur (/ 1 (/ trig-rate 2))
+                                   :amp-lfo (rrange 0.1 0.4)
+                                   :amp-lfo-min 0.95
+                                   :amp (weighted {1 1 0.5 5 0.7 3 0.8 2 0.9 1})
+                                   :lpf-min 300
+                                   :lpf-max (rrange 2000 10000)
+                                   :start start
+                                   :end end
+                                   :out out
+                                   :pan (rrange -1 1)})))))
 
 (comment
   ;; Amplitudes
@@ -169,8 +175,8 @@
    e3 0.65
    out 0]
   (o/out out (let [sig (o/in in 1)
-                   sig2 (+ (-> sig (o/pitch-shift 0.1 ps2))
-                           (-> sig (o/pitch-shift 0.1 ps1)
+                   sig2 (+ (-> sig (o/pitch-shift 0.05 ps2))
+                           (-> sig (o/pitch-shift 0.05 ps1)
                                (* 0.8)))
                    sig2* (o/pan-az 4 (+ (* 0.25 sig) sig2) (scu/lfo-kr 0.5 -1 1))
                    reson (-> (+ sig2 (* 0.25 sig))
@@ -197,13 +203,42 @@
 
 (def ps-ringz (throttle2 ps-ringz** 100))
 
+(defn- rand-ratio [ratios]
+  (if (map? ratios)
+    (weighted ratios)
+    (rand-nth ratios)))
+
+(defonce ps2-ratios-index (atom 0))
+(comment
+  (-> @ps2-ratios-index)
+  (reset! ps2-ratios-index 6))
+
+(defn- get-ps-ratio!
+  []
+  (let [index @ps2-ratios-index
+        cross-sets
+        [[[8/7 11/8 7/4] [1/4 11/32 4/11 13/32]] ;; original
+         [[8/7 33/28 7/4] [1/4  4/11 4/7]]       ;; original v2
+         [[9/7 4/7 7/4] [1/4 4/7 7/10]]          ;; jade
+         [[5/4 5/3 25/11] [1/4 7/10 13/8]]       ;; brillante azul
+         [[5/4 5/3 25/11 8/13] [1/4 7/10]]       ;; brillante azul v2
+         [[5/4 5/3 25/11] [1/4  7/10 13/8] {1/2 2 1 1}] ;; brillante azul v3 (golondrina)
+         [[5/4 5/13 25/11] [1/4 7/10 3/2]] ;; golondrina v2 (prime rotation A)
+         [[5/4 5/13 25/11] [1/4 7/10 3/2] [7]] ;; golondrina v2.1 (prime rotation A)
+         [[13/16 13/24 13/11 1/22] [1/4 11/26 33/64]] {2 3 1 1}] ;; púrpura
+        ]
+    (->> cross-sets
+         (wrap-at index)
+         (map rand-ratio)
+         (apply *))))
+
 (defn mic-1-amp-trig-handler
   [{:keys [args]}]
   (timbre/info :trig/mic-1)
   (ps-ringz {:group (ringz-group)
              :in (:in-bus args)
              :ps1 3/2
-             :ps2 (* (rand-nth [8/7 11/8 7/4]) (rand-nth [1/4 11/32 4/11 13/32]))
+             :ps2 (get-ps-ratio!)
              :rz-freq (+ (rrand -0.2 0.2)
                          (* (rand-nth [200 250 300])
                             (rand-nth [1 2 3 4 5])))
@@ -217,7 +252,7 @@
   (ps-ringz {:group (ringz-group)
              :in (:in-bus args)
              :ps1 3/2
-             :ps2 (* (rand-nth [8/7 11/8 7/4]) (rand-nth [1/4 11/32 4/11 13/32]))
+             :ps2 (get-ps-ratio!)
              :rz-freq (+ (rrand -0.2 0.2)
                          (* (rand-nth [200 250 300])
                             (rand-nth [2 3 7/2 5])))
@@ -227,34 +262,27 @@
 
 (defn mic-3-amp-trig-handler
   [{:keys [_in args]}]
-  (timbre/info :trig/mic-3)
-  (play-sample {:group (groups/mid)
+  (timbre/info :trig/mic-3 args)
+  (play-sample {:group (groups/mid) ;; only when `play-sample?' is true
                 :out mixed-main-out})
   (ps-ringz {:group (ringz-group)
              :in (:in-bus args)
              :ps1 3/2
-             :ps2 (* (rand-nth [8/7 11/8 7/4]) (rand-nth [1/4 11/32 4/11 13/32]))
+             :ps2 (get-ps-ratio!)
              :rz-freq (+ (rrand -0.2 0.2)
                          (* (rand-nth [200 250 299])
                             (rand-nth [2 3 4 5 11/8])))
              :amp @ps-ringz-amp
              :time-scale (rand-nth [1/2 1 3/2])
              :out percussion-processes-main-out}))
+
 (comment
-  (ps-ringz {:group (ringz-group)
-             :in (-> @inputs :mic-3 :bus)
-             :ps1 3/2
-             :ps2 (* (rand-nth [1 8/7 11/8 7/4]) (rand-nth [1/4 11/32 4/11 13/32]))
-             :rz-freq (* (rand-nth [200 251 300])
-                         (rand-nth [1 2 3 #_4 #_5]))
-             :amp @ps-ringz-amp
-             :time-scale (rand-nth [1/2 1 3/2])
-             :out percussion-processes-main-out}))
+  (mic-3-amp-trig-handler {:args {:in-bus (-> @inputs first second)}}))
 
 (defn guitar-amp-trig-handler
   [{:keys [in args]}]
   (timbre/info :trig/guitar)
-  (play-sample {:group (groups/mid)
+  (play-sample {:group (groups/mid) ;; only when `play-sample?' is true
                 :out mixed-main-out}))
 
 (defn open-inputs-with-rand-pan*
@@ -346,17 +374,53 @@
   ;; OSC interactions
   ;; receving port should be 16180
   (def reaper-osc-client (habitat-osc/make-reaper-osc-client))
+  (def internal-osc-client (habitat-osc/make-internal-osc-client))
+  (defn osc-set-section [n]
+    (osc/osc-send internal-osc-client
+                  (str "/Sections/section" n)
+                  1.0))
+  (osc-set-section 1)
   (habitat-osc/responder
    (fn [{:keys [path args] :as msg}]
      (let [args-map (args->map args)
            press? (= 1.0 (first args))]
        (case path
-         "/Sections/section1" (when press? (println "INiting section1"))
-         "/Sections/section2" (when press? (println "INiting section2"))
+         "/Sections/section1" (when press?
+                                (timbre/info "Initing section #1")
+                                (open-inputs-with-rand-pan*
+                                 {:inputs inputs
+                                  :preouts preouts}
+                                 {}))
+         "/Sections/section2" (when press?
+                                (timbre/info "Initing section #2")
+                                (open-inputs-with-rand-pan*
+                                 {:inputs inputs
+                                  :preouts preouts}
+                                 {:guitar {:rate (rrange 1 3)}
+                                  :mic-1 {:rate (rrange 1 3)}
+                                  :mic-2 {:rate (rrange 1 3)}
+                                  :mic-3 {:rate (rrange 1 3)}}))
          "/Sections/section3" (when press? (println "INiting section3"))
-         "/feedback-panic" (when press? (lower-mic-group-volume! reaper-osc-client))
-         (println "Unknown path for message: " msg args-map)))))
+         "/Sections/play-sample" (if press?
+                                   (do
+                                     (timbre/info "Starting sampler")
+                                     (reset! play-sample? true)
+                                     (start-rec-loop3!
+                                      {:id ::rec-loop
+                                       :input-bus-fn (fn [_] (-> @inputs (select-keys [:guitar :mic-1 :mic-2 :mic-3]) vals (->> (map :bus))))
+                                       :durs (mapv (fn [_] (rrange 10 20)) (range 40))
+                                       :rec-input-config {:print-info? false}}))
+                                   (do
+                                     (timbre/info "Stopping sampler")
+                                      ;; NOTE that `::rec-loop` is never stopped
+                                     (reset! play-sample? false)))
 
+         "/Sections/ps2-ratios-index" (let [index (first args)]
+                                        (if (int? index)
+                                          (reset! ps2-ratios-index index)
+                                          (timbre/error "Cannot set ps2-ratios-index" {:args args})))
+         "/feedback-panic" (when press? (lower-mic-group-volume! reaper-osc-client))
+         (timbre/warn "Unknown path for message: " msg args-map)))))
   ;; Init proceedure
   (when @habitat-initialized?
     (reset! rec/recording? {})
@@ -416,7 +480,7 @@
 
   (o/ctl ps-ringz-4ins* :guitar-amp 1.2)
   (o/ctl mic-1-ampt :thresh (o/db->amp -30))
-  (o/ctl mic-2-ampt :thresh (o/db->amp -30))
+  (o/ctl mic-2-ampt :thresh (o/db->amp -30)) ;; TODO may need to change this
   (o/ctl mic-3-ampt :thresh (o/db->amp -30))
   (o/ctl guitar-ampt :thresh (o/db->amp -25))
 
@@ -450,6 +514,9 @@
              :peakLag 1)))
 
   (start-rec-loop3!
-   {:input-bus-fn (fn [_] (-> @inputs (select-keys [:guitar :mic-1 :mic-2 :mic-3]) vals (->> (map :bus))))
+   {:id ::rec-loop
+    :input-bus-fn (fn [_] (-> @inputs (select-keys [:guitar :mic-1 :mic-2 :mic-3]) vals (->> (map :bus))))
     :durs (mapv (fn [_] (rrange 10 20)) (range 40))
-    :rec-input-config {:print-info? false}}))
+    :rec-input-config {:print-info? false}})
+
+  (gp/stop ::rec-loop))

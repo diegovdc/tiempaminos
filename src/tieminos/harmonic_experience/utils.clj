@@ -18,13 +18,12 @@
 
 (def ^:private scale->sorted-ratios
   (memoize
-    (fn [scale]
-      (map :bounded-ratio scale))))
+   (fn [scale]
+     (map :bounded-ratio scale))))
 
 (defn- midi->ratio&freq*
   [{:keys [ref-note root scale midi-note]}]
   {:ratio (midi->ratio ref-note (scale->sorted-ratios scale) midi-note)
-   :freq (scale/deg->freq scale root (- midi-note ref-note))}
-  )
+   :freq (scale/deg->freq scale root (- midi-note ref-note))})
 
 (def midi->ratio&freq #'midi->ratio&freq*)

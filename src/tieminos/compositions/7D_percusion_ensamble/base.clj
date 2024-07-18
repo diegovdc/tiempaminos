@@ -18,10 +18,9 @@
    [time-time.standard :refer [rrand]]))
 
 (comment
-  (midi/midi-devices )
+  (midi/midi-devices)
   (midi/midi-out "VirMIDI")
-  (midi/midi-out "Bus 3")
-  )
+  (midi/midi-out "Bus 3"))
 (def surge-suave (midi/midi-out "VirMIDI"))
 (def ssuave surge-suave)
 (def plasmonic-bell (midi/midi-out "Bus 3"))
@@ -55,8 +54,8 @@
 
 #_{:clj-kondo/ignore [:deprecated-var]}
 (def subscales-list-map {:original dorian-hexanies-in-polydori
-                      :sorted dorian-hexanies-in-polydori-1
-                      :modal dorian-hexanies-in-polydori-2})
+                         :sorted dorian-hexanies-in-polydori-1
+                         :modal dorian-hexanies-in-polydori-2})
 
 (defn diat->polydori-degree
   ([scale degree] (diat->polydori-degree scale degree :original))
@@ -97,7 +96,6 @@ If using `mdeg->freq` this may show up only once because it is memoized, even if
                       1046 (bh 4)
                       2092 (bh 6)})
 
-
 (defn freq->out
   "The key of the `freq->chan-map` is the top freq limit.
   All frequencies at or below this will go to the specified channel.
@@ -106,12 +104,12 @@ If using `mdeg->freq` this may show up only once because it is memoized, even if
   ([freq->chan-map freq]
    (let [sorted-list (sort-freq->chan-map freq->chan-map)]
      (reduce
-       (fn [chan [lower higher]]
-         (if (< lower freq (inc higher))
-           (reduced (freq->chan-map higher))
-           chan))
-       (freq->chan-map (second (last sorted-list)))
-       sorted-list))))
+      (fn [chan [lower higher]]
+        (if (< lower freq (inc higher))
+          (reduced (freq->chan-map higher))
+          chan))
+      (freq->chan-map (second (last sorted-list)))
+      sorted-list))))
 
 (def out (memoize freq->out))
 
@@ -147,7 +145,7 @@ If using `mdeg->freq` this may show up only once because it is memoized, even if
 
 (defn init! []
   (when (o/server-disconnected?)
-      (tieminos.core/connect))
+    (tieminos.core/connect))
   (groups/init-groups!))
 
 (def mempan
@@ -163,7 +161,6 @@ If using `mdeg->freq` this may show up only once because it is memoized, even if
                      :ratio ratio
                      :on-event on-event}
               ref (assoc :ref ref))))
-
 
 (defn vel
   "Ensure valid midi velocity"

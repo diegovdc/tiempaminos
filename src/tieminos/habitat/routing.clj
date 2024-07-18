@@ -16,16 +16,30 @@
   (o/ctl guitar :out (reaper-returns 2))
   (o/stop))
 
-(def reaper-returns
-  "Returns map, numbered after the returns in reaper i.e. 1 based numbers"
-  (let [starting-chan 33
-        n-chans 4
-        total-returns 6
-        return-outs (range starting-chan
-                           (+ starting-chan
-                              (* n-chans total-returns))
-                           n-chans)]
-    (into {} (map-indexed (fn [i out] [(inc i) out]) return-outs))))
+(def return-n-chans (atom 4))
+
+#_(def reaper-returns ;; previous version
+    "Returns map, numbered after the returns in reaper i.e. 1 based numbers"
+    (let [starting-chan 33 ;; previous channels belong to the outputs of the instruments from reaper that go into SC
+          n-chans @n-chans
+          total-returns 6
+          return-outs (range starting-chan
+                             (+ starting-chan
+                                (* n-chans total-returns))
+                             n-chans)]
+      (println n-chans)
+      (into {} (map-indexed (fn [i out] [(inc i) out]) return-outs))))
+
+(defn reaper-returns
+  [return]
+  (let [starting-chan 33 ;; previous channels belong to the outputs of the instruments from reaper that go into SC
+        n-chans @return-n-chans]
+    (+ starting-chan (* n-chans (dec return)))))
+
+(comment
+  (-> reaper-returns)
+  (reset! return-n-chans 8)
+  (reaper-returns 5))
 
 ;; TODO eventually remove
 (def clean-return (reaper-returns 1))
@@ -34,20 +48,29 @@
   "Return for buffers and sounds processed by SC"
   (reaper-returns 3))
 
+;; NOTE ns will need to be recompiled if the `return-n-chans` value changes. Therefore it's better to not use these `def`s  anymore.
 (def guitar-main-out (reaper-returns 1))
 (def guitar-processes-main-out (reaper-returns 2))
 (def percussion-main-out (reaper-returns 3))
 (def percussion-processes-main-out (reaper-returns 4))
 (def mixed-main-out (reaper-returns 5))
 (def non-recordable-main-out (reaper-returns 6))
-(def main-returns {:guitar guitar-main-out
-                   :guitar-processes guitar-processes-main-out
-                   :percussion percussion-main-out
-                   :percussion-processes percussion-processes-main-out
-                   :mixed mixed-main-out
-                   :non-recordable non-recordable-main-out})
+(def main-returns
+  {:guitar guitar-main-out
+   :guitar-processes guitar-processes-main-out
+   :percussion percussion-main-out
+   :percussion-processes percussion-processes-main-out
+   :mixed mixed-main-out
+   :non-recordable non-recordable-main-out})
 
-(oe/defsynth recordable-output
+(defn get-guitar-main-out [] (reaper-returns 1))
+(defn get-guitar-processes-main-out [] (reaper-returns 2))
+(defn get-percussion-main-out [] (reaper-returns 3))
+(defn get-percussion-processes-main-out [] (reaper-returns 4))
+(defn get-mixed-main-out [] (reaper-returns 5))
+(defn get-non-recordable-main-out [] (reaper-returns 6))
+
+(oe/defsynth recordable-output ;; TODO make octophonic version
   ;; mixdown a 4-ch input into a 1-ch output
   [bus 0 out 0]
   (o/out out (o/mix (o/in bus 4))))
@@ -220,6 +243,16 @@
                        :action o/FREE)]
     (o/out out (* env (o/in in 4)))))
 
+(defsynth preout-8
+  [in 0
+   out 0
+   gate 1
+   release 5]
+  (let [env (o/env-gen (o/env-adsr 2 1 1 release :curve -0.5)
+                       gate
+                       :action o/FREE)]
+    (o/out out (* env (o/in in 8)))))
+
 (defonce preouts (atom {}))
 
 (defn set-preout-in!
@@ -231,35 +264,37 @@
 (defn get-clean-instrument-return
   [input-name]
   (if (= :guitar input-name)
-    guitar-main-out
-    percussion-main-out))
+    (get-guitar-main-out)
+    (get-percussion-main-out)))
 
 (defn get-process-instrument-return
   [input-name]
   (if (= :guitar input-name)
-    guitar-processes-main-out
-    percussion-processes-main-out))
+    (get-guitar-processes-main-out)
+    (get-percussion-processes-main-out)))
 
 (defn get-mixed-instrument-return
   []
-  mixed-main-out)
-
+  (get-mixed-main-out))
 
 (defn init-preouts!
   "Note that no preout is initialized for the `:texto-sonoro`"
-  [inputs]
-  (doseq [[k {:keys [bus synth]}] @preouts]
-    (o/free-bus bus)
-    (ctl-synth2 synth :gate 0))
-  (reset! preouts
-          (->> inputs
-               (map (fn [[input-name _]]
-                      (let [preout-bus (o/audio-bus 4 (str "preout-" (name input-name)))]
-                        [input-name {:bus preout-bus
-                                     :synth (preout {:group (groups/preouts)
-                                                     :in preout-bus
-                                                     :out (get-clean-instrument-return input-name)})}])))
-               (into {}))))
+  [inputs return-n-chans]
+  (let [preout* (case return-n-chans
+                  4 preout
+                  8 preout-8)]
+    (doseq [[_k {:keys [bus synth]}] @preouts]
+      (o/free-bus bus)
+      (ctl-synth2 synth :gate 0))
+    (reset! preouts
+            (->> inputs
+                 (map (fn [[input-name _]]
+                        (let [preout-bus (o/audio-bus return-n-chans (str "preout-" (name input-name)))]
+                          [input-name {:bus preout-bus
+                                       :synth (preout* {:group (groups/preouts)
+                                                        :in preout-bus
+                                                        :out (get-clean-instrument-return input-name)})}])))
+                 (into {})))))
 
 (comment
   (o/stop)

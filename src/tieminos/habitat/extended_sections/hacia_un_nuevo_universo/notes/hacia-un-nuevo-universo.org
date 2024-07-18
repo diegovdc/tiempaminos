@@ -1,4 +1,97 @@
-*
+* Tunel cuántico / Bardó
+** TODO Rerenderizar todos los audios
+** TODO Compartirlos
+** TODO Organizar cronológicamente (en tabla de excel)
+*** TODO Organización por estratos o fases temporales del código
+Agrupar por bloques secuenciales de sesiones donde opera más o menos el mismo código o el mismo resultado estético
+*** TODO Marcar partes específicas del cada track
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+* TODO Clarify threshold levels for Milo and have a strategy for setting them on different scenarios
+* TODO investigar 2.2.12
+* TODO Micro 1 EQ boost lows on second and third section
+** TODO Also increase transposition probability to low notes on that section
+* TODO Gong, third section lows in third section at the bottom
+* TODO Gong subbass throughout
+* TODO Ajustar width del paneo, incrementarlo
+* 2.2.30 - constellation tests
+** TODO in general fix the balance between the clean and processed outputs of the guitar. Processed seems too low, but then the clean output may need to be reduced a little bit.
+** TODO Remove UAD plugins in Mics 2 and 3 to reduce latency
+** part 2
+*** TODO In this part the guitar needs to be fed at a higher volume to the process, as it can barely be heard in there and is fully masked by the clean output
+*** #5 works great
+*** #3
+*** #4
+*** #6
+* 2.2.28
+*Added harmonic constellations*
+Adds controls for switching harmonies and controls for playing samples
+Also work on panning
+** IDEA Nueva idea para el final
+SCHEDULED: <2024-05-22 Wed>
+Gong de Milo: encontrar fundamental/bajo, darle un boost con eq, y panearlo en círculos (quizá a la vez clock/counterclock), que tenga su propia interacción con la una o varias constelaciones y la guitarra
+*** IDEA Micro del gong puede tener una sola constelación y los otros tener distintas e ir mutando
+SCHEDULED: <2024-05-29 Wed>
+** Técnica de guitarra para la tercera parte:
+- Resonadores entre 1 y 2da pastilla.
+- Selector de pastillas (1era y 3era, y solo 3era).
+- Slide del lado izquierdo, arco del lado derecho.
+- Amp: Tone+Boost, Vol ~8, Bass ~8, Mid ~3.5, Treble ~3.5
+** Revisar panneo2 rápido
+** Good takes
+** Levels
+*** Reaper
+Similar to 2.2.27, but guitar amp is lower
+#+ATTR_ORG: :width 1300px
+[[file:./reaper-2.2.28.jpg
+*** Interface
+Same as 2.2.27 take 2:
+  Guitar: 5
+  Mic 1-3: 7, 4.2, 4
+  Master: 8.5
+
 * 2.2.27
 ** Good takes
 ** Levels
@@ -37,11 +130,11 @@ cf. `997ef19`
 *** Interface levels
 Guitar: 4.2
 Mic 1-3: 7
-**** TODO check guitar input level
-SCHEDULED: <2024-05-04 Sat>
-*** TODO Need to test again with open mics
-SCHEDULED: <2024-05-04 Sat>
+**** DONE check guitar input level
+CLOSED: [2024-05-22 Wed 08:10] SCHEDULED: <2024-05-04 Sat>
+*** DONE Need to test again with open mics
+CLOSED: [2024-05-22 Wed 08:10] SCHEDULED: <2024-05-04 Sat>
 *** Percu processes at higher volume and clean guitar is lower
 ** Added a reverb with side-chain ducking so that when the Percu/Processes track is silent the reverb can substitute
 
-#  LocalWords:  notchy Percu ef ringz ps
+#  LocalWords:  notchy Percu ef ringz ps Slide

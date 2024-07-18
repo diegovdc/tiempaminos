@@ -27,6 +27,29 @@
              (* amp (o/env-gen (o/env-adsr a 1 1 release :curve -0.5)
                                gate
                                :action o/FREE)))))
+
+(defsynth rand-pan8
+  [in 0
+   out 0
+   amp 1
+   rate 0.1
+   release 2
+   width 3
+   a 2
+   orientation 0.5
+   mix 0
+   room 1
+   gate 1]
+  (o/out out
+         (-> (oe/circle-az-8ch :num-channels 8
+                               :in (o/in in)
+                               :pos (o/lf-noise1 rate)
+                               :width width
+                               :orientation orientation)
+             (o/free-verb mix room)
+             (* amp (o/env-gen (o/env-adsr a 1 1 release :curve -0.5)
+                               gate
+                               :action o/FREE)))))
 (defsynth rand-pan4v2
   [in 0
    out 0
@@ -93,8 +116,11 @@
   (->> @current-panners
        keys))
 
-(defn panner [{:keys [in type out]
-               :or {amp 1} :as args}]
+(defn panner
+  "Creates a panner. If a panner for the `input` already exists then it creates a new instance and closes the gate of the previous panner.
+  So there should always be one active panner for every input (except of course for the fadeout of the old panner)"
+  [{:keys [in type out]
+    :as args}]
   (when-not (or in out)
     (throw (ex-info "Can not modify panner, data missing"
                     args)))
@@ -132,7 +158,13 @@
                                   (merge {:group (groups/panners)
                                           :in in*
                                           :out out*}
-                                         args*)))]
+                                         args*))
+                     ;; octophonic
+                     :rand8 (rand-pan8
+                             (merge {:group (groups/panners)
+                                     :in in*
+                                     :out out*}
+                                    args*)))]
 
     (try (when (:synth current-panner)
            (o/ctl (:synth current-panner) :gate 0))
@@ -146,5 +178,4 @@
 (defn panner-rate [{:keys [in rate max]
                     :or {max 1.5} :as _args}]
   (let [panner (get-in @current-panners [(input-number->bus in) :synth])]
-    (println panner in (* max rate))
     (ctl-synth panner :rate (* max rate))))

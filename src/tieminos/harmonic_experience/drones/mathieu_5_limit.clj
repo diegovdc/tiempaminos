@@ -18,29 +18,29 @@
 
 (def harmonic-experience-12-tone
   (ratios->scale
-    [1     ;; sa
-     16/15 ;; komal re
-     9/8   ;; re
-     6/5   ;; komal ga
-     5/4   ;; ga
-     4/3   ;; ma
-     45/32 ;; ma
-     3/2   ;; pa
-     8/5   ;; komal dha
-     5/3   ;; dha
-     9/5   ;; komal nise
-     15/8  ;; ni
-     ]))
+   [1     ;; sa
+    16/15 ;; komal re
+    9/8   ;; re
+    6/5   ;; komal ga
+    5/4   ;; ga
+    4/3   ;; ma
+    45/32 ;; ma
+    3/2   ;; pa
+    8/5   ;; komal dha
+    5/3   ;; dha
+    9/5   ;; komal nise
+    15/8  ;; ni
+    ]))
 
 (def harmonic-experience-22-tone
   "Example 16.20"
   (ratios->scale
-    (set (concat
-             (map #(* 5 5 (pow 3 %)) (range -1 1))
-             (map #(* 5 (pow 3 %)) (range -2 4))
-             (map #(pow 3 %) (range -3 6))
-             (map #(* 1/5 (pow 3 %)) (range -1 3))
-             [1/25]))))
+   (set (concat
+         (map #(* 5 5 (pow 3 %)) (range -1 1))
+         (map #(* 5 (pow 3 %)) (range -2 4))
+         (map #(pow 3 %) (range -3 6))
+         (map #(* 1/5 (pow 3 %)) (range -1 3))
+         [1/25]))))
 
 (comment
   (def sa (drone root))
@@ -60,9 +60,9 @@
     (def scale harmonic-experience-22-tone)
     (let [lattice-size 120]
       (def lattice-atom (draw-lattice
-                          {:ratios (map :bounded-ratio scale)
-                           :width (* 16 lattice-size)
-                           :height (* 9 lattice-size)}))))
+                         {:ratios (map :bounded-ratio scale)
+                          :width (* 16 lattice-size)
+                          :height (* 9 lattice-size)}))))
 
   (def oxygen #_(get-oxygen!)
     (get-lumatone!))
@@ -75,14 +75,12 @@
 
   (when oxygen
     (midi-in-event
-      :midi-input oxygen
-      :note-on (fn [ev]
-                 (let [{:keys [ratio freq] } (get-note-data ev)]
-                   (println (:note ev) ratio freq)
-                   (add-played-ratio lattice-atom {:ratio ratio :stroke-weight 10  :color [200 200 120]})
-                   (harmonic freq :amp (linexp* 0 127 0.5 3 (:velocity ev)))))
-      :note-off (fn [ev]
-                  (let [{:keys [ratio] } (get-note-data ev)]
-                    (remove-played-ratio lattice-atom {:ratio ratio})
-                    )
-                  ))))
+     :midi-input oxygen
+     :note-on (fn [ev]
+                (let [{:keys [ratio freq]} (get-note-data ev)]
+                  (println (:note ev) ratio freq)
+                  (add-played-ratio lattice-atom {:ratio ratio :stroke-weight 10  :color [200 200 120]})
+                  (harmonic freq :amp (linexp* 0 127 0.5 3 (:velocity ev)))))
+     :note-off (fn [ev]
+                 (let [{:keys [ratio]} (get-note-data ev)]
+                   (remove-played-ratio lattice-atom {:ratio ratio}))))))

@@ -75,6 +75,10 @@
   []
   (osc/osc-client (get-local-host) 65432))
 
+(defn make-internal-osc-client
+  []
+  (osc/osc-client (get-local-host) 16180))
+
 (comment
   (init)
   (reset! osc-server nil)
@@ -83,7 +87,7 @@
   (osc/osc-send client "/holas" 1,2,3,4)
 
   (responder
-    (fn [{:keys [path args] :as msg}]
-      (let [args-map (args->map args)]
-        (case path
-          (println "Unknown path for message: " msg))))))
+   (fn [{:keys [path args] :as msg}]
+     (let [args-map (args->map args)]
+       (case path
+         (println "Unknown path for message: " msg))))))
