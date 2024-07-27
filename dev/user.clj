@@ -3,6 +3,7 @@
    [clojure.java.shell :refer [sh]]
    [clojure.string :as str]
    [clojure.tools.namespace.repl :as repl :refer [refresh set-refresh-dirs]]
+   [erv.scale.scl :as scl]
    [overtone.core :as o]
    [overtone.sc.machinery.server.connection :as oc]
    [taoensso.timbre :as timbre]
@@ -138,6 +139,14 @@
                                         :in (* amp in)
                                         :pos (o/lf-saw 0.2)))))))
   :surrounding...?)
+
+(def default-scl-dir "/Users/diego/Music/tunings/")
+
+(defn spit-scl
+  [{:keys [meta] :as scale-data}]
+  (if-not (:scl/name meta)
+    (throw (ex-info "`:meta :scl/name` is required" scale-data))
+    (scl/spit-file (str default-scl-dir (:scl/name meta) ".scl") scale-data)))
 
 (comment
   (connect)
