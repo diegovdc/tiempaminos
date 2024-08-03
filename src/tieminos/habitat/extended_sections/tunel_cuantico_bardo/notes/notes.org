@@ -1,0 +1,23 @@
+Código tomado de las grabaciones de 2.2.9, por lo que en el directorio de reaper todas las sesiones se nombrarán como 2.2.9.x
+
+* Tunel cuántico / Bardó
+** TODO Rerenderizar todos los audios
+** TODO Compartirlos
+** TODO 2.2.9 1 y 3 - Acordes Meru
+*** TODO Recuperar algoritmos
+*** TODO Volvemos a tocarlas
+**** TODO Verificar si los acordes de estas tomas son realmente estables (toma #1) o inestables (#3) o si fuimos nosotros
+*** TODO Explorar maneras de controlar la randomización
+**** TODO Reducir rangos de randomización
+**** TODO O usar pesos
+*** TODO Explorar densidades y duraciones de los samples
+e.g. sonidos largos y sostenidos en su densidad
+*** TODO Explorar clusters espaciales
+donde cada uno exista en un lugar relativamente estático del espacio
+*** TODO Al tocar, intencionar estas entidades como conciencias o estados-energías interiores
+*** TODO ¿Qué zonas activa esto del cerebro?
+
+** TODO Organizar cronológicamente (en tabla de excel)
+*** TODO Organización por estratos o fases temporales del código
+Agrupar por bloques secuenciales de sesiones donde opera más o menos el mismo código o el mismo resultado estético
+*** TODO Marcar partes específicas del cada track
