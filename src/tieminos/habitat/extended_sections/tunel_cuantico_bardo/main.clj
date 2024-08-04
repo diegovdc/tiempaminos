@@ -112,7 +112,7 @@
      :durs (mapv (fn [_] (rrange 10 20)) (range 40))
      :rec-input-config {:section "gusano-cuantico-2.2.9.2"
                         :subsection "algo-2-2-9"}})
-  (hacia-un-nuevo-universo-perc-refrain-v1p2
+  (clouds-refrain
     {:out-bus out-bus
      :buf-fn (fn [_] (->> @rec/bufs vals (sort-by :rec/time) reverse (filter :analysis) (take 10) (#(when (seq %) (rand-nth %)))))
      :silence-thresh 0.05
@@ -236,6 +236,9 @@
                 :rate 1}})
 
 
+  (algo-2-2-9 {:out-bus in1
+               :chord [0 6 12 18]
+               :transpositions [0 -5 0 5]})
   (algo-2-2-9 {:out-bus in1
                :chord [10 15 20]
                :transpositions [0 -5 0 5]})

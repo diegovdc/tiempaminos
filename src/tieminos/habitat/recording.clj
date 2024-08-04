@@ -1,5 +1,6 @@
 (ns tieminos.habitat.recording
   (:require
+   [clojure.edn :as edn]
    [clojure.string :as str]
    [overtone.core :as o]
    [overtone.music.time :refer [now]]
@@ -47,7 +48,9 @@
 (def habitat-samples-path (str (System/getProperty "user.dir")
                                "/samples/habitat_samples/"))
 
-(defn save-samples [& {:keys [description full-keyword]}]
+(defn save-samples [& {:keys [description full-keyword buffers-atom]}]
+  (when-not buffers-atom
+    (throw (ex-info "A buffers-atom must be passed in... perhaps try rec/bufs" {})))
   (let [prefix  (or full-keyword
                     (keyword "habitat"
                              (str "*"
@@ -56,7 +59,7 @@
                                   (when description (str "*" (str/replace description #" " "-"))))))]
     (rec/save-samples prefix
                       :path habitat-samples-path
-                      :buffers-atom bufs
+                      :buffers-atom buffers-atom
                       :preserve-keys [:analysis :amp-norm-mult])))
 
 (defonce buf-keys-count (atom {}))
@@ -79,6 +82,15 @@
                   :dur-s dur-s})
       (throw (ex-info "Data missing from osc command for recording"
                       {:osc-data osc-data})))))
+
+(defn get-samples-db!
+  []
+  (edn/read-string (slurp (str habitat-samples-path "db.edn"))))
+
+(comment
+  (-> (get-samples-db!)
+     :test/gusano-cuantico-2.2.9.2)
+  )
 
 (comment
   (require '[tieminos.habitat.routing :refer [guitar-bus
