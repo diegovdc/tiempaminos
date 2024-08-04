@@ -55,6 +55,82 @@
                                        [-1 -5])
                            :action o/FREE)))))
 
+
+(oe/defsynth clouds2-4ch
+  [buf 0
+   trig-rate 40
+   grain-dur 1/20
+   rate 1
+   amp 1
+   amp-lfo-min 0.5
+   amp-lfo 0.1
+   start 0.1
+   end 0.3
+   a 0.1
+   d 1
+   d-level 0.3
+   r 3
+   out 0
+   lpf-min 100
+   lpf-max 2000
+   pan 0
+   rev-mix 1
+   rev-room 0.5
+   interp 1
+   a-level 1
+   root 200
+   moog-freq 200
+   moog-reso 0.5
+   dly-time-mult 1
+   dly-mix 1 ;; produces a string like sound
+   ]
+  (let [comb-mix* (min 1 (max 0 dly-mix))]
+    (o/out out
+           (-> [(o/grain-buf
+                  :num-channels 1
+                  :trigger (o/impulse trig-rate)
+                  :dur grain-dur
+                  :sndbuf buf
+                  :rate rate
+                  :pos (o/line start end (+ a d r))
+                  :interp interp
+                  :pan 0)
+                (o/grain-buf
+                  :num-channels 1
+                  :trigger (o/impulse (* 13/7 trig-rate))
+                  :dur (* 13/7 grain-dur)
+                  :sndbuf buf
+                  :rate rate
+                  :pos (o/line start end (+ a d r)) #_(lfo 1 start end)
+                  :interp interp
+                  :pan 0)
+                (o/grain-buf
+                  :num-channels 1
+                  :trigger (o/impulse (* 19/17 trig-rate))
+                  :dur (* 19/17 grain-dur)
+                  :sndbuf buf
+                  :rate rate
+                  :pos  (lfo-kr 1 start end)
+                  :interp interp
+                  :pan 0)]
+               o/mix
+               ((fn [sig]
+                  (+ (* (- 1 comb-mix*) sig)
+                     (* comb-mix*
+                        (o/comb-n sig
+                                  (* dly-time-mult rate (/ 1 root))
+                                  (* dly-time-mult rate (/ 1 root))
+                                  -2)))))
+               (o/moog-ladder moog-freq moog-reso)
+               (o/svf) ;; could parametrize this
+               (#(o/pan-az 4 % :pos (lfo-kr 0.1 -1 1) :width (lfo-kr 0.1 1 2.5)))
+               (o/free-verb rev-mix rev-room)
+               (* amp
+                  #_(lfo amp-lfo amp-lfo-min 1)
+                  (o/env-gen (o/envelope [0 a-level d-level 0] [a d r]
+                                         [-1 -5])
+                             :action o/FREE))))))
+
 (comment
 
   (-> rec/bufs)
@@ -65,81 +141,7 @@
       )
 
   (do
-    (oe/defsynth clouds2-4ch
-      ;; TODO pass in manual envelope
-      [buf 0
-       trig-rate 40
-       grain-dur 1/20
-       rate 1
-       amp 1
-       amp-lfo-min 0.5
-       amp-lfo 0.1
-       start 0.1
-       end 0.3
-       a 0.1
-       d 1
-       d-level 0.3
-       r 3
-       out 0
-       lpf-min 100
-       lpf-max 2000
-       pan 0
-       rev-mix 1
-       rev-room 0.5
-       interp 1
-       a-level 1
-       root 200
-       moog-freq 200
-       moog-reso 0.5
-       dly-time-mult 1
-       dly-mix 1 ;; produces a string like sound
-       ]
-      (let [comb-mix* (min 1 (max 0 dly-mix))]
-        (o/out out
-               (-> [(o/grain-buf
-                      :num-channels 1
-                      :trigger (o/impulse trig-rate)
-                      :dur grain-dur
-                      :sndbuf buf
-                      :rate rate
-                      :pos (o/line start end (+ a d r))
-                      :interp interp
-                      :pan 0)
-                    (o/grain-buf
-                      :num-channels 1
-                      :trigger (o/impulse (* 13/7 trig-rate))
-                      :dur (* 13/7 grain-dur)
-                      :sndbuf buf
-                      :rate rate
-                      :pos (o/line start end (+ a d r)) #_(lfo 1 start end)
-                      :interp interp
-                      :pan 0)
-                    (o/grain-buf
-                      :num-channels 1
-                      :trigger (o/impulse (* 19/17 trig-rate))
-                      :dur (* 19/17 grain-dur)
-                      :sndbuf buf
-                      :rate rate
-                      :pos  (lfo-kr 1 start end)
-                      :interp interp
-                      :pan 0)]
-                   o/mix
-                   ((fn [sig]
-                      (+ (* (- 1 comb-mix*) sig)
-                         (* comb-mix*
-                            (o/comb-n sig
-                                      (* dly-time-mult rate (/ 1 root))
-                                      (* dly-time-mult rate (/ 1 root))
-                                      -2)))))
-                   (o/moog-ladder moog-freq moog-reso)
-                   (o/svf) ;; could parametrize this
-                   (#(o/pan-az 4 % :pos (lfo-kr 0.1 -1 1) :width (lfo-kr 0.1 1 2.5)))
-                   (o/free-verb rev-mix rev-room)
-                   (* amp
-                      #_(lfo amp-lfo amp-lfo-min 1)
-                      (o/env-gen (o/envelope [0 a-level d-level 0] [a d r]
-                                             [-1 -5])
-                                 :action o/FREE))))))
+
 
     ;; TODO left here WIP
     ;; Sounds good on long sounds
@@ -171,8 +173,7 @@
            :root root
            :moog-freq (* (rand-nth [1 2 8]) r root)
            :moog-reso 1
-           :out 22
-           })))))
+           :out 22})))))
 
 (oe/defsynth amanecer*snare-mist
   ;; TODO pass in manual envelope

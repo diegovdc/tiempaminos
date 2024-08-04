@@ -39,8 +39,8 @@
        (into {})))
 
 (defn rec&play [bus dur-s on-end & [rec-input-config]]
-  (rec-input (merge {:section "amanecer"
-                     :subsection "ide"
+  (rec-input (merge {:section "unknown"
+                     :subsection "unknown"
                      :input-name (:name bus)
                      :input-bus bus
                      :dur-s dur-s
@@ -451,7 +451,6 @@
      :id :hacia-un-nuevo-universo-perc2
      :durs (periodize-durs period durs)
      :on-event (on-event
-                (println "ONP" on-play)
                 (when-let [buf (buf-fn {:index index})]
                   (when-not (silence? silence-thresh buf) ;; allow us to control silences by not playing
                     (let [rate (at-i rates*)
@@ -480,7 +479,9 @@
                                       :pan (rrange -1 1)}]
                           (when on-play
                             (println "ONPLAY")
-                            (on-play (assoc config :amp amp*)))
+                            (on-play (assoc config
+                                            :amp amp*
+                                            :rate (float r))))
                           (amanecer*guitar-clouds (assoc config
                                                          :rate (float r)
                                                          :interp (rand-nth [1 2 4])

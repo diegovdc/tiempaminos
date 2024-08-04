@@ -158,6 +158,7 @@
           (swap! db assoc-in
                  [prefix k]
                  {:path path*
+                  :id (:id b)
                   :key k
                   :date date
                   :prefix prefix
