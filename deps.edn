@@ -11,7 +11,7 @@
         io.github.diegovdc/time-time {:git/url "https://github.com/diegovdc/time-time.git"
                                       :sha "29e04abec1fc290c162e34a18db57ef5ac33d3e6"} #_{:local/root "../time-tiem" :deps/manifest :deps}
         io.github.diegovdc/erv {:git/url "https://github.com/diegovdc/erv.git"
-                                :sha "29ad44ac3f4307992e5de5a6e6dc6bc72171e4f7"
+                                :sha "1fc6dd19c6a9acf253fb004c6fc1ad32afa4179a"
                                 ;; :tag "0.0.7"
                                 } #_{:local/root "../erv" :deps/manifest :deps}
         com.taoensso/timbre {:mvn/version "4.10.0"}

@@ -194,14 +194,18 @@
                    shuffle
                    (into {})
                    (map (fn [[_ data]]
-                          [(:key data) (with-meta (merge (o/load-sample (:path data))
-                                                         (:buf-map-data data {}))
+                          (println "Loading" data)
+                          [(:key data) (with-meta (-> (o/load-sample (:path data))
+                                                      (merge (:buf-map-data data {}))
+                                                      (assoc :db/sample-key (:key data)
+                                                             :db/samples-atom buffers-atom ;; ommited because it can be too big to look at
+                                                             ))
                                          data)]))
                    (into {}))]
     (reset! buffers-atom (with-meta files {:samples-path samples-path}))
     buffers-atom))
 
-(defn delete-sample!
+(defn delete-sample!*
   "`samples-atom` must have been created with `load-own-samples!` as it
   needs the `:samples-path` to be set in the metadata of the contained map."
   [samples-atom sample-key]
@@ -223,6 +227,16 @@
         (spit db-path updated-db)
         (reset! samples-atom updated-samples)))
     :done))
+
+(defn delete-sample!
+  [sample]
+  (if-not (and (:db/sample-key sample)
+               (:db/samples-atom sample))
+    (throw (ex-info "Could not delete sample. Probably the sample was not loaded with load-own-samples!."
+                    {:sample sample}))
+    (delete-sample!*
+      (:db/samples-atom sample)
+      (:db/sample-key sample))))
 
 (defn filter*
   "Filters bufs by passing the `bufkey` to `f`"

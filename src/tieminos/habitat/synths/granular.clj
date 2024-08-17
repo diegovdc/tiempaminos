@@ -133,7 +133,7 @@
 
 (comment
 
-  (-> rec/bufs)
+  (-> @rec/bufs count)
   (-> (:amanecer-ide-mic-1-bus-3 @rec/bufs)
       ;; keys
       :amp-norm-mult
@@ -150,7 +150,7 @@
     ;; `dly-time-mult` can add softness
     ;; `dly-mix` can add a stringy sound (karlplus-strong)
     ;; `moog-freq` is a lpf freq -  a higher freq can let through the stringy sound
-    (let [buf (:amanecer-ide-mic-1-bus-3 @rec/bufs)
+    (let [buf (:amanecer-ide-guitar-bus-116 @rec/bufs)
           root 200]
       (doseq [r (rand-nth [[1 11/9 11/8 3/2]
                            [4/3 11/7 11/5 11/6]])]
@@ -173,7 +173,7 @@
            :root root
            :moog-freq (* (rand-nth [1 2 8]) r root)
            :moog-reso 1
-           :out 22})))))
+           :out 0})))))
 
 (oe/defsynth amanecer*snare-mist
   ;; TODO pass in manual envelope

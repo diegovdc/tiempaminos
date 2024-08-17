@@ -1,8 +1,10 @@
 Código tomado de las grabaciones de 2.2.9, por lo que en el directorio de reaper todas las sesiones se nombrarán como 2.2.9.x
 
 * Tunel cuántico / Bardó
-** TODO Rerenderizar todos los audios
-** TODO Compartirlos
+** DONE Rerenderizar todos los audios
+CLOSED: [2024-08-10 Sat 16:30]
+** DONE Compartirlos
+CLOSED: [2024-08-10 Sat 16:30]
 ** TODO 2.2.9 1 y 3 - Acordes Meru
 *** TODO Recuperar algoritmos
 *** TODO Volvemos a tocarlas
@@ -16,7 +18,8 @@ e.g. sonidos largos y sostenidos en su densidad
 donde cada uno exista en un lugar relativamente estático del espacio
 *** TODO Al tocar, intencionar estas entidades como conciencias o estados-energías interiores
 *** TODO ¿Qué zonas activa esto del cerebro?
-
+** TODO Recuperar 2.9.1
+** TODO Trabajar transción de tunel -> bloque/loop de samples -> 1 sample con reactividad percusiva
 ** TODO Organizar cronológicamente (en tabla de excel)
 *** TODO Organización por estratos o fases temporales del código
 Agrupar por bloques secuenciales de sesiones donde opera más o menos el mismo código o el mismo resultado estético
