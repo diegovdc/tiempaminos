@@ -130,7 +130,8 @@
                  ((juxt identity fingerings/fingerings))))))
 
 (defn pr-set [set*]
-  (-> set* str (str/replace "#" "∈")))
+  #_(-> set* str (str/replace "#" "∈"))
+  (format "{%s}" (->> set* sort (str/join "."))))
 
 (defn pitch-class->pr-fingering [pitch-class]
   (str pitch-class " " (pr-set (:set (get eik-notes pitch-class)))

@@ -77,6 +77,8 @@
               ".wav")
          opts))
 
+(def rec-stop o/recording-stop)
+
 (comment
   (connect)
   (disconnect)
