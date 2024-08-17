@@ -3,7 +3,7 @@
    [hacia-un-nuevo-universo.nebulosa&planeta-hostil :as-alias nebulosa&planeta-hostil]
    [overtone.core :as o]
    [tieminos.habitat.extended-sections.hacia-un-nuevo-universo.refrains :refer [hacia-un-nuevo-universo-perc-refrain-v2p2]]
-   [tieminos.habitat.extended-sections.harmonies.fib-1 :refer [fib-chord-seq
+   [tieminos.habitat.extended-sections.harmonies.chords :refer [fib-chord-seq
                                                                transpose-chord]]
    [tieminos.habitat.groups :as groups]
    [tieminos.habitat.init :refer [habitat-initialized? init!]]

@@ -4,22 +4,26 @@
    [clojure.data.generators :refer [weighted]]
    [overtone.core :as o]
    [tieminos.attractors.lorentz :as lorentz]
-   [tieminos.habitat.extended-sections.fib-meru :refer [fib-chord-seq
-                                                        transpose-chord]]
-   [tieminos.habitat.extended-sections.hacia-un-nuevo-universo.main-4ch :as hunu.4ch]
-   [tieminos.habitat.extended-sections.tunel-cuantico-bardo.save-synths :as tc.synth-persistance]
+   [tieminos.habitat.extended-sections.hacia-un-nuevo-universo.main-4ch
+    :as hunu.4ch]
+   [tieminos.habitat.extended-sections.harmonies.chords
+    :refer [fib-chord-seq transpose-chord]]
+   [tieminos.habitat.extended-sections.tunel-cuantico-bardo.save-synths
+    :as tc.synth-persistance]
    [tieminos.habitat.groups :as groups]
    [tieminos.habitat.init :as habitat]
    [tieminos.habitat.main :as main]
    [tieminos.habitat.main-sequencer :as hseq]
    [tieminos.habitat.recording :as rec :refer [norm-amp silence?]]
-   [tieminos.habitat.routing :as habitat.route :refer [main-returns]]
-   [tieminos.habitat.routing :as routing]
-   [tieminos.habitat.scratch.sample-rec2 :refer [periodize-durs quad-router-2o
-                                                 rand-latest-buf rev-filter
-                                                 start-rec-loop3!]]
-   [tieminos.habitat.synths.granular :refer [amanecer*guitar-clouds
-                                             clouds2-4ch]]
+   [tieminos.habitat.routing :as routing :refer [main-returns]]
+   [tieminos.habitat.scratch.sample-rec2
+    :refer [periodize-durs
+            quad-router-2o
+            rand-latest-buf
+            rev-filter
+            start-rec-loop3!]]
+   [tieminos.habitat.synths.granular
+    :refer [amanecer*guitar-clouds clouds2-4ch]]
    [tieminos.math.bezier-samples :as bzs]
    [tieminos.osc.reaper :as reaper]
    [tieminos.sc-utils.ndef.v1 :as ndef]

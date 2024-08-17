@@ -4,7 +4,7 @@
    [clojure.set :as set]
    [erv.scale.core :as scale]
    [overtone.core :as o]
-   [tieminos.habitat.extended-sections.harmonies.fib-1 :refer [fib-chord-seq
+   [tieminos.habitat.extended-sections.harmonies.chords :refer [fib-chord-seq
                                                                transpose-chord]]
    [tieminos.midi.core :refer [midi-in-event oxygen]]
    [tieminos.synths :as synths]

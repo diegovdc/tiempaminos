@@ -1,7 +1,7 @@
 (ns tieminos.habitat.extended-sections.hacia-un-nuevo-universo.versions.v2-2-7-nueblosa&planeta-hostil
   (:require
    [overtone.core :as o]
-   [tieminos.habitat.extended-sections.harmonies.fib-1 :refer [fib-chord-seq
+   [tieminos.habitat.extended-sections.harmonies.chords :refer [fib-chord-seq
                                                                transpose-chord]]
    [tieminos.habitat.groups :as groups]
    [tieminos.habitat.init :refer [habitat-initialized? init!]]
