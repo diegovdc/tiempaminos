@@ -7,7 +7,7 @@
    [tieminos.habitat.extended-sections.hacia-un-nuevo-universo.main-4ch
     :as hunu.4ch]
    [tieminos.habitat.extended-sections.harmonies.chords
-    :refer [fib-chord-seq transpose-chord]]
+    :refer [fib-chord-seq meta-slendro1 rate-chord-seq transpose-chord]]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.save-synths
     :as tc.synth-persistance]
    [tieminos.habitat.groups :as groups]
@@ -15,17 +15,13 @@
    [tieminos.habitat.main :as main]
    [tieminos.habitat.main-sequencer :as hseq]
    [tieminos.habitat.recording :as rec :refer [norm-amp silence?]]
-   [tieminos.habitat.routing :as routing :refer [main-returns]]
+   [tieminos.habitat.routing :as habitat.route :refer [main-returns]]
    [tieminos.habitat.scratch.sample-rec2
-    :refer [periodize-durs
-            quad-router-2o
-            rand-latest-buf
-            rev-filter
+    :refer [periodize-durs quad-router-2o rand-latest-buf rev-filter
             start-rec-loop3!]]
    [tieminos.habitat.synths.granular
     :refer [amanecer*guitar-clouds clouds2-4ch]]
    [tieminos.math.bezier-samples :as bzs]
-   [tieminos.osc.reaper :as reaper]
    [tieminos.sc-utils.ndef.v1 :as ndef]
    [tieminos.sc-utils.synths.v1 :refer [lfo-kr]]
    [tieminos.utils :refer [rrange wrap-at]]
@@ -64,7 +60,7 @@
   (let [rates* (map (fn [r] (if (sequential? r) r [r])) rates)]
     (ref-rain
      :id id
-     :durs (periodize-durs period durs)
+     :durs (if period (periodize-durs period durs) durs)
      :on-event (on-event
 
                 (when-let [buf (buf-fn {:index index})]
@@ -114,15 +110,17 @@
            transpositions
            out-bus
            on-play
-           clouds-config]
+           clouds-config
+           rec-input-config]
     :or {chord [0 6 12 18]
-         transpositions [0]}}]
+         transpositions [0]
+         rec-input-config {:section "gusano-cuantico-2.2.9.x"
+                           :subsection "algo-2-2-9"}}}]
 
   (start-rec-loop3!
-   {:input-bus-fn (fn [_] (-> @habitat.route/inputs (select-keys [:guitar #_:mic-1 :mic-2]) vals (->> (map :bus))))
+   {:input-bus-fn (fn [_] (-> @habitat.route/inputs (select-keys [:guitar :mic-1 #_:mic-2]) vals (->> (map :bus))))
     :durs (mapv (fn [_] 5) (range 1))
-    :rec-input-config {:section "gusano-cuantico-2.2.9.2"
-                       :subsection "algo-2-2-9"}})
+    :rec-input-config rec-input-config})
   (clouds-refrain
     (merge
       {:out-bus out-bus
@@ -169,7 +167,7 @@
       :params-file-name "gusano-cuantico-2.2.9.2_take-1.edn"
       :groups @groups/groups
       :default-group (groups/mid)
-      :default-out (routing/get-mixed-main-out)}))
+      :default-out (habitat.route/get-mixed-main-out)}))
 
   (def test-synths
     (tc.synth-persistance/rehydrate-synth-params
@@ -177,7 +175,7 @@
       :params-file-name "test-gusano-cuantico-2.2.9.2.edn"
       :groups @groups/groups
       :default-group (groups/mid)
-      :default-out (routing/get-mixed-main-out)}))
+      :default-out (habitat.route/get-mixed-main-out)}))
 
   ;; example for how to delete a sample
   (rec/delete-sample! (-> @(tc.synth-persistance/get-db-keyword-atom!
@@ -249,7 +247,7 @@
                      (o/free-verb)
                      (#(o/pan-az 4 % (lfo-kr 0.1 -1 1)))))))
         o/mix)
-   {:out (routing/get-mixed-main-out)}))
+   {:out (habitat.route/get-mixed-main-out)}))
 
 (defonce smooth-configs (atom []))
 
@@ -270,7 +268,7 @@
                        :root root
                        :moog-freq (* (rand-nth [1 2 8 16]) r root)
                        :moog-reso (rrand 0.5 1.3)})]
-    (if (and false (> (count @smooth-configs) 15))
+    (if (> (count @smooth-configs) 15)
       (do
         (println "#---" index)
         (clouds2-4ch (wrap-at index @smooth-configs)))
@@ -329,27 +327,81 @@
                             :out-bus2 (habitat.route/main-returns :mixed)}))
 
   (def rev-filter* (rev-filter
-                   {:group (groups/panners)
-                    :inbus out1}))
+                     {:group (groups/panners)
+                      :inbus out1}))
 
   #_(open-inputs-with-rand-pan
-     {:inputs habitat.route/inputs
-      :preouts habitat.route/preouts})
+      {:inputs habitat.route/inputs
+       :preouts habitat.route/preouts})
 
   (hunu.4ch/open-inputs-with-rand-pan*
-   {:inputs habitat.route/inputs
-    :preouts habitat.route/preouts}
-   {}
-   #_{:guitar {:amp 1
-               :type :clockwise
-               :rate 1}})
+    {:inputs habitat.route/inputs
+     :preouts habitat.route/preouts}
+    {}
+    #_{:guitar {:amp 1
+                :type :clockwise
+                :rate 1}})
 
   (algo-2-2-9 {:out-bus in1
                :chord [0 6 12 18]
-               :transpositions [0 5 0 5]
-               :clouds-config {:amp (o/db->amp -24) ;; NOTE interesante cambiar la amplitud
-                              }
+               :transpositions (range 10 15)
+               :clouds-config {:amp (o/db->amp -36) ;; NOTE interesante cambiar la amplitud
+                               }
                })
+
+  (gp/stop ::clouds-refrain)
+  (gp/stop :cuerpo-envolvente)
+
   (algo-2-2-9 {:out-bus in1
                :chord [10 15 20]
-               :transpositions [0 5 0 5]}))
+               :transpositions [0 5 0 5]})
+
+  (algo-2-2-9 {:out-bus in1
+               :clouds-config {:amp (o/db->amp -12)
+                               :rates (rate-chord-seq meta-slendro1
+                                                      (transpose-chord
+                                                        [0 13 ]
+                                                        (range 10 12)))}})
+
+  ;; cluster lento
+  (algo-2-2-9 {:on-play (fn [config]
+                          (println "==================")
+                          (smooth-clouds 200 config))
+               :out-bus in1
+               :clouds-config {:id :cuerpo-envolvente
+                               :amp (o/db->amp -24)
+                               :rates (rate-chord-seq meta-slendro1
+                                                      (transpose-chord
+                                                        [0 7 ]
+                                                        [-24 6]))
+                               :period 90
+                               :durs [1 3 5]
+                               :a-weights {10 1
+                                           15 0.3}
+                               :d-weights {40 1
+                                           30 0.3}
+                               :d-level-weights {0.8 5
+                                                 0.6 8}}})
+
+
+
+  ;; Usar sobretodo en el micro, para dar color a las partes piano/vacias
+  (ndef/ndef ::cuerpo
+      (* 2 (o/mix [(* 2 (o/pan4 (-> :mic-1
+                                    habitat.route/get-input-bus
+                                    (o/in 1)
+                                    (o/pitch-shift  0.2
+                                                    (first (rate-chord-seq meta-slendro1
+                                                                           [[-12 -7 -4 7 8 9 13 14]])))
+                                    (o/mix))
+                                (lfo-kr 0.1 -1 1)
+                                (lfo-kr 0.1 -1 1)))
+                   (o/pan4 (-> :guitar
+                               habitat.route/get-input-bus
+                               (o/in 1)
+                               (o/pitch-shift  0.2 (first (rate-chord-seq meta-slendro1
+                                                                          [[-12 -7 -4 7 8 9 13 14]])))
+                               (o/mix))
+                           (lfo-kr 0.1 -1 1)
+                           (lfo-kr 0.1 -1 1))]))
+      {:out habitat.route/mixed-main-out}))

@@ -22,13 +22,10 @@
        (map (fn [deg]
               (scale/deg->freq scale 1 deg)))))
 
-(defn rate-chord-seq [scale  chords]
+(defn rate-chord-seq [scale chords]
   (map (partial rate-chord scale) chords))
 
 (def fib-chord-seq (partial rate-chord-seq fib-21))
-
-(= (fib-chord-seq [[0 5 7 8]])
-   (rate-chord-seq fib-21 [[0 5 7 8]]))
 
 (defn transpose-chord [chord transpositions]
   (map (fn [t] (map (fn [deg] (+ t deg)) chord)) transpositions))
