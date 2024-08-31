@@ -338,14 +338,14 @@
     {:inputs habitat.route/inputs
      :preouts habitat.route/preouts}
     {}
-    #_{:guitar {:amp 1
-                :type :clockwise
-                :rate 1}})
+    #_{:mic-1 {:amp 1
+              :type :clockwise
+              :rate 0.6}})
 
   (algo-2-2-9 {:out-bus in1
-               :chord [0 6 12 18]
-               :transpositions (range 10 15)
-               :clouds-config {:amp (o/db->amp -36) ;; NOTE interesante cambiar la amplitud
+               :chord [0 5 8 9]
+               :transpositions (shuffle (range 0 60 4))
+               :clouds-config {:amp (o/db->amp -24) ;; NOTE interesante cambiar la amplitud
                                }
                })
 
