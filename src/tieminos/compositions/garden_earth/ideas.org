@@ -1,0 +1,12 @@
+* Sample&Hold
+
+- Con curvas de aceleración, desaceleración, o con secuencias de patrones weighteados
+- Envolventes sobre los samples holdeados de diferentes tipos: cresc, decrecendo
+- Usar el pitch follower para determinar comportamientos del sample and hold (i.e armonías o transposiciones)
+
+* TODO Pitchfollowed chords
+** Acordes triggereados por un pitch class
+** Acordes tiggereados por los `frequencies` de una sección de tiempo (digamos las 2 o 3 clases más frecuentes en los últimos 5 segundos
+** TODO pitch follower que vaya agregando datos
+** TODO MIDI control for the pitch follower activation/deactivation (e.g. sustain pedal)
+** TODO MIDI control/mapping for the chords

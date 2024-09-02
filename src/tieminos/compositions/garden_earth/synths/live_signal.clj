@@ -2,7 +2,7 @@
   (:require
    [clojure.string :as str]
    [overtone.core :as o]
-   [tieminos.compositions.garden-earth.base :as ge-base]))
+   [tieminos.compositions.garden-earth.base :as ge-base :refer [scale-freqs-ranges]]))
 
 (defn lfo [freq min* max*]
   (o/lin-lin (o/lf-noise1 freq) -1 1 min* max*))
@@ -39,7 +39,8 @@
 
 (comment
   (o/demo 5 (o/send-reply (o/impulse 5) "/receive-pitch"
-                          (o/pitch (o/sound-in 0))))
+                          (o/lag2 (o/pitch (o/sound-in 0))
+                                  0.3)))
   (reset! freq-history nil)
   (-> @freq-history))
 
@@ -51,37 +52,49 @@
   ((o/synth
     (let [input (o/sound-in in)]
       (o/send-reply (o/impulse freq) pitch-path
-                    [(o/pitch:kr input) (o/amplitude:kr input)]
+                    [(o/lag2 (o/pitch:kr input) 0.3)
+                     (o/amplitude:kr input)]
                     in)))))
 
 (defn run-receive-pitch
   "Gets pitches from `sound-in` 0 in almost real time
   and `conj`es the data into`freq-history.
   NOTE: `run-get-signal-pitches` must be running`"
-  [& {:keys [pitch-path]
-      :or {pitch-path "/receive-pitch"}}]
+  [& {:keys [pitch-path
+             on-receive-pitch
+             scale-freqs-ranges]
+      :or {pitch-path "/receive-pitch"
+           scale-freqs-ranges scale-freqs-ranges}}]
+  (println "scale-freqs-ranges" scale-freqs-ranges)
   (o/on-event pitch-path
               (fn [data]
                 (let [[_node-id input-bus freq freq?* amp] (-> data :args)
-                      freq? (= freq?* 1.0)]
+                      freq? (= freq?* 1.0)
+                      data (when freq?
+                             (assoc (ge-base/eiko-round-freq freq scale-freqs-ranges)
+                                    :amp amp
+                                    :timestamp (o/now)
+                                    :pitch-path pitch-path
+                                    :input-bus input-bus))]
                   (when freq?
-                    (println "freq: " freq "hz, amp: " amp " @ " pitch-path)
-                    #_(println data)
+                    (when on-receive-pitch (on-receive-pitch data))
                     (swap! freq-history
-                           (comp (partial take 100) conj)
-                           (assoc (ge-base/eiko-round-freq freq)
-                                  :amp amp
-                                  :timestamp (o/now)
-                                  :pitch-path pitch-path
-                                  :input-bus input-bus)))))
+                           (comp (partial take 100) conj) data))))
               (keyword (str/replace pitch-path #"/" ""))))
 
 (defn start-signal-analyzer
-  [& {:keys [in pitch-path]
+  [& {:keys [in freq pitch-path on-receive-pitch scale-freqs-ranges]
       :or {in 0
+           freq 5
+           scale-freqs-ranges scale-freqs-ranges
            pitch-path "/receive-pitch"}}]
-  (run-receive-pitch :pitch-path pitch-path)
-  (run-get-signal-pitches :in in :pitch-path pitch-path))
+  (run-receive-pitch :pitch-path pitch-path
+                     :on-receive-pitch on-receive-pitch
+                     :scale-freqs-ranges scale-freqs-ranges)
+  (run-get-signal-pitches
+    :in in
+    :freq freq
+    :pitch-path pitch-path))
 (comment
   (o/stop)
   (start-signal-analyzer :in 0 :pitch-path "/receive-pitch-0")

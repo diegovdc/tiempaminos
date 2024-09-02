@@ -205,39 +205,50 @@
                      (:class (:pitch %))))
        (into {})))
 
+(defn make-scale-freqs-ranges
+  ([scale-freqs-map pitch-classes]
+   (let [scale-freqs-map* (filter (fn [[_k pc]] (pitch-classes pc))
+                                  scale-freqs-map)
+         ranges (->> scale-freqs-map* keys sort (partition 2 1))
+         ;; add upper and lower bounds so that it wraps on itself
+         low-note (first (first ranges))
+         high-note (last (last ranges))
+         low-range [(/ high-note 2) low-note]
+         high-range [high-note (* 2 low-note)]]
+     (concat [low-range] ranges [high-range]))))
+
+(comment
+  (make-scale-freqs-ranges
+    scale-freqs-map
+    #{"A+53" "A+92"}))
+
 (def scale-freqs-ranges
-  (let [ranges (->> scale-freqs-map keys sort (partition 2 1))
-        ;; add upper and lower bounds so that it wraps on itself
-        low-note (first (first ranges))
-        high-note (last (last ranges))
-        low-range [(/ high-note 2) low-note]
-        high-range [high-note (* 2 low-note)]]
-    (concat [low-range] ranges [high-range])))
+  (make-scale-freqs-ranges scale-freqs-map (set (vals scale-freqs-map))))
 
 (defn eiko-round-freq
   "Round `freq` to the nearest pitch class in the `eikosany`"
-  [freq]
-  (let [[freq-in-octave transp-period]
-        (loop [f freq octaves 1]
-          (cond (> 880 f 440) [f octaves]
-                (> f 880) (recur (/ f 2) (* 2 octaves))
-                (< f 440) (recur (* f 2) (/ octaves 2))))
+  ([freq scale-freqs-ranges]
+   (let [[freq-in-octave transp-period]
+         (loop [f freq octaves 1]
+           (cond (> 880 f 440) [f octaves]
+                 (> f 880) (recur (/ f 2) (* 2 octaves))
+                 (< f 440) (recur (* f 2) (/ octaves 2))))
 
-        [t-freq1 t-freq2] (or (->> scale-freqs-ranges
-                                   (filter #(> (second %)
-                                               freq-in-octave
-                                               (first %)))
-                                   first))
-        diff1 (- t-freq1 freq-in-octave)
-        diff2 (- t-freq2 freq-in-octave)
-        [eik-freq diff-hz] (if (> (Math/abs diff2) (Math/abs diff1))
-                             [t-freq1 diff1]
-                             [t-freq2 diff2])]
-    {:pitch-class (scale-freqs-map eik-freq)
-     :eik-freq (* transp-period eik-freq)
-     :eik-freq-ref eik-freq
-     :transp transp-period
-     :diff-hz diff-hz
-     :original-freq freq}))
+         [t-freq1 t-freq2] (or (->> scale-freqs-ranges
+                                    (filter #(> (second %)
+                                                freq-in-octave
+                                                (first %)))
+                                    first))
+         diff1 (- t-freq1 freq-in-octave)
+         diff2 (- t-freq2 freq-in-octave)
+         [eik-freq diff-hz] (if (> (Math/abs diff2) (Math/abs diff1))
+                              [t-freq1 diff1]
+                              [t-freq2 diff2])]
+     {:pitch-class (scale-freqs-map eik-freq)
+      :eik-freq (* transp-period eik-freq)
+      :eik-freq-ref eik-freq
+      :transp transp-period
+      :diff-hz diff-hz
+      :original-freq freq})))
 
 (comment (eiko-round-freq 454.6221))
