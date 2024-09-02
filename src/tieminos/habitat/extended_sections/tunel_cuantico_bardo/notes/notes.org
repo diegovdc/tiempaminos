@@ -1,6 +1,7 @@
 Código tomado de las grabaciones de 2.2.9, por lo que en el directorio de reaper todas las sesiones se nombrarán como 2.2.9.x
 
 * Tunel cuántico / Bardó
+
 ** DONE Rerenderizar todos los audios
 CLOSED: [2024-08-10 Sat 16:30]
 ** DONE Compartirlos
@@ -24,3 +25,7 @@ donde cada uno exista en un lugar relativamente estático del espacio
 *** TODO Organización por estratos o fases temporales del código
 Agrupar por bloques secuenciales de sesiones donde opera más o menos el mismo código o el mismo resultado estético
 *** TODO Marcar partes específicas del cada track
+** TODO interfaz
+*** TODO cómo mapear los patches
+  Qué se necesita mappear
+*** TODO Controlar aspectos de la espacialización de los instrumentos

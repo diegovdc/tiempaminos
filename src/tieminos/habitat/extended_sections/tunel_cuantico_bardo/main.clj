@@ -90,20 +90,22 @@
                                       :end end
                                       :out out-bus
                                       :pan (rrange -1 1)}]
-                          (when on-play
-                            (println "ONPLAY")
-                            (on-play (assoc config
-                                            :amp amp*
-                                            :rate r
-                                            :index i)))
-                          (amanecer*guitar-clouds (assoc config
-                                                         :rate (float r)
-                                                         :interp (rand-nth [1 2 4])
-                                                         :amp (* amp* (rrange 0.2 1) (norm-amp buf))))
-                          (amanecer*guitar-clouds (assoc config
-                                                         :rate (* (rand-nth [2 3/2 5/4 7/4 1/2 1 1 1 1]) r)
-                                                         :interp (rand-nth [4])
-                                                         :amp (* amp* (rrange 0 0.7) (norm-amp buf)))))))))))))
+                          (if on-play
+                            (do
+                              (println "ONPLAY")
+                              (on-play (assoc config
+                                              :amp amp*
+                                              :rate r
+                                              :index i)))
+                            (do
+                              (amanecer*guitar-clouds (assoc config
+                                                             :rate (float r)
+                                                             :interp (rand-nth [1 2 4])
+                                                             :amp (* amp* (rrange 0.2 1) (norm-amp buf))))
+                              (amanecer*guitar-clouds (assoc config
+                                                             :rate (* (rand-nth [2 3/2 5/4 7/4 1/2 1 1 1 1]) r)
+                                                             :interp (rand-nth [4])
+                                                             :amp (* amp* (rrange 0 0.7) (norm-amp buf)))))))))))))))
 
 (defn algo-2-2-9
   [{:keys [chord
@@ -118,32 +120,32 @@
                            :subsection "algo-2-2-9"}}}]
 
   (start-rec-loop3!
-   {:input-bus-fn (fn [_] (-> @habitat.route/inputs (select-keys [:guitar :mic-1 #_:mic-2]) vals (->> (map :bus))))
+   {:input-bus-fn (fn [_] (-> @habitat.route/inputs (select-keys [:guitar :mic-1 :mic-2]) vals (->> (map :bus))))
     :durs (mapv (fn [_] 5) (range 1))
     :rec-input-config rec-input-config})
   (clouds-refrain
-    (merge
-      {:out-bus out-bus
-       :buf-fn (fn [_] (->> @rec/bufs vals (sort-by :rec/time) reverse (filter :analysis)
-                            (remove #(silence? 0.05  %))
-                            (take 3) (#(when (seq %) (rand-nth %)))))
-       :silence-thresh 0.05
-       :rates (fib-chord-seq (transpose-chord chord transpositions))
-       :amp 0.6
-       :period 30
-       :durs [2 3 5 3 8 13 5 8 2 3 5]
+   (merge
+    {:out-bus out-bus
+     :buf-fn (fn [_] (->> @rec/bufs vals (sort-by :rec/time) reverse (filter :analysis)
+                          (remove #(silence? 0.05  %))
+                          (take 3) (#(when (seq %) (rand-nth %)))))
+     :silence-thresh 0.05
+     :rates (fib-chord-seq (transpose-chord chord transpositions))
+     :amp 0.6
+     :period 30
+     :durs [2 3 5 3 8 13 5 8 2 3 5]
        ;; :period 40
        ;; :durs [1 1 1 1 1 1 1]
-       :d-weights {5 1
-                   3 0.3}
-       :d-level-weights {0.3 5
-                         0.1 2
-                         0.2 3
-                         0.4 8}
-       :a-weights {(rrange 5 8) 3
-                   (rrange 3 5) 2}
-       :on-play on-play}
-      clouds-config)))
+     :d-weights {5 1
+                 3 0.3}
+     :d-level-weights {0.3 5
+                       0.1 2
+                       0.2 3
+                       0.4 8}
+     :a-weights {(rrange 5 8) 3
+                 (rrange 3 5) 2}
+     :on-play on-play}
+    clouds-config)))
 
 (defonce saved-synth-params (atom []))
 
@@ -293,14 +295,6 @@
                            :action o/FREE))
              (#(o/pan-az 4 % (lfo-kr 0.1 -1 1))))))
 
-(hunu.4ch/open-inputs-with-rand-pan*
- {:inputs habitat.route/inputs
-  :preouts habitat.route/preouts}
- {}
- #_{:guitar {:amp 1
-             :type :clockwise
-             :rate 1}})
-
 (comment
   (doseq [i (range 60)]
     (o/demo (o/in i
@@ -327,18 +321,19 @@
                             :out-bus2 (habitat.route/main-returns :mixed)}))
 
   (def rev-filter* (rev-filter
-                     {:group (groups/panners)
-                      :inbus out1}))
+                    {:group (groups/panners)
+                     :inbus out1}))
 
   #_(open-inputs-with-rand-pan
-      {:inputs habitat.route/inputs
-       :preouts habitat.route/preouts})
+     {:inputs habitat.route/inputs
+      :preouts habitat.route/preouts})
 
   (hunu.4ch/open-inputs-with-rand-pan*
-    {:inputs habitat.route/inputs
-     :preouts habitat.route/preouts}
-    {}
-    #_{:mic-1 {:amp 1
+   {:inputs habitat.route/inputs
+    :preouts habitat.route/preouts}
+   {}
+   #_{:mic-2 {:width 4}}
+   #_{:mic-1 {:amp 1
               :type :clockwise
               :rate 0.6}})
 
@@ -346,9 +341,7 @@
                :chord [0 5 8 9]
                :transpositions (shuffle (range 0 60 4))
                :clouds-config {:amp (o/db->amp -24) ;; NOTE interesante cambiar la amplitud
-                               }
-               })
-
+                               }})
   (gp/stop ::clouds-refrain)
   (gp/stop :cuerpo-envolvente)
 
@@ -356,12 +349,90 @@
                :chord [10 15 20]
                :transpositions [0 5 0 5]})
 
+  (def lor (lorentz/init-system :x 0.3 :y 0.02 :z 0.012))
+  (def chord-seq
+    (let [min* -12
+          max* 12
+          lor-speed 70
+          total 1000]
+      (map (fn [a b c] [a b c])
+           (map
+            #(int (lorentz/bound (lor (* lor-speed %)) :x min* max*))
+            (range total))
+           (map
+            #(int (lorentz/bound (lor (* lor-speed %)) :y min* max*))
+            (range total))
+           (map
+            #(int (lorentz/bound (lor (* lor-speed %)) :z min* max*))
+            (range total)))))
+  (-> chord-seq)
+  ;; largos
   (algo-2-2-9 {:out-bus in1
                :clouds-config {:amp (o/db->amp -12)
+                               :period nil
+                               :durs (fn [{:keys [index] :as config}]
+                                       (let [dur (lorentz/bound (lor (* 50 index)) :x 0.1 2)]
+                                         (println "durs call=========" dur)
+                                         dur)
+                                       #_(rand 10))
                                :rates (rate-chord-seq meta-slendro1
-                                                      (transpose-chord
-                                                        [0 13 ]
-                                                        (range 10 12)))}})
+                                                      chord-seq)}
+               :on-play (fn [{:as config
+                              :keys [index]}]
+                          (println "adr" (select-keys config [:a :d :r]))
+                          (let [min* 1 max* 4]
+                            (amanecer*guitar-clouds (assoc config
+                                                           :a (lorentz/bound (lor (* 50 index))
+                                                                             :x min* max*)
+                                                           :d (lorentz/bound (lor (* 50 index))
+                                                                             :y min* max*)
+                                                           :r (lorentz/bound (lor (* 50 index))
+                                                                             :z min* max*)
+                                                           :interp (rand-nth [1 2 4])
+                                                           :amp (o/db->amp  (rrange -6 0))))))})
+  ;; breves
+  (algo-2-2-9 {:out-bus in1
+               :clouds-config {:amp (o/db->amp -12)
+                               :period nil
+                               :durs (fn [{:keys [index] :as config}]
+                                       (let [dur (lorentz/bound (lor (* 50 index)) :x 0.1 2)]
+                                         (println "durs call=========" dur)
+                                         dur)
+                                       #_(rand 10))
+                               :rates (rate-chord-seq meta-slendro1
+                                                      chord-seq)}
+               :on-play (fn [{:as config
+                              :keys [index]}]
+                          (println "adr" (select-keys config [:a :d :r]))
+                          (let [min* 0.1 max* 2]
+                            (amanecer*guitar-clouds (assoc config
+                                                           :a (lorentz/bound (lor (* 50 index))
+                                                                             :x min* max*)
+                                                           :d (lorentz/bound (lor (* 50 index))
+                                                                             :y min* max*)
+                                                           :r (lorentz/bound (lor (* 50 index))
+                                                                             :z min* max*)
+                                                           :interp (rand-nth [1 2 4])
+                                                           :amp (o/db->amp  (rrange -6 0))))))})
+  ;; ataques
+  (algo-2-2-9 {:out-bus in1
+               :clouds-config {:amp (o/db->amp -12)
+                               :period nil
+                               :durs (fn [{:keys [index] :as config}]
+
+                                       (rand 10))
+                               :rates (rate-chord-seq meta-slendro1
+                                                      (reverse chord-seq))}
+               :on-play (fn [{:as config
+                              :keys [index]}]
+                          (println "adr" (select-keys config [:a :d :r]))
+                          (amanecer*guitar-clouds (assoc config
+                                                         :a (rrange 0.1 0.4)
+                                                         #_(rrange 3 5)
+                                                         :d 2
+                                                         :r 3
+                                                         :interp (rand-nth [1 2 4])
+                                                         :amp (o/db->amp  (rrange -6  6)))))})
 
   ;; cluster lento
   (algo-2-2-9 {:on-play (fn [config]
@@ -372,8 +443,8 @@
                                :amp (o/db->amp -24)
                                :rates (rate-chord-seq meta-slendro1
                                                       (transpose-chord
-                                                        [0 7 ]
-                                                        [-24 6]))
+                                                       [0 7]
+                                                       [-24 6]))
                                :period 90
                                :durs [1 3 5]
                                :a-weights {10 1
@@ -383,25 +454,23 @@
                                :d-level-weights {0.8 5
                                                  0.6 8}}})
 
-
-
   ;; Usar sobretodo en el micro, para dar color a las partes piano/vacias
   (ndef/ndef ::cuerpo
-      (* 2 (o/mix [(* 2 (o/pan4 (-> :mic-1
-                                    habitat.route/get-input-bus
-                                    (o/in 1)
-                                    (o/pitch-shift  0.2
-                                                    (first (rate-chord-seq meta-slendro1
-                                                                           [[-12 -7 -4 7 8 9 13 14]])))
-                                    (o/mix))
-                                (lfo-kr 0.1 -1 1)
-                                (lfo-kr 0.1 -1 1)))
-                   (o/pan4 (-> :guitar
-                               habitat.route/get-input-bus
-                               (o/in 1)
-                               (o/pitch-shift  0.2 (first (rate-chord-seq meta-slendro1
-                                                                          [[-12 -7 -4 7 8 9 13 14]])))
-                               (o/mix))
-                           (lfo-kr 0.1 -1 1)
-                           (lfo-kr 0.1 -1 1))]))
-      {:out habitat.route/mixed-main-out}))
+             (* 2 (o/mix [(* 2 (o/pan4 (-> :mic-1
+                                           habitat.route/get-input-bus
+                                           (o/in 1)
+                                           (o/pitch-shift  0.2
+                                                           (first (rate-chord-seq meta-slendro1
+                                                                                  [[-12 -7 -4 7 8 9 13 14]])))
+                                           (o/mix))
+                                       (lfo-kr 0.1 -1 1)
+                                       (lfo-kr 0.1 -1 1)))
+                          (o/pan4 (-> :guitar
+                                      habitat.route/get-input-bus
+                                      (o/in 1)
+                                      (o/pitch-shift  0.2 (first (rate-chord-seq meta-slendro1
+                                                                                 [[-12 -7 -4 7 8 9 13 14]])))
+                                      (o/mix))
+                                  (lfo-kr 0.1 -1 1)
+                                  (lfo-kr 0.1 -1 1))]))
+             {:out habitat.route/mixed-main-out}))
