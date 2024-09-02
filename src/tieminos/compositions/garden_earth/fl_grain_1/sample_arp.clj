@@ -1,4 +1,4 @@
-(ns tieminos.compositions.garden-earth.fl-grain-1.sample&hold
+(ns tieminos.compositions.garden-earth.fl-grain-1.sample-arp
   (:require
    [clojure.data.generators :as gen]
    [clojure.set :as set]
@@ -36,15 +36,14 @@
                               (map :pitch-class)
                               most-frequent-val)
         most-frequent-transp (-> (group-by :pitch-class freq-range)
-                                 (get most-frequent-pc)
-                                 (->> (map :transp))
+                                 (get most-frequent-pc) (->> (map :transp))
                                  most-frequent-val)]
     {:pitch-class most-frequent-pc
      :transp most-frequent-transp}))
 
 (most-frequent-pitch @freq-history 1639060141963 (o/now))
 
-(defonce s&h-seq (atom nil))
+(defonce arp-seq (atom nil))
 
 (defn fsf
   ([steps] (fsf steps 0.01 0.1))
@@ -66,7 +65,7 @@
 (def bz {:fsf fsf :f f :s s})
 
 (defn play-sample
-  [{:keys [buf] :as _s&h-data}
+  [{:keys [buf] :as _arp-data}
    & {:keys [amp adr-env grain-conf d-level rate]
       :or {rate 1
            amp 2
@@ -99,22 +98,22 @@
                                                             rec-start-time
                                                             now)
           new-buf-key (into [pitch-class] buf-key)
-          s&h-data {:buf b
+          arp-data {:buf b
                     :buf-key new-buf-key
                     :pitch-class pitch-class
                     :transp transp
                     :recording/start-time rec-start-time
                     :recording/end-time now}]
       (when pitch-class
-        (play-fn s&h-data)
+        (play-fn arp-data)
         ;; TODO rename key to include analyzed "dominant" pitch
-        (println s&h-data)
+        (println arp-data)
         (swap! bufs-atom set/rename-keys {buf-key new-buf-key})
-        (swap! s&h-seq conj s&h-data))))
+        (swap! arp-seq conj arp-data))))
   (comment
-    (s&h rec/bufs 0.5 1)))
+    (arp rec/bufs 0.5 1)))
 
-(defn s&h [bufs-atom dur index
+(defn arp [bufs-atom dur index
            & {:keys [in play-fn]
               :or {in 0
                    play-fn #(play-sample
@@ -137,8 +136,8 @@
   (midi-in-event
    :note-on
    (fn [ev]
-     (let [{:as s&h-data
-            :keys [pitch-class]} (->> @s&h-seq first)
+     (let [{:as arp-data
+            :keys [pitch-class]} (->> @arp-seq first)
            ;; scale (:scale eik)
            scale (subcps "2)4 of 3)6 1-5.7.9.11")
            pc-index* (pc-index scale pitch-class)
@@ -147,7 +146,7 @@
            env (envs :atk-reso1)]
        (println pc-index* (:note ev)
                 rate)
-       (play-sample s&h-data
+       (play-sample arp-data
                     :rate rate
                     :amp (* 8 (/ (ev :velocity) 40))
                     :d-level 0.1
@@ -155,9 +154,9 @@
    :note-off (fn [_] #_(println "off" ((juxt :channel :note) _)))))
 
 (do
-  (defn s&h-reponse-1
-    [{:as s&h-data :keys [pitch-class]}]
-    (println s&h-data)
+  (defn arp-reponse-1
+    [{:as arp-data :keys [pitch-class]}]
+    (println arp-data)
     (when pitch-class
       (let [scale #_(:scale eik) (subcps "2)4 of 3)6 11-1.5.7.9")
             pc-index* (pc-index scale pitch-class)
@@ -173,12 +172,12 @@
             env (rand-val envs)
             amps (fsf (count intervals) 1 2)
             d-level ((rand-val bz) (count intervals) 0.1 0.3)]
-        (ref-rain :id (keyword "s&h" (str "response1-" (rand-int 5000)))
+        (ref-rain :id (keyword "arp" (str "response1-" (rand-int 5000)))
                   :durs durs
                   :loop? false
                   :on-event
                   (on-event
-                    (play-sample s&h-data
+                    (play-sample arp-data
                                  :rate (at-index intervals)
                                  :d-level (at-index d-level)
                                  :amp (at-index amps)
@@ -189,9 +188,9 @@
   (pan-verb :in 5 :mix 1 :room 1 :amp 2 :damp-min 0.6 :damp 0.7
             :pan-min -0.5 :pan 0.5)
   ;; NOTE `ge-live-sig/start-signal-analyzer' should be running
-  (s&h rec/bufs 0.5 1 {:in 5 :play-fn s&h-reponse-1})
+  (arp rec/bufs 0.5 1 {:in 5 :play-fn arp-reponse-1})
   (ref-rain :id :s&h-rain
             :durs [5 3 8 2 1 5]
             :ratio 1/3
-            :on-event (on-event (s&h rec/bufs 0.5 index
-                                     {:in 5 :play-fn s&h-reponse-1}))))
+            :on-event (on-event (arp rec/bufs 0.5 index
+                                     {:in 5 :play-fn arp-reponse-1}))))

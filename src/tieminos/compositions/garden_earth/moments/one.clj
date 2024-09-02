@@ -4,18 +4,19 @@
    [erv.utils.conversions :as conv]
    [overtone.core :as o]
    [taoensso.timbre :as timbre]
-   [tieminos.compositions.garden-earth.analysis :refer [pitch-class->note-set]]
-   [tieminos.compositions.garden-earth.fl-grain-1.sample&hold :refer [s&h]]
-   [tieminos.compositions.garden-earth.habitat-flores-polinizadores :refer [s&h-reponse-1]]
-   [tieminos.compositions.garden-earth.synths.live-signal :refer [pan-verb
-                                                                  start-signal-analyzer]]
+   [tieminos.compositions.garden-earth.analysis
+    :refer [pitch-class->note-set]]
+   [tieminos.compositions.garden-earth.fl-grain-1.sample-arp :refer [s&h]]
+   [tieminos.compositions.garden-earth.habitat-flores-polinizadores
+    :refer [s&h-reponse-1]]
+   [tieminos.compositions.garden-earth.synths.live-signal
+    :refer [pan-verb start-signal-analyzer]]
    [tieminos.compositions.garden-earth.synths.recording :as rec]
-   [tieminos.compositions.garden-earth.web.ajax :refer [post-live-state
-                                                        post-note-tuning]]
+   [tieminos.compositions.garden-earth.web.ajax
+    :refer [post-live-state post-note-tuning]]
    [tieminos.midi.core :refer [get-oxygen! midi-in-event]]
    [tieminos.sc-utils.ndef.v1 :as ndef]
-   [time-time.dynacan.players.gen-poly :refer [on-event ref-rain]]
-   [time-time.dynacan.players.gen-poly :as gp]))
+   [time-time.dynacan.players.gen-poly :as gp :refer [on-event ref-rain]]))
 
 (defonce live-state (atom {}))
 
