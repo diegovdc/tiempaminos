@@ -1,29 +1,20 @@
 (ns tieminos.compositions.garden-earth.fl-grain-1.sample&hold
   (:require
+   [clojure.data.generators :as gen]
    [clojure.set :as set]
+   [clojure.string :as str]
    [overtone.core :as o]
    [tieminos.compositions.garden-earth.base
-    :refer [dur->env
-            eik
-            interval-from-pitch-class
-            midi-in-event
-            on-event
-            pc-index
-            ref-rain
-            stop
-            subcps]]
+    :refer [dur->env eik interval-from-pitch-class midi-in-event on-event
+            pc-index ref-rain stop subcps]]
    [tieminos.compositions.garden-earth.synths.granular
     :refer [sample&hold]]
    [tieminos.compositions.garden-earth.synths.live-signal
-    :refer [freq-history]]
-   [tieminos.compositions.garden-earth.synths.recording :as rec]))
+    :refer [freq-history pan-verb]]
+   [tieminos.compositions.garden-earth.synths.recording :as rec]
+   [tieminos.math.bezier :as bz]
+   [tieminos.math.utils :refer [linexp]]))
 
-(require '[clojure.string :as str]
-         '[clojure.data.generators :as gen]
-         '[tieminos.math.bezier :as bz]
-         '[tieminos.math.utils :refer [linexp linlin]])
-
-(o/env-gen (o/env-perc))
 
 (defn most-frequent-val [coll]
   (->> coll frequencies
@@ -101,6 +92,7 @@
 (do
   (defn on-sample-end
     [play-fn rec-start-time bufs-atom buf-key]
+    (println "on-sample end" play-fn)
     (let [b (@bufs-atom buf-key)
           now (o/now)
           {:keys [pitch-class transp]} (most-frequent-pitch @freq-history
@@ -123,20 +115,22 @@
     (s&h rec/bufs 0.5 1)))
 
 (defn s&h [bufs-atom dur index
-           & {:keys [play-fn]
-              :or {play-fn #(play-sample
-                             %
-                             :amp 2
-                             :adr-env (dur->env {:a 2 :d 2 :r 5} 2))}}]
+           & {:keys [in play-fn]
+              :or {in 0
+                   play-fn #(play-sample
+                              %
+                              :amp 2
+                              :adr-env (dur->env {:a 2 :d 2 :r 5} 2))}}]
   (let [start-time (o/now)]
-    (rec/start-recording :bufs-atom bufs-atom
-                         :buf-key [:sample&hold index]
-                         :seconds dur
-                         :msg "Rec: Sample&Hold"
-                         :on-end (partial on-sample-end
-                                          play-fn
-                                          start-time bufs-atom)
-                         :countdown 1)))
+    (rec/start-recording {:input-bus in
+                          :bufs-atom bufs-atom
+                          :buf-key [:sample&hold index]
+                          :seconds dur
+                          :msg "Rec: Sample&Hold"
+                          :on-end (partial on-sample-end
+                                           play-fn
+                                           start-time bufs-atom)
+                          :countdown 1})))
 (comment
   (->> eik :subcps keys (filter #(str/includes? % "2)4")))
   (subcps "2)4 of 3)6 11-1.5.7.9")
@@ -163,6 +157,7 @@
 (do
   (defn s&h-reponse-1
     [{:as s&h-data :keys [pitch-class]}]
+    (println s&h-data)
     (when pitch-class
       (let [scale #_(:scale eik) (subcps "2)4 of 3)6 11-1.5.7.9")
             pc-index* (pc-index scale pitch-class)
@@ -183,17 +178,20 @@
                   :loop? false
                   :on-event
                   (on-event
-                   (play-sample s&h-data
-                                :rate (at-index intervals)
-                                :d-level (at-index d-level)
-                                :amp (at-index amps)
-                                :adr-env (dur->env env (at-index env-durs)))))))))
+                    (play-sample s&h-data
+                                 :rate (at-index intervals)
+                                 :d-level (at-index d-level)
+                                 :amp (at-index amps)
+                                 :adr-env (dur->env env (at-index env-durs)))))))))
 
 (comment
-  .1
   (stop)
-  (s&h rec/bufs 0.5 1 :play-fn s&h-reponse-1)
+  (pan-verb :in 5 :mix 1 :room 1 :amp 2 :damp-min 0.6 :damp 0.7
+            :pan-min -0.5 :pan 0.5)
+  ;; NOTE `ge-live-sig/start-signal-analyzer' should be running
+  (s&h rec/bufs 0.5 1 {:in 5 :play-fn s&h-reponse-1})
   (ref-rain :id :s&h-rain
             :durs [5 3 8 2 1 5]
             :ratio 1/3
-            :on-event (on-event (s&h rec/bufs 0.5 index :play-fn s&h-reponse-1))))
+            :on-event (on-event (s&h rec/bufs 0.5 index
+                                     {:in 5 :play-fn s&h-reponse-1}))))

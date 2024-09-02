@@ -51,8 +51,7 @@
         (post-note-tuning (assoc freq-analysis-data
                                  :label (format "%s {%s}" pitch-class (str/join "." set*))
                                  :last-sets @last-sets
-                                 :diff-cents diff-cents))
-        )))
+                                 :diff-cents diff-cents)))))
   (o/stop)
   (start-signal-analyzer {:in 5
                           :freq 10

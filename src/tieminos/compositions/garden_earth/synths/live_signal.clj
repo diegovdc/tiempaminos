@@ -16,7 +16,8 @@
                         amp 1
                         mix-min 0.2 mix 0.5
                         room-min 0.5 room 0.5
-                        damp-min 0 damp 0.5]
+                        damp-min 0 damp 0.5
+                        pan-min -1 pan 1]
     (let [input (o/sound-in in)]
       (o/out out
              (->> (range 1)
@@ -28,7 +29,7 @@
                              (o/free-verb (lfo (rand 0.5) mix-min mix)
                                           (lfo (rand 2) room-min room)
                                           (lfo (rand) damp-min damp))
-                             (o/pan2 (lfo (rand) -1 1))
+                             (o/pan2 (lfo (rand) pan-min pan))
                              (* amp  (o/env-gen (o/env-asr a s r))))))
                   o/mix))))
   #_(o/stop)
@@ -52,7 +53,7 @@
   ((o/synth
     (let [input (o/sound-in in)]
       (o/send-reply (o/impulse freq) pitch-path
-                    [(o/lag2 (o/pitch:kr input) 0.3)
+                    [(o/lag2 (o/pitch:kr input) 0.1) ;; smooth out signal
                      (o/amplitude:kr input)]
                     in)))))
 
