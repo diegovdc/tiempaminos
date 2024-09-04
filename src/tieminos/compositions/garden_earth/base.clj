@@ -186,9 +186,26 @@
   (.indexOf (map (comp :class :pitch) scale) pitch-class))
 (comment (pc-index (:scale eik) "C+59"))
 
-(defn interval-from-pitch-class
+(defn ^:deprecated interval-from-pitch-class
   [eik-scale pitch-class deg-interval]
   (interval-from-note eik-scale (get eik-notes pitch-class) deg-interval))
+
+(defn interval-from-pitch-class2
+  "Get an interval from a pitch class from the `eik` scale or any subcps.
+  Just like `interval-from-pitch-class` but deg-interval `0` always returns
+  a unison if the `pitch-class` is part of the `scale`; else it will return
+  the closest note above it.
+  This one should be preferred above the aforementioned function."
+  [eik-scale pitch-class deg-interval]
+  (interval-from-note eik-scale
+                      (get eik-notes pitch-class)
+                      (+ (pc-index eik-scale pitch-class)
+                         deg-interval)))
+
+(comment
+  (->> (keys eik-notes)
+       (map
+         #(interval-from-pitch-class2 (:scale eik) % 0))))
 
 (defn get-pc
   "Get the pitch class string of a note"
