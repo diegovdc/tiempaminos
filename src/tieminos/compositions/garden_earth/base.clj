@@ -213,9 +213,9 @@
          ;; add upper and lower bounds so that it wraps on itself
          low-note (first (first ranges))
          high-note (last (last ranges))
-         low-range [(/ high-note 2) low-note]
+         ;; close the octave
          high-range [high-note (* 2 low-note)]]
-     (concat [low-range] ranges [high-range]))))
+     (concat ranges [high-range]))))
 
 (comment
   (make-scale-freqs-ranges
@@ -228,11 +228,13 @@
 (defn eiko-round-freq
   "Round `freq` to the nearest pitch class in the `eikosany`"
   ([freq scale-freqs-ranges]
-   (let [[freq-in-octave transp-period]
+   (let [lowest (-> scale-freqs-ranges first first)
+         highest (* 2 lowest)
+         [freq-in-octave transp-period]
          (loop [f freq octaves 1]
-           (cond (> 880 f 440) [f octaves]
-                 (> f 880) (recur (/ f 2) (* 2 octaves))
-                 (< f 440) (recur (* f 2) (/ octaves 2))))
+           (cond (> highest f lowest) [f octaves]
+                 (> f highest) (recur (/ f 2) (* 2 octaves))
+                 (< f lowest) (recur (* f 2) (/ octaves 2))))
 
          [t-freq1 t-freq2] (or (->> scale-freqs-ranges
                                     (filter #(> (second %)
@@ -244,11 +246,19 @@
          [eik-freq diff-hz] (if (> (Math/abs diff2) (Math/abs diff1))
                               [t-freq1 diff1]
                               [t-freq2 diff2])]
-     {:pitch-class (scale-freqs-map eik-freq)
+     {:pitch-class (scale-freqs-map (if (= highest eik-freq) ;; there is no octave of the lowest note on the freq-map
+                                      lowest eik-freq))
       :eik-freq (* transp-period eik-freq)
       :eik-freq-ref eik-freq
       :transp transp-period
       :diff-hz diff-hz
       :original-freq freq})))
 
-(comment (eiko-round-freq 454.6221))
+(comment
+  (->> scale-freqs-map (sort-by first) )
+  (-> scale-freqs-ranges)
+  (eiko-round-freq
+    452.49603
+    scale-freqs-ranges)
+
+  )
