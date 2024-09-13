@@ -33,7 +33,7 @@
   ([{:keys [bufs-atom buf-key seconds input-bus writer-fn]
      :or {writer-fn writer}}]
    (let [buf (alloc bufs-atom buf-key seconds)]
-     (writer input-bus buf seconds)
+     (writer-fn input-bus buf seconds)
      buf)))
 
 (defn free-buffers []
@@ -78,6 +78,7 @@
                           (make-progress-bar-fn progress-range))]
     (when-not input-bus
       (throw (ex-info "No `input-bus` provided for recording." {})))
+    ;; TODO rename the keyword below and allow for a custom `id-key-fn`
     (ref-rain :id (keyword "granular" (str "recording"
                                            (name-buf-key buf-key)))
               :tempo (dur->bpm (* seconds 1000))
@@ -85,13 +86,13 @@
               :durs durs
               :on-event
               (on-event
-               (when (zero? index)
-                 (rec-buf {:bufs-atom bufs-atom
-                           :buf-key buf-key
-                           :seconds seconds
-                           :input-bus input-bus}))
-               (when progress-bar?
-                 (progress-bar-fn index))))))
+                (when (zero? index)
+                  (rec-buf {:bufs-atom bufs-atom
+                            :buf-key buf-key
+                            :seconds seconds
+                            :input-bus input-bus}))
+                (when progress-bar?
+                  (progress-bar-fn index))))))
 
 (def recording?
   "For external use only (an outside check if something is being recorded)"

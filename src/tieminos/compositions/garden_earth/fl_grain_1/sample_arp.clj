@@ -11,9 +11,10 @@
     :refer [sample&hold]]
    [tieminos.compositions.garden-earth.synths.live-signal
     :refer [freq-history pan-verb]]
-   [tieminos.compositions.garden-earth.synths.recording :as rec]
    [tieminos.math.bezier :as bz]
-   [tieminos.math.utils :refer [linexp]]))
+   [tieminos.math.utils :refer [linexp]]
+   [tieminos.sc-utils.recording.v1 :as sc.rec.v1]
+   [tieminos.synths :as synth]))
 
 (defn most-frequent-val [coll]
   (->> coll frequencies
@@ -74,9 +75,9 @@
            adr-env (dur->env {:a 2 :d 2 :r 5} 3)}}]
 
   (sample&hold
-   (merge {:out out :buf buf :d-level d-level :amp amp :rate rate}
-          grain-conf
-          adr-env)))
+    (merge {:out out :buf buf :d-level d-level :amp amp :rate rate}
+           grain-conf
+           adr-env)))
 
 (def envs {:atk-reso1 {:a 0.1 :d 0.5 :r 5}
            :atk-reso2 {:a 0.1 :d 0.5 :r 0.5}
@@ -94,6 +95,7 @@
 (do
   (defn on-sample-end
     [play-fn rec-start-time bufs-atom buf-key]
+
     (let [b (@bufs-atom buf-key)
           now (o/now)
           {:keys [pitch-class transp]} (most-frequent-pitch @freq-history
@@ -110,27 +112,37 @@
         (play-fn arp-data)
         ;; TODO rename key to include analyzed "dominant" pitch
         (swap! bufs-atom set/rename-keys {buf-key new-buf-key})
-        (swap! arp-seq conj arp-data))))
-  (comment
-    (arp {:bufs-atom rec/bufs :dur 0.5 :index 1})))
+        (swap! arp-seq conj arp-data)))))
 
-(defn arp [{:keys [bufs-atom dur index ;; required
-                   in play-fn]
-            :or {in 0
-                 play-fn #(play-sample
-                           %
-                           :amp 2
-                           :adr-env (dur->env {:a 2 :d 2 :r 5} 2))}}]
+(comment
+  (arp {:bufs-atom sc.rec.v1/bufs :dur 0.5 :index 1})
+
+  (o/demo
+    (o/play-buf 1 (-> @sc.rec.v1/bufs
+                      (get ["A+53" :sample-arp 5])))))
+
+(defn arp
+  "NOTE `in` should be an `o/audio-bus`"
+  [{:keys [bufs-atom dur index ;; these 3 are required
+           in play-fn]
+    :or {in 0
+         play-fn #(play-sample
+                    %
+                    :amp 2
+                    :adr-env (dur->env {:a 2 :d 2 :r 5} 2))}}]
   (let [start-time (o/now)]
-    (rec/start-recording {:input-bus in
-                          :bufs-atom bufs-atom
-                          :buf-key [:sample-arp index]
-                          :seconds dur
-                          :msg "Rec: Sample Arp"
-                          :on-end (partial on-sample-end
-                                           play-fn
-                                           start-time bufs-atom)
-                          :countdown 1})))
+    (sc.rec.v1/start-recording
+      {:input-bus in
+       :bufs-atom bufs-atom
+       :buf-key [:sample-arp index]
+       :seconds dur
+       :msg "Rec: Sample Arp"
+       :print-info? false
+       :on-end (partial on-sample-end
+                        play-fn
+                        start-time
+                        bufs-atom)
+       :countdown 1})))
 (comment
   (->> eik :subcps keys (filter #(str/includes? % "2)4")))
   (subcps "2)4 of 3)6 11-1.5.7.9")
@@ -198,50 +210,49 @@
   [pattern pitch-class scale]
   (map #(interval-from-pitch-class2 scale pitch-class %)
        pattern))
-
-(pattern-interval-seq-fn [0 2 0 2 0 2] "C+59" (subcps "2)4 of 3)6 11-1.5.7.9"))
-
 (do
   (defn arp-reponse-2
     [{:keys [scale out interval-seq-fn]
       :or {out 0
            interval-seq-fn default-interval-seq-fn}}
      {:as arp-data :keys [pitch-class]}]
+    (println pitch-class "---------------------------------------------")
     (when pitch-class
       (let [intervals (interval-seq-fn pitch-class scale)
             durs ((rand-val bz)
                   (count intervals)
-                  (rand-nth [0.01 0.1 0.3])
+                  (rand-nth [#_0.01 0.1 0.3])
                   (rand-nth [0.17 0.5 0.8]))
             env-durs ((rand-val bz) (count intervals) 3 5)
             env (rand-val envs)
-            amps (fsf (count intervals) 1 2)
+            amps (fsf (count intervals) 1 1.5)
             d-level ((rand-val bz) (count intervals) 0.1 0.3)]
         (ref-rain :id (keyword "arp" (str "response1-" (rand-int 5000)))
                   :durs durs
                   :loop? false
                   :on-event
                   (on-event
-                   (play-sample arp-data
-                                {:out out
-                                 :rate (at-index intervals)
-                                 :d-level (at-index d-level)
-                                 :amp (at-index amps)
-                                 :adr-env (dur->env env (at-index env-durs))})))))))
+                    #_(synth/low)
+                    (play-sample arp-data
+                                 {:out out
+                                  :rate (at-index intervals)
+                                  :d-level (at-index d-level)
+                                  :amp (at-index amps)
+                                  :adr-env (dur->env env (at-index env-durs))})))))))
 
 (comment
   (stop)
   (pan-verb :in 5 :mix 1 :room 1 :amp 2 :damp-min 0.6 :damp 0.7
             :pan-min -0.5 :pan 0.5)
   ;; NOTE `ge-live-sig/start-signal-analyzer' should be running
-  (arp {:bufs-atom rec/bufs
+  (arp {:bufs-atom sc.rec.v1/bufs
         :dur 0.5
         :index 1
         :in 5 :play-fn arp-reponse-1})
   (ref-rain :id :arp-rain
             :durs [5 3 8 2 1 5]
             :ratio 1/3
-            :on-event (on-event (arp {:bufs-atom rec/bufs
+            :on-event (on-event (arp {:bufs-atom sc.rec.v1/bufs
                                       :dur 0.5
                                       :index index
                                       :in 5

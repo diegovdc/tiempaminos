@@ -85,7 +85,9 @@
 (comment
     ;; TODO convert into test
   (find-subcps-intersections
-    "1)4 of 3)6 1.3-5.7.9.11" #{"2)4"}))
+    "1)4 of 3)6 1.3-5.7.9.11" #{"2)4"})
+  (find-subcps-intersections
+    "2)4 of 3)6 11-1.5.7.9" #{"2)4"}))
 
 (comment
   ;; projections (transpositions/stellations)

@@ -4,18 +4,20 @@
    [overtone.core :as o]
    [taoensso.timbre :as timbre]
    [tieminos.compositions.garden-earth.base :as ge-base :refer [early-g]]
+   [tieminos.compositions.garden-earth.routing :refer [init-inputs! inputs]]
    [tieminos.compositions.garden-earth.synths.fx :as fx]
    [tieminos.compositions.garden-earth.synths.general
     :refer [tuning-monitor]]
    [tieminos.compositions.garden-earth.synths.live-signal :as live-signal]
    [tieminos.compositions.garden-earth.synths.recording :as rec]
-   [tieminos.core :refer [connect]]))
+   [tieminos.core :refer [connect]]
+   [tieminos.sc-utils.groups.v1 :as groups]))
 
-(declare startup test-sound load-test-samples! init-groups-and-fx!)
+(declare init! test-sound load-test-samples! init-groups-and-fx!)
 
 (comment
   ;; antes inicializar SuperCollider con `sc-init.scd`
-  (startup true)
+  (init! true)
   (test-sound)
   (load-test-samples!)
   (init-groups-and-fx!))
@@ -28,19 +30,12 @@
     (timbre/info (count @ss) "test samples loaded: " (keys @ss))))
 
 (defn init-groups-and-fx! []
-  (let [main (o/group "get-on-the-bus main")
-        early (o/group :head main)
-        fx (o/group "fx" :after early)]
-    (reset! ge-base/groups {:main main :early early :fx fx})
-    (reset! ge-base/fx {:rev-l (fx/rev [:tail fx] 8 0 :amp 2)
-                        :rev-r (fx/rev [:tail fx] 9 1 :amp 2)
-                        :rev-3 (fx/rev [:tail fx] 10 2 :amp 2)
-                        :rev-4 (fx/rev [:tail fx] 11 3 :amp 2)})))
-
-(defn init-fx! []
-  (let [fx (@ge-base/groups :fx)]
-    (reset! ge-base/fx {:rev-l (fx/rev [:tail fx] 8 :amp 2)
-                        :rev-r (fx/rev [:tail fx] 9 1 :amp 2)})))
+  (when-not (seq @groups/groups)
+    (groups/init-groups!))
+  (reset! ge-base/fx {:rev-l (fx/rev (groups/fx) 8 0 :amp 2)
+                      :rev-r (fx/rev (groups/fx) 9 1 :amp 2)
+                      :rev-3 (fx/rev (groups/fx) 10 2 :amp 2)
+                      :rev-4 (fx/rev (groups/fx) 11 3 :amp 2)}))
 
 (o/defsynth sini [out 0]
   (o/out out (* (o/pan2 (o/sin-osc 200) 0) 0.2 (o/env-gen (o/env-perc) :action o/FREE))))
@@ -54,16 +49,18 @@
   (Thread/sleep 1000)
   :done)
 
-(defn startup [dev?]
+(defn init! [& {:keys [dev?]}]
   (if (o/server-connected?)
     (timbre/info "Server already connected")
     (timbre/info (connect)))
   (init-groups-and-fx!)
-  (when dev?
-    (load-test-samples!)
-    (test-sound)
-    (println "Local functions: " (keys (ns-publics *ns*))))
-  :done)
+  (init-inputs! inputs)
+  #_(when dev?
+      (load-test-samples!)
+      (test-sound)
+      (println "Local functions: " (keys (ns-publics *ns*))))
+  (timbre/info "Garden Earth initialized!")
+  inputs)
 
 (def stop ge-base/stop)
 

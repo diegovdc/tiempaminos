@@ -30,7 +30,6 @@
            (timbre/warn (str "Could not connect to USB MIDI: " (.getMessage e)))))))
 
 (defonce lumatone* (atom nil))
-
 (defn get-lumatone!
   []
   (if @lumatone*
@@ -38,6 +37,18 @@
     (try (reset! lumatone* (midi/midi-in "Lumatone"))
          (catch Exception e
            (timbre/warn (str "Could not connect to Lumatone: " (.getMessage e)))))))
+
+
+(defonce pacer* (atom nil))
+
+(defn get-pacer!
+  []
+  (if @pacer*
+    @pacer*
+    (try (reset! pacer* (midi/midi-in "PACER MIDI1"))
+         (catch Exception e
+           (timbre/warn (str "Could not connect to Pacer: " (.getMessage e)))))))
+
 
 (defonce iac2* (atom nil))
 

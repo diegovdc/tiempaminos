@@ -417,7 +417,6 @@
   (o/recording-stop)
   (defn spy [x] (println x) x)
   (start-signal-analyzer)
-  (-> @freq-history)
   (def test-samples (load-test-samples!))
   (def test-samples* (-> @rec/bufs vals vec))
   (-> test-samples*)

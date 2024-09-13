@@ -5,17 +5,19 @@
    [clojure.string :as str]
    [erv.cps.core :as cps]
    [erv.scale.core :as scale :refer [+names]]
+   [erv.utils.conversions :as conv]
    [erv.utils.core :as utils]
    [overtone.midi :as midi]
    [potemkin :refer [import-vars]]
    [taoensso.timbre :as timbre]
    [tieminos.compositions.garden-earth.fingerings :as fingerings]
+   [tieminos.habitat.groups :as groups]
    [tieminos.math.utils :refer [normalize]]
    [time-time.dynacan.players.gen-poly :as gp]))
 
-(defonce groups (atom {}))
+(defonce groups #'groups/groups)
 (defonce fx (atom {}))
-(defn early-g [] [:head (:early @groups)])
+(defn early-g [] (groups/early))
 
 ;; for the `import-vars` below
 (require '[tieminos.midi.core]
@@ -205,7 +207,7 @@
 (comment
   (->> (keys eik-notes)
        (map
-         #(interval-from-pitch-class2 (:scale eik) % 0))))
+        #(interval-from-pitch-class2 (:scale eik) % 0))))
 
 (defn get-pc
   "Get the pitch class string of a note"
@@ -236,8 +238,8 @@
 
 (comment
   (make-scale-freqs-ranges
-    scale-freqs-map
-    #{"A+53" "A+92"}))
+   scale-freqs-map
+   #{"A+53" "A+92"}))
 
 (def scale-freqs-ranges
   (make-scale-freqs-ranges scale-freqs-map (set (vals scale-freqs-map))))
@@ -258,24 +260,25 @@
                                                 freq-in-octave
                                                 (first %)))
                                     first))
-         diff1 (- t-freq1 freq-in-octave)
-         diff2 (- t-freq2 freq-in-octave)
+         diff1 (- freq-in-octave t-freq1)
+         diff2 (- freq-in-octave t-freq2)
          [eik-freq diff-hz] (if (> (Math/abs diff2) (Math/abs diff1))
                               [t-freq1 diff1]
-                              [t-freq2 diff2])]
+                              [t-freq2 diff2])
+         eik-freq* (* transp-period eik-freq)
+         diff-cents (conv/ratio->cents (/ freq eik-freq*))]
      {:pitch-class (scale-freqs-map (if (= highest eik-freq) ;; there is no octave of the lowest note on the freq-map
                                       lowest eik-freq))
-      :eik-freq (* transp-period eik-freq)
+      :eik-freq eik-freq*
       :eik-freq-ref eik-freq
-      :transp transp-period
+      :transp transp-period ;; period ratio that relates the `:original-freq` to the `:eik-freq-ref`
       :diff-hz diff-hz
+      :diff-cents diff-cents
       :original-freq freq})))
 
 (comment
-  (->> scale-freqs-map (sort-by first) )
+  (->> scale-freqs-map (sort-by first))
   (-> scale-freqs-ranges)
   (eiko-round-freq
-    452.49603
-    scale-freqs-ranges)
-
-  )
+   452.49603
+   scale-freqs-ranges))

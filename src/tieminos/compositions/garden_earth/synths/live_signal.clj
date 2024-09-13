@@ -2,7 +2,8 @@
   (:require
    [clojure.string :as str]
    [overtone.core :as o]
-   [tieminos.compositions.garden-earth.base :as ge-base :refer [scale-freqs-ranges]]))
+   [tieminos.compositions.garden-earth.base :as ge-base :refer [scale-freqs-ranges]]
+   [tieminos.utils :refer [hz->ms]]))
 
 (defn lfo [freq min* max*]
   (o/lin-lin (o/lf-noise1 freq) -1 1 min* max*))
@@ -37,7 +38,7 @@
     (pan-verb :mix 1 :room 1 :amp 2)))
 
 (defonce freq-history (atom nil))
-
+(-> @freq-history)
 (comment
   (o/demo 5 (o/send-reply (o/impulse 5) "/receive-pitch"
                           (o/lag2 (o/pitch (o/sound-in 0))
@@ -50,12 +51,13 @@
       :or {freq 5
            in 0
            pitch-path "/receive-pitch"}}]
+  (println "SIGANALIZER------------------------- " in)
   ((o/synth
-    (let [input (o/sound-in in)]
-      (o/send-reply (o/impulse freq) pitch-path
-                    [(o/lag2 (o/pitch:kr input) 0.1) ;; smooth out signal
-                     (o/amplitude:kr input)]
-                    in)))))
+       (let [input (o/sound-in in)]
+         (o/send-reply (o/impulse freq) pitch-path
+                       [(o/lag2 (o/pitch:kr input) 0.1) ;; smooth out signal
+                        (o/amplitude:kr input)]
+                       in)))))
 
 (defn run-receive-pitch
   "Gets pitches from `sound-in` 0 in almost real time
@@ -96,6 +98,48 @@
     :in in
     :freq freq
     :pitch-path pitch-path))
+
+
+#_(defn add-analysis
+  [dur-s buf-key input-bus]
+  (let [now (o/now)
+        sample-start (- now (* 1000 dur-s)
+                        ;; ensure samples window corresponds to dur-s
+                        (hz->ms analyzer-freq))
+        ;; TODO allow multiple inputs: (get @freq-history (keyword (:name input-bus)))
+        analysis (->> @freq-history
+                      (drop-while #(> (:timestamp %) now))
+                      (take-while #(>= (:timestamp %) sample-start))
+                      (reduce (fn [acc {:keys [amp freq freq?]}]
+                                (-> acc
+                                    (update :min-amp min amp)
+                                    (update :max-amp max amp)
+                                    (update :amps conj amp)
+                                    (cond-> freq? (update :freqs conj freq))))
+
+                              {:min-amp 0
+                               :max-amp 0
+                               :amps ()
+                               :freqs ()}))
+        avg-amp (avg (:amps analysis))
+        avg-freq? (boolean (seq (:freqs analysis)))
+        avg-freq (when avg-freq? (avg (:freqs analysis)))
+        amp-norm-mult (normalize-amp (:max-amp analysis))]
+    (swap! bufs update buf-key
+           assoc
+           :rec/time sample-start
+           :analysis (-> analysis
+                         (assoc :avg-amp avg-amp)
+                         (assoc :avg-freq? avg-freq?)
+                         (cond-> avg-freq? (assoc :avg-freq avg-freq))
+                         (dissoc :amps :freqs))
+           :amp-norm-mult amp-norm-mult)))
+
+#_(defn add-amp-analysis
+  "For use in thread in the `:on-end` key of `sc.rec.v1/start-recording`"
+  [buf-key]
+  (add-analysis dur-s buf-key input-bus))
+
 (comment
   (o/stop)
   (start-signal-analyzer :in 0 :pitch-path "/receive-pitch-0")
