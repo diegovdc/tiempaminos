@@ -47,13 +47,14 @@
   (-> @freq-history))
 
 (defn run-get-signal-pitches
-  [& {:keys [freq in pitch-path]
+  [& {:keys [freq in pitch-path analyzer-amp]
       :or {freq 5
            in 0
-           pitch-path "/receive-pitch"}}]
-  (println "SIGANALIZER------------------------- " in)
+           pitch-path "/receive-pitch"
+           analyzer-amp 1}}]
+  (println "SIG ANALIZER Bus:" in "amp:" analyzer-amp)
   ((o/synth
-       (let [input (o/sound-in in)]
+       (let [input  (* analyzer-amp (o/sound-in in))]
          (o/send-reply (o/impulse freq) pitch-path
                        [(o/lag2 (o/pitch:kr input) 0.1) ;; smooth out signal
                         (o/amplitude:kr input)]
@@ -86,16 +87,19 @@
               (keyword (str/replace pitch-path #"/" ""))))
 
 (defn start-signal-analyzer
-  [& {:keys [in freq pitch-path on-receive-pitch scale-freqs-ranges]
+  [& {:keys [in freq pitch-path on-receive-pitch scale-freqs-ranges
+             analyzer-amp]
       :or {in 0
            freq 5
            scale-freqs-ranges scale-freqs-ranges
-           pitch-path "/receive-pitch"}}]
+           pitch-path "/receive-pitch"
+           analyzer-amp 1}}]
   (run-receive-pitch :pitch-path pitch-path
                      :on-receive-pitch on-receive-pitch
                      :scale-freqs-ranges scale-freqs-ranges)
   (run-get-signal-pitches
     :in in
+    :analyzer-amp analyzer-amp
     :freq freq
     :pitch-path pitch-path))
 

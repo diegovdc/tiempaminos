@@ -13,8 +13,8 @@
     :refer [freq-history pan-verb]]
    [tieminos.math.bezier :as bz]
    [tieminos.math.utils :refer [linexp]]
-   [tieminos.sc-utils.recording.v1 :as sc.rec.v1]
-   [tieminos.synths :as synth]))
+   [tieminos.sc-utils.groups.v1 :as groups]
+   [tieminos.sc-utils.recording.v1 :as sc.rec.v1]))
 
 (defn most-frequent-val [coll]
   (->> coll frequencies
@@ -75,7 +75,12 @@
            adr-env (dur->env {:a 2 :d 2 :r 5} 3)}}]
 
   (sample&hold
-    (merge {:out out :buf buf :d-level d-level :amp amp :rate rate}
+    (merge {:group (groups/mid)
+            :out out
+            :buf buf
+            :d-level d-level
+            :amp amp
+            :rate rate}
            grain-conf
            adr-env)))
 

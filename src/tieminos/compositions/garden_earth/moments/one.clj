@@ -36,7 +36,10 @@
    [[0 2]
     [0 -2]
     [0 3 1 -2]
-    [6 -6 -12 -6 0 6]]])
+    [6 -6 -12 -6 0 6]
+    (range 0 27 4)
+    (reverse (range 0 20 3))
+    (shuffle (range -7 7))]])
 
 (def harmonizer-harmonies
   [ ;; S.0
@@ -112,11 +115,12 @@
   [in]
   (start-signal-analyzer {:in in
                           :freq 10
+                          :analyzer-amp 3
                           :pitch-path "/receive-pitch-5"
                           #_#_:scale-freqs-ranges (make-scale-freqs-ranges
-                                                   scale-freqs-map
-                                                   (set (map (comp :class :pitch)
-                                                             scale-1)))
+                                                    scale-freqs-map
+                                                    (set (map (comp :class :pitch)
+                                                              scale-1)))
                           :on-receive-pitch #'on-receive-pitch}))
 
 ;;;;;;;;;;;;;;;;;
@@ -236,9 +240,9 @@
     ((get-in sections* [(:section live-state-data 0) config-key]))))
 
 (comment
+  (do (o/stop) (reset! live-state initial-state))
   (ge.init/init!)
   #_(-> @live-state)
-  (do (o/stop) (reset! live-state initial-state))
   (start-signal-analyzer! (ge.route/fl-i1 :in))
 
   ;; init live-state
