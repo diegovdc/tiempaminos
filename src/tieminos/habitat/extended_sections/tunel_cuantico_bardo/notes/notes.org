@@ -26,6 +26,11 @@ donde cada uno exista en un lugar relativamente estático del espacio
 Agrupar por bloques secuenciales de sesiones donde opera más o menos el mismo código o el mismo resultado estético
 *** TODO Marcar partes específicas del cada track
 ** TODO interfaz
+Controles:
+  - Botones de rec/stop
+  - Botones de activar/desactivar proceso
+  - Amplitud del proceso
 *** TODO cómo mapear los patches
   Qué se necesita mappear
 *** TODO Controlar aspectos de la espacialización de los instrumentos
+** TODO Quitar normalización de la reproducción de samples

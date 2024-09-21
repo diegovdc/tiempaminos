@@ -234,7 +234,8 @@
 (defn throttle
   ;; NOTE Seems to be like `sequence-call` but better
   "Will imediately call a function and then wait for `time-ms` to call it again, if it was called in the interim.
-  The second call will use the latest value with which the function was called."
+  The second call will use the latest value with which the function was called.
+  So it calls the function at the start and the end of the period."
   [f time-ms]
   (let [c (a/chan (a/sliding-buffer 1))]
     (a/go-loop []
@@ -248,7 +249,8 @@
   (doseq [x (range 6)] (tprint x)))
 
 (defn throttle2
-  "Like throttle, but after a call, it will discard all calls effectuated during the `time-ms` waiting period."
+  "Like throttle, but after a call, it will discard all calls effectuated during the `time-ms` waiting period.
+  So it calls the function only the start of the period."
   [f time-ms]
   (let [c (a/chan (a/sliding-buffer 1))]
     (a/go-loop []

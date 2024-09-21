@@ -89,8 +89,7 @@
 
 (comment
   (-> (get-samples-db!)
-     :test/gusano-cuantico-2.2.9.2)
-  )
+      :test/gusano-cuantico-2.2.9.2))
 
 (comment
   (require '[tieminos.habitat.routing :refer [guitar-bus
@@ -259,15 +258,14 @@
 
 (def test-samples (atom {}))
 
-
 (def load-own-samples! #'rec/load-own-samples!)
 (def delete-sample! #'rec/delete-sample!)
 
 (comment
   (rec/load-own-samples!
-    :buffers-atom test-samples
-    :prefixes-set #{:habitat/test-samples-v1}
-    :samples-path habitat-samples-path))
+   :buffers-atom test-samples
+   :prefixes-set #{:habitat/test-samples-v1}
+   :samples-path habitat-samples-path))
 
 (comment
   #_:clj-kondo/ignore

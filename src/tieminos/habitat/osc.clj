@@ -35,7 +35,7 @@
   [& {:keys [port] :or {port 16180}}]
   (if-not @osc-server
     (reset! osc-server (:server (init-server port)))
-    (timbre/warn "OSC Server is already running.")))
+    (timbre/warn "OSC Server is already running on:" (str (get-local-host) "@" port))))
 
 (defn responder
   "The `::default` keyword is an identifier, so calling responder with different functions will overwrite the previous function.
