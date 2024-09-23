@@ -16,10 +16,15 @@
 (defn toogle-rec [{:keys [input on?]}]
   (swap! live-state assoc-in [:rec input] (-> default-rec-config
                                               (merge (-> @live-state :rec input))
-                                              (assoc :on? on?)))
+                                              (assoc :on? on?
+                                                     :start-time (System/currentTimeMillis))))
   (if on?
     (bardo.live-ctl/start-recording {:input-k input})
     (bardo.live-ctl/stop-recording {:input-k input})))
+
+(comment
+  (toogle-rec {:input :guitar
+               :on? true}))
 
 (defn switch-rec-durs [inputs dur]
   (let [dur* (case dur
@@ -75,6 +80,7 @@
   [player amp]
   (swap! live-state
          assoc-in [:algo-2.2.9-clouds player :amp]
+         ;; TODO lower extra vol
          (+ 24 (first (linlin 0 1 -32 6 [amp])))))
 
 (comment
