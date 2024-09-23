@@ -31,15 +31,59 @@
    ["2)4 of 3)6 11-1.5.7.9"
     "2)4 of 3)6 9-1.5.7.11"]])
 
+(declare live-state make-repeat-cell)
+
+
+(defn simple-pattern
+  [pattern pitch-class scale]
+  ;; just for the UI's benefit
+  (swap! live-state assoc :arp/pattern-str (str (into [] pattern)))
+  (map #(interval-from-pitch-class2 scale pitch-class %)
+       pattern))
+
+(defn negate-seq [coll] (map #(* -1 %) coll))
+
+(defn make-seq-range
+  "Make a sequenential range, always starting from the zeroth degree.
+  If `converge?` then the sequence will be reversed."
+  [{:keys [len interval down? converge?]}]
+  (let [seq* (range 0 (* interval len) interval)]
+    (cond-> seq*
+      down? negate-seq
+      converge? reverse)))
+
+(comment
+  (make-seq-range {:len 5
+                   :interval 3
+                   :down? true
+                   :converge? false}))
+
 (def arp-patterns
   [ ;; S.0
-   [[0 2]
-    [0 -2]
-    [0 3 1 -2]
-    [6 -6 -12 -6 0 6]
-    (range 0 27 4)
-    (reverse (range 0 20 3))
-    (shuffle (range -7 7))]])
+   [{:name (str [0 2])
+     :fn #(make-repeat-cell [0 2] %1 %2 {:max-len 15})}
+    {:name (str [0 -2])
+     :fn #(make-repeat-cell [0 -2] %1 %2 {:max-len 15})}
+    {:name (str [0 3 1 -2])
+     :fn #(make-repeat-cell [0 3 1 -2] %1 %2 {:max-len 15})}
+    {:name (str [6 -6 -12 -6 0 6])
+     :fn #(make-repeat-cell (shuffle [6 -6 -12 -6 0 6]) %1 %2 {:max-len 9})}
+    {:name ":div-conv"
+     :fn #(simple-pattern
+            (make-seq-range {:len (rand-int 5)
+                             :interval (inc (rand-int 4))
+                             :down? (rand-nth [true false])
+                             :converge? (rand-nth [true false])})
+            %1 %2)}]])
+
+(comment
+  ((-> arp-patterns
+       (nth 0)
+       (nth 3)
+       :fn)
+   "A+92"
+   (subcps "2)4 of 3)6 11-1.5.7.9")
+   ))
 
 (def harmonizer-harmonies
   [ ;; S.0
@@ -70,7 +114,7 @@
                      (wrap-at section)
                      (wrap-at index))]
     (assoc state
-           :arp/pattern-index  index
+           :arp/pattern-index index
            :arp/pattern pattern)))
 
 (defn update-arp-scale-data
@@ -135,8 +179,10 @@
   (swap! live-state assoc
          :arp.refrain/on? false))
 (-> @live-state)
-(defn pattern-interval-seq-fn2
-  [pattern-cell pitch-class scale
+(defn make-repeat-cell
+  [pattern-cell
+   pitch-class
+   scale
    & {:keys [min-len max-len]
       :or {min-len 3 max-len 9}}]
   (let [len (max min-len (rand-int max-len))
@@ -166,7 +212,7 @@
                                 :play-fn #_(partial #'arp-reponse-1 {:scale scale
                                                                      :out (bh 0)})
                                 (partial #'arp-reponse-2 {:scale scale
-                                                          :interval-seq-fn (partial pattern-interval-seq-fn2 pattern)
+                                                          :interval-seq-fn (:fn pattern)
                                                           :out (bh 2)})}))))
   (swap! live-state assoc :arp.refrain/on? true))
 
@@ -231,7 +277,7 @@
         {0 {:arp (fn [] {:subcps-name (wrap-at (:arp/cps-index live-state-data 0)
                                                ["2)4 of 3)6 11-1.5.7.9"
                                                 "2)4 of 3)6 9-1.5.7.11"])
-                         :interval-seq-fn (partial pattern-interval-seq-fn2
+                         :interval-seq-fn (partial make-repeat-cell
                                                    (wrap-at (:arp/pattern-fn-index live-state-data 0)
                                                             [[0 2]
                                                              [0 -2]
@@ -248,8 +294,9 @@
   ;; init live-state
   (add-watch live-state ::post-live-state
              (fn [_key _ref _old-value new-value]
-               (post-live-state new-value)))
-
+               (post-live-state (-> new-value
+                                    (update :arp/pattern :name)))))
+  (->> @live-state)
   (pan-verb :in (ge.route/fl-i1 :in) :amp 2 :mix 1 :room 1
             :damp-min 0.6 :damp 0.7
             :pan-min -0.5 :pan 0.5)
