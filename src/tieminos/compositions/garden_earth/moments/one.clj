@@ -147,7 +147,7 @@
       (swap! last-sets #(take 6 (conj % set*))))
     (when-not pitch-class
       (timbre/error (ex-info "Pitch class not found"  freq-analysis-data)))
-    (println (format "%s {%s}" pitch-class (str/join "." set*)))
+    #_(println (format "%s {%s} - %s" pitch-class (str/join "." set*) diff-cents))
     (post-note-tuning (assoc freq-analysis-data
                              :label (format "%s {%s}" pitch-class (str/join "." set*))
                              :last-sets @last-sets
