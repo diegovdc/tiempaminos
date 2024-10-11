@@ -22,14 +22,22 @@
 
 (oe/defsynth amp-trigger
   [in 0
-   thresh 0.1]
+   thresh 0.1
+   amplitude-rel-time 0.2
+   lag 0.3]
   (let [sig (o/in in)
-        amp (o/lag2 (o/amplitude sig 0.01 0.2) 0.3)
+        amp (o/lag2 (o/amplitude sig 0.01 amplitude-rel-time)
+                    lag)
         trig (> amp thresh)]
     (o/send-trig:ar trig 0 amp)))
 
 (defn reg-amp-trigger
-  [{:keys [group in thresh handler handler-args]
+  [{:keys [group
+           in
+           thresh
+           amp-trigger-params
+           handler
+           handler-args]
     :or {in 0
          thresh 0.1}
     :as config}]
@@ -39,7 +47,9 @@
   (timbre/info "reg-amp-trigger thresh:" thresh)
   (make-trigger-handler handlers handler-args)
 
-  (let [synth (amp-trigger (cond-> {:in in :thresh thresh}
+  ;; TODO? Perhaps remove group from top level and move it amp-trigger params
+  (let [synth (amp-trigger (cond-> (merge {:in in :thresh thresh}
+                                          amp-trigger-params)
                              group (assoc :group group)))]
     (swap! handlers assoc (:id synth) config)
     synth))

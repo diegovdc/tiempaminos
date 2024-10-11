@@ -7,9 +7,8 @@
    [overtone.core :as o]
    [overtone.helpers.audio-file :as oaf]
    [taoensso.timbre :as timbre]
-   [tieminos.compositions.garden-earth.synths.general
-    :refer [tuning-monitor]]
    [tieminos.compositions.garden-earth.synths.granular :as gs]
+   [tieminos.overtone-extensions :as oe]
    [tieminos.utils :refer [dur->bpm seconds->dur]]
    [time-time.dynacan.players.gen-poly :refer [on-event ref-rain]]))
 
@@ -19,7 +18,7 @@
     (swap! bufs-atom assoc key buf)
     buf))
 
-(o/defsynth writer
+(oe/defsynth writer
   [in-bus 0 buf 0 seconds 5]
   ;; `in-bus` should be a mono bus
   ;; "Use a custom input, with `o/in`"
@@ -30,10 +29,14 @@
     (o/record-buf:ar (* env in) buf :action o/FREE :loop 0)))
 
 (defn rec-buf
-  ([{:keys [bufs-atom buf-key seconds input-bus writer-fn]
+  ([{:keys [bufs-atom buf-key seconds input-bus writer-fn group]
      :or {writer-fn writer}}]
    (let [buf (alloc bufs-atom buf-key seconds)]
-     (writer-fn input-bus buf seconds)
+     ;; NOTE IMPORTANT writer-fn is expected to be an oe/defsynth
+     (writer-fn (cond-> {:in-bus input-bus
+                         :buf buf
+                         :seconds seconds}
+                  group (assoc :group group)))
      buf)))
 
 (defn free-buffers []
@@ -68,7 +71,7 @@
 
 (defn run-rec
   "NOTE: `input-bus` may be `nil`. This will use `o/sound-in` 0"
-  [bufs-atom buf-key seconds input-bus & {:keys [progress-bar? print-info?]
+  [bufs-atom buf-key seconds input-bus & {:keys [progress-bar? print-info? group]
                                           :or {print-info? true}}]
 
   (when print-info? (println (format "\nStarting!\n\n%s seconds" seconds)))
@@ -79,7 +82,7 @@
     (when-not input-bus
       (throw (ex-info "No `input-bus` provided for recording." {})))
     ;; TODO rename the keyword below and allow for a custom `id-key-fn`
-    (ref-rain :id (keyword "granular" (str "recording"
+    (ref-rain :id (keyword "sc.rec.v1" (str "recording"
                                            (name-buf-key buf-key)))
               :tempo (dur->bpm (* seconds 1000))
               :loop? false
@@ -87,7 +90,8 @@
               :on-event
               (on-event
                 (when (zero? index)
-                  (rec-buf {:bufs-atom bufs-atom
+                  (rec-buf {:group group
+                            :bufs-atom bufs-atom
                             :buf-key buf-key
                             :seconds seconds
                             :input-bus input-bus}))
@@ -100,7 +104,7 @@
 
 (defn start-recording
   "NOTE: `input-bus` may be `nil`. See `run-rec`."
-  [& {:keys [bufs-atom buf-key seconds msg on-end countdown input-bus bpm _progress-bar? on-rec-start print-info?]
+  [& {:keys [bufs-atom buf-key seconds msg on-end countdown input-bus bpm _progress-bar? on-rec-start print-info? _group]
       :or {on-end (fn [_buf-key] nil)
            countdown 3
            bpm 60

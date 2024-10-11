@@ -1,0 +1,38 @@
+
+* Forma
+#+begin_src clojure
+[:fondo-oceánico
+ [[:fondo-oceánico 2]
+  [:erupciones-submarinas 2]
+  [:fuente-hydrotermal 2]
+  [:quimio-síntesis 1]
+  [:ecosistema-submarino 1 [:sucesión, :vida :muerte]]]]
+#+end_src
+
+* ¿Cómo resolver ésta sección eficientemente?
+** ¿Qué necesito?
+*** Poder grabar las diferentes capas
+**** ¿Qué capas?
+Con éstas, al menos puedo generar los materiales de quimio-síntesis y ecosistema submarino
+***** DONE Crear preouts para routear audio postfx
+CLOSED: [2024-10-09 Wed 20:01]
+***** TODO Fondo oceánico
+****** TODO Directo de la guitarra
+***** TODO Erupciones submarinas
+****** TODO In desde de la algun out
+***** TODO Fuente-hidrotermal
+**** ¿Reproducir las capas?
+***** DONE Samples de cada capa deben ser etiquetados
+CLOSED: [2024-10-09 Wed 22:24]
+***** DONE Cada uno debe tener su refrain
+CLOSED: [2024-10-09 Wed 22:24]
+**** ¿Cómo se encienden las grabaciones?
+***** DONE con el async sequencer
+CLOSED: [2024-10-09 Wed 22:24]
+**** ¿Cómo se encienden los refrains?
+***** TODO con el async sequencer
+**** TODO weighted rand-buf (so that earlier bufs can be played more often that others)
+**** TODO REAPER - split rehearsal signal so that I can use bass amp for sub-bufferd
+**** TODO Add amplitud analyzer to tag recordings, and add amp limiter using the norm-amp -6db (or -3db?) as limit
+**** LocalWords
+#  LocalWords:  refrain async sequencer

@@ -1,0 +1,111 @@
+
+* Procesos
+SCHEDULED: <2024-10-05 Sat>
+** Por implementar
+*** TODO Sampler
+**** DONE [#A] Implementar Sampler
+**** TODO [#A] Categorizar momentos para usarlos en superposición
+**** TODO [#B] Mecanismo para grabar sonidos precisos
+**** TODO [#C] Mecanismo para grabar un sample controlado por un pedal
+*** TODO [#B] Frequency analyzer
+**** DONE Implementar
+**** TODO Asociar análisis de frecuencias a los samples
+**** TODO Asociar análisis de amplitud a los samples
+*** DONE [#A] SYNTH: Play-Buf Transparente
+CLOSED: [2024-10-06 Sun 09:22]
+**** DONE Transparente
+CLOSED: [2024-10-06 Sun 09:22]
+**** DONE Con transposiciones
+CLOSED: [2024-10-06 Sun 09:22]
+*** TODO [#A] SYNTH: Granulaciones Transparentes
+**** TODO Posibilidad de distorsionar la transparencia al cambiar la duración
+*** DONE [#B] SYNTH: Granulaciones radicales
+CLOSED: [2024-10-06 Sun 09:22]
+*** TODO [#A] SYNTH: Pitch-shifter (gated or ndef)
+**** TODO [#C] Usar frequency analyzer parar sostener frecuencias precisas incluso cuando la fuente cambie
+**** TODO Con delay (incluso de varios segundos)
+*** STRT SYNTH: magma
+**** DONE Versión ADSR
+CLOSED: [2024-10-06 Sun 09:26]
+**** TODO Versión Ndef
+
+*** TODO [#A] SYNTH: Pitch-shifter adsr
+**** TODO Con delay (incluso de varios segundos)
+*** TODO [#C] SYNTH: Freeze
+*** TODO [#B] SYNTH: atractor valle
+*** TODO [#A] Disparador de amplitud
+Función que siga la amplitud y dispare eventos cada que se cruza un umbral
+*** TODO [#A] FX
+**** TODO ¿Cómo controlarlos con sencillez?
+- Opciones
+  - Hacer cadena al vuelo y usar un bus
+  - Hacer variantes de los sintes o parametrizarlos de modo que todo los FX se puedan controlar
+**** DONE Filtros
+Por ahora usamos el SineShaper
+CLOSED: [2024-10-08 Tue 21:22]
+**** TODO Distorsiones
+Reaper
+**** STRT Reverb
+Reaper
+**** TODO Convolution reverb adsr
+*** TODO REFRAIN: Flujo Montañoso:  tipo "clouds" (Hábitat: Gusano Cuántico)
+*** DONE REFRAIN: Magma
+CLOSED: [2024-10-06 Sun 09:26]
+*** DONE REFRAIN Movimientos Submarinos
+CLOSED: [2024-10-06 Sun 09:28]
+*** DONE REFRAIN: para sucesiones
+CLOSED: [2024-10-06 Sun 09:25]
+**** DONE [#A] que pueda lanzar un play-buf puntuado por alguna(s) granulaciones más brillantes
+CLOSED: [2024-10-06 Sun 09:25]
+***** DONE A veces adornados por otras granulaciones y por pitch-shifts
+CLOSED: [2024-10-06 Sun 09:25]
+*** TODO [#B] REFRAIN: evolución de la especies, tipo "Escucha de aves"
+**** TODO agrupar ciertos samples y de algún modo organizarlos sobre el tiempo
+***** TODO La secuencia debe multiplicarse varias veces y tocarse en heterofonía (duraciones muy similares, pero a veces adelante o detrás)
+***** TODO lo samples también deben oscilar ligeramente en rate de modo que hagan batimentos entre sí
+***** TODO Puede haber algunos que diverjan de otros en transposición
+***** TODO Pueden haber adornos de granulación
+*** TODO REFRAIN: atractor valle
+*** TODO [#C] REFRAIN: armónico
+
+* TODO Interfase
+SCHEDULED: <2024-10-14 Mon>
+** IDEA [#A] control de cambio de secciones
+(siguiente y anterior)
+** IDEA [#A] control de refrains
+** TODO [#A] control de grabación
+** TODO [#A] control de grabación etiquetada
+Importante pero pensar más a detalle según la forma
+** TODO [#A] controles de parámetros de síntesis/refrains
+Idealmente relacionados con la sección (diferentes secciones, diferentes parámetros y sintes disponibles)
+** TODO [#B] Usar el pedal de expresión de algún modo
+** TODO [#C] Usar pedales de sustain
+** TODO [#A] Implementar controles en código
+** TODO Implementar UI en el navegador
+** TODO [#A] Decidir sobre ideas
+
+
+* TODO UI
+
+** TODO Visualizar la seccion
+** TODO Visualizar el estado de la pieza (synths/refrains activos)
+** TODO Cronometrar el performance
+
+* DONE Forma-Secciones
+CLOSED: [2024-10-08 Tue 21:19] SCHEDULED: <2024-10-04 Fri>
+** DONE Macro-grafo de momentos
+CLOSED: [2024-10-08 Tue 21:19]
+** DONE Nodos (Detallar refrains y sintes con nodos específicos y con secciones)
+CLOSED: [2024-10-08 Tue 21:19]
+**** Movimientos Subterráneos
+- Play-buf - transposiciones hacia abajo
+- Granulaciones Transparentes
+      quizá, pero pocas
+
+* TODO Reaper
+SCHEDULED: <2024-10-12 Sat>
+
+* Palabras
+#  LocalWords:  gated adsr sintes buf clouds REFRAIN Reverb pitch shifts Freeze SYNTH FX refrains delay samples
+#  LocalWords:  frequency analyzer play reverb Convolution rate sustain sample Pitch-shifter Play-Buf Frequency
+#  LocalWords:  UI ADSR ndef NDEF

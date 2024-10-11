@@ -24,12 +24,14 @@
             (catch Exception ~(symbol "_e") nil)))
      (swap! ndefs assoc ~id synth#)))
 
-(defn stop [& ids]
-  (doseq [id ids]
-    (when-let [prev-synth (get @ndefs id)]
-      (try (o/ctl prev-synth :gate 0)
-           (catch Exception _e nil))
-      (swap! ndefs dissoc id))))
+(defn stop
+  ([] (when-let [ndefs* (seq (keys @ndefs))]  (apply stop ndefs*)))
+  ([& ids]
+   (doseq [id ids]
+     (when-let [prev-synth (get @ndefs id)]
+       (try (o/ctl prev-synth :gate 0)
+            (catch Exception _e nil))
+       (swap! ndefs dissoc id)))))
 
 (comment
   (def my-group (o/group "my-group"))

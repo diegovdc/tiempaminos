@@ -20,7 +20,17 @@
   (atom {}))
 
 (defn rec-input
-  [{:keys [section subsection input-name input-bus dur-s on-end msg countdown on-rec-start print-info?]
+  [{:keys [section
+           subsection
+           input-name
+           input-bus
+           dur-s
+           on-end
+           msg
+           countdown
+           on-rec-start
+           print-info?
+           group]
     :or {on-end (fn [& _args])
          msg "Recording"
          countdown 0
@@ -43,7 +53,8 @@
                    (add-meta buf-key section subsection input-name)
                    (on-end buf-key))
          :countdown countdown
-         :on-rec-start on-rec-start)))))
+         :on-rec-start on-rec-start
+         :group group)))))
 
 (def habitat-samples-path (str (System/getProperty "user.dir")
                                "/samples/habitat_samples/"))
@@ -234,6 +245,36 @@
          assoc :rec/meta {:section section
                           :subsection subsection
                           :input-name input-name}))
+
+(defn perform-query [query-map value-map]
+  (->> query-map
+       (map
+        (fn [[k v]]
+          (if (fn? v)
+            (boolean (v (k value-map)))
+            (= v (k value-map)))))
+       (every? true?)))
+
+(defn filter-by-rec-meta
+  "Gets buffers that have a `:rec/meta` key and whose
+  values equal the `rec-meta-query` map."
+  [bufs rec-meta-query]
+  (filter
+   (fn [[_k buf]]
+     (let [ks (keys rec-meta-query)
+           meta-map (-> buf :rec/meta (select-keys ks))]
+
+       (perform-query rec-meta-query meta-map)))
+   bufs))
+
+(comment
+  ;; test
+  (def test-derefed-bufs
+    {:buf-1 {:rec/meta {:a :b :x :y}}
+     :buf-2 {:rec/meta {:a :c :x :y}}
+     :buf-3 {:rec/meta {:a :b :x :z}}})
+  (filter-by-rec-meta test-derefed-bufs {:a :b})
+  (filter-by-rec-meta test-derefed-bufs {:a #(= % :b)}))
 
 #_:clj-kondo/ignore
 (comment

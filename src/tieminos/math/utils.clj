@@ -37,8 +37,15 @@
 (defn linexp*
   "Linear to exponential scaling"
   [in-min in-max out-min out-max x]
-  (* out-min (Math/pow (/ out-max out-min)
-                       (/ (- x in-min) (- in-max in-min)))))
+  (when (= 0 out-min) (throw (ex-info "out-min cannot be zero"  {:in-min in-min :in-max in-max :out-min out-min :out-max out-max :x x})))
+  (cond
+    (and (= in-min in-max)
+         (> x out-max)) out-max
+    (and (= in-min in-max)
+         (< x out-min)) out-min
+    (= in-min in-max) x
+    :else (* out-min (Math/pow (/ out-max out-min)
+                               (/ (- x in-min) (- in-max in-min))))))
 
 (defn linexp
   ([out-min out-max nums]

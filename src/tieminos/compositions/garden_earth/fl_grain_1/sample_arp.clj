@@ -73,16 +73,15 @@
            d-level 0.3
            grain-conf {:trig-rate 100 :grain-dur 1/10 :start 0 :end 1}
            adr-env (dur->env {:a 2 :d 2 :r 5} 3)}}]
-
   (sample&hold
-    (merge {:group (groups/mid)
-            :out out
-            :buf buf
-            :d-level d-level
-            :amp amp
-            :rate rate}
-           grain-conf
-           adr-env)))
+   (merge {:group (groups/mid)
+           :out out
+           :buf buf
+           :d-level d-level
+           :amp amp
+           :rate rate}
+          grain-conf
+          adr-env)))
 
 (def envs {:atk-reso1 {:a 0.1 :d 0.5 :r 5}
            :atk-reso2 {:a 0.1 :d 0.5 :r 0.5}
@@ -123,8 +122,8 @@
   (arp {:bufs-atom sc.rec.v1/bufs :dur 0.5 :index 1})
 
   (o/demo
-    (o/play-buf 1 (-> @sc.rec.v1/bufs
-                      (get ["A+53" :sample-arp 5])))))
+   (o/play-buf 1 (-> @sc.rec.v1/bufs
+                     (get ["A+53" :sample-arp 5])))))
 
 (defn arp
   "NOTE `in` should be an `o/audio-bus`"
@@ -132,22 +131,22 @@
            in play-fn]
     :or {in 0
          play-fn #(play-sample
-                    %
-                    :amp 2
-                    :adr-env (dur->env {:a 2 :d 2 :r 5} 2))}}]
+                   %
+                   :amp 2
+                   :adr-env (dur->env {:a 2 :d 2 :r 5} 2))}}]
   (let [start-time (o/now)]
     (sc.rec.v1/start-recording
-      {:input-bus in
-       :bufs-atom bufs-atom
-       :buf-key [:sample-arp index]
-       :seconds dur
-       :msg "Rec: Sample Arp"
-       :print-info? false
-       :on-end (partial on-sample-end
-                        play-fn
-                        start-time
-                        bufs-atom)
-       :countdown 1})))
+     {:input-bus in
+      :bufs-atom bufs-atom
+      :buf-key [:sample-arp index]
+      :seconds dur
+      :msg "Rec: Sample Arp"
+      :print-info? false
+      :on-end (partial on-sample-end
+                       play-fn
+                       start-time
+                       bufs-atom)
+      :countdown 1})))
 (comment
   (->> eik :subcps keys (filter #(str/includes? % "2)4")))
   (subcps "2)4 of 3)6 11-1.5.7.9")
@@ -217,33 +216,38 @@
        pattern))
 (do
   (defn arp-reponse-2
-    [{:keys [scale out interval-seq-fn]
+    [{:keys [scale out interval-seq-fn
+             env-min-dur env-max-dur
+             amp-min amp-max]
       :or {out 0
-           interval-seq-fn default-interval-seq-fn}}
+           interval-seq-fn default-interval-seq-fn
+           env-min-dur 3
+           env-max-dur 5
+           amp-min 1
+           amp-max 1.5}
+      :as _config-data}
      {:as arp-data :keys [pitch-class]}]
-    (println pitch-class "---------------------------------------------")
     (when pitch-class
       (let [intervals (interval-seq-fn pitch-class scale)
             durs ((rand-val bz)
                   (count intervals)
                   (rand-nth [#_0.01 0.1 0.3])
                   (rand-nth [0.17 0.5 0.8]))
-            env-durs ((rand-val bz) (count intervals) 3 5)
+            env-durs ((rand-val bz) (count intervals) env-min-dur env-max-dur)
             env (rand-val envs)
-            amps (fsf (count intervals) 1 1.5)
+            amps (fsf (count intervals) amp-min amp-max)
             d-level ((rand-val bz) (count intervals) 0.1 0.3)]
         (ref-rain :id (keyword "arp" (str "response1-" (rand-int 5000)))
                   :durs durs
                   :loop? false
                   :on-event
                   (on-event
-                    #_(synth/low)
-                    (play-sample arp-data
-                                 {:out out
-                                  :rate (at-index intervals)
-                                  :d-level (at-index d-level)
-                                  :amp (at-index amps)
-                                  :adr-env (dur->env env (at-index env-durs))})))))))
+                   (play-sample arp-data
+                                {:out out
+                                 :rate (at-index intervals)
+                                 :d-level (at-index d-level)
+                                 :amp (at-index amps)
+                                 :adr-env (dur->env env (at-index env-durs))})))))))
 
 (comment
   (stop)
