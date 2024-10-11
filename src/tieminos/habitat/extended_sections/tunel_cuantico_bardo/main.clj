@@ -327,15 +327,17 @@
   #_(open-inputs-with-rand-pan
      {:inputs habitat.route/inputs
       :preouts habitat.route/preouts})
+  (o/demo (o/in (-> @habitat.route/inputs
+                    :mic-2
+                    :bus)))
 
   (hunu.4ch/open-inputs-with-rand-pan*
    {:inputs habitat.route/inputs
     :preouts habitat.route/preouts}
-   {}
+   #_{}
    #_{:mic-2 {:width 4}}
-   #_{:mic-1 {:amp 1
-              :type :clockwise
-              :rate 0.6}})
+   {:mic-1 {:amp 1}
+    :mic-2 {:amp 1}})
 
   (algo-2-2-9 {:out-bus in1
                :chord [0 5 8 9]

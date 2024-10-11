@@ -13,8 +13,9 @@
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.rec :as bardo.rec]
    [tieminos.habitat.recording :as rec]
    [tieminos.habitat.routing :refer [inputs]]
-   [tieminos.habitat.synths.granular :refer [amanecer*guitar-clouds]]
    [tieminos.math.bezier-samples :as bzs]
+   [tieminos.overtone-extensions :as oe]
+   [tieminos.sc-utils.synths.v1 :refer [lfo-kr]]
    [tieminos.utils :refer [rrange wrap-at]]
    [time-time.dynacan.players.gen-poly :as gp]))
 
@@ -32,13 +33,18 @@
     :rand-4 (+ dur (rand (* 3 dur)))
     dur))
 
+(comment
+  (-> @live-state :rec :mic-1 :dur))
+
 (defn start-recording [{:keys [input-k]}]
   (timbre/info "starting rec on" input-k)
   (if-let [input-bus (-> @inputs input-k :bus)]
     (bardo.rec/start-rec-loop!
      {:id (make-rec-id input-k)
       :input-bus input-bus
-      :rec-dur (fn [_] (-> @live-state :rec input-k :dur))
+      :rec-dur-fn (fn [_]
+                    (println "INPUT" input-k)
+                    (-> @live-state :rec input-k :dur))
       :rec-pulse (fn [_] (-> @live-state :rec input-k get-rec-pulse))
        ;; :print-info? true
       :on-rec-start (fn [_]
@@ -116,21 +122,48 @@
      (round (lorentz/bound (lorentz index*) :y min* max*))
      (round (lorentz/bound (lorentz index*) :z min* max*))]))
 
+(oe/defsynth
+  cristal-liquidizado
+  [buf 0
+   rate 1
+   amp 0.5
+   pan 0
+   out 0]
+  (o/out out
+         (-> (o/play-buf 1 buf rate)
+             ;; TODO agregar control de reverb via OSC
+             #_(o/free-verb (lfo-kr 4 0 1))
+             (* amp
+                (o/env-gen
+                 (o/envelope
+                  [0 1 1 0]
+                  [(* 0.1 (o/buf-dur buf))
+                   (* 0.7 (o/buf-dur buf))
+                   (* 0.2 (o/buf-dur buf))])
+                 :action o/FREE))
+             (#(o/pan-az:ar 4 % pan)))))
+
+(comment
+  (->> @rec/bufs
+       vals
+       (map :duration)
+       frequencies))
+
 (defn start-clouds
   [player-k]
   (clouds-refrain
-    {:id (make-clouds-id player-k)
-     :silence-thresh (o/db->amp -55)
-     :durs-fn (fn [{:keys [index]}]
-                (let [state @live-state
-                      rhythm (-> state :algo-2.2.9-clouds player-k :rhythm)]
-                  (get-dur index
-                           rhythm
-                           (:lorentz state))))
+   {:id (make-clouds-id player-k)
+    :silence-thresh (o/db->amp -55)
+    :durs-fn (fn [{:keys [index]}]
+               (let [state @live-state
+                     rhythm (-> state :algo-2.2.9-clouds player-k :rhythm)]
+                 (get-dur index
+                          rhythm
+                          (:lorentz state))))
      ;; TODO simplify
-     :buf-fn (fn [_]
-               (let [lib-size (-> @live-state :algo-2.2.9-clouds player-k :sample-lib-size)
-                     [_k buf] (->> @rec/bufs
+    :buf-fn (fn [_]
+              (let [lib-size (-> @live-state :algo-2.2.9-clouds player-k :sample-lib-size)
+                    [_k buf] (->> @rec/bufs
                                   (sort-by (comp :rec/time second))
                                   reverse
                                   (filter (fn [[k _]]
@@ -140,22 +173,25 @@
                                                              "guitar-"))))
                                   (take lib-size)
                                   (#(when (seq %) (rand-nth %))))]
-                 #_(println "get buf" k  (into {} buf))
-                 buf))
-     :rates-fn (fn [{:keys [index]}]
-                 (->> (lorentz-chord index (:lorentz @live-state))
-                      (#(rate-chord-seq meta-slendro1 [%]))
-                      first))
-     :amp-fn (fn [_] (-> @live-state :algo-2.2.9-clouds player-k :amp (o/db->amp)))
-     :on-play (fn [{:as config :keys [index]}]
-                (let [state @live-state]
-                  (println "=========" config)
-                  (amanecer*guitar-clouds
+                #_(println "get buf" k  (into {} buf))
+                buf))
+    :rates-fn (fn [{:keys [index]}]
+                (->> (lorentz-chord index (:lorentz @live-state))
+                     (#(rate-chord-seq meta-slendro1 [%]))
+                     first))
+    :amp-fn (fn [_] (-> @live-state :algo-2.2.9-clouds player-k :amp (o/db->amp)))
+    :on-play (fn [{:as config :keys [index]}]
+               (let [state @live-state]
+                 (println "=========" config)
+                 ;; TODO update live state with event duration
+                 ;; TODO controlar selección de sintes
+                 (cristal-liquidizado config)
+                 #_(amanecer*guitar-clouds
                     (-> config
                         (merge (get-envelope
-                                 index
-                                 (-> state :algo-2.2.9-clouds player-k :env)
-                                 (:lorentz state)))))))}))
+                                index
+                                (-> state :algo-2.2.9-clouds player-k :env)
+                                (:lorentz state)))))))}))
 
 (comment
   (-> @live-state :algo-2.2.9-clouds :milo :amp (o/db->amp))

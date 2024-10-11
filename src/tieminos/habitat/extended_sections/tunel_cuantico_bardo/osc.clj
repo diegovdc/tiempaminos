@@ -81,7 +81,7 @@
   (swap! live-state
          assoc-in [:algo-2.2.9-clouds player :amp]
          ;; TODO lower extra vol
-         (+ 24 (first (linlin 0 1 -32 6 [amp])))))
+         (+ 18 (first (linlin 0 1 -32 6 [amp])))))
 
 (comment
   (set-clouds-amp :diego 1))
@@ -176,5 +176,6 @@
   (->> @live-state)
   (add-watch live-state ::post-live-state
              (fn [_key _ref _old-value new-value]
-               (throttled-post (dissoc new-value
-                                       :lorentz)))))
+               (throttled-post (dissoc new-value :lorentz))))
+  (add-watch live-state ::post-live-state
+             (fn [_key _ref _old-value new-value])))

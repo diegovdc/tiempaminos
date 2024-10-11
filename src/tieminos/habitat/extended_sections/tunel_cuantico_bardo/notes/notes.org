@@ -34,3 +34,4 @@ Controles:
   Qué se necesita mappear
 *** TODO Controlar aspectos de la espacialización de los instrumentos
 ** TODO Quitar normalización de la reproducción de samples
+** TODO Weights largos - investigar por qué se mantiene una fundamental

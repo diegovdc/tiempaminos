@@ -1,10 +1,12 @@
 (ns tieminos.osc.core
   "Communication with SuperCollider for interaction with MIDI sources and sinks"
-  (:require [overtone.osc :as osc]
-            [overtone.music.time :refer [apply-at]]
-            [overtone.sc.node :refer [ctl node? node-live?]]
-            [time-time.standard :refer [now]]
-            [taoensso.timbre :as timbre]))
+  (:require
+   [overtone.music.time :refer [apply-at]]
+   [overtone.osc :as osc]
+   [overtone.sc.node :refer [ctl node?]]
+   [taoensso.timbre :as timbre]
+   [tieminos.network-utils :refer [get-local-host]]
+   [time-time.standard :refer [now]]))
 
 ;;;;;;;;;;;;;;;;;;;;
 ;;; Receive MIDI ;;;
@@ -69,9 +71,9 @@
   (-> @osc-servers))
 (defn init-server [port]
   (if (get @osc-servers port)
-    (timbre/info "OSC server already exists at port:" port)
+    (timbre/info "OSC server already exists on: " (str (get-local-host) "@" port))
     (let [server (osc/osc-server port)]
-      (timbre/info (str "OSC server initialized on port:" port))
+      (timbre/info (str "OSC server initialized on: " (str (get-local-host) "@" port)))
       (let [server-data {:server server :port port}]
         (swap! osc-servers assoc port server-data)
         server-data))))
@@ -80,7 +82,7 @@
   (if-let [peer (get-in @osc-servers [port :server])]
     (do (osc/osc-close peer)
         (swap! osc-servers dissoc port)
-        (timbre/info "OSC server closed on port:" port))
+        (timbre/info "OSC server closed on port: " (str (get-local-host) "@" port)))
     (timbre/info "OSC server does not exist on port:" port)))
 
 (defn midi-event
@@ -145,7 +147,7 @@
   (require '[erv-fib-synth.synths :as synths])
   (midi-event :note-on (fn [msg] (synths/low)))
   (osc/osc-close (recv :server))
-  (osc/osc-close)
+
   (midi-event :note-on println :note-off println))
 (comment (osc/osc-rm-all-listeners server))
 
