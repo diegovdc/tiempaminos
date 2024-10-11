@@ -47,13 +47,13 @@
   "Make a sequenential range, always starting from the zeroth degree.
   If `converge?` then the sequence will be reversed."
   [{:keys [len interval down? converge?]}]
-  (let [seq* (range 0 (* interval len) interval)]
+  (let [seq* (range 0 (* interval (max 1 len)) interval)]
     (cond-> seq*
       down? negate-seq
       converge? reverse)))
 
 (comment
-  (make-seq-range {:len 5
+  (make-seq-range {:len 0
                    :interval 3
                    :down? true
                    :converge? false}))
@@ -242,14 +242,15 @@
   (timbre/info :starting-harmonizer)
   (if-let [ratios (:harmonizer/harmony @live-state)]
     (do (ndef/ndef
-            ::harmonizer
-            (-> (o/sound-in (ge.route/fl-i1 :in))
-                #_(o/delay-l 1 1)
-                (o/pitch-shift 0.1 ratios)
-                ((fn [sig] (if (> (count ratios) 1) (o/mix sig) sig)))
-                (o/free-verb 0.5 3)
-                (o/pan2)
-                (* 8)))
+          ::harmonizer
+          (-> (o/sound-in (ge.route/fl-i1 :in))
+              #_(o/delay-l 1 1)
+              (o/pitch-shift 0.1 ratios)
+              ((fn [sig] (if (> (count ratios) 1) (o/mix sig) sig)))
+              (o/free-verb 0.5 3)
+              (o/pan2)
+              (* 8))
+          {:out (bh 2)})
         (swap! live-state assoc :harmonizer/on? true))
     (timbre/error "No :harmonizer/harmony found")))
 
