@@ -1,5 +1,6 @@
 (ns tieminos.compositions.garden-earth.routing
   (:require
+   [clojure.core.async :as async]
    [overtone.core :as o]
    [taoensso.timbre :as timbre]
    [tieminos.compositions.7D-percusion-ensamble.base :refer [bh]]
@@ -20,7 +21,8 @@
   (atom ins))
 
 (defn init-inputs! [{:keys [inputs config]}]
-  (doseq [{:keys [synth]} (->> @inputs vals)]
+  (doseq [{:keys [bus synth]} (->> @inputs vals)]
+    (when bus (o/free-bus bus))
     (when (and synth (o/node-active? synth))
       (try (o/kill synth)
            (catch Exception _
@@ -70,7 +72,8 @@
   "Creates output synths that take their `in` via a bus.
   This way the output bus can be (for example) recorded."
   [{:keys [outputs config]}]
-  (doseq [{:keys [synth]} (->> @outputs vals)]
+  (doseq [{:keys [bus synth]} (->> @outputs vals)]
+    (when bus (o/free-bus bus))
     (when (and synth (o/node-active? synth))
       (try (o/kill synth)
            (catch Exception _
@@ -79,15 +82,15 @@
   (reset! outputs {})
   (->> config
        (mapv
-         (fn [[k {:keys [bh-out]}]]
-           (let [out-bus (o/audio-bus 2 (str (name k) "-out"))
-                 bh-out* (bh bh-out)
-                 out-synth (output {#_ #_:group (groups/post-fx)
-                                    :in  out-bus
-                                    :out bh-out*})]
-             [k {:out bh-out*
-                 :bus out-bus
-                 :synth out-synth}])))
+        (fn [[k {:keys [bh-out]}]]
+          (let [out-bus (o/audio-bus 2 (str (name k) "-out"))
+                bh-out* (bh bh-out)
+                out-synth (output {#_#_:group (groups/post-fx)
+                                   :in  out-bus
+                                   :out bh-out*})]
+            [k {:out bh-out*
+                :bus out-bus
+                :synth out-synth}])))
        (into {})
        (reset! outputs)))
 
@@ -100,9 +103,9 @@
 (comment
   (groups/init-groups!)
   (init-outputs!
-    {:outputs outputs
-     :config {:sc-1 {:bh-out 2}
-              :sc-2 {:bh-out 4}}})
+   {:outputs outputs
+    :config {:sc-1 {:bh-out 2}
+             :sc-2 {:bh-out 4}}})
 
   (oe/defsynth testy
     [out 0]
@@ -120,3 +123,78 @@
               :in (out :sc-1)})
   (o/demo (o/sin-osc))
   (o/stop))
+
+;;;;;;;;;;;;;;;;;;
+;; Control Buses
+;;;;;;;;;;;;;;;;;;
+
+(defonce controls (atom {}))
+
+(defn init-control-buses!
+  "Control buses may be used like this in a synth:
+    (o/clip (o/in:kr amp-ctl 1) 0 1)
+   Where `amp-ctl` is the control bus.
+   The use of clip is recommended so that if no control bus
+   is passed in, then the bus will not get some random high o low value."
+  [{:keys [controls controls-config]}]
+  (doseq [[_k {:keys [bus]}] @controls]
+    (o/free-bus bus))
+  (->> controls-config
+       (mapv (fn [[k {:keys [chans]}]]
+               (let [bus (o/control-bus chans (name k))]
+                 [k {:bus bus}])))
+       (into {})
+       (reset! controls)))
+
+(defn ctl-bus
+  [control-bus-key]
+  (-> @controls control-bus-key :bus))
+
+(defn set-ctl
+  "Set the value of a control bus"
+  [control-bus-key value]
+  (when-let [bus (ctl-bus control-bus-key)]
+    (o/control-bus-set! bus (/ value 127))))
+
+(defn ctl-range
+  [ctl-bus min* max*]
+  (-> ctl-bus
+      (o/in:kr 1)
+      (o/lin-lin:kr 0 1 min* max*)
+      (o/clip min* max*)))
+
+(comment
+  (def default-ctl-1 (let [bus (o/control-bus 1 "default-ctl-bus")]
+                       (o/control-bus-set! bus 0.5)
+                       bus))
+  (-> default-ctl-1 (into {}))
+  (init-control-buses!
+    {:exp/pedal-1 {:chans 1}})
+
+  (set-ctl :exp/pedal-1 127)
+
+  (oe/defsynth sini
+    [freq 200
+     amp 0.5
+     amp-ctl 0
+     amp-ctl-max 6
+     out 0]
+    ;; NOTE the use of clip to prevent high amps if no
+    ;; ctl is passed in.
+    (o/out out (* amp (ctl-range amp-ctl 0 amp-ctl-max)
+                  (o/pan2 (o/sin-osc 200)))))
+
+  (def test-sini (sini
+                   {:amp-ctl (ctl-bus :exp/pedal-1)}))
+  (o/kill test-sini)
+  (o/stop)
+
+  (oe/defsynth sini2
+    [freq 200
+     amp 0.5
+     out 0]
+    (o/out out (* amp (o/pan2 (o/sin-osc (o/clip (o/lin-lin:kr 4000 100 400 100 200)
+                                                 100 200))))))
+
+  (def test-sini2 (sini2))
+  (o/kill test-sini2))

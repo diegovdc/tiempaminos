@@ -2,6 +2,7 @@
   (:require
    [clojure.data.generators :refer [weighted]]
    [overtone.core :as o]
+   [taoensso.timbre :as timbre]
    [tieminos.compositions.7D-percusion-ensamble.base :refer [bh]]
    [tieminos.compositions.garden-earth.base :refer [eik subcps]]
    [tieminos.compositions.garden-earth.fl-grain-1.sample-arp :refer [arp-reponse-2
@@ -11,7 +12,7 @@
    [tieminos.compositions.garden-earth.moments.two.synths :refer [buf-mvts-subterraneos]]
    [tieminos.compositions.garden-earth.routing :refer [fl-i1]]
    [tieminos.habitat.amp-trigger :as amp-trig]
-   [tieminos.habitat.recording :as rec]
+   [tieminos.habitat.recording :as habitat.rec]
    [tieminos.overtone-extensions :as oe]
    [tieminos.sc-utils.groups.v1 :as groups]
    [tieminos.sc-utils.ndef.v1 :as ndef]
@@ -20,25 +21,60 @@
    [tieminos.utils :refer [rrange]]
    [time-time.dynacan.players.gen-poly :as gp :refer [on-event ref-rain]]))
 
+
+(defonce analyzers-registry (atom {}))
+
+(defn- merge-analyzers-inputs
+  [inputs recordable-outputs]
+  (merge (->> inputs (map (fn [[k v]] [(keyword "recordable-input" (name k)) v]))
+              (into {}))
+         (->> recordable-outputs (map (fn [[k v]] [(keyword "recordable-output" (name k)) v]))
+              (into {}))))
+
+(defn- init-analyzers! [inputs recordable-outputs]
+  (let [inputs* (merge-analyzers-inputs inputs recordable-outputs)]
+    (doseq [[_ {:keys [analyzer]}] @analyzers-registry]
+      (when (and analyzer (o/node-active? analyzer))
+        (try (o/kill analyzer)
+             (catch Exception _
+               (timbre/warn "Signal analyzer does not exist anymore")))))
+
+    (reset! analyzers-registry
+            (into {}
+                  (map
+                    (fn [[input-name {:keys [bus]}]]
+                      {input-name (habitat.rec/start-signal-analyzer :input-bus bus)})
+                    inputs*)))))
+
 (defn stop!
   [{:keys [reset-bufs?]
     :or {reset-bufs? true}}]
   (gp/stop)
   (ndef/stop)
-  (when reset-bufs? (reset! rec/bufs {}))
-  (reset! rec/recording? {}))
+  (when reset-bufs? (reset! habitat.rec/bufs {}))
+  (reset! habitat.rec/recording? {}))
+
+
 
 (defn init!
   []
-  (ge.init/init!
-   {:inputs-config {:in-1 {:amp (o/db->amp 8)}}
-    :outputs-config {:rain-1 {:bh-out 2}
-                     :ndef-1 {:bh-out 4}}}))
+  (let [{:keys [inputs outputs]
+         :as init-data}
+        (ge.init/init!
+          {:inputs-config {:in-1 {:amp (o/db->amp 8)}}
+           :outputs-config {:rain-1 {:bh-out 2}
+                            :ndef-1 {:bh-out 4}}
+           :controls-config {:exp/pedal-1 {:chans 1}}})
+        ;; Amp analyzer
+        amp-analyzers (init-analyzers! inputs outputs)]
+    (assoc init-data
+           :amp-analyzers amp-analyzers)))
 
 (comment
   (o/stop)
   (def init-data (init!))
-
+  (init!)
+  (-> init-data)
   (-> init-data
       :outputs
       deref
@@ -65,15 +101,15 @@
   (o/kill testy))
 
 (comment
-  (-> @rec/bufs)
+  (-> @habitat.rec/bufs)
   (o/demo
    (o/play-buf 1
-               (-> @rec/bufs
+               (-> @habitat.rec/bufs
                    vals
                    rand-nth)))
 
   (defn rand-buf []
-    (-> @rec/bufs
+    (-> @habitat.rec/bufs
         vals
         rand-nth))
 
@@ -92,9 +128,9 @@
                                         :out (bh 2)}))))
   (gp/stop ::movimientos-subterraneos)
   (gp/stop :ge.two/default-rec-loop)
-  (reset! rec/bufs {})
-  (reset! rec/recording? {})
-  (-> rec/bufs)
+  (reset! habitat.rec/bufs {})
+  (reset! habitat.rec/recording? {})
+  (-> habitat.rec/bufs)
   (let [dur 10]
     (start-rec-loop!
      {:input-bus (fl-i1 :bus)
@@ -190,7 +226,7 @@
    :on-event (on-event
                 ;; TODO remove use of rand-buf
                 ;; Por ahora usando samples de atractores/drone guitarra
-              (when-let [buf (-> @rec/bufs vals rand-nth)]
+              (when-let [buf (-> @habitat.rec/bufs vals rand-nth)]
                 (println "Dur" (* 1 (:duration buf)))
                 (magma {:buf buf
                         :rate (at-i [1 3/2 1/2
@@ -220,7 +256,7 @@
     ;; TODO control durs so that this could go faster or slower
    :durs (fn [_] (+ 0.1 (rand 2)))
    :on-event (on-event
-              (let [buf (-> @rec/bufs vals rand-nth)
+              (let [buf (-> @habitat.rec/bufs vals rand-nth)
                     scale (at-i [#_"1)3 of 3)6 1.5-7.9.11"
                                  #_"2)4 of 3)6 11-1.3.7.9"
                                  "2)4 of 3)6 1-3.5.7.9"])
@@ -358,8 +394,8 @@
 
 (comment
   ;; Rec loop
-  (-> @rec/bufs)
-  (reset! rec/bufs {})
+  (-> @habitat.rec/bufs)
+  (reset! habitat.rec/bufs {})
   (let [dur 2]
     (start-rec-loop!
      {:input-bus (fl-i1 :bus)

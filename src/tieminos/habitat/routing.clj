@@ -7,6 +7,8 @@
    [tieminos.sc-utils.synths.v1 :refer [lfo]]
    [tieminos.utils :refer [ctl-synth ctl-synth2]]))
 
+;; TODO IMPORTANT free the buses with `(when bus (o/free-bus bus))`
+
 (comment
   ;;  USAGE
   (defsynth input

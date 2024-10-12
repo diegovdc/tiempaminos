@@ -1,5 +1,9 @@
 (ns tieminos.compositions.garden-earth.moments.two.interface
-  "The MIDI interface")
+  "The MIDI interface"
+  (:require
+   [tieminos.compositions.garden-earth.moments.two.live-state :as two.ls]
+   [tieminos.compositions.garden-earth.routing :as ge.route]
+   [tieminos.midi.core :refer [get-pacer! midi-in-event]]))
 
 (def features
   [{:section [:section/up :section/down]}
@@ -41,3 +45,22 @@
 ;; 6. Si las subsecciones aún no terminan de ejecutarse,
 ;;    el botón avanzar cambia a la siguiente subsección.
 ;;
+
+(comment
+  (two.ls/init-watch!)
+
+  (midi-in-event
+    :midi-input (get-pacer!)
+    :note-on (fn [{:keys [note]}]
+               (println note)
+               (cond
+
+                 (= 2 note) (println "note 2")
+                 ))
+    :cc (fn [{:keys [note velocity]}]
+          (cond
+            ;; expression pedal
+            (= 7 note) (do (swap! two.ls/live-state assoc :exp/pedal-1 velocity)
+                           (ge.route/set-ctl :exp/pedal-1 velocity))
+            )
+          )))

@@ -5,14 +5,14 @@
    [tieminos.compositions.garden-earth.moments.two.synths :refer [buf-mvts-subterraneos
                                                                   ndef-mvts-subterraneos simple-playbuf]]
    [tieminos.compositions.garden-earth.routing :as ge.route :refer [fl-i1]]
-   [tieminos.habitat.recording :refer [filter-by-rec-meta]]
+   [tieminos.habitat.recording :as habitat.rec]
    [tieminos.overtone-extensions :as oe]
    [tieminos.sc-utils.groups.v1 :as groups]
    [tieminos.utils :refer [rrange]]
    [time-time.dynacan.players.gen-poly :as gp :refer [on-event ref-rain]]))
 
 (defn rand-queried-buf [rec-query]
-  (try (-> @rec/bufs (filter-by-rec-meta rec-query)
+  (try (-> @habitat.rec/bufs (habitat.rec/filter-by-rec-meta rec-query)
            rand-nth
            second)
        (catch Exception _e nil)))
@@ -69,6 +69,9 @@
                      :out (ge.route/out :rain-1)})))))
 
 (comment
+  (->> @habitat.rec/bufs
+      vals
+      (map (partial into {})))  `
   (do
     (def section (nth sections 0))
     ((:on-start section)))

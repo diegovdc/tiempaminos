@@ -32,7 +32,9 @@ CLOSED: [2024-10-09 Wed 22:24]
 **** ¿Cómo se encienden los refrains?
 ***** TODO con el async sequencer
 **** TODO weighted rand-buf (so that earlier bufs can be played more often that others)
-**** TODO REAPER - split rehearsal signal so that I can use bass amp for sub-bufferd
-**** TODO Add amplitud analyzer to tag recordings, and add amp limiter using the norm-amp -6db (or -3db?) as limit
+**** DONE REAPER - split rehearsal signal so that I can use bass amp for sub-woofer
+CLOSED: [2024-10-11 Fri 18:14]
+**** DONE Add  amplitud analyzer to tag recordings, and add amp limiter using the norm-amp -6db (or -3db?) as limit
+CLOSED: [2024-10-11 Fri 18:42]
 **** LocalWords
 #  LocalWords:  refrain async sequencer

@@ -4,7 +4,8 @@
    [overtone.core :as o]
    [taoensso.timbre :as timbre]
    [tieminos.compositions.garden-earth.base :as ge-base :refer [early-g]]
-   [tieminos.compositions.garden-earth.routing :refer [init-inputs!
+   [tieminos.compositions.garden-earth.routing :refer [controls
+                                                       init-control-buses! init-inputs!
                                                        init-outputs! inputs outputs]]
    [tieminos.compositions.garden-earth.synths.fx :as fx]
    [tieminos.compositions.garden-earth.synths.general
@@ -50,7 +51,7 @@
   (Thread/sleep 1000)
   :done)
 
-(defn init! [& {:keys [dev? inputs-config outputs-config]}]
+(defn init! [& {:keys [dev? inputs-config outputs-config controls-config]}]
   (if (o/server-connected?)
     (timbre/info "Server already connected")
     (timbre/info (connect)))
@@ -59,13 +60,16 @@
                  :config inputs-config})
   (init-outputs! {:outputs outputs
                   :config outputs-config})
+  (init-control-buses! {:controls controls
+                        :controls-config controls-config})
   #_(when dev?
       (load-test-samples!)
       (test-sound)
       (println "Local functions: " (keys (ns-publics *ns*))))
   (timbre/info "Garden Earth initialized!")
-  {:inputs inputs
-   :outputs outputs})
+  {:inputs @inputs
+   :outputs @outputs
+   :controls @controls})
 
 (def stop ge-base/stop)
 
