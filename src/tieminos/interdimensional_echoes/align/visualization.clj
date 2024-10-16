@@ -160,4 +160,4 @@
                   (if hex-name
                     (remove-ratio lattice-atom (rooted-hexanies-name->deg->ratio hex-name) hex-degs note channel)
                     (remove-ratio lattice-atom polydori-deg->ratio polydori-degs note channel))))
-    :auto-ctl false}))
+    :auto-ctl? false}))

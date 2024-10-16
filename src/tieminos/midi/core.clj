@@ -38,7 +38,6 @@
          (catch Exception e
            (timbre/warn (str "Could not connect to Lumatone: " (.getMessage e)))))))
 
-
 (defonce pacer* (atom nil))
 
 (defn get-pacer!
@@ -48,7 +47,6 @@
     (try (reset! pacer* (midi/midi-in "PACER MIDI1"))
          (catch Exception e
            (timbre/warn (str "Could not connect to Pacer: " (.getMessage e)))))))
-
 
 (defonce iac2* (atom nil))
 
@@ -147,18 +145,18 @@
   "`dup-note-mode` #{:multi :round-robin} - what to do whane multiple consecutive note-on events happen on a single midi note (without alternating note-off events)
     - `:multi` allow any number of synths to be triggered on a single note
     - `:round-robin` allow only one note at a time, killing the previous synth playing on that note"
-  [ev {:keys [note-on note-off auto-ctl dup-note-mode]
+  [ev {:keys [note-on note-off cc auto-ctl? dup-note-mode]
        :or {dup-note-mode :multi}}]
   (try
     (let [cmd (:command ev)
-          gate-ctl (get-auto-gate-ctl auto-ctl)]
+          gate-ctl (get-auto-gate-ctl auto-ctl?)]
 
       (cond
-        (= cmd :control-change) (println "CC" ((juxt :note  :velocity :channel) ev))
+        (= cmd :control-change) (cc ev)
         (= cmd :pitch-bend) (timbre/warn "pitch-bend message not implemented yet")
 
         (#{:note-on :note-off} cmd)
-        (condp = [auto-ctl cmd dup-note-mode]
+        (condp = [auto-ctl? cmd dup-note-mode]
           [true :note-on :multi] ((gate-ctl :add) ev (note-on ev))
           [true :note-on :round-robin] (let [note (:note ev)
                                              note-synths (get-note-synths note)]
@@ -185,16 +183,17 @@
 (defn midi-in-event
   "`note` events receive a map with the following keys
    `'(:data2 :command :channel :msg :note :status :data1 :device :timestamp :velocity)`"
-  [& {:keys [midi-input note-on note-off auto-ctl]
-      :or {midi-input oxygen
-           auto-ctl true
-           note-off (fn [_] nil)}}]
+  [& {:keys [midi-input note-on note-off cc auto-ctl?]
+      :or   {midi-input oxygen
+             auto-ctl?  true
+             note-off   (fn [_] nil)}}]
   (midi/midi-handle-events
    midi-input
    (fn [ev] (handle-midi-event ev
-                               {:note-on note-on
-                                :note-off note-off
-                                :auto-ctl auto-ctl}))))
+                               {:note-on   note-on
+                                :note-off  note-off
+                                :cc        cc
+                                :auto-ctl? auto-ctl?}))))
 
 #_(defn all-notes-off [sink] (midi/midi-control sink 123 0))
 (defn all-notes-off [sink]

@@ -7,6 +7,9 @@
    [overtone.core :as o]
    [taoensso.timbre :as timbre]))
 
+(defn now []
+  (System/currentTimeMillis))
+
 (defn wrap-at [i coll]
   (let [i* (mod i (count coll))]
     (nth coll i*)))

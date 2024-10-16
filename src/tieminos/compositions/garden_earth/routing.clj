@@ -1,11 +1,11 @@
 (ns tieminos.compositions.garden-earth.routing
   (:require
-   [clojure.core.async :as async]
    [overtone.core :as o]
    [taoensso.timbre :as timbre]
    [tieminos.compositions.7D-percusion-ensamble.base :refer [bh]]
    [tieminos.overtone-extensions :as oe]
-   [tieminos.sc-utils.groups.v1 :as groups]))
+   [tieminos.sc-utils.groups.v1 :as groups]
+   [tieminos.sc-utils.synths.v1 :refer [ctl-range]]))
 
 ;;;;;;;;;;;;;
 ;; Inputs
@@ -156,13 +156,6 @@
   (when-let [bus (ctl-bus control-bus-key)]
     (o/control-bus-set! bus (/ value 127))))
 
-(defn ctl-range
-  [ctl-bus min* max*]
-  (-> ctl-bus
-      (o/in:kr 1)
-      (o/lin-lin:kr 0 1 min* max*)
-      (o/clip min* max*)))
-
 (comment
   (def default-ctl-1 (let [bus (o/control-bus 1 "default-ctl-bus")]
                        (o/control-bus-set! bus 0.5)
@@ -179,22 +172,11 @@
      amp-ctl 0
      amp-ctl-max 6
      out 0]
-    ;; NOTE the use of clip to prevent high amps if no
+    ;; NOTE the use of `ctl-range` to prevent high amps if no
     ;; ctl is passed in.
     (o/out out (* amp (ctl-range amp-ctl 0 amp-ctl-max)
                   (o/pan2 (o/sin-osc 200)))))
 
   (def test-sini (sini
                    {:amp-ctl (ctl-bus :exp/pedal-1)}))
-  (o/kill test-sini)
-  (o/stop)
-
-  (oe/defsynth sini2
-    [freq 200
-     amp 0.5
-     out 0]
-    (o/out out (* amp (o/pan2 (o/sin-osc (o/clip (o/lin-lin:kr 4000 100 400 100 200)
-                                                 100 200))))))
-
-  (def test-sini2 (sini2))
-  (o/kill test-sini2))
+  (o/kill test-sini))

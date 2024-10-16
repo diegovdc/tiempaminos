@@ -21,6 +21,7 @@ CLOSED: [2024-10-09 Wed 20:01]
 ***** TODO Erupciones submarinas
 ****** TODO In desde de la algun out
 ***** TODO Fuente-hidrotermal
+****** TODO  cristal-liquidizado-like refrain
 **** ¿Reproducir las capas?
 ***** DONE Samples de cada capa deben ser etiquetados
 CLOSED: [2024-10-09 Wed 22:24]
@@ -36,5 +37,9 @@ CLOSED: [2024-10-09 Wed 22:24]
 CLOSED: [2024-10-11 Fri 18:14]
 **** DONE Add  amplitud analyzer to tag recordings, and add amp limiter using the norm-amp -6db (or -3db?) as limit
 CLOSED: [2024-10-11 Fri 18:42]
+**** TODO Use norm-amp to limit amplitude
+**** TODO Agregar delays triggerable con pedales
+**** IDEA La distor de limitador está chida
+**** TODO quimio-síntesis, sólo grabar unos momentitos, específicos usando pedales
 **** LocalWords
 #  LocalWords:  refrain async sequencer

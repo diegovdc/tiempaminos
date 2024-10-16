@@ -85,7 +85,7 @@
              @synths)))))
 
 (deftest handle-midi-event-test
-  (let [handler-config {:auto-ctl true
+  (let [handler-config {:auto-ctl? true
                         :note-on (fn [ev] {:i-am-synth (:id ev)})
                         :note-off (fn [_ev] nil)}]
     (testing "Can add a new synth"

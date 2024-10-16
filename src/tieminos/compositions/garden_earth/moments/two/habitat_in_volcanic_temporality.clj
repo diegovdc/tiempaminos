@@ -8,7 +8,11 @@
    [tieminos.compositions.garden-earth.fl-grain-1.sample-arp :refer [arp-reponse-2
                                                                      default-interval-seq-fn]]
    [tieminos.compositions.garden-earth.init :as ge.init]
+   [tieminos.compositions.garden-earth.moments.two.async-sequencer :as aseq]
+   [tieminos.compositions.garden-earth.moments.two.interface :as two.interface]
+   [tieminos.compositions.garden-earth.moments.two.live-state :as two.ls]
    [tieminos.compositions.garden-earth.moments.two.rec :refer [start-rec-loop!]]
+   [tieminos.compositions.garden-earth.moments.two.sections.fondo-oceanico :as fondo-oceanico]
    [tieminos.compositions.garden-earth.moments.two.synths :refer [buf-mvts-subterraneos]]
    [tieminos.compositions.garden-earth.routing :refer [fl-i1]]
    [tieminos.habitat.amp-trigger :as amp-trig]
@@ -64,13 +68,31 @@
           {:inputs-config {:in-1 {:amp (o/db->amp 8)}}
            :outputs-config {:rain-1 {:bh-out 2}
                             :ndef-1 {:bh-out 4}}
-           :controls-config {:exp/pedal-1 {:chans 1}}})
+           :controls-config {:exp/pedal-1 {:chans 1}
+                             :exp/btn-2 {:chans 1}}})
         ;; Amp analyzer
         amp-analyzers (init-analyzers! inputs outputs)]
-    (assoc init-data
-           :amp-analyzers amp-analyzers)))
+    (two.ls/init-watch!)
+    (two.interface/init!)
+    (assoc init-data :amp-analyzers amp-analyzers)))
 
 (comment
+  (o/stop)
+  (let [sections (concat fondo-oceanico/sections)]
+    (stop! {})
+    (init!)
+    (aseq/run-sections sections 0))
+
+  (aseq/pause)
+  (aseq/resume)
+  (aseq/skip)
+  (aseq/prev)
+  (aseq/stop)
+  )
+
+(comment
+  (defn init!* [] (println (init!)) nil)
+  (stop! {})
   (o/stop)
   (def init-data (init!))
   (init!)

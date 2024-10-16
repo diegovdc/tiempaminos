@@ -1,5 +1,7 @@
 (ns tieminos.compositions.garden-earth.moments.two.sections.fondo-oceanico
   (:require
+   [clojure.data.generators :refer [weighted]]
+   [overtone.core :as o]
    [taoensso.timbre :as timbre]
    [tieminos.compositions.garden-earth.moments.two.rec :refer [start-rec-loop!]]
    [tieminos.compositions.garden-earth.moments.two.synths :refer [buf-mvts-subterraneos
@@ -8,14 +10,50 @@
    [tieminos.habitat.recording :as habitat.rec]
    [tieminos.overtone-extensions :as oe]
    [tieminos.sc-utils.groups.v1 :as groups]
+   [tieminos.sc-utils.ndef.v1 :as ndef]
    [tieminos.utils :refer [rrange]]
    [time-time.dynacan.players.gen-poly :as gp :refer [on-event ref-rain]]))
 
+;; TODO move to habitat.rec
+
 (defn rand-queried-buf [rec-query]
-  (try (-> @habitat.rec/bufs (habitat.rec/filter-by-rec-meta rec-query)
+  (try (-> @habitat.rec/bufs
+           (habitat.rec/filter-by-rec-meta rec-query)
            rand-nth
            second)
        (catch Exception _e nil)))
+
+;; TODO move to habitat.rec
+(defn weigthed-rand-queried-buf
+  [{:keys [rec-query
+           recent-amount
+           recent-weight
+           old-weight]}]
+  (try
+    (let [query-res (-> @habitat.rec/bufs (habitat.rec/filter-by-rec-meta rec-query))
+          recency-k (weighted {:recent recent-weight
+                               :old old-weight})
+          bufs (case recency-k
+                 :old query-res
+                 :recent (->> query-res
+                              (sort-by (comp :rec/time second))
+                              reverse
+                              (take recent-amount)))]
+      (->> bufs rand-nth second))
+    (catch Exception e (timbre/error "weigthed-rand-queried-buf" e))))
+
+(comment
+  (map (fn [_]
+         (->> (weigthed-rand-queried-buf
+               {:rec-query {:section "fondo-oceanico"
+                            :subsection "fondo-oceanico"}
+                :recent-amount 3
+                :recent-weight 4
+                :old-weight 1})
+              #_(map second)
+              (into {})
+              (#(-> % (select-keys [:id #_:rec/meta])))))
+       (range 10)))
 
 (defn- rec-loop!
   [{:keys [id dur section subsection input-bus]
@@ -50,32 +88,45 @@
   (o/kill t))
 
 (defn rain-mvts-submarinos
-  [{:keys [id rates-fn durs-fn amp-fn rec-query]
-    :or {amp-fn (fn [_i] 4)
+  [{:keys [id
+           rates-fn
+           durs-fn
+           amp-fn
+           rec-query]
+    :or {amp-fn (fn [_i] 2)
          durs-fn (fn [_] (+ 0.1 (rand 5)))
          rec-query {:section "fondo-oceanico"
                     :subsection "fondo-oceanico"}}}]
   (ref-rain
-    :id id
-    :durs durs-fn
-    :on-event (on-event
-                (when-let [buf (rand-queried-buf rec-query)]
-                  (buf-mvts-subterraneos
-                    {:group (groups/early)
-                     :buf buf
-                     :rate (rates-fn index)
-                     :amp (amp-fn index)
-                     :pan (rrange -1.0 1)
-                     :out (ge.route/out :rain-1)})))))
+   :id id
+   :durs durs-fn
+   :on-event (on-event
+              (when-let [buf (rand-queried-buf rec-query)]
+                (buf-mvts-subterraneos
+                 {:group (groups/early)
+                  :buf buf
+                  :rate (rates-fn index)
+                  :max-rev-mix 1
+                  :rev-room 2
+                  :amp (amp-fn index)
+                  :amp-ctl (ge.route/ctl-bus :exp/pedal-1)
+                  :amp-ctl-min 0.25
+                  :amp-ctl-max (o/db->amp 4)
+                  :pan (rrange -1.0 1)
+                  :out (ge.route/out :rain-1)})))))
 
 (comment
   (->> @habitat.rec/bufs
-      vals
-      (map (partial into {})))  `
+       vals
+       (map (partial into {})))
   (do
-    (def section (nth sections 0))
+    (def section (nth sections 1))
     ((:on-start section)))
   ((:on-end section)))
+
+(comment
+  (-> @gp/refrains
+      keys))
 
 (def fondo-oceanico-ndef-query-1
   {:section "fondo-oceanico"
@@ -96,6 +147,9 @@
                   :buf buf
                   :rate (rates-fn index)
                   :amp (amp-fn index)
+                  :amp-ctl (ge.route/ctl-bus :exp/pedal-1)
+                  :amp-ctl-min 0.25
+                  :amp-ctl-max (o/db->amp 4)
                   :pan (rrange -1.0 1)
                   :out out})))))
 
@@ -110,16 +164,16 @@
                       :rec-query {:section "fondo-oceanico"
                                   :subsection subsection}
                       :durs-fn (fn [_] (+ 0.1 (rand 6)))
-                      :amp-fn (fn [_i] 20) ;; TODO improve amps variation
+                      :amp-fn (fn [_i] (rrange 2 20)) ;; TODO improve amps variation
                       ;; TODO changes rates?
                       :rates-fn (fn [_] (rand-nth [1 11/9 1/2 2/3 4/11 9/22]))}]
      {:name name*
       :dur/minutes dur
       :on-start (fn []
                   (rec-loop!
-                    {:subsection subsection
-                     :dur 10
-                     :input-bus (fl-i1 :bus)})
+                   {:subsection subsection
+                    :dur 10
+                    :input-bus (fl-i1 :bus)})
 
                   ;; TODO add controls for `amp` and `dur`?
                   ;; Or somehow start later
@@ -130,18 +184,19 @@
                                            :out (ge.route/out :ndef-1)})
                   ;; rec but don't play yet
                   (rec-loop!
-                      (merge {:id :fondo-oceanico/rec-loop.fondo-oceanico-ndef
-                              :dur 10
-                              :input-bus (ge.route/out :ndef-1)}
-                             fondo-oceanico-ndef-query-1)))
+                   (merge {:id :fondo-oceanico/rec-loop.fondo-oceanico-ndef
+                           :dur 10
+                           :input-bus (ge.route/out :ndef-1)}
+                          fondo-oceanico-ndef-query-1)))
       :on-end (fn []
                 (gp/stop :fondo-oceanico/rec-loop)
                 (gp/stop :fondo-oceanico/rec-loop.fondo-oceanico-ndef)
+                (ndef/stop :fondo-oceanico/fondo-oceanico)
                 ;; Lower freq and amp
                 (rain-mvts-submarinos
                  (merge rain-config
                         {:durs-fn (fn [_] (+ 1 (rand 7)))
-                         :amp-fn (fn [_i] (rand-nth [4 1]))})))})
+                         :amp-fn (fn [_i] (rrange 0 2))})))})
 ;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Fuente Hidrotermal
 ;;;;;;;;;;;;;;;;;;;;;;;
@@ -152,28 +207,44 @@
                       :rec-query {:section "fondo-oceanico"
                                   :subsection subsection}
                       :durs-fn (fn [_] (+ 0.1 (rand 6)))
-                      :amp-fn (fn [_i] 4) ;; TODO improve amps variation
+                      :amp-fn (fn [_i] (rrange 1 2)) ;; TODO improve amps variation
                       ;; TODO changes rates?
                       :rates-fn (fn [_] (rand-nth [1 11/9 1/2 2/3 4/11 9/22]))}]
      {:name name*
       :dur/minutes dur
       :on-start (fn []
+                  ;; rec
                   (rec-loop!
                    {:subsection (name name*)
                     :dur 10
                     :input-bus (fl-i1 :bus)})
+
+                  ;; rains
                   (rain-mvts-submarinos rain-config)
 
                   (rain-simple-playbuf
                    {:id :fondo-oceanico/simple-playbuf.fondo-oceanico-ndef
                     :rec-query fondo-oceanico-ndef-query-1
-                    :out (ge.route/out :ndef-1)}))
+                    :rates-fn (fn [_] (rand-nth [1 2/3 8/7 3/2]))
+                    :out (ge.route/out :ndef-1)})
+
+                  ;; ndef
+                  (ndef-mvts-subterraneos {:id :fondo-oceanico/fuente-hidrotermal
+                                           :out (ge.route/out :ndef-1)
+                                           :rates [1/2 7/8 9/8 10/4]
+                                           :amp-boost-ctl-bus (ge.route/ctl-bus :exp/btn-2)
+                                           :amp-boost-min 0
+                                           :amp-boost-max 1
+                                           :amp-boost-lag 4}))
       :on-end (fn []
+                (gp/stop :fondo-oceanico/rec-loop)
+                (gp/stop :fondo-oceanico/simple-playbuf.fondo-oceanico-ndef)
+                (ndef/stop :fondo-oceanico/fuente-hidrotermal)
                 ;; Lower freq and amp
                 (rain-mvts-submarinos
                  (merge rain-config
                         {:durs-fn (fn [_] (+ 1 (rand 7)))
-                         :amp-fn (fn [_i] (rand-nth [4 1]))})))})
+                         :amp-fn (fn [_i] (rand-nth [2 1]))})))})
 
    ;; TODO left here
    (let [name* :erupciones-submarinas
@@ -183,7 +254,8 @@
       :on-start (fn []
                   (rec-loop!
                    {:subsection (name name*)
-                    :dur 10}))
+                    :dur 10
+                    :input-bus (fl-i1 :bus)}))
       :on-end (fn [])})
 
    (let [name* :quimio-sintesis
@@ -193,7 +265,8 @@
       :on-start (fn []
                   (rec-loop!
                    {:subsection (name name*)
-                    :dur 10}))
+                    :dur 10
+                    :input-bus (fl-i1 :bus)}))
       :on-end (fn [])})
 
    (let [name* :ecosistema-submarino
@@ -203,7 +276,8 @@
       :on-start (fn []
                   (rec-loop!
                    {:subsection (name name*)
-                    :dur 10}))
+                    :dur 10
+                    :input-bus (fl-i1 :bus)}))
       :on-end (fn [])})])
 
 (comment

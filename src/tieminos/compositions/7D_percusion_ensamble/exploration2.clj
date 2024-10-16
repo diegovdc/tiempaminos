@@ -91,7 +91,7 @@
      {:midi-input iac2
       :note-on (fn [{:keys [note velocity channel]}]
                  (short-plate2 :out (bh 2)))
-      :auto-ctl false}))
+      :auto-ctl? false}))
 
   (ref-rain
    :id ::1
