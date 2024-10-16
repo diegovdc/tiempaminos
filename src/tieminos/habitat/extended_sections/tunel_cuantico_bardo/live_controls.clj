@@ -129,19 +129,22 @@
    amp 0.5
    pan 0
    out 0]
-  (o/out out
-         (-> (o/play-buf 1 buf rate)
-             ;; TODO agregar control de reverb via OSC
-             #_(o/free-verb (lfo-kr 4 0 1))
-             (* amp
-                (o/env-gen
-                 (o/envelope
-                  [0 1 1 0]
-                  [(* 0.1 (o/buf-dur buf))
-                   (* 0.7 (o/buf-dur buf))
-                   (* 0.2 (o/buf-dur buf))])
-                 :action o/FREE))
-             (#(o/pan-az:ar 4 % pan)))))
+  (let [dur (* (o/buf-dur buf) rate)]
+    (o/out out
+
+           (-> (o/play-buf 1 buf rate)
+               ;; TODO agregar control de reverb via OSC
+               #_(o/free-verb (lfo-kr 4 0 1))
+               (* amp
+                  (o/env-gen
+                    (o/envelope
+                      [0 1 1 0]
+
+                      [(* 0.1 dur)
+                       (* 0.7 dur)
+                       (* 0.2 dur)])
+                    :action o/FREE))
+               (#(o/pan-az:ar 4 % pan))))))
 
 (comment
   (->> @rec/bufs
