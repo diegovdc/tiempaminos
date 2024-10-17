@@ -6,7 +6,7 @@
 
 (defn init []
   (when-not @osc-client
-    (reset! osc-client (osc/osc-client "0.0.0.0" 1618))
+    (reset! osc-client (osc/osc-client "0.0.0.0" 65432))
     @osc-client))
 
 (defn time "Set start time at `seconds`"
@@ -22,16 +22,18 @@
 (defn basic-insert-marker
   "This is a very simple way to insert markers. It may produce duplicate markers"
   [marker-name]
-  (osc/osc-send @osc-client "insert-new-marker") ;; this osc command needs to be asociated to th action "Markers: nsert marker at current position"
+  (osc/osc-send @osc-client "insert-new-marker") ;; this osc command needs to be asociated to th action "Markers: insert marker at current position"
   (osc/osc-send @osc-client
                 "s/lastmarker/name"
                 marker-name))
 
 (comment
+  (reset! osc-client nil)
   (osc/osc-send @osc-client "/time" (float 121))
   (osc/osc-debug true)
   (osc/osc-debug false)
   (init)
   (play)
   (stop)
-  (rec))
+  (rec)
+  (basic-insert-marker "Tieminos Marker"))
