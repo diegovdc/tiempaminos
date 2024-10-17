@@ -67,14 +67,29 @@
         (ge.init/init!
           {:inputs-config {:in-1 {:amp (o/db->amp 8)}}
            :outputs-config {:rain-1 {:bh-out 2}
-                            :ndef-1 {:bh-out 4}}
+                            :ndef-1 {:bh-out 4}
+                            ;; TODO maybe use another `:bh-out`
+                            :magma-rain {:bh-out 2}
+                            :magma-ndef {:bh-out 4}
+                            :estratos-rain {:bh-out 2}
+                            }
            :controls-config {:exp/pedal-1 {:chans 1}
-                             :exp/btn-2 {:chans 1}}})
+                             :exp/btn-a {:chans 1}
+                             :exp/btn-b {:chans 1}
+                             :exp/btn-c {:chans 1}
+                             :exp/btn-d {:chans 1}
+                             :exp/btn-1 {:chans 1}
+                             :exp/btn-2 {:chans 1}
+                             :exp/btn-3 {:chans 1}
+                             :exp/btn-4 {:chans 1}
+                             :exp/btn-5 {:chans 1}}})
         ;; Amp analyzer
         amp-analyzers (init-analyzers! inputs outputs)]
     (two.ls/init-watch!)
     (two.interface/init!)
     (assoc init-data :amp-analyzers amp-analyzers)))
+
+(defn init!* [] (println (init!)) nil)
 
 (comment
   (o/stop)
@@ -91,7 +106,7 @@
   )
 
 (comment
-  (defn init!* [] (println (init!)) nil)
+
   (stop! {})
   (o/stop)
   (def init-data (init!))

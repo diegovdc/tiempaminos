@@ -21,7 +21,10 @@
    {:name :section-4
     :dur/minutes 1/12
     :on-start (fn [] (println "starting S3"))
-    :on-end (fn [] (println "ending S3"))}])
+    :on-end (fn [] (println "ending S3"))
+    :handlers {:exp/btn-2 {:description "Prints a line that says \"btn-2\""
+                           :fn/on (fn [_] (timbre/log "btn-2 handler call"))
+                           :fn/off (fn [_] (timbre/log "btn-2 handler call"))}}}])
 
 (defonce pause-chan (async/chan))
 (defonce resume-chan (async/chan))
@@ -48,15 +51,13 @@
       (swap! two.ls/live-state assoc :piece/running? true :piece/start-time (now))
       (async/go-loop [section-index start-at]
         (if-let [section (nth sections section-index nil)]
-          (let [{:keys [dur/minutes on-start on-end]} section
+          (let [{:keys [dur/minutes on-start on-end handlers]} section
                 on-end* (fn []
                           (timbre/info "Stopping section:" (:name section))
                           (on-end))]
             (timbre/info "Starting section:" (:name section))
             (swap! two.ls/live-state assoc
-                   :section {:name (:name section)
-                             :start-time (System/currentTimeMillis)
-                             :dur/minutes (float minutes)})
+                   :section (assoc section :start-time (System/currentTimeMillis)))
             (on-start)
             (let [section-timeout (async/timeout (* minutes 60 1000))]
               (async/alt!

@@ -1,50 +1,24 @@
 (ns tieminos.compositions.garden-earth.moments.two.sections.fondo-oceanico
   (:require
-   [clojure.data.generators :refer [weighted]]
    [overtone.core :as o]
    [taoensso.timbre :as timbre]
-   [tieminos.compositions.garden-earth.moments.two.rec :refer [start-rec-loop!]]
-   [tieminos.compositions.garden-earth.moments.two.synths :refer [buf-mvts-subterraneos
-                                                                  ndef-mvts-subterraneos simple-playbuf]]
+   [tieminos.compositions.garden-earth.moments.two.rec
+    :refer [start-rec-loop!]]
+   [tieminos.compositions.garden-earth.moments.two.synths
+    :refer [buf-mvts-subterraneos ndef-mvts-subterraneos simple-playbuf]]
    [tieminos.compositions.garden-earth.routing :as ge.route :refer [fl-i1]]
    [tieminos.habitat.recording :as habitat.rec]
    [tieminos.overtone-extensions :as oe]
    [tieminos.sc-utils.groups.v1 :as groups]
    [tieminos.sc-utils.ndef.v1 :as ndef]
-   [tieminos.utils :refer [rrange]]
+   [tieminos.utils
+    :refer [rrange]]
    [time-time.dynacan.players.gen-poly :as gp :refer [on-event ref-rain]]))
 
-;; TODO move to habitat.rec
-
-(defn rand-queried-buf [rec-query]
-  (try (-> @habitat.rec/bufs
-           (habitat.rec/filter-by-rec-meta rec-query)
-           rand-nth
-           second)
-       (catch Exception _e nil)))
-
-;; TODO move to habitat.rec
-(defn weigthed-rand-queried-buf
-  [{:keys [rec-query
-           recent-amount
-           recent-weight
-           old-weight]}]
-  (try
-    (let [query-res (-> @habitat.rec/bufs (habitat.rec/filter-by-rec-meta rec-query))
-          recency-k (weighted {:recent recent-weight
-                               :old old-weight})
-          bufs (case recency-k
-                 :old query-res
-                 :recent (->> query-res
-                              (sort-by (comp :rec/time second))
-                              reverse
-                              (take recent-amount)))]
-      (->> bufs rand-nth second))
-    (catch Exception e (timbre/error "weigthed-rand-queried-buf" e))))
 
 (comment
   (map (fn [_]
-         (->> (weigthed-rand-queried-buf
+         (->> (habitat.rec/weigthed-rand-queried-buf
                {:rec-query {:section "fondo-oceanico"
                             :subsection "fondo-oceanico"}
                 :recent-amount 3
@@ -73,9 +47,9 @@
 (comment
   (require '[overtone.core :as o])
 
-  (rand-queried-buf  {:section "fondo-oceanico"
+  (habitat.rec/rand-queried-buf  {:section "fondo-oceanico"
                       :subsection "fondo-oceanico"})
-  (o/demo (o/play-buf 1 (rand-queried-buf  {:section "fondo-oceanico"
+  (o/demo (o/play-buf 1 (habitat.rec/rand-queried-buf  {:section "fondo-oceanico"
                                             :subsection "fondo-oceanico"})))
 
   (oe/defsynth
@@ -101,19 +75,20 @@
    :id id
    :durs durs-fn
    :on-event (on-event
-              (when-let [buf (rand-queried-buf rec-query)]
-                (buf-mvts-subterraneos
-                 {:group (groups/early)
-                  :buf buf
-                  :rate (rates-fn index)
-                  :max-rev-mix 1
-                  :rev-room 2
-                  :amp (amp-fn index)
-                  :amp-ctl (ge.route/ctl-bus :exp/pedal-1)
-                  :amp-ctl-min 0.25
-                  :amp-ctl-max (o/db->amp 4)
-                  :pan (rrange -1.0 1)
-                  :out (ge.route/out :rain-1)})))))
+               ;; TODO replace by weighted-queried-buf
+               (when-let [buf (habitat.rec/rand-queried-buf rec-query)]
+                 (buf-mvts-subterraneos
+                   {:group (groups/early)
+                    :buf buf
+                    :rate (rates-fn index)
+                    :max-rev-mix 1
+                    :rev-room 2
+                    :amp (amp-fn index)
+                    :amp-ctl (ge.route/ctl-bus :exp/pedal-1)
+                    :amp-ctl-min 0.25
+                    :amp-ctl-max (o/db->amp 4)
+                    :pan (rrange -1.0 1)
+                    :out (ge.route/out :rain-1)})))))
 
 (comment
   (->> @habitat.rec/bufs
@@ -141,17 +116,18 @@
    :id id
    :durs durs-fn
    :on-event (on-event
-              (when-let [buf (rand-queried-buf rec-query)]
-                (simple-playbuf
-                 {:group (groups/early)
-                  :buf buf
-                  :rate (rates-fn index)
-                  :amp (amp-fn index)
-                  :amp-ctl (ge.route/ctl-bus :exp/pedal-1)
-                  :amp-ctl-min 0.25
-                  :amp-ctl-max (o/db->amp 4)
-                  :pan (rrange -1.0 1)
-                  :out out})))))
+               ;; TODO replace by weighted-queried-buf
+               (when-let [buf (habitat.rec/rand-queried-buf rec-query)]
+                 (simple-playbuf
+                   {:group (groups/early)
+                    :buf buf
+                    :rate (rates-fn index)
+                    :amp (amp-fn index)
+                    :amp-ctl (ge.route/ctl-bus :exp/pedal-1)
+                    :amp-ctl-min 0.25
+                    :amp-ctl-max (o/db->amp 4)
+                    :pan (rrange -1.0 1)
+                    :out out})))))
 
 (def sections
   [;;;;;;;;;;;;;;;;;;;;

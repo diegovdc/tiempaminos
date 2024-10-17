@@ -20,3 +20,13 @@
       (o/in:kr 1)
       (o/lin-lin:kr 0 1 min* max*)
       (o/clip min* max*)))
+
+(defn ctl-rang-inverted
+  "Ensures an `o/control-bus` will stay within a given range,
+  EVEN when not set when calling the synth.
+  Expects the ctl-bus to provide values between 0 and 1."
+  [ctl-bus min* max*]
+  (-> ctl-bus
+      (o/in:kr 1)
+      (o/lin-lin:kr 0 1 max* min*)
+      (o/clip max* min*)))

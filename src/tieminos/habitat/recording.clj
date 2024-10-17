@@ -1,5 +1,6 @@
 (ns tieminos.habitat.recording
   (:require
+   [clojure.data.generators :refer [weighted]]
    [clojure.edn :as edn]
    [clojure.string :as str]
    [overtone.core :as o]
@@ -9,7 +10,7 @@
    [tieminos.habitat.routing :refer [bus->bus-name input-number->bus*]]
    [tieminos.math.utils :refer [avg]]
    [tieminos.sc-utils.recording.v1 :as rec :refer [start-recording]]
-   [tieminos.utils :refer [hz->ms normalize-amp]]))
+   [tieminos.utils :refer [hz->ms normalize-amp rrange]]))
 
 (declare make-buf-key! add-analysis add-meta)
 
@@ -330,3 +331,28 @@
               :input-name "mic-1"
               :input-bus mic-1-bus
               :dur-s (rrange 7 15)}))
+
+(defn rand-queried-buf [rec-query]
+  (try (-> @bufs
+           (filter-by-rec-meta rec-query)
+           rand-nth
+           second)
+       (catch Exception _e nil)))
+
+(defn weigthed-rand-queried-buf
+  [{:keys [rec-query
+           recent-amount
+           recent-weight
+           old-weight]}]
+  (try
+    (let [query-res (-> @bufs (filter-by-rec-meta rec-query))
+          recency-k (weighted {:recent recent-weight
+                               :old old-weight})
+          bufs (case recency-k
+                 :old query-res
+                 :recent (->> query-res
+                              (sort-by (comp :rec/time second))
+                              reverse
+                              (take recent-amount)))]
+      (->> bufs rand-nth second))
+    (catch Exception e (timbre/error "weigthed-rand-queried-buf" e))))

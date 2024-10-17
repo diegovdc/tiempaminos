@@ -32,7 +32,8 @@ CLOSED: [2024-10-09 Wed 22:24]
 CLOSED: [2024-10-09 Wed 22:24]
 **** ¿Cómo se encienden los refrains?
 ***** TODO con el async sequencer
-**** TODO weighted rand-buf (so that earlier bufs can be played more often that others)
+**** DONE weighted rand-buf (so that earlier bufs can be played more often that others)
+CLOSED: [2024-10-15 Tue 20:41]
 **** DONE REAPER - split rehearsal signal so that I can use bass amp for sub-woofer
 CLOSED: [2024-10-11 Fri 18:14]
 **** DONE Add  amplitud analyzer to tag recordings, and add amp limiter using the norm-amp -6db (or -3db?) as limit
@@ -40,6 +41,7 @@ CLOSED: [2024-10-11 Fri 18:42]
 **** TODO Use norm-amp to limit amplitude
 **** TODO Agregar delays triggerable con pedales
 **** IDEA La distor de limitador está chida
+***** TODO pero investigar cómo generarla mejor con distorción real y no con el limitador del DAW o de Overtone
 **** TODO quimio-síntesis, sólo grabar unos momentitos, específicos usando pedales
 **** LocalWords
 #  LocalWords:  refrain async sequencer

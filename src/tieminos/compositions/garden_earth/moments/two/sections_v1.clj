@@ -1,4 +1,9 @@
-(ns tieminos.compositions.garden-earth.moments.two.sections-v1)
+(ns tieminos.compositions.garden-earth.moments.two.sections-v1
+  (:require
+   [tieminos.compositions.garden-earth.moments.two.sections.erupcion :as erupcion]
+   [tieminos.compositions.garden-earth.moments.two.sections.fondo-oceanico :as fondo-oceanico]
+   [tieminos.compositions.garden-earth.moments.two.sections.formacion-terrestre :as formacion-terrestre]
+   [tieminos.compositions.garden-earth.moments.two.sections.totalidad :as totalidad]))
 
 (do
   (def sections
@@ -9,7 +14,7 @@
        [:quimio-síntesis 1]
        [:ecosistema-submarino 1 [:sucesión, :vida :muerte]]]]
 
-     [:formación-de-tierra
+     [:formación-terrestre
       [[:movimientos-tectónicos 2]
        [:magma 0.5 [:secundario]]
        [:lava-solidificada 1 [:submarino]]
@@ -22,21 +27,21 @@
        [:estrátos 2 [:sumando/secciones :secundario "fondo lento"]]]]
 
      [:erupción
-      [[:a-interior-de-la-tierra 1 [:incrementos]]
+      [[:al-interior-de-la-tierra 1 [:incrementos]]
        [:movimientos-tectónicos 1 [:incrementando]]
        [:movimientos-magmáticos 1 [:incrementando]]
        [:ecosistema 1 [:sumando/secciones :secundario "retorno filtrado como escuchado desde la tierra"]]
-       [:plume 1 [:crecimiento-ascenso]]
+       [:mantel-plume 1 [:crecimiento-ascenso]]
        [:erupción 1 ["humo rocas"]]
        [:lava 3 [:creciendo]]
        [:ecosistema-en-pánico 1 ["nuevamente al exterior"]]
-       [:lava-descendiendo 1 ]
+       [:lava-descendiendo 1]
        [:temblores 1 [:disminuyendo "magma endureciéndose"]]
        [:cuasi-silencio 2 ["nuevamente al exterior"]]]]
 
      [:totalidad/vida-regalo-de-las-profundidades
       [[:formación-de-ecosistema 4 [:sucesión]]
-       [:movimientos-tectónicos 0.5 [:sumando/secciones] ]
+       [:movimientos-tectónicos 0.5 [:sumando/secciones]]
        [:formación-de-montañas/estratos 2 [:sumando/secciones "en mezcla con ecosistemas"]]
        [:multiplicación-de-ecosistemas 2 [:sumando/secciones :alejamiento]]
        [:algún-lugar-hermoso->hermosura-en-general 0.5 [:sumando/desaparece-al-final :meta-slendro]]
@@ -60,6 +65,20 @@
    (->> sections
         (mapcat second)
         (map first)
-        count)]
+        count)])
 
-  )
+(comment
+  ;; real sections durations
+  (+
+   (->> fondo-oceanico/sections
+        (map :dur/minutes)
+        (apply +))
+   (->> formacion-terrestre/sections
+        (map :dur/minutes)
+        (apply +))
+   (->> erupcion/sections
+        (map :dur/minutes)
+        (apply +))
+   (->> totalidad/sections
+        (map :dur/minutes)
+        (apply +))))
