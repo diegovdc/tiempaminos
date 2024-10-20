@@ -42,3 +42,7 @@ Controles:
 ** TODO Control de reverb
 *** TODO e independencia del reverb
 ** TODO Control de velocidad de las armonías
+** TODO Control de profundidad **para sonidos cortos** (se sienten antinaturales, en 2D)
+** TODO Bancos de samples
+*** TODO Limpiar bancos
+** TODO agregar más sintes y poder cambiar entre ellos
