@@ -1,0 +1,22 @@
+#+title: Totalidad: Vida, regalo de las profundidades
+
+* TODO [#B] usar analizador de frecuencias para tunear sonidos
+* TODO [#C] EN GENERAL de los samples de secciones anteriores, buscar manera de hacerlos ligeramente diferentes
+* TODO [#B] meru-filter-bank-fx
+- Varios filtros independientes
+- bpf res freqs vibrando en meru
+- lag en freq, hacer algo como de modo que se puedan sustituir filtros individuales
+  #+begin_src clojure
+  (o/ctl my-filter :gate 0 :freq next-freq) ;; gliss con release hacia nueva freq
+  (meru-filter :freq next-freq)
+  #+end_src
+  
+* TODO formación de montañas estratos
+** TODO Revisar duración, puede ser demasiado larga y más bien superponer
+* TODO multiplicación de ecosistemas
+De dónde salen?
+** TODO Use other kinds of rates
+* TODO algún-lugar-hermoso->hermosura-en-general
+Quizá el meru filter bank
+* TODO [#A] Agregar sinte de garden-earth
+* TODO Actualizar outs

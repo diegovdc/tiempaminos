@@ -2,10 +2,11 @@
   (:require
    [overtone.core :as o]
    [taoensso.timbre :as timbre]
+   [tieminos.compositions.garden-earth.moments.two.rains :refer [rain-simple-playbuf]]
    [tieminos.compositions.garden-earth.moments.two.rec
     :refer [start-rec-loop!]]
    [tieminos.compositions.garden-earth.moments.two.synths
-    :refer [buf-mvts-subterraneos ndef-mvts-subterraneos simple-playbuf]]
+    :refer [buf-mvts-subterraneos ndef-mvts-subterraneos]]
    [tieminos.compositions.garden-earth.routing :as ge.route :refer [fl-i1]]
    [tieminos.habitat.recording :as habitat.rec]
    [tieminos.overtone-extensions :as oe]
@@ -107,27 +108,40 @@
   {:section "fondo-oceanico"
    :subsection "fondo-oceanico-ndef-query-1"})
 
-(defn rain-simple-playbuf
-  [{:keys [id rates-fn durs-fn amp-fn rec-query out]
-    :or {amp-fn (fn [_i] 4)
-         durs-fn (fn [_] (+ 0.1 (rand 5)))
-         out (ge.route/out :ndef-1)}}]
-  (ref-rain
-   :id id
-   :durs durs-fn
-   :on-event (on-event
-               ;; TODO replace by weighted-queried-buf
-               (when-let [buf (habitat.rec/rand-queried-buf rec-query)]
-                 (simple-playbuf
-                   {:group (groups/early)
-                    :buf buf
-                    :rate (rates-fn index)
-                    :amp (amp-fn index)
-                    :amp-ctl (ge.route/ctl-bus :exp/pedal-1)
-                    :amp-ctl-min 0.25
-                    :amp-ctl-max (o/db->amp 4)
-                    :pan (rrange -1.0 1)
-                    :out out})))))
+(def erupciones-submarinas-query
+  {:section "fondo-oceanico"
+   :subsection "erupciones-submarinas"})
+
+(def quimio-sintesis-query
+  {:section "fondo-oceanico"
+   :subsection "quimio-sintesis"})
+
+(def ecosistema-submarino-query
+  {:section "fondo-oceanico"
+   :subsection "ecosistema-submarino"})
+
+;; TODO remove
+#_(defn rain-simple-playbuf
+    [{:keys [id rates-fn durs-fn amp-fn rec-query out]
+      :or {amp-fn (fn [_i] 4)
+           durs-fn (fn [_] (+ 0.1 (rand 5)))
+           out (ge.route/out :ndef-1)}}]
+    (ref-rain
+      :id id
+      :durs durs-fn
+      :on-event (on-event
+                  ;; TODO replace by weighted-queried-buf
+                  (when-let [buf (habitat.rec/rand-queried-buf rec-query)]
+                    (simple-playbuf
+                      {:group (groups/early)
+                       :buf buf
+                       :rate (rates-fn index)
+                       :amp (amp-fn index)
+                       :amp-ctl (ge.route/ctl-bus :exp/pedal-1)
+                       :amp-ctl-min 0.25
+                       :amp-ctl-max (o/db->amp 4)
+                       :pan (rrange -1.0 1)
+                       :out out})))))
 
 (def sections
   [;;;;;;;;;;;;;;;;;;;;
@@ -228,10 +242,10 @@
      {:name name*
       :dur/minutes dur
       :on-start (fn []
+                  ;; for use in totalidad
                   (rec-loop!
-                   {:subsection (name name*)
-                    :dur 10
-                    :input-bus (fl-i1 :bus)}))
+                    (merge erupciones-submarinas-query
+                           {:dur 10 :input-bus (fl-i1 :bus)})))
       :on-end (fn [])})
 
    (let [name* :quimio-sintesis
@@ -239,10 +253,10 @@
      {:name name*
       :dur/minutes dur
       :on-start (fn []
+                  ;; for use in totalidad
                   (rec-loop!
-                   {:subsection (name name*)
-                    :dur 10
-                    :input-bus (fl-i1 :bus)}))
+                    (merge quimio-sintesis-query
+                           {:dur 10 :input-bus (fl-i1 :bus)})))
       :on-end (fn [])})
 
    (let [name* :ecosistema-submarino
@@ -250,10 +264,10 @@
      {:name name*
       :dur/minutes dur
       :on-start (fn []
+                  ;; for use in totalidad
                   (rec-loop!
-                   {:subsection (name name*)
-                    :dur 10
-                    :input-bus (fl-i1 :bus)}))
+                    (merge ecosistema-submarino-query
+                           {:dur 10 :input-bus (fl-i1 :bus)})))
       :on-end (fn [])})])
 
 (comment

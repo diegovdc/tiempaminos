@@ -207,8 +207,10 @@
     (map #(interval-from-pitch-class2 scale pitch-class %)
          (map #(* % direction)
               (range 0 (+ 9 (rand-int 7)) 2)))))
+(comment
 
-(interval-from-pitch-class2 (:scale eik) "C+20" 0)
+  (default-interval-seq-fn "C+20" (:scale eik))
+  (interval-from-pitch-class2 (:scale eik) "C+20" 0))
 
 (defn pattern-interval-seq-fn
   [pattern pitch-class scale]

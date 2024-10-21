@@ -72,6 +72,10 @@
                             :magma-rain {:bh-out 2}
                             :magma-ndef {:bh-out 4}
                             :estratos-rain {:bh-out 2}
+                            :erupcion-ndef {:bh-out 2}
+                            :clean-ndef {:bh-out 2}
+                            :mantle-plume-main {:bh-out 2}
+                            :mantle-plume-rev {:bh-out 2}
                             }
            :controls-config {:exp/pedal-1 {:chans 1}
                              :exp/btn-a {:chans 1}

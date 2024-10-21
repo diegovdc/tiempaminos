@@ -55,6 +55,8 @@
       (concat [countdown-section]
               sections))))
 
+;; TODO add :on-section-start and :on-section-end para agregar callbacks que se ejecuten en secciones futuras
+
 (defn run-sections
   [sections start-at
    & {:keys [initial-countdown-seconds
@@ -74,12 +76,26 @@
         (if-let [section (nth sections* section-index nil)]
           (let [{:keys [dur/minutes on-start on-end handlers]} section
                 on-end* (fn []
-                          (timbre/info "Stopping section:" (:name section))
-                          (on-end))]
-            (on-sequencer-section-change section)
+                          (try
+                            (timbre/info "Stopping section:" (:name section))
+                            (on-end)
+                            (catch Exception e (timbre/error (str "Error on-end section: " (:name section))
+                                                             e))))]
+
+            ;; on-sequencer-section-change
+            (try (on-sequencer-section-change section)
+                 (catch Exception e (timbre/error (str "Error on-sequencer-section-change section: "
+                                                       (:name section))
+                                                  e)))
+
+
             (swap! two.ls/live-state assoc
                    :section (assoc section :start-time (System/currentTimeMillis)))
-            (on-start)
+
+            ;; on-start
+            (try (on-start)
+                 (catch Exception e (timbre/error (str "Error on-start section: " (:name section)) e)))
+
             (let [section-timeout (async/timeout (* minutes 60 1000))]
               (async/alt!
                 section-timeout
@@ -120,8 +136,10 @@
                     (println "Stopping!")
                     (recur (count sections*))))))
           (do
-            (swap! two.ls/live-state assoc :piece/running? false)
-            (on-sequencer-end)))))))
+            (try
+              (swap! two.ls/live-state assoc :piece/running? false)
+              (on-sequencer-end)
+              (catch Exception e (timbre/error "Error on-sequencer-end" e)))))))))
 
 (def reaper-events
   {:on-sequencer-start (fn []
@@ -140,3 +158,37 @@
   (skip)
   (prev)
   (stop))
+
+
+
+;;;;;;;;;;;;;;;;
+;;; async event
+;;;;;;;;;;;;;;;;
+
+(defn async-event
+  "For small events happening within a sections.
+  `:dur-s` and `:wait-s` are expressed in seconds"
+  [{:keys [wait-s dur-s on-start on-end]
+    :or {dur-s 0}}]
+  (async/go
+    (try
+      (async/<! (async/timeout (* wait-s 1000)))
+      (when on-start (on-start))
+      (async/<! (async/timeout (* dur-s 1000)))
+      (when on-end (on-end))
+      (catch Exception e (timbre/error "Error in async-event" e)))))
+
+(comment
+  (do (async-event
+        {:wait-s 1
+         :dur-s 2
+         :on-start #(println "Task started!")
+         :on-end #(throw (Exception. "Simulated failure"))})  ; Intentional error
+
+      (println "Main thread continues..."))
+  (do (async-event
+        {:wait-s 1
+         :dur-s 2
+         :on-start #(println "Task started!" (rand))
+         :on-end #(println "Task end!")})  ; Intentional error
+      (println "Main thread continues...")))

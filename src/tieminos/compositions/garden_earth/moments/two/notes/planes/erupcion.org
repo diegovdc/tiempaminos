@@ -1,0 +1,26 @@
+
+* TODO [#A] Al interior de la tierra
+** WAIT Revisar duración
+2 minutos puede ser demasiado y el tiempo podría ser mejor usado al final
+** DONE Pensar qué hacer con la electrónica (o nada?)
+CLOSED: [2024-10-19 Sat 20:14]
+*** DONE golpes reverberados, lfo-kr clipeando part del sample original. tipo playbuf -> (env de lfo) -> reverb -> saturación(lfo)
+CLOSED: [2024-10-19 Sat 20:14]
+* DONE [#A] Movimientos magmáticos
+CLOSED: [2024-10-19 Sat 18:47]
+** DONE Agregar control de ndef magma :exp/btn-2
+CLOSED: [2024-10-19 Sat 18:47]
+* TODO [#A] Mantel plume
+** DONE Pensar cómo funcionaría la electrónica
+CLOSED: [2024-10-19 Sat 22:57]
+*** DONE quizá más raspado y resonante (mvts ascendntes); (pero con toques de los golpes de al interior de la tierra). Procesado con ps, rev y magma
+CLOSED: [2024-10-19 Sat 22:57]
+** TODO [#A] Test electronica
+** TODO [#C] rain de mvts magmáticos, pero limpio
+Quizá sea necesario hacer grabaciones de 10 segundos
+* TODO Erupción
+** TODO Handlers
+* TODO [#B] Cuasi silencio
+** TODO Cómo hacer ruido
+*** TODO samples de mvts-magmaticos-query via sine-shaper en 0.01 o algo así y bajo volumen (lfo 3 0.2 0.1) + amp control de :exp/pedal-1
+** TODO Cómo hacer pequeñas reverberaciones
