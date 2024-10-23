@@ -17,7 +17,7 @@
         mid (o/group :after early)
         late (o/group :after mid)
         fx (o/group "fx" :after late)
-        post-fx (o/group "post-fx" :after late)
+        post-fx (o/group "post-fx" :after fx)
         output-rec (o/group "output-rec" :after late)]
     (reset! groups
             {:main main

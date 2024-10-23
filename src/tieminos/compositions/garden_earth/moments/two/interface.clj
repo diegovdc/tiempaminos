@@ -59,38 +59,41 @@
   (reset! two.ls/live-state {})
   (swap! two.ls/live-state assoc-in [:section :handlers :exp/btn-2]
          {:fn/on (fn [_] (println "on"))
-          :fn/off (fn [_] (println "off"))} )
+          :fn/off (fn [_] (println "off"))})
   (set-ctl :note-on :exp/btn-2 127)
-  (set-ctl :note-off :exp/btn-2 0)
-  )
+  (set-ctl :note-off :exp/btn-2 0))
 
 (do
   (defn init!
     []
     (let [toggle-fn  (fn [event-k {:keys [note velocity]}]
+                       (println note)
                        (cond
                          (= 0 note) (set-ctl event-k :exp/btn-a velocity)
-                         (= 2 note) (println "note 2")
-                         (= 3 note) (println "note 3")
+                         (= 1 note) (set-ctl event-k :exp/btn-b velocity)
+                         (= 2 note) (set-ctl event-k :exp/btn-c velocity)
+                         (= 3 note) (set-ctl event-k :exp/btn-d velocity)
+                         (= 4 note) (set-ctl event-k :exp/btn-1 velocity)
                          (= 5 note) (set-ctl event-k :exp/btn-2 velocity)
+                         (= 6 note) (set-ctl event-k :exp/btn-3 velocity)
+                         (= 7 note) (set-ctl event-k :exp/btn-4 velocity)
                          (= 8 note) (set-ctl event-k :exp/btn-5 velocity)))]
       (try
         (midi-in-event
-          :midi-input (get-pacer!)
-          :auto-ctl? false
-          :note-on (partial toggle-fn :note-on)
-          :note-off (partial toggle-fn :note-off)
-          :cc (fn [{:keys [note velocity]}]
-                (cond
+         :midi-input (get-pacer!)
+         :auto-ctl? false
+         :note-on (partial toggle-fn :note-on)
+         :note-off (partial toggle-fn :note-off)
+         :cc (fn [{:keys [note velocity]}]
+               (cond
                   ;; expression pedal
-                  (= 7 note) (set-ctl :cc :exp/pedal-1 velocity))))
+                 (= 7 note) (set-ctl :cc :exp/pedal-1 velocity))))
 
         (catch Exception e (timbre/error e)))))
   (init!))
 
 (comment
   (two.ls/init-watch!)
-  
 
   (init!)
   (midi-in-event

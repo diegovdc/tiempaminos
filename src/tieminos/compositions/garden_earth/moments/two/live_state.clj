@@ -26,7 +26,7 @@
   (add-watch live-state ::post-live-state
              (fn [_key _ref _old-value new-value]
                (let [data (remove-section-handler-fns new-value)]
-                 (timbre/info data)
+                 #_(timbre/info data)
                  (throttled-post data)))))
 
 (defn set-piece-start-time!

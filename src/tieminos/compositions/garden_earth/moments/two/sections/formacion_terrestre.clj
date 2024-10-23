@@ -64,7 +64,8 @@
           :amp-boost-max 4
           :amp-boost-lag (rrange 5 18)
           :out out}
-         config))
+         ;; NOTE functions and unwelcome data structures like maps should be disassociated
+         (dissoc config :delay-weights)))
 
 (comment
   (do
@@ -381,7 +382,8 @@
                   (rec-loop!
                     (merge estratos-ecosistema-input-query
                            {:id :formacion-terrestre/estratos-ecosistema-rain.rec-loop
-                            :dur 11}))
+                            :dur 11
+                            :input-bus (fl-i1 :bus)}))
                   (rec-loop!
                     (merge estratos-ecosistema-rain-query
                            {:id :formacion-terrestre/estratos-ecosistema-rain.rec-loop

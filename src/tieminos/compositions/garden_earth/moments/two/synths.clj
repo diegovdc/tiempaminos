@@ -3,13 +3,14 @@
    [clojure.data.generators :refer [weighted]]
    [erv.scale.core :as scale]
    [overtone.core :as o]
+   [overtone.sc.ugen-collide-list :as oc]
    [tieminos.compositions.garden-earth.moments.two.harmonies :as two.harmonies]
    [tieminos.compositions.garden-earth.routing :as ge.route :refer [fl-i1]]
    [tieminos.overtone-extensions :as oe]
    [tieminos.sc-utils.groups.v1 :as groups]
    [tieminos.sc-utils.ndef.v1 :as ndef]
    [tieminos.sc-utils.synths.v1 :refer [ctl-range lfo-kr]]
-   [tieminos.utils :refer [rrange wrap-at]]
+   [tieminos.utils :refer [rrange]]
    [time-time.dynacan.players.gen-poly :as gp :refer [on-event ref-rain]]))
 
 (oe/defsynth simple-playbuf
@@ -24,13 +25,16 @@
    amp-ctl 1000
    amp-ctl-min 1
    amp-ctl-max 1
+   rev-mix 0
+   rev-damp 0.5
+   rev-room 1
    out 0]
   (let [dur (/ (o/buf-dur buf) rate)]
     (o/out out
            (-> (o/play-buf 1 buf rate)
                (o/delay-l delay delay)
                ;; TODO agregar control de reverb via OSC
-               #_(o/free-verb (lfo-kr 4 0 1))
+               (o/free-verb rev-mix rev-room rev-damp)
                (* amp
                   (ctl-range amp-ctl amp-ctl-min amp-ctl-max)
                   (o/env-gen
@@ -366,39 +370,40 @@
          group (groups/mid)}}]
   (ndef/ndef
    id
-   (let [sig (o/in in 1)
-         echoes (->> 5
-                     range
-                     (map (fn [_]
-                            (-> sig
-                                (o/comb-l 1 (lfo-kr 0.1 0.1 1)
-                                          1)
-                                (* 2  (o/clip:kr (lfo-kr 4 -1 1) 0 0.5))
-                                ((fn [sig]
-                                   (+ sig
-                                      (* 2 (o/bpf sig
-                                                  (lfo-kr 1 80 90)
-                                                  (lfo-kr 0.5 0.2 0.5))))))))))]
-     (+ (o/pan2 sig (lfo-kr 1 -1 1))
-        (-> echoes
-            (o/mix)
-            (o/pan2 (lfo-kr 1 -1 1))
-            (o/free-verb 1
-                         (o/clip (lfo-kr 1 -2 2) 0 1)
-                         (lfo-kr 4 0 1)))
-        (-> echoes
-            (->> (map (fn [sig] (-> sig
-                                    (* 4)
-                                    (o/sine-shaper)
-                                    (o/distortion2 0.2)
-                                    (o/lpf 400)
-                                    (* 1/2)
-                                    (* (lfo-kr 10 0 2))))))
-            (o/mix)
-            (o/free-verb 1
-                         (o/clip (lfo-kr 1 -2 2) 0 1)
-                         (lfo-kr 4 0 1)))))
-   {:group (groups/mid)
+      (let [sig* (o/in in 1)
+            sig (-> (o/in in 1)
+                    (o/pitch-shift (lfo-kr 1 0.1 0.7) 1/2))
+            echoes (->> 5
+                        range
+                        (map (fn [_]
+                               (-> sig
+                                   #_(o/comb-l 1 (lfo-kr 0.1 0.1 1) 1)
+                                   (* 2  (o/clip:kr (lfo-kr 4 -1 1) 0 0.5))
+                                   ((fn [sig]
+                                      (+ sig
+                                         (* 2 (o/lpf sig
+                                                     (lfo-kr 1 80 90))))))))))]
+        (+ (* 1/2 sig)
+           (* 2 (o/pan2 sig (lfo-kr 1 -1 1)))
+       (-> echoes
+           (o/mix)
+           (o/pan2 (lfo-kr 1 -1 1))
+           (o/free-verb 1
+                        (o/clip (lfo-kr 1 -2 2) 0 1)
+                        (lfo-kr 4 0 1)))
+       (-> echoes
+           (->> (map (fn [sig] (-> sig
+                                   (* 4)
+                                   (o/sine-shaper)
+                                   (o/distortion2 0.2)
+                                   (o/lpf 400)
+                                   (* 1/2)
+                                   (* (lfo-kr 10 0 2))))))
+           (o/mix)
+           (o/free-verb 1
+                        (o/clip (lfo-kr 1 -2 2) 0 1)
+                        (lfo-kr 4 0 1)))))
+   {:group group
     :out out
     :fade-time fade-time}))
 
@@ -563,3 +568,54 @@
                                        (* 2 i)))))
 
   (o/stop))
+
+
+(defn fade-rev
+  "A reverb controlled by an exp/btn.
+  ins must be an array of buses"
+  [{:keys [id
+           ins
+           out
+           room
+           damp
+           amp-boost-bus
+           amp-boost-min
+           amp-boost-max
+           amp-boost-lag
+           fade-time]
+    :or {id :fade-rev
+         room 1
+         damp 0.5
+         amp-boost-bus 1000
+         amp-boost-min 0
+         amp-boost-max 1
+         amp-boost-lag 0.5
+         fade-time 2}}]
+  (ndef/ndef
+      id
+      (-> (apply oc/+
+                 (map (fn [in] (let [n-chans (:n-channels in)]
+                                 (cond-> (o/in in n-chans)
+                                   (= 1 n-chans) (o/pan2 (lfo-kr 0.5 -0.5 0.5)))))
+                      ins) )
+          (o/free-verb 1 room damp)
+          (* (o/lag2 (ctl-range
+                      amp-boost-bus
+                      amp-boost-min
+                      amp-boost-max)
+                    amp-boost-lag)))
+    {:group (groups/fx)
+     :out out}))
+
+(comment
+  (fade-rev
+    {:id :test
+     :ins [(ge.route/fl-i1 :bus)]
+     :out (ge.route/out :ndef-1)
+     :amp-boost-bus (ge.route/ctl-bus :exp/btn-1)
+     :amp-boost-min 0
+     :amp-boost-max 1
+     :amp-boost-lag 5})
+  (ge.route/set-ctl :exp/btn-1 127)
+  (ge.route/set-ctl :exp/btn-1 0)
+  )

@@ -297,21 +297,22 @@
 
                   (aseq/async-event
                     {:wait-s 25
-                     :on-start (ref-rain
-                                 :id :totalidad/ecosistema.arp
-                                 :durs (fn [_] (weighted rain-durs-weights))
-                                 :on-event (on-event
-                                             (when-let [buf (habitat.rec/weigthed-rand-queried-buf
-                                                              {:rec-query multiplicacion-de-ecosistemas-query
-                                                               :recent-amount 1
-                                                               :recent-weight 2
-                                                               :old-weight 0})]
-                                               (arp-reponse-2
-                                                 {:interval-seq-fn interval-seq-fn
-                                                  :scale two.harmonies/meta-slendro2
-                                                  :out (ge.route/out :rain-1)}
-                                                 {:pitch-class "A+92"
-                                                  :buf buf}))))})
+                     :on-start
+                     (fn [] (ref-rain
+                              :id :totalidad/ecosistema.arp
+                              :durs (fn [_] (weighted rain-durs-weights))
+                              :on-event (on-event
+                                          (when-let [buf (habitat.rec/weigthed-rand-queried-buf
+                                                           {:rec-query multiplicacion-de-ecosistemas-query
+                                                            :recent-amount 1
+                                                            :recent-weight 2
+                                                            :old-weight 0})]
+                                            (arp-reponse-2
+                                              {:interval-seq-fn interval-seq-fn
+                                               :scale two.harmonies/meta-slendro2
+                                               :out (ge.route/out :rain-1)}
+                                              {:pitch-class "A+92"
+                                               :buf buf})))))})
 
                   (aseq/async-event
                     {:wait-s 35

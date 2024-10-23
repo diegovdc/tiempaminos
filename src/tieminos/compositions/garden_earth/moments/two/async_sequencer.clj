@@ -33,16 +33,23 @@
 (defonce prev-chan (async/chan))
 (defonce stop-chan (async/chan))
 
-(defn pause [] (when (:piece/running? @two.ls/live-state)
-                 (async/>!! pause-chan :pause)))   ;; Pause
-(defn resume [] (when (:piece/running? @two.ls/live-state)
-                  (async/>!! resume-chan :resume))) ;; Resume
-(defn skip [] (when (:piece/running? @two.ls/live-state)
-                (async/>!! skip-chan :skip)))     ;; Skip to the next section
-(defn prev [] (when (:piece/running? @two.ls/live-state)
-                (async/>!! prev-chan :prev)))
-(defn stop [] (when (:piece/running? @two.ls/live-state)
-                (async/>!! stop-chan :prev)))
+(defn pause [] (if (:piece/running? @two.ls/live-state)
+                 (async/>!! pause-chan :pause)
+                 (timbre/warn "Piece not running")))   ;; Pause
+(defn resume [] (if (:piece/running? @two.ls/live-state)
+                  (async/>!! resume-chan :resume)
+                  (timbre/warn "Piece not running"))) ;; Resume
+(defn skip [] (if (:piece/running? @two.ls/live-state)
+                (async/>!! skip-chan :skip)
+                (timbre/warn "Piece not running")))
+(defn prev [] (if (:piece/running? @two.ls/live-state)
+                (async/>!! prev-chan :prev)
+                (timbre/warn "Piece not running")))
+(defn stop [] (if (:piece/running? @two.ls/live-state)
+                (do (when (:paused? @two.ls/live-state)
+                      (resume))
+                    (async/>!! stop-chan :prev))
+                (timbre/warn "Piece not running")))
 
 (defn- add-countdown-section
   [initial-countdown-seconds sections]
@@ -58,23 +65,24 @@
 ;; TODO add :on-section-start and :on-section-end para agregar callbacks que se ejecuten en secciones futuras
 
 (defn run-sections
-  [sections start-at
-   & {:keys [initial-countdown-seconds
+  [& {:keys [sections
+             start-at
+             initial-countdown-seconds
              on-sequencer-start
              on-sequencer-end
              on-sequencer-section-change]
-      :or {on-sequencer-start (fn [] (timbre/info "Starting sequencer"))
+      :or {start-at 0
+           on-sequencer-start (fn [] (timbre/info "Starting sequencer"))
            on-sequencer-end (fn [] (timbre/info "All sections completed"))
            on-sequencer-section-change (fn [section] (timbre/info "Starting section:" (:name section)))}}]
   (if (:piece/running? @two.ls/live-state)
     (timbre/info "AsyncSequencer already running.")
-    (let [sections* (add-countdown-section initial-countdown-seconds sections)
-          paused? (atom false)]
+    (let [sections* (add-countdown-section initial-countdown-seconds sections)]
       (swap! two.ls/live-state assoc :piece/running? true :piece/start-time (now))
       (on-sequencer-start)
       (async/go-loop [section-index start-at]
         (if-let [section (nth sections* section-index nil)]
-          (let [{:keys [dur/minutes on-start on-end handlers]} section
+          (let [{:keys [dur/minutes on-start on-end]} section
                 on-end* (fn []
                           (try
                             (timbre/info "Stopping section:" (:name section))
@@ -88,9 +96,10 @@
                                                        (:name section))
                                                   e)))
 
-
             (swap! two.ls/live-state assoc
-                   :section (assoc section :start-time (System/currentTimeMillis)))
+                   :section (-> section
+                                (assoc :start-time (System/currentTimeMillis))
+                                (update :dur/minutes float)))
 
             ;; on-start
             (try (on-start)
@@ -99,7 +108,7 @@
             (let [section-timeout (async/timeout (* minutes 60 1000))]
               (async/alt!
                 section-timeout
-                (if @paused?
+                (if (:paused? @two.ls/live-state)
                   (recur section-index)
                   (do
                     (on-end*)
@@ -109,8 +118,9 @@
                 pause-chan
                 (do
                   (println "Paused" section-index)
-                  (reset! paused? true)
-                  (async/<! resume-chan) ;; Wait for resume
+                  (swap! two.ls/live-state  assoc :paused? true)
+                  (async/<! resume-chan)
+                  (swap! two.ls/live-state  assoc :paused? false)
                   (on-end*)
                   (println "Resumed")
                   (recur (inc section-index)))
@@ -150,16 +160,15 @@
 
 (comment
   (let [start-at 0]
-    (run-sections sections start-at
-                  reaper-events))
+    (run-sections (merge {:sections  sections
+                          :start-at start-at}
+                         reaper-events)))
 
   (pause)
   (resume)
   (skip)
   (prev)
   (stop))
-
-
 
 ;;;;;;;;;;;;;;;;
 ;;; async event
@@ -180,15 +189,15 @@
 
 (comment
   (do (async-event
-        {:wait-s 1
-         :dur-s 2
-         :on-start #(println "Task started!")
-         :on-end #(throw (Exception. "Simulated failure"))})  ; Intentional error
+       {:wait-s 1
+        :dur-s 2
+        :on-start #(println "Task started!")
+        :on-end #(throw (Exception. "Simulated failure"))})  ; Intentional error
 
       (println "Main thread continues..."))
   (do (async-event
-        {:wait-s 1
-         :dur-s 2
-         :on-start #(println "Task started!" (rand))
-         :on-end #(println "Task end!")})  ; Intentional error
+       {:wait-s 1
+        :dur-s 2
+        :on-start #(println "Task started!" (rand))
+        :on-end #(println "Task end!")})  ; Intentional error
       (println "Main thread continues...")))

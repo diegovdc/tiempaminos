@@ -70,15 +70,43 @@
 (comment
   ;; real sections durations
   (+
-   (->> fondo-oceanico/sections
-        (map :dur/minutes)
-        (apply +))
-   (->> formacion-terrestre/sections
-        (map :dur/minutes)
-        (apply +))
-   (->> erupcion/sections
-        (map :dur/minutes)
-        (apply +))
-   (->> totalidad/sections
-        (map :dur/minutes)
-        (apply +))))
+    (->> fondo-oceanico/sections
+         (map :dur/minutes)
+         (apply +))
+    (->> formacion-terrestre/sections
+         (map :dur/minutes)
+         (apply +))
+    (->> erupcion/sections
+         (map :dur/minutes)
+         (apply +))
+    (->> totalidad/sections
+         (map :dur/minutes)
+         (apply +)))
+
+
+  (require '[tieminos.compositions.garden-earth.moments.two.async-sequencer :as aseq])
+
+  (let [sections (concat
+                   fondo-oceanico/sections
+                   formacion-terrestre/sections
+                   erupcion/sections
+                   totalidad/sections)]
+    (aseq/run-sections
+      {:sections sections
+       :start-at 0
+       :initial-countdown-seconds 5}))
+
+  (aseq/skip)
+  (aseq/pause)
+  (aseq/resume)
+  (aseq/prev)
+  (aseq/stop)
+
+  ;; DONE error in weighted rand - el error es esperado (por ahora al menos)
+  ;; DONE algo raro en :formacion-terreste/ecosistema
+  ;; DONE algo raro en :formacion-terreste/al-interior de la tierra
+  ;; DONE algo raro en :erupcion/mantel-plume de la tierra (bad synthdef call)
+  ;; DONE countdown no tiene cronometro
+  ;; DONE estratos.sumando no tiene cronometro
+  ;; DONE multiplicación-de-ecosistemas error
+  )

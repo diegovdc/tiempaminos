@@ -12,7 +12,10 @@
    [tieminos.compositions.garden-earth.moments.two.interface :as two.interface]
    [tieminos.compositions.garden-earth.moments.two.live-state :as two.ls]
    [tieminos.compositions.garden-earth.moments.two.rec :refer [start-rec-loop!]]
+   [tieminos.compositions.garden-earth.moments.two.sections.erupcion :as erupcion]
    [tieminos.compositions.garden-earth.moments.two.sections.fondo-oceanico :as fondo-oceanico]
+   [tieminos.compositions.garden-earth.moments.two.sections.formacion-terrestre :as formacion-terrestre]
+   [tieminos.compositions.garden-earth.moments.two.sections.totalidad :as totalidad]
    [tieminos.compositions.garden-earth.moments.two.synths :refer [buf-mvts-subterraneos]]
    [tieminos.compositions.garden-earth.routing :refer [fl-i1]]
    [tieminos.habitat.amp-trigger :as amp-trig]
@@ -55,7 +58,10 @@
     :or {reset-bufs? true}}]
   (gp/stop)
   (ndef/stop)
-  (when reset-bufs? (reset! habitat.rec/bufs {}))
+  (if reset-bufs?
+    (reset! habitat.rec/bufs {})
+    (when-not (zero? (count @habitat.rec/bufs))
+      (timbre/warn "Buffs from the previous session are being preserved")))
   (reset! habitat.rec/recording? {}))
 
 
@@ -72,10 +78,10 @@
                             :magma-rain {:bh-out 2}
                             :magma-ndef {:bh-out 4}
                             :estratos-rain {:bh-out 2}
-                            :erupcion-ndef {:bh-out 2}
-                            :clean-ndef {:bh-out 2}
+                            :erupcion-ndef {:bh-out 4}
+                            :clean-ndef {:bh-out 4}
                             :mantle-plume-main {:bh-out 2}
-                            :mantle-plume-rev {:bh-out 2}
+                            :mantle-plume-rev {:bh-out 4}
                             }
            :controls-config {:exp/pedal-1 {:chans 1}
                              :exp/btn-a {:chans 1}
@@ -97,24 +103,31 @@
 
 (comment
   (o/stop)
-  (let [sections (concat fondo-oceanico/sections)]
-    (stop! {})
-    (init!)
-    (aseq/run-sections sections 0))
 
+  (do (stop! {}) (aseq/stop))
+  (let [sections (concat
+                   ;; fondo-oceanico/sections
+                   ;; formacion-terrestre/sections
+                   erupcion/sections
+                   totalidad/sections)]
+    (stop! {:reset-bufs? false})
+    (init!)
+    (aseq/run-sections
+      {:sections sections
+       :start-at 0
+       :initial-countdown-seconds 20}))
   (aseq/pause)
   (aseq/resume)
+  (do (stop! {}) (aseq/stop))
   (aseq/skip)
-  (aseq/prev)
-  (aseq/stop)
-  )
+  (aseq/prev))
 
 (comment
-
+  (require '[tieminos.compositions.garden-earth.moments.two.habitat-in-volcanic-temporality :as ivt])
   (stop! {})
   (o/stop)
   (def init-data (init!))
-  (init!)
+  (init!*)
   (-> init-data)
   (-> init-data
       :outputs

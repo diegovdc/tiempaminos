@@ -337,7 +337,11 @@
            (filter-by-rec-meta rec-query)
            rand-nth
            second)
-       (catch Exception _e nil)))
+       (catch Exception e
+         (timbre/warn "rand-queried-buf"
+                   [(:section rec-query)
+                    (:subsection rec-query)]
+                   e))))
 
 (defn weigthed-rand-queried-buf
   [{:keys [rec-query
@@ -355,4 +359,8 @@
                               reverse
                               (take recent-amount)))]
       (->> bufs rand-nth second))
-    (catch Exception e (timbre/error "weigthed-rand-queried-buf" e))))
+    (catch Exception e
+      (timbre/warn "weighted-rand-queried-buf"
+                   [(:section rec-query)
+                    (:subsection rec-query)]
+                   e))))

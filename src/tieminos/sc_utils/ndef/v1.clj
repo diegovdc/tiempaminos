@@ -6,14 +6,22 @@
 (defonce ndefs (atom {}))
 
 (defmacro ndef
-  [id synth & {:keys [out fade-time group]
-               :or {out 0 fade-time 3}}]
+  [id synth
+   & {:keys [out
+             fade-time
+             fade-in
+             fade-out
+             group]
+      :or {out 0
+           fade-time 3
+           fade-in fade-time
+           fade-out fade-time}}]
   `(let [synth# ~(remove nil?
                          `((o/synth
                             [~(symbol "gate") 1]
                             (o/out ~out
                                    (~(symbol "*") (o/env-gen
-                                                   (o/asr ~fade-time 1 ~fade-time)
+                                                   (o/asr ~fade-in 1 ~fade-out)
                                                    :gate ~(symbol "gate")
                                                    :action o/FREE)
                                                   ~synth)))
@@ -46,5 +54,13 @@
         :group [:head my-group]
         :fade-time 5)
   (stop :my-id)
+  (ndef :my-id (* 0.2 (o/sin-osc 100))
+        :group [:head my-group]
+        :fade-in 0.5
+        :fade-out 5)
+  (ndef :my-id (* 0.2 (o/sin-osc 100))
+        :group [:head my-group]
+        :fade-in 5
+        :fade-out 0.5)
 
   (o/stop))
