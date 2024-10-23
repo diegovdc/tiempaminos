@@ -104,7 +104,12 @@
 (comment
   (o/stop)
 
-  (do (stop! {}) (aseq/stop))
+  (do (stop!
+        {:reset-bufs?
+         true}) (aseq/stop))
+  (do (stop!
+        {:reset-bufs?
+         false}) (aseq/stop))
   (let [sections (concat
                    ;; fondo-oceanico/sections
                    ;; formacion-terrestre/sections
@@ -113,9 +118,16 @@
     (stop! {:reset-bufs? false})
     (init!)
     (aseq/run-sections
-      {:sections sections
-       :start-at 0
-       :initial-countdown-seconds 20}))
+      (merge
+        {:sections sections
+         :start-at 0
+         :initial-countdown-seconds 20}
+        #_aseq/reaper-events)))
+
+
+  (erupcion/init-section-buses&outs!)
+  (two.ls/set-section (-> erupcion/sections (nth 4)))
+  (swap! two.ls/live-state assoc :piece/running? false)
   (aseq/pause)
   (aseq/resume)
   (do (stop! {}) (aseq/stop))

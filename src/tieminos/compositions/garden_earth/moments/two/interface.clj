@@ -77,7 +77,8 @@
                          (= 5 note) (set-ctl event-k :exp/btn-2 velocity)
                          (= 6 note) (set-ctl event-k :exp/btn-3 velocity)
                          (= 7 note) (set-ctl event-k :exp/btn-4 velocity)
-                         (= 8 note) (set-ctl event-k :exp/btn-5 velocity)))]
+                         (= 8 note) (set-ctl event-k :exp/btn-5 velocity)
+                         (= 9 note) (set-ctl event-k :exp/btn-6 velocity)))]
       (try
         (midi-in-event
          :midi-input (get-pacer!)

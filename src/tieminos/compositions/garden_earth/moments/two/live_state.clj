@@ -19,6 +19,14 @@
                        (into {})))
       (update :section dissoc :on-start :on-end)))
 
+(defn set-section
+  [section]
+  (swap! live-state
+         assoc
+         :section (-> section
+                      (assoc :start-time (System/currentTimeMillis))
+                      (update :dur/minutes float))))
+
 (comment (remove-section-handler-fns @live-state))
 
 (defn init-watch!

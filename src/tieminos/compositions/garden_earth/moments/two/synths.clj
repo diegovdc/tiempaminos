@@ -214,13 +214,13 @@
           ;; 0.5 - ya bastante suave, y brilloso
           ;; 1 - magma brillosa
           ;; Aumentar el a-level aumenta el burbujeo
-      (o/sine-shaper (o/lag (ctl-range a-level-ctl
-                                       a-level-ctl-min
-                                       a-level-ctl-max)
-                            a-level-ctl-lag))
+      (o/sine-shaper (o/lag2 (ctl-range a-level-ctl
+                                        a-level-ctl-min
+                                        a-level-ctl-max)
+                             a-level-ctl-lag))
       (* amp)
+      (#(o/compander % % (o/db->amp -8) :slope-above 1/3))
       (o/free-verb 0.5 2)
-
       (o/pan2 (lfo-kr 0.5 -0.5 0.5)))
      {:fade-time fade-time
       :out out
@@ -254,16 +254,17 @@
    amp-boost-lag 1
    pan-min -1
    pan-max 1
+   lpf 20000
    out 0]
   (let [a (* dur a%)
         r (* dur r%)
         s (- dur a r)
         sig
         (-> (o/in in 1)
-            #_(o/lpf 4000)
             (o/delay-l delay delay)
             (o/pitch-shift 0.3 ratio)
             (o/pan2 (lfo-kr pan-freq pan-min pan-max))
+            (o/lpf lpf)
             (* 2  amp
                (lfo-kr 0.3 0.5 1)
                (o/lag (ctl-range
@@ -370,39 +371,39 @@
          group (groups/mid)}}]
   (ndef/ndef
    id
-      (let [sig* (o/in in 1)
-            sig (-> (o/in in 1)
-                    (o/pitch-shift (lfo-kr 1 0.1 0.7) 1/2))
-            echoes (->> 5
-                        range
-                        (map (fn [_]
-                               (-> sig
-                                   #_(o/comb-l 1 (lfo-kr 0.1 0.1 1) 1)
-                                   (* 2  (o/clip:kr (lfo-kr 4 -1 1) 0 0.5))
-                                   ((fn [sig]
-                                      (+ sig
-                                         (* 2 (o/lpf sig
-                                                     (lfo-kr 1 80 90))))))))))]
-        (+ (* 1/2 sig)
-           (* 2 (o/pan2 sig (lfo-kr 1 -1 1)))
-       (-> echoes
-           (o/mix)
-           (o/pan2 (lfo-kr 1 -1 1))
-           (o/free-verb 1
-                        (o/clip (lfo-kr 1 -2 2) 0 1)
-                        (lfo-kr 4 0 1)))
-       (-> echoes
-           (->> (map (fn [sig] (-> sig
-                                   (* 4)
-                                   (o/sine-shaper)
-                                   (o/distortion2 0.2)
-                                   (o/lpf 400)
-                                   (* 1/2)
-                                   (* (lfo-kr 10 0 2))))))
-           (o/mix)
-           (o/free-verb 1
-                        (o/clip (lfo-kr 1 -2 2) 0 1)
-                        (lfo-kr 4 0 1)))))
+   (let [sig* (o/in in 1)
+         sig (-> (o/in in 1)
+                 (o/pitch-shift (lfo-kr 1 0.1 0.7) 1/2))
+         echoes (->> 5
+                     range
+                     (map (fn [_]
+                            (-> sig
+                                #_(o/comb-l 1 (lfo-kr 0.1 0.1 1) 1)
+                                (* 2  (o/clip:kr (lfo-kr 4 -1 1) 0 0.5))
+                                ((fn [sig]
+                                   (+ sig
+                                      (* 2 (o/lpf sig
+                                                  (lfo-kr 1 80 90))))))))))]
+     (+ (* 1/2 sig)
+        (* 2 (o/pan2 sig (lfo-kr 1 -1 1)))
+        (-> echoes
+            (o/mix)
+            (o/pan2 (lfo-kr 1 -1 1))
+            (o/free-verb 1
+                         (o/clip (lfo-kr 1 -2 2) 0 1)
+                         (lfo-kr 4 0 1)))
+        (-> echoes
+            (->> (map (fn [sig] (-> sig
+                                    (* 4)
+                                    (o/sine-shaper)
+                                    (o/distortion2 0.2)
+                                    (o/lpf 400)
+                                    (* 1/2)
+                                    (* (lfo-kr 10 0 2))))))
+            (o/mix)
+            (o/free-verb 1
+                         (o/clip (lfo-kr 1 -2 2) 0 1)
+                         (lfo-kr 4 0 1)))))
    {:group group
     :out out
     :fade-time fade-time}))
@@ -557,7 +558,7 @@
     (def filters (mapv (fn [i]
                          (meru-filter {:group (groups/fx)
                                        :in test-bus
-                                        :freq (* 800
+                                       :freq (* 800
                                                 (scale/deg->freq meta-slendro2 1
                                                                  (* 2 i)))}))
                        (range 4))))
@@ -568,7 +569,6 @@
                                        (* 2 i)))))
 
   (o/stop))
-
 
 (defn fade-rev
   "A reverb controlled by an exp/btn.
@@ -592,30 +592,29 @@
          amp-boost-lag 0.5
          fade-time 2}}]
   (ndef/ndef
-      id
-      (-> (apply oc/+
-                 (map (fn [in] (let [n-chans (:n-channels in)]
-                                 (cond-> (o/in in n-chans)
-                                   (= 1 n-chans) (o/pan2 (lfo-kr 0.5 -0.5 0.5)))))
-                      ins) )
-          (o/free-verb 1 room damp)
-          (* (o/lag2 (ctl-range
-                      amp-boost-bus
-                      amp-boost-min
-                      amp-boost-max)
-                    amp-boost-lag)))
-    {:group (groups/fx)
-     :out out}))
+   id
+   (-> (apply oc/+
+              (map (fn [in] (let [n-chans (:n-channels in)]
+                              (cond-> (o/in in n-chans)
+                                (= 1 n-chans) (o/pan2 (lfo-kr 0.5 -0.5 0.5)))))
+                   ins))
+       (o/free-verb 1 room damp)
+       (* (o/lag2 (ctl-range
+                   amp-boost-bus
+                   amp-boost-min
+                   amp-boost-max)
+                  amp-boost-lag)))
+   {:group (groups/fx)
+    :out out}))
 
 (comment
   (fade-rev
-    {:id :test
-     :ins [(ge.route/fl-i1 :bus)]
-     :out (ge.route/out :ndef-1)
-     :amp-boost-bus (ge.route/ctl-bus :exp/btn-1)
-     :amp-boost-min 0
-     :amp-boost-max 1
-     :amp-boost-lag 5})
+   {:id :test
+    :ins [(ge.route/fl-i1 :bus)]
+    :out (ge.route/out :ndef-1)
+    :amp-boost-bus (ge.route/ctl-bus :exp/btn-1)
+    :amp-boost-min 0
+    :amp-boost-max 1
+    :amp-boost-lag 5})
   (ge.route/set-ctl :exp/btn-1 127)
-  (ge.route/set-ctl :exp/btn-1 0)
-  )
+  (ge.route/set-ctl :exp/btn-1 0))

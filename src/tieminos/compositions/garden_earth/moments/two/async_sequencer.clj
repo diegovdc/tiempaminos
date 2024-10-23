@@ -96,10 +96,7 @@
                                                        (:name section))
                                                   e)))
 
-            (swap! two.ls/live-state assoc
-                   :section (-> section
-                                (assoc :start-time (System/currentTimeMillis))
-                                (update :dur/minutes float)))
+            (two.ls/set-section section)
 
             ;; on-start
             (try (on-start)
