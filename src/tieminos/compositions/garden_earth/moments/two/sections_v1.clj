@@ -86,15 +86,15 @@
 
   (require '[tieminos.compositions.garden-earth.moments.two.async-sequencer :as aseq])
 
-  (let [sections (concat
-                   fondo-oceanico/sections
-                   formacion-terrestre/sections
-                   erupcion/sections
-                   totalidad/sections)]
-    (aseq/run-sections
-      {:sections sections
-       :start-at 0
-       :initial-countdown-seconds 5}))
+  (def sections (concat
+                  fondo-oceanico/sections
+                  formacion-terrestre/sections
+                  erupcion/sections
+                  totalidad/sections))
+  (aseq/run-sections
+    {:sections sections
+     :start-at 0
+     :initial-countdown-seconds 5})
 
   (aseq/skip)
   (aseq/pause)
@@ -109,4 +109,7 @@
   ;; DONE countdown no tiene cronometro
   ;; DONE estratos.sumando no tiene cronometro
   ;; DONE multiplicación-de-ecosistemas error
+  ;;
+  (->> sections
+       (map (juxt :name :dur/minutes :description)))
   )

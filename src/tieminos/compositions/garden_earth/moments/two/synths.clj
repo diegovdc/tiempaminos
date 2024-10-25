@@ -28,10 +28,11 @@
    rev-mix 0
    rev-damp 0.5
    rev-room 1
+   start-pos 0
    out 0]
   (let [dur (/ (o/buf-dur buf) rate)]
     (o/out out
-           (-> (o/play-buf 1 buf rate)
+           (-> (o/play-buf 1 buf rate :start-pos start-pos)
                (o/delay-l delay delay)
                ;; TODO agregar control de reverb via OSC
                (o/free-verb rev-mix rev-room rev-damp)
@@ -183,15 +184,19 @@
              in-num-channels
              out
              group
+             pre-amp
              amp
              lpf
              a-level-ctl
              a-level-ctl-min
              a-level-ctl-max
              a-level-ctl-lag
-             fade-time]
+             fade-time
+             fade-in
+             fade-out]
       :or {id ::magma-lava
            in-num-channels 1
+           pre-amp 40
            amp 1/2
            lpf 800
            a-level-ctl 1
@@ -199,7 +204,7 @@
            a-level-ctl-max 1
            a-level-ctl-lag 0.5
            fade-time 7}}]
-    (println {:in in :in-num-channels in-num-channels :out out :amp amp :lpf lpf :a-level-ctl a-level-ctl :a-level-ctl-min a-level-ctl-min :a-level-ctl-max a-level-ctl-max :a-level-ctl-lag a-level-ctl-lag})
+    #_(println {:in in :in-num-channels in-num-channels :out out :amp amp :lpf lpf :a-level-ctl a-level-ctl :a-level-ctl-min a-level-ctl-min :a-level-ctl-max a-level-ctl-max :a-level-ctl-lag a-level-ctl-lag})
     (ndef/ndef
      id
      (->
@@ -207,7 +212,7 @@
       (o/lpf lpf)
       (o/pitch-shift 0.2 [1/2 2/3 1 3/2 11/4 13/4])
       (#(o/compander % % 0.5 1 2))
-      (* 40)
+      (* pre-amp)
           ;; NOTE rangos (asumiendo `a-level` 3): -- pero puede llegar hasta el 10 sin problemas
           ;; 0.05 - burbujeos
           ;; 0.3 - magma viva
@@ -222,7 +227,9 @@
       (#(o/compander % % (o/db->amp -8) :slope-above 1/3))
       (o/free-verb 0.5 2)
       (o/pan2 (lfo-kr 0.5 -0.5 0.5)))
-     {:fade-time fade-time
+      ;; FIXME without the explicit default 7 it doesn't work
+     {:fade-in (or fade-in fade-time 7)
+      :fade-out (or fade-out fade-time 7)
       :out out
       :group group}))
 
@@ -277,6 +284,51 @@
                            [delay a s r])
                           :action o/FREE)))]
     (o/out out sig)))
+
+(oe/defsynth delayed-ps2
+  [in 0
+   delay 0
+   dur 2
+   a% 0.2
+   r% 0.2
+   pan-freq 1
+   ratio 1
+   amp 1
+   amp-boost-ctl-bus 1000
+   amp-boost-min 1
+   amp-boost-max 1
+   amp-boost-lag 1
+   pan-min -1
+   pan-max 1
+   lpf 20000
+   dry-amp 0
+   out 0]
+  (let [a (* dur a%)
+        r (* dur r%)
+        s (- dur a r)
+        clean-sig (-> (o/in in 1)
+                      (o/delay-l delay delay))
+        sig
+        (-> clean-sig
+            (o/pitch-shift 0.3 ratio)
+            (o/pan2 (lfo-kr pan-freq pan-min pan-max))
+            (o/lpf lpf))]
+    (o/out out
+           (-> (+ sig
+                  (-> clean-sig
+                      (o/pan2 (lfo-kr pan-freq pan-min pan-max))
+                      (* dry-amp)))
+               (* 2  amp
+                  (lfo-kr 0.3 0.5 1)
+                  (o/lag (ctl-range
+                          amp-boost-ctl-bus
+                          amp-boost-min
+                          amp-boost-max)
+                         amp-boost-lag)
+                  (o/env-gen (o/envelope
+                              [0 0 1 1 0]
+                              [delay a s r])
+                             :action o/FREE))))))
 
 (comment
   (ref-rain

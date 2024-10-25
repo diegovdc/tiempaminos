@@ -63,7 +63,6 @@
 (defn magma-lava-on-event
   [{:keys [rec-query rates-fn a-level-fn amp]} index]
   (when-let [buf (habitat.rec/rand-queried-buf rec-query)]
-    (println buf)
     (magma {:group (groups/early)
             :buf buf
             :rate (rates-fn index)
@@ -213,6 +212,7 @@
                       :durs-fn (fn [_] (rrange 2 4))
                       :amp-fn (fn [_] (rrange 2 4))
                       :rates-fn (fn [_] (rand-nth rates))
+                      :old-weight 8
                       :synth-config {:a 0.2
                                      :s 0.3
                                      :r 0.5
@@ -259,16 +259,31 @@
       :on-start (fn []
                   ;; grabar para posteriormente usar en refrain de lava
                   (rec-loop!
-                   (merge mvts-magmaticos-query
-                          {:dur 2
-                           :input-bus (fl-i1 :bus)})))
+                    (merge mvts-magmaticos-query
+                           {:dur 2
+                            :input-bus (fl-i1 :bus)}))
+
+                  (let [rates [1 2/3 1/2]]
+                    (rain-simple-playbuf
+                     {:id :erupcion/movimientos-magmáticos.al-interior-de-la-tierra
+                      :rec-query al-interior-de-la-tierra-query
+                      :durs-fn (fn [_] (rrange 2 8))
+                      :amp-fn (fn [_] (rrange 0.5 0.9))
+                      :rates-fn (fn [_] (rand-nth rates))
+                      :old-weight 8
+                      :synth-config {:a 0.2
+                                     :s 0.3
+                                     :r 0.5
+                                     :rev-mix 0.5}
+                      :out (ge.route/out :rain-1)})))
       :handlers (lava-handlers {:ndef-magma-lava-params
                                 {:a-level-ctl-min 0.7
                                  :a-level-ctl-max 1
                                  :a-level-ctl-lag 2
                                  :amp 0.01}})
       :on-end (fn []
-                (gp/stop :erupcion/rec-loop))})
+                (gp/stop :erupcion/rec-loop)
+                (gp/stop :erupcion/movimientos-magmáticos.al-interior-de-la-tierra))})
 
 ;;;;;;;;;;;;;;;;;;
 ;;; :mantel-plume
@@ -291,50 +306,64 @@
       :on-start (fn []
                   ;;  TODO quizá grabar y usar para erupción
                   #_(rec-loop!
-                     {:subsection subsection
-                      :dur 10
-                      :input-bus (fl-i1 :bus)})
+                      {:subsection subsection
+                       :dur 10
+                       :input-bus (fl-i1 :bus)})
 
                   ;; TODO IMPORTANT free all these things
 
-;; main fx
+                  ;; main fx
                   (ndef-interior-del-la-tierra
-                   {:id :erupcion/mantel-plume.interior-del-la-tierra
-                    :group (groups/mid)
-                    :in (fl-i1 :bus)
-                    :out @bi-out-bus
-                    :fade-time 15})
+                    {:id :erupcion/mantel-plume.interior-del-la-tierra
+                     :group (groups/mid)
+                     :in (fl-i1 :bus)
+                     :out @bi-out-bus
+                     :fade-time 15})
+
+                  (let [rates [1 2/3 1/2]]
+                    (rain-simple-playbuf
+                     {:id :erupcion/mantel-plume.al-interior-de-la-tierra
+                      :rec-query al-interior-de-la-tierra-query
+                      :durs-fn (fn [_] (rrange 2 4))
+                      :amp-fn (fn [_] (rrange 0.5 1.5))
+                      :rates-fn (fn [_] (rand-nth rates))
+                      :old-weight 8
+                      :synth-config {:a 0.2
+                                     :s 0.3
+                                     :r 0.5
+                                     :rev-mix 0.5}
+                      :out (ge.route/out :rain-1)}))
 
                   (ref-rain
-                   :id :erupcion/mantel-plume.ps
-                   :durs (fn [_] (rrange 0.7 3))
-                   :on-event (on-event
-                              (delayed-ps
-                               (delayed-ps-estratos-base-config
-                                {:lpf 4000
-                                 :amp (rrange 0.6 1)
-                                 :amp-boost-ctl-bus (ge.route/ctl-bus (rand-nth [:exp/btn-3 :exp/btn-b]))
-                                 :ratio
-                                 (if (> 0.5 (rand))
-                                   (* (-> two.harmonies/fib rand-nth :bounded-ratio)
-                                      (weighted {1 1
-                                                 1/2 3
-                                                 11/4
-                                                 8/7
-                                                 16/11
-                                                 16/7}))
-                                   (scale/deg->freq two.harmonies/fib 1
-                                                    (at-i ps-degrees)))
+                    :id :erupcion/mantel-plume.ps
+                    :durs (fn [_] (rrange 0.7 3))
+                    :on-event (on-event
+                                (delayed-ps
+                                  (delayed-ps-estratos-base-config
+                                    {:lpf 4000
+                                     :amp (rrange 0.6 1)
+                                     :amp-boost-ctl-bus (ge.route/ctl-bus (rand-nth [:exp/btn-3 :exp/btn-b]))
+                                     :ratio
+                                     (if (> 0.5 (rand))
+                                       (* (-> two.harmonies/fib rand-nth :bounded-ratio)
+                                          (weighted {1 1
+                                                     1/2 3
+                                                     11/4
+                                                     8/7
+                                                     16/11
+                                                     16/7}))
+                                       (scale/deg->freq two.harmonies/fib 1
+                                                        (at-i ps-degrees)))
 
-                                 :out @bi-out-bus}))))
+                                     :out @bi-out-bus}))))
                   (fade-rev
-                   {:id :erupcion/mentel-plume.fade-rev
-                    :ins [(ge.route/fl-i1 :bus)]
-                    :out (ge.route/out :ndef-1)
-                    :amp-boost-bus (ge.route/ctl-bus :exp/btn-1)
-                    :amp-boost-min 0
-                    :amp-boost-max 0.7
-                    :amp-boost-lag 4}))
+                    {:id :erupcion/mentel-plume.fade-rev
+                     :ins [(ge.route/fl-i1 :bus)]
+                     :out (ge.route/out :ndef-1)
+                     :amp-boost-bus (ge.route/ctl-bus :exp/btn-1)
+                     :amp-boost-min 0
+                     :amp-boost-max 1.2
+                     :amp-boost-lag 4}))
 
       :handlers (merge
                  {:exp/btn-1 "toggle: fade-rev"}
@@ -342,7 +371,8 @@
       :on-end (fn []
                 (ndef/stop :erupcion/mentel-plume.fade-rev)
                 (gp/stop :erupcion/rec-loop)
-                (gp/stop :erupcion/mantel-plume.ps))})
+                (gp/stop :erupcion/mantel-plume.ps)
+                (gp/stop :erupcion/mantel-plume.al-interior-de-la-tierra))})
 
 ;;;;;;;;;;;;;;;;
 ;;; erupción
@@ -516,7 +546,7 @@
 ;;;;;;;;;;;;;;;;;;;;
 
    (let [name* :cuasi-silencio
-         dur 3
+         dur 1.25
          subsection (name name*)
          rain-config {:id (keyword "erupcion" subsection)
                       :rec-query {:section "erupcion"

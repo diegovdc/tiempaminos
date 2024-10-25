@@ -20,6 +20,7 @@
    [tieminos.compositions.garden-earth.routing :refer [fl-i1]]
    [tieminos.habitat.amp-trigger :as amp-trig]
    [tieminos.habitat.recording :as habitat.rec]
+   [tieminos.osc.reaper :as reaper]
    [tieminos.overtone-extensions :as oe]
    [tieminos.sc-utils.groups.v1 :as groups]
    [tieminos.sc-utils.ndef.v1 :as ndef]
@@ -78,10 +79,13 @@
                             :magma-rain {:bh-out 2}
                             :magma-ndef {:bh-out 4}
                             :estratos-rain {:bh-out 2}
-                            :erupcion-ndef {:bh-out 4}
                             :clean-ndef {:bh-out 4}
-                            :mantle-plume-main {:bh-out 2}
                             :mantle-plume-rev {:bh-out 4}
+                            :mantle-plume-main {:bh-out 6}
+                            :erupcion-rain {:bh-out 8}
+                            :erupcion-ndef {:bh-out 10}
+                            :totalidad-ecosistema {:bh-out 12}
+                            :with-rev-send {:bh-out 14}
                             }
            :controls-config {:exp/pedal-1 {:chans 1}
                              :exp/btn-a {:chans 1}
@@ -95,6 +99,7 @@
                              :exp/btn-5 {:chans 1}}})
         ;; Amp analyzer
         amp-analyzers (init-analyzers! inputs outputs)]
+    (reaper/init)
     (two.ls/init-watch!)
     (two.interface/init!)
     (assoc init-data :amp-analyzers amp-analyzers)))
@@ -102,27 +107,24 @@
 (defn init!* [] (println (init!)) nil)
 
 (comment
+  (reaper/play)
   (o/stop)
 
-  (do (stop!
-        {:reset-bufs?
-         true}) (aseq/stop))
-  (do (stop!
-        {:reset-bufs?
-         false}) (aseq/stop))
+  #_(do (stop! {:reset-bufs? true}) (aseq/stop))
+  (aseq/stop)
   (let [sections (concat
-                   ;; fondo-oceanico/sections
-                   ;; formacion-terrestre/sections
+                   fondo-oceanico/sections
+                   formacion-terrestre/sections
                    erupcion/sections
                    totalidad/sections)]
     (stop! {:reset-bufs? false})
     (init!)
     (aseq/run-sections
-      (merge
-        {:sections sections
-         :start-at 0
-         :initial-countdown-seconds 20}
-        #_aseq/reaper-events)))
+      (merge aseq/reaper-events
+             {:sections sections
+              :start-at 0
+              :initial-countdown-seconds 40
+              :on-sequencer-end (fn [] (stop! {:reset-bufs? false}))})))
 
 
   (erupcion/init-section-buses&outs!)
@@ -167,7 +169,10 @@
   (o/kill testy))
 
 (comment
-  (-> @habitat.rec/bufs)
+  (-> @habitat.rec/bufs
+      vals
+      first
+      (->> (into {})))
   (o/demo
    (o/play-buf 1
                (-> @habitat.rec/bufs

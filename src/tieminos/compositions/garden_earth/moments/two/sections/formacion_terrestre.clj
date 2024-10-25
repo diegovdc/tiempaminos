@@ -151,42 +151,15 @@
 ;;;;;;;;;;;;;;;;;;
 
 (def sections
-  [;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;; movimientos-tectonicos
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-   (let [name* :movimientos-tectónicos
-         dur 2
-         subsection (name name*)
-         rain-config {:id (keyword "formacion-terrestre" subsection)
-                      :rec-query mvts-tectonicos-query
-                      :durs-fn (fn [_] (+ 0.1 (rand 6)))}]
-     {:name name*
-      :description "raspador en pastilla, <>"
-      :dur/minutes dur
-      :on-start (fn []
-                  (rec-loop!
-                   (merge {:dur 10 :input-bus (fl-i1 :bus)}
-                          mvts-tectonicos-query))
-
-                  (rain-simple-playbuf
-                   {:id :formacion-terrestre/mvts-tectónicos
-                    :rec-query mvts-tectonicos-query
-                    :durs-fn (fn [_] (rrange 4 9))
-                    :amp-fn (fn [_] (rrange 0.5 1.2))
-                    :rates-fn (fn [_] (tectonic-rates (rrand 1 5) (rrand 1 6)))
-                    :out (ge.route/out :rain-1)}))
-      :on-end (fn []
-                (gp/stop :formacion-terrestre/rec-loop))})
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  [;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; lava-solidificada (submarina)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
    (let [name* :lava-solidificada
          dur 1
          subsection (name name*)]
      {:name name*
-      :description "Submarina"
+      :description ["Submarina"
+                    "preparar: raspador en pastilla, boost; gain: 3.5; bass: 2+; watts: max;master: 11;"]
       :dur/minutes dur
       :on-start (fn []
                   #_(rec-loop!
@@ -195,13 +168,13 @@
                       :input-bus (fl-i1 :bus)})
 
                   ;; continua pero atenuado y más esporádico
-                  (rain-simple-playbuf
-                   {:id :formacion-terrestre/mvts-tectónicos
-                    :rec-query mvts-tectonicos-query
-                    :durs-fn (fn [_] (rrange 6 9))
-                    :amp-fn (fn [_] (rrange 0.2 0.8))
-                    :rates-fn (fn [_] (tectonic-rates (rrand 1 5) (rrand 1 9)))
-                    :out (ge.route/out :rain-1)}))
+                  #_(rain-simple-playbuf
+                     {:id :formacion-terrestre/mvts-tectónicos
+                      :rec-query mvts-tectonicos-query
+                      :durs-fn (fn [_] (rrange 6 9))
+                      :amp-fn (fn [_] (rrange 0.2 0.8))
+                      :rates-fn (fn [_] (tectonic-rates (rrand 1 5) (rrand 1 9)))
+                      :out (ge.route/out :rain-1)}))
       :handlers {:exp/btn-2 {:description "toggle: ndef-magma-lava"
                              :fn/on (fn [_]
                                       (ndef-magma-lava
@@ -213,11 +186,48 @@
                                         :a-level-ctl-min 0.4
                                         :a-level-ctl-max 1
                                         :a-level-ctl-lag 0.1
+                                        :pre-amp 22
                                         :amp (rrange 0.5 2)
                                         :out (ge.route/out :magma-ndef)}))
                              :fn/off (fn [_] (ndef/stop :formacion-terrestre/btn-2))}}
       :on-end (fn []
                 (ndef/stop :formacion-terrestre/btn-2)
+                (gp/stop :formacion-terrestre/rec-loop))})
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; movimientos-tectonicos
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+   (let [name* :movimientos-tectónicos
+         dur 3
+         subsection (name name*)
+         rain-config {:id (keyword "formacion-terrestre" subsection)
+                      :rec-query mvts-tectonicos-query
+                      :durs-fn (fn [_] (+ 0.1 (rand 6)))}]
+     {:name name*
+      :description "raspador en pastilla, boost; gain: 3.5; bass: 2+; watts: max;master: 11;"
+      :dur/minutes dur
+      :on-start (fn []
+                  (rec-loop!
+                   (merge {:dur 10 :input-bus (fl-i1 :bus)}
+                          mvts-tectonicos-query))
+
+                  (rain-simple-playbuf
+                   {:id :formacion-terrestre/mvts-tectónicos
+                    :rec-query mvts-tectonicos-query
+                    :durs-fn (fn [_] (rrange 4 9))
+                    :amp-fn (fn [_] (rrange 0.1 0.3))
+                    :rates-fn (fn [_] (tectonic-rates (rrand 1 5) (rrand 1 6)))
+                    :old-weight 3
+                    :synth-config (fn [_]
+                                    {:a 0.3
+                                     :s 0.2
+                                     :r 0.3
+                                     :rev-mix (rrange 0.4 1)
+                                     :amp-ctl-min 0.5
+                                     :amp-ctl-max 4
+                                     :delay (rand 3)})
+                    :out (ge.route/out :rain-1)}))
+      :on-end (fn []
                 (gp/stop :formacion-terrestre/rec-loop))})
 
 ;;;;;;;;;;;;;;;;
@@ -231,42 +241,52 @@
       :dur/minutes dur
       :on-start (fn []
                   (ref-rain
-                    :id :formacion-terrestre/emergiendo-del-océano
-                    :durs (fn [_] (rrange 0.5 2))
-                    :on-event (on-event
-                                (delayed-ps
-                                  (delayed-ps-estratos-base-config
-                                    {:ratio (* (-> two.harmonies/meta-pelog rand-nth :bounded-ratio)
-                                               (weighted {1 1
-                                                          1/2 3
-                                                          1/4 2
-                                                          2 2}))
-                                     :out (ge.route/out :estratos-rain)}))))
+                   :id :formacion-terrestre/emergiendo-del-océano
+                   :durs (fn [_] (rrange 0.5 2))
+                   :on-event (on-event
+                              (delayed-ps
+                               (delayed-ps-estratos-base-config
+                                {:ratio (* (-> two.harmonies/meta-pelog rand-nth :bounded-ratio)
+                                           (weighted {1 1
+                                                      1/2 3
+                                                      1/4 2
+                                                      2 2}))
+                                 :out (ge.route/out :estratos-rain)}))))
 
                   (let [durs (map (fn [_] (weighted {7 2, 5 4, 3 3, 2 2})) (range 20))]
                     (start-rec-loop!
-                      (merge emergiendo-del-océano-query
-                             {:id :formacion-terrestre/rec-loop
-                              :input-bus (ge.route/out :estratos-rain)
-                              :rec-dur-fn (fn [{:keys [index]}] (wrap-at index durs))
-                              :rec-pulse durs})))
+                     (merge emergiendo-del-océano-query
+                            {:id :formacion-terrestre/rec-loop
+                             :input-bus (ge.route/out :estratos-rain)
+                             :rec-dur-fn (fn [{:keys [index]}] (wrap-at index durs))
+                             :rec-pulse durs})))
 
                   (rain-simple-playbuf
-                    {:id :formacion-terrestre/emergiendo-del-océano.simple-playbuf
-                     :rec-query emergiendo-del-océano-query
-                     :durs-fn (fn [_] (rrange 9 18))
-                     :amp-fn (fn [_] (rrange 0.2 0.8))
-                     :rates-fn (fn [_] (rand-nth [1 1/2 2]))
-                     :out (ge.route/out :rain-1)})
+                   {:id :formacion-terrestre/emergiendo-del-océano.simple-playbuf
+                    :rec-query emergiendo-del-océano-query
+                    :durs-fn (fn [_] (rrange 9 18))
+                    :amp-fn (fn [_] (rrange 0.2 0.8))
+                    :rates-fn (fn [_] (rand-nth [1 1/2 2]))
+                    :old-weight 8
+                    :out (ge.route/out :rain-1)})
 
                   ;; continua pero atenuado y aún más esporádico
                   (rain-simple-playbuf
-                    {:id :formacion-terrestre/mvts-tectónicos
-                     :rec-query mvts-tectonicos-query
-                     :durs-fn (fn [_] (rrange 9 18))
-                     :amp-fn (fn [_] (rrange 0.2 0.8))
-                     :rates-fn (fn [_] (tectonic-rates (rrand 2 7) (rrand 2 9)))
-                     :out (ge.route/out :rain-1)}))
+                   {:id :formacion-terrestre/mvts-tectónicos
+                    :rec-query mvts-tectonicos-query
+                    :durs-fn (fn [_] (rrange 9 18))
+                    :amp-fn (fn [_] (rrange 0.1 0.5))
+                    :rates-fn (fn [_] (tectonic-rates (rrand 1 3) (rrand 1 4)))
+                    :old-weight 8
+                    :synth-config (fn [_]
+                                    {:a 0.3
+                                     :s 0.2
+                                     :r 0.3
+                                     :rev-mix 0.5
+                                     :amp-ctl-min 0.5
+                                     :amp-ctl-max 4
+                                     :delay (rand 3)})
+                    :out (ge.route/out :rain-1)}))
       :handlers {:exp/btn-2 {:description "delayed-ps amp boost 1/2 of the sounds"}
                  :exp/btn-a {:description "delayed-ps amp boost 1/2 of the sounds"}}
       :on-end (fn []
@@ -277,55 +297,55 @@
 ;;;;;;;;;;;;;;;;
 ;;; :terremotos
 ;;;;;;;;;;;;;;;;
-   (let [name* :terremotos
-         dur 1
-         subsection (name name*)]
-     {:name name*
-      :dur/minutes dur
-      :on-start (fn []
-                  (rec-loop!
-                   {:subsection subsection
-                    :dur 10
-                    :input-bus (fl-i1 :bus)})
+   #_(let [name* :terremotos
+           dur 1
+           subsection (name name*)]
+       {:name name*
+        :dur/minutes dur
+        :on-start (fn []
+                    (rec-loop!
+                     {:subsection subsection
+                      :dur 10
+                      :input-bus (fl-i1 :bus)})
 
-                  (rain-simple-playbuf
-                   {:id :formacion-terrestre/mvts-tectónicos
-                    :rec-query mvts-tectonicos-query
-                    :durs-fn (fn [_] (rrange 3 8))
-                    :amp-fn (fn [_] (rrange 0.5 1.2))
-                    :delay-fn delay-fn
-                    :rates-fn rates-fn
-                    :out (ge.route/out :rain-1)})
+                    (rain-simple-playbuf
+                     {:id :formacion-terrestre/mvts-tectónicos
+                      :rec-query mvts-tectonicos-query
+                      :durs-fn (fn [_] (rrange 3 8))
+                      :amp-fn (fn [_] (rrange 0.5 1.2))
+                      :delay-fn delay-fn
+                      :rates-fn rates-fn
+                      :out (ge.route/out :rain-1)})
 
-                  (rain-simple-playbuf
-                   {:id :formacion-terrestre/emergiendo-del-océano
-                    :rec-query emergiendo-del-océano-query
-                    :durs-fn (fn [_] (rrange 3 18))
-                    :amp-fn (fn [_] (rrange 0.1 1.2))
-                    :rates-fn rates-fn
-                    :delay-fn delay-fn
-                    :out (ge.route/out :rain-1)}))
+                    (rain-simple-playbuf
+                     {:id :formacion-terrestre/emergiendo-del-océano
+                      :rec-query emergiendo-del-océano-query
+                      :durs-fn (fn [_] (rrange 3 18))
+                      :amp-fn (fn [_] (rrange 0.1 1.2))
+                      :rates-fn rates-fn
+                      :delay-fn delay-fn
+                      :out (ge.route/out :rain-1)}))
 
-      :handlers {:exp/btn-2
-                 {:description "toggle: ndef-magma-lava"
-                  :fn/on (fn [_]
-                           (ndef-magma-lava
-                            {:id :formacion-terrestre/btn-2
-                             :group (groups/mid)
-                             :in (fl-i1 :bus)
-                             :lpf 20000
-                             :a-level-ctl (ge.route/ctl-bus :exp/pedal-1)
-                             :a-level-ctl-min 0.4
-                             :a-level-ctl-max 1
-                             :a-level-ctl-lag 0.1
-                             :amp (rrange 0.5 2)
-                             :out (ge.route/out :magma-ndef)}))
-                  :fn/off (fn [_] (ndef/stop :formacion-terrestre/btn-2))}}
-      :on-end (fn []
-                (gp/stop :formacion-terrestre/rec-loop)
-                (gp/stop :formacion-terrestre/emergiendo-del-océano)
-                (gp/stop :formacion-terrestre/mvts-tectónicos)
-                (ndef/stop :formacion-terrestre/btn-2))})
+        :handlers {:exp/btn-2
+                   {:description "toggle: ndef-magma-lava"
+                    :fn/on (fn [_]
+                             (ndef-magma-lava
+                              {:id :formacion-terrestre/btn-2
+                               :group (groups/mid)
+                               :in (fl-i1 :bus)
+                               :lpf 20000
+                               :a-level-ctl (ge.route/ctl-bus :exp/pedal-1)
+                               :a-level-ctl-min 0.4
+                               :a-level-ctl-max 1
+                               :a-level-ctl-lag 0.1
+                               :amp (rrange 0.5 2)
+                               :out (ge.route/out :magma-ndef)}))
+                    :fn/off (fn [_] (ndef/stop :formacion-terrestre/btn-2))}}
+        :on-end (fn []
+                  (gp/stop :formacion-terrestre/rec-loop)
+                  (gp/stop :formacion-terrestre/emergiendo-del-océano)
+                  (gp/stop :formacion-terrestre/mvts-tectónicos)
+                  (ndef/stop :formacion-terrestre/btn-2))})
 
 ;;;;;;;;;;;;;;;;;;;;
 ;;; :ecosistema
@@ -353,47 +373,47 @@
       :dur/minutes dur
       :on-start (fn []
                   (ref-rain
-                    :id :formacion-terrestre/ecosistema
-                    :durs (fn [_] (weighted rain-durs-weights))
-                    :on-event (on-event
-                                (delayed-ps
-                                  (delayed-ps-estratos-base-config
-                                    {:ratio (if (> 0.5 (rand))
-                                              (* (-> two.harmonies/meta-slendro1 rand-nth :bounded-ratio)
-                                                 (weighted transp-weights))
-                                              (scale/deg->freq two.harmonies/meta-slendro1 1
-                                                               (at-i ps-degrees)))
-                                     :delay-weights delay-weights
-                                     :out (ge.route/out :estratos-rain)}))))
+                   :id :formacion-terrestre/ecosistema
+                   :durs (fn [_] (weighted rain-durs-weights))
+                   :on-event (on-event
+                              (delayed-ps
+                               (delayed-ps-estratos-base-config
+                                {:ratio (if (> 0.5 (rand))
+                                          (* (-> two.harmonies/meta-slendro1 rand-nth :bounded-ratio)
+                                             (weighted transp-weights))
+                                          (scale/deg->freq two.harmonies/meta-slendro1 1
+                                                           (at-i ps-degrees)))
+                                 :delay-weights delay-weights
+                                 :out (ge.route/out :estratos-rain)}))))
 
                   (ndef-magma-lava
-                    {:id :formacion-terrestre/ecosistema
-                     :group (groups/mid)
-                     :in (fl-i1 :bus)
-                     :lpf 20000
-                     :a-level-ctl (ge.route/ctl-bus :exp/pedal-1)
-                     :a-level-ctl-min 0.4
-                     :a-level-ctl-max 1
-                     :a-level-ctl-lag 0.1
-                     :amp (rrange 0.5 2)
-                     :out (ge.route/out :magma-ndef)})
+                   {:id :formacion-terrestre/ecosistema
+                    :group (groups/mid)
+                    :in (fl-i1 :bus)
+                    :lpf 20000
+                    :a-level-ctl (ge.route/ctl-bus :exp/pedal-1)
+                    :a-level-ctl-min 0.4
+                    :a-level-ctl-max 1
+                    :a-level-ctl-lag 0.1
+                    :amp (rrange 0.5 2)
+                    :out (ge.route/out :magma-ndef)})
 
                   ;; rec for use in last totalidad
                   (rec-loop!
-                    (merge estratos-ecosistema-input-query
-                           {:id :formacion-terrestre/estratos-ecosistema-rain.rec-loop
-                            :dur 11
-                            :input-bus (fl-i1 :bus)}))
+                   (merge estratos-ecosistema-input-query
+                          {:id :formacion-terrestre/estratos-ecosistema-rain.rec-loop
+                           :dur 11
+                           :input-bus (fl-i1 :bus)}))
                   (rec-loop!
-                    (merge estratos-ecosistema-rain-query
-                           {:id :formacion-terrestre/estratos-ecosistema-rain.rec-loop
-                            :dur 11
-                            :input-bus (ge.route/out :estratos-rain)}))
+                   (merge estratos-ecosistema-rain-query
+                          {:id :formacion-terrestre/estratos-ecosistema-rain.rec-loop
+                           :dur 11
+                           :input-bus (ge.route/out :estratos-rain)}))
                   (rec-loop!
-                    (merge estratos-ecosistema-magma-nutrients-query
-                           {:id :formacion-terrestre/estratos-ecosistema-magma-nutrients.rec-loop
-                            :dur 8
-                            :input-bus (ge.route/out :magma-ndef)})))
+                   (merge estratos-ecosistema-magma-nutrients-query
+                          {:id :formacion-terrestre/estratos-ecosistema-magma-nutrients.rec-loop
+                           :dur 8
+                           :input-bus (ge.route/out :magma-ndef)})))
       :handlers {:exp/btn-2 {:description "delayed-ps amp boost 1/2 of the sounds"}
                  :exp/btn-a {:description "delayed-ps amp boost 1/2 of the sounds"}}
       :on-end (fn []
@@ -428,32 +448,33 @@
       :dur/minutes dur
       :on-start (fn []
                   (ref-rain
-                    :id :formacion-terrestre/estratos
-                    :durs (fn [_] (weighted rain-durs-weights))
-                    :on-event (on-event
-                                (delayed-ps
-                                  (delayed-ps-estratos-base-config
-                                    {:ratio (if (> 0.5 (rand))
-                                              (* (-> two.harmonies/fib rand-nth :bounded-ratio)
-                                                 (weighted transp-weights))
-                                              (scale/deg->freq two.harmonies/fib 1
-                                                               (at-i ps-degrees)))
-                                     :delay-weights delay-weights
-                                     :out (ge.route/out :estratos-rain)}))))
+                   :id :formacion-terrestre/estratos
+                   :durs (fn [_] (weighted rain-durs-weights))
+                   :on-event (on-event
+                              (delayed-ps
+                               (delayed-ps-estratos-base-config
+                                {:ratio (if (> 0.5 (rand))
+                                          (* (-> two.harmonies/fib rand-nth :bounded-ratio)
+                                             (weighted transp-weights))
+                                          (scale/deg->freq two.harmonies/fib 1
+                                                           (at-i ps-degrees)))
+                                 :delay-weights delay-weights
+                                 :out (ge.route/out :estratos-rain)}))))
 
                   (rec-loop!
-                    (merge estratos-query
-                           {:dur 15
-                            :input-bus (ge.route/out :estratos-rain)}))
+                   (merge estratos-query
+                          {:dur 15
+                           :input-bus (ge.route/out :estratos-rain)}))
 
                   (rain-simple-playbuf
-                    {:id :formacion-terrestre/estratos-2
-                     :rec-query estratos-query
-                     :durs-fn (fn [_] (rrange 3 18))
-                     :amp-fn (fn [_] (rrange 0.1 1.2))
-                     :rates-fn (fn [_] (weighted rate-weights))
-                     :delay-fn delay-fn
-                     :out (ge.route/out :rain-1)}))
+                   {:id :formacion-terrestre/estratos-2
+                    :rec-query estratos-query
+                    :durs-fn (fn [_] (rrange 3 18))
+                    :amp-fn (fn [_] (rrange 0.1 1.2))
+                    :rates-fn (fn [_] (weighted rate-weights))
+                    :old-weight 8
+                    :delay-fn delay-fn
+                    :out (ge.route/out :rain-1)}))
       :handlers {:exp/btn-2 {:description "delayed-ps amp boost 1/2 of the sounds"}
                  :exp/btn-a {:description "delayed-ps amp boost 1/2 of the sounds"}}
       :on-end (fn []

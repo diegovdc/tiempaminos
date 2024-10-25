@@ -1,0 +1,11 @@
+
+* TODO revisar ideas de cada una de las secciones
+No están claras en la última grabación
+* TODO en movimientos tectónicos tener cuidado con la configuración del ampli
+* TODO En la primera parte hay demasiados graves
+* TODO revisar afinación, la actual no funciona
+* TODO Parece que la entrada de la guitarra está muy baja en muchas secciones, comprimir antes de mandar al SC
+* TODO En primera sección asegurar que ndef magma tenga un crescendo más lento
+* TODO Revisar rains de simple bufs para en algunos casos quitarles el sezgo hacia los buffers recientes
+* TODO Bajar amps de PS en parte 2
+* TODO Reogranizar segunda parte para hacer más terremoto sin electrónica
