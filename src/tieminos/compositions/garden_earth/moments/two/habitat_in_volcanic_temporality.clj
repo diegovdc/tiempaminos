@@ -137,19 +137,22 @@
   (aseq/prev))
 
 (comment
+  (->> habitat.rec/bufs
+       deref
+       vals
+       (map (comp (juxt :section :subsection) :rec/meta))
+       frequencies
+       )
+  )
+
+(comment
   (require '[tieminos.compositions.garden-earth.moments.two.habitat-in-volcanic-temporality :as ivt])
   (stop! {})
-  (o/stop)
+
   (def init-data (init!))
   (init!*)
   (-> init-data)
-  (-> init-data
-      :outputs
-      deref
-      :rain-1
-      :synth
-      (o/node-active?)
-      )
+
 
   ;; TODO make this an init function
   ;; For some reason amp via o/sound-in is coming 8db lower than it should be
@@ -158,6 +161,8 @@
   (ge.init/init!
     {:inputs-config {:in-1 {:amp (o/db->amp 8)}}}))
 
+
+
 (comment
   (oe/defsynth io
     ;; Simple input->output synth for testing
@@ -165,7 +170,7 @@
     (o/out out (* (o/db->amp 8) (o/in in))))
 
   (def testy (io {:in (fl-i1 :bus)
-                 :out (bh 2)}))
+                  :out (bh 2)}))
   (o/kill testy))
 
 (comment
