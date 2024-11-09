@@ -85,7 +85,7 @@
         (fn [[k {:keys [bh-out]}]]
           (let [out-bus (o/audio-bus 2 (str (name k) "-out"))
                 bh-out* (bh bh-out)
-                out-synth (output {#_#_:group (groups/post-fx)
+                out-synth (output {:group (groups/post-fx)
                                    :in  out-bus
                                    :out bh-out*})]
             [k {:out bh-out*
@@ -101,11 +101,13 @@
     bus))
 
 (comment
+
+  (-> @outputs)
   (groups/init-groups!)
   (init-outputs!
-   {:outputs outputs
-    :config {:sc-1 {:bh-out 2}
-             :sc-2 {:bh-out 4}}})
+    {:outputs outputs
+     :config {:sc-1 {:bh-out 2}
+              :sc-2 {:bh-out 4}}})
 
   (oe/defsynth testy
     [out 0]

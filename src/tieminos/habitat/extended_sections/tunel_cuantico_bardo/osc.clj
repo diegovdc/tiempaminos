@@ -1,11 +1,12 @@
 (ns tieminos.habitat.extended-sections.tunel-cuantico-bardo.osc
   (:require
+   [clojure.math :refer [round]]
    [org.httpkit.client :as http]
    [taoensso.timbre :as timbre]
-   [tieminos.habitat.extended-sections.tunel-cuantico-bardo.live-state :refer [live-state]]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.live-controls :as bardo.live-ctl]
+   [tieminos.habitat.extended-sections.tunel-cuantico-bardo.live-state :refer [live-state]]
    [tieminos.habitat.osc :as habitat-osc]
-   [tieminos.math.utils :refer [linlin]]
+   [tieminos.math.utils :refer [linexp linlin]]
    [tieminos.utils :refer [throttle]]))
 
 (def default-rec-config
@@ -41,6 +42,13 @@
                                 inputs))))
   ;; we don't restart the recorder, but the recorder should receive a durs function instead that will deref the live-state somehow
   )
+
+(defn set-active-recorded-bank
+  [inputs bank]
+  (swap! live-state (fn [state]
+                      (reduce (fn [state* input] (assoc-in state* [:rec input :active-bank] bank))
+                              state
+                              inputs))))
 
 (defn switch-rec-pulse [inputs pulse]
   (let [pulse (case pulse
@@ -82,7 +90,6 @@
          assoc-in [:algo-2.2.9-clouds player :amp]
          ;; TODO lower extra vol
          (+ 18 (first (linlin 0 1 -32 6 [amp])))))
-
 (comment
   (set-clouds-amp :diego 1))
 
@@ -96,6 +103,18 @@
               4 8
               (throw (ex-info "Unkown clouds sample-lib-size" {:player player :opt-num opt-num})))]
     (swap! live-state assoc-in [:algo-2.2.9-clouds player :sample-lib-size] env)))
+
+(defn set-active-synth
+  [player opt-num]
+  (let [synth-key (case opt-num
+              0 :granular
+              1 :crystal
+              (throw (ex-info "Unkown synth" {:player player :opt-num opt-num})))]
+    (swap! live-state assoc-in [:algo-2.2.9-clouds player :active-synth] synth-key)))
+
+(defn set-active-bank
+  [{:keys [player bank on?]}]
+  (swap! live-state assoc-in [:algo-2.2.9-clouds player :active-banks (dec bank)] on?))
 
 (defn set-clouds-env
   [player opt-num]
@@ -121,6 +140,39 @@
     (when (-> @live-state :algo-2.2.9-clouds player :on?)
       (timbre/info "Restarting player-clouds" :player))))
 
+(defn set-harmonic-speed
+  [player harmonic-speed]
+  (swap! live-state
+         assoc-in [:algo-2.2.9-clouds player :harmonic-speed]
+         (round (first (linlin 0 1 5 70 [harmonic-speed])))))
+
+(defn- update-harmonic-range
+  [hrange low? value]
+  (assoc hrange
+         (if low? :low :high)
+         (round (first (linlin 0 1 -30 30 [value])))))
+
+(defn set-harmonic-range
+  [{:keys [player low? value]}]
+  (swap! live-state
+         update-in [:algo-2.2.9-clouds player :harmonic-range]
+         update-harmonic-range
+         low?
+         value))
+
+(defn set-rev-send
+  [{:keys [player clean? value]}]
+  (let [out (if clean? :clean :processes)]
+    (swap! live-state
+           assoc-in [:algo-2.2.9-clouds player :reaper.send/reverb out]
+           value)))
+
+(defn delete-bank
+  "`k` is a key for where to find the active bank of the player"
+  [player k]
+  (let [active-bank (-> @live-state :rec k :active-bank)]
+    (println "TODO delete active-bank" player active-bank)))
+
 (do
   (defn init! []
     (habitat-osc/init)
@@ -138,6 +190,15 @@
            "/Milo/clouds-env-radio" (set-clouds-env :milo (first args))
            "/Milo/clouds-rhythm-radio" (set-clouds-rhythm :milo (first args))
            "/Milo/clouds-sample-lib-size-radio" (set-clouds-sample-lib-size :milo (first args))
+           "/Milo/bank-rec-radio" (set-active-recorded-bank [:mic-1 :mic-2] (first args))
+           "/Milo/bank-delete-btn" (delete-bank :milo :mic-1)
+           "/Milo/toggle-bank" (set-active-bank {:player :milo :bank (:index args-map) :on? (== 1 (:on args-map))})
+           "/Milo/synth-radio" (set-active-synth :milo (first args) )
+           "/Milo/harmonic-speed" (set-harmonic-speed :milo (first args) )
+           "/Milo/harmonic-lowest-note" (set-harmonic-range {:player :milo :low? true :value (first args)})
+           "/Milo/harmonic-highest-note" (set-harmonic-range {:player :milo :low?  false :value (first args)})
+           "/Milo/rev-send-clean" (set-rev-send {:player :milo :clean? true :value (first args)})
+           "/Milo/rev-send-process" (set-rev-send {:player :milo :clean? false :value (first args)})
            "/Diego/rec-guitar-btn" (toogle-rec {:input :guitar :on? press? :dur (-> @live-state :rec :mic-1 :dur (or 0.5))})
            "/Diego/rec-durs-radio" (switch-rec-durs [:guitar] (first args))
            "/Diego/rec-pulse-radio" (switch-rec-pulse [:guitar] (first args))
@@ -146,6 +207,15 @@
            "/Diego/clouds-env-radio" (set-clouds-env :diego (first args))
            "/Diego/clouds-rhythm-radio" (set-clouds-rhythm :diego (first args))
            "/Diego/clouds-sample-lib-size-radio" (set-clouds-sample-lib-size :diego (first args))
+           "/Diego/bank-rec-radio" (set-active-recorded-bank [:guitar] (first args))
+           "/Diego/toggle-bank" (set-active-bank {:player :diego :bank (:index args-map) :on? (== 1 (:on args-map))})
+           "/Diego/bank-delete-btn" (delete-bank :diego :guitar)
+           "/Diego/synth-radio" (set-active-synth :diego (first args) )
+           "/Diego/harmonic-speed" (set-harmonic-speed :diego (first args) )
+           "/Diego/harmonic-lowest-note" (set-harmonic-range {:player :diego :low? true :value (first args)})
+           "/Diego/harmonic-highest-note" (set-harmonic-range {:player :diego :low?  false :value (first args)})
+           "/Diego/rev-send-clean" (set-rev-send {:player :diego :clean? true :value (first args)})
+           "/Diego/rev-send-process" (set-rev-send {:player :diego :clean? false :value (first args)})
            (timbre/warn "Unknown path for message: " msg args-map))))))
 
   (init!))
@@ -174,8 +244,10 @@
             50))
 (comment
   (->> @live-state)
+  (reset! live-state {})
   (add-watch live-state ::post-live-state
              (fn [_key _ref _old-value new-value]
                (throttled-post (dissoc new-value :lorentz))))
   (add-watch live-state ::post-live-state
-             (fn [_key _ref _old-value new-value])))
+             (fn [_key _ref _old-value new-value]
+               (println new-value))))

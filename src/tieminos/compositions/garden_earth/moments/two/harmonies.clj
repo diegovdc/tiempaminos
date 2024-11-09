@@ -5,13 +5,23 @@
 
 
 (def meta-pelog
-  "12 tone meta-pleog"
+  "5 tone meta-pelog"
   (->> {:seed [1 1 1]
         :formula :meta-pelog}
        (meru/recurrent-series)
        :series
-       (drop 8)
-       (take 7)
+       (drop 5)
+       (take 5)
+       (ratios->scale)))
+
+(def meta-pelog2
+  "5 tone meta-pelog (Wilson's own reseed)"
+  (->> {:seed [1 2 2]
+        :formula :meta-pelog}
+       (meru/recurrent-series)
+       :series
+       (drop 5)
+       (take 5)
        (ratios->scale)))
 
 
@@ -25,6 +35,22 @@
        (take 12)
        (ratios->scale)))
 
+(defn normalize-to-1
+  [n-seq]
+  (let [min* (apply min n-seq)]
+    (map #(/ % min*) n-seq)))
+
+(def meta-slendro2
+  "12 tone meta-slendro (Wilson's own reseed)"
+  (->> {:seed [2 1 1]
+        :formula :meta-slendro}
+       (meru/recurrent-series)
+       :series
+       (drop 10)
+       (take 12)
+       normalize-to-1
+       (ratios->scale)))
+
 (def fib
   (->> {:seed [1 1 2]
         :formula :fibonacci}
@@ -36,4 +62,7 @@
 
 (comment
   (-> fib)
-  (-> meta-pelog))
+  (-> meta-pelog)
+  (-> meta-pelog2)
+  (-> meta-slendro2)
+  (-> meta-slendro1))

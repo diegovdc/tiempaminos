@@ -19,6 +19,14 @@
                        (into {})))
       (update :section dissoc :on-start :on-end)))
 
+(defn set-section
+  [section]
+  (swap! live-state
+         assoc
+         :section (-> section
+                      (assoc :start-time (System/currentTimeMillis))
+                      (update :dur/minutes float))))
+
 (comment (remove-section-handler-fns @live-state))
 
 (defn init-watch!
@@ -26,7 +34,7 @@
   (add-watch live-state ::post-live-state
              (fn [_key _ref _old-value new-value]
                (let [data (remove-section-handler-fns new-value)]
-                 (timbre/info data)
+                 #_(timbre/info data)
                  (throttled-post data)))))
 
 (defn set-piece-start-time!

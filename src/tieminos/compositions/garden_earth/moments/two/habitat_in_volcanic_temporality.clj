@@ -12,11 +12,15 @@
    [tieminos.compositions.garden-earth.moments.two.interface :as two.interface]
    [tieminos.compositions.garden-earth.moments.two.live-state :as two.ls]
    [tieminos.compositions.garden-earth.moments.two.rec :refer [start-rec-loop!]]
+   [tieminos.compositions.garden-earth.moments.two.sections.erupcion :as erupcion]
    [tieminos.compositions.garden-earth.moments.two.sections.fondo-oceanico :as fondo-oceanico]
+   [tieminos.compositions.garden-earth.moments.two.sections.formacion-terrestre :as formacion-terrestre]
+   [tieminos.compositions.garden-earth.moments.two.sections.totalidad :as totalidad]
    [tieminos.compositions.garden-earth.moments.two.synths :refer [buf-mvts-subterraneos]]
    [tieminos.compositions.garden-earth.routing :refer [fl-i1]]
    [tieminos.habitat.amp-trigger :as amp-trig]
    [tieminos.habitat.recording :as habitat.rec]
+   [tieminos.osc.reaper :as reaper]
    [tieminos.overtone-extensions :as oe]
    [tieminos.sc-utils.groups.v1 :as groups]
    [tieminos.sc-utils.ndef.v1 :as ndef]
@@ -55,7 +59,10 @@
     :or {reset-bufs? true}}]
   (gp/stop)
   (ndef/stop)
-  (when reset-bufs? (reset! habitat.rec/bufs {}))
+  (if reset-bufs?
+    (reset! habitat.rec/bufs {})
+    (when-not (zero? (count @habitat.rec/bufs))
+      (timbre/warn "Buffs from the previous session are being preserved")))
   (reset! habitat.rec/recording? {}))
 
 
@@ -72,6 +79,13 @@
                             :magma-rain {:bh-out 2}
                             :magma-ndef {:bh-out 4}
                             :estratos-rain {:bh-out 2}
+                            :clean-ndef {:bh-out 4}
+                            :mantle-plume-rev {:bh-out 4}
+                            :mantle-plume-main {:bh-out 6}
+                            :erupcion-rain {:bh-out 8}
+                            :erupcion-ndef {:bh-out 10}
+                            :totalidad-ecosistema {:bh-out 12}
+                            :with-rev-send {:bh-out 14}
                             }
            :controls-config {:exp/pedal-1 {:chans 1}
                              :exp/btn-a {:chans 1}
@@ -85,6 +99,7 @@
                              :exp/btn-5 {:chans 1}}})
         ;; Amp analyzer
         amp-analyzers (init-analyzers! inputs outputs)]
+    (reaper/init)
     (two.ls/init-watch!)
     (two.interface/init!)
     (assoc init-data :amp-analyzers amp-analyzers)))
@@ -92,33 +107,52 @@
 (defn init!* [] (println (init!)) nil)
 
 (comment
+  (reaper/play)
   (o/stop)
-  (let [sections (concat fondo-oceanico/sections)]
-    (stop! {})
-    (init!)
-    (aseq/run-sections sections 0))
 
+  #_(do (stop! {:reset-bufs? true}) (aseq/stop))
+  (aseq/stop)
+  (let [sections (concat
+                   fondo-oceanico/sections
+                   formacion-terrestre/sections
+                   erupcion/sections
+                   totalidad/sections)]
+    (stop! {:reset-bufs? false})
+    (init!)
+    (aseq/run-sections
+      (merge aseq/reaper-events
+             {:sections sections
+              :start-at 0
+              :initial-countdown-seconds 40
+              :on-sequencer-end (fn [] (stop! {:reset-bufs? false}))})))
+
+
+  (erupcion/init-section-buses&outs!)
+  (two.ls/set-section (-> erupcion/sections (nth 4)))
+  (swap! two.ls/live-state assoc :piece/running? false)
   (aseq/pause)
   (aseq/resume)
+  (do (stop! {}) (aseq/stop))
   (aseq/skip)
-  (aseq/prev)
-  (aseq/stop)
+  (aseq/prev))
+
+(comment
+  (->> habitat.rec/bufs
+       deref
+       vals
+       (map (comp (juxt :section :subsection) :rec/meta))
+       frequencies
+       )
   )
 
 (comment
-
+  (require '[tieminos.compositions.garden-earth.moments.two.habitat-in-volcanic-temporality :as ivt])
   (stop! {})
-  (o/stop)
+
   (def init-data (init!))
-  (init!)
+  (init!*)
   (-> init-data)
-  (-> init-data
-      :outputs
-      deref
-      :rain-1
-      :synth
-      (o/node-active?)
-      )
+
 
   ;; TODO make this an init function
   ;; For some reason amp via o/sound-in is coming 8db lower than it should be
@@ -127,6 +161,8 @@
   (ge.init/init!
     {:inputs-config {:in-1 {:amp (o/db->amp 8)}}}))
 
+
+
 (comment
   (oe/defsynth io
     ;; Simple input->output synth for testing
@@ -134,11 +170,14 @@
     (o/out out (* (o/db->amp 8) (o/in in))))
 
   (def testy (io {:in (fl-i1 :bus)
-                 :out (bh 2)}))
+                  :out (bh 2)}))
   (o/kill testy))
 
 (comment
-  (-> @habitat.rec/bufs)
+  (-> @habitat.rec/bufs
+      vals
+      first
+      (->> (into {})))
   (o/demo
    (o/play-buf 1
                (-> @habitat.rec/bufs

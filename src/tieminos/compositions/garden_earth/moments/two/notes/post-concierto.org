@@ -1,0 +1,32 @@
+
+* TODO revisar parte final:
+weighted-rand-queried-buf ["totalidad" "multiplicacion-de-ecosistemas"] java.lang.IndexOutOfBoundsException
+
+Las frequencies de las grabaciones se ven así:
+#+begin_src clojure
+(->> habitat.rec/bufs
+       deref
+       vals
+       (map (comp (juxt :section :subsection) :rec/meta))
+       frequencies
+       ) ; =>
+{["fondo-oceanico" "ecosistema-submarino"] 11,
+ [nil nil] 1,
+ ["formacion-terrestre" "movimientos-tectónicos"] 19,
+ ["fondo-oceanico" "quimio-sintesis"] 6,
+ ["formacion-terrestre" "ecosistema.input"] 1,
+ ["totalidad" "formacion-de-ecosistema"] 25,
+ ["fondo-oceanico" "erupciones-submarinas"] 7,
+ ["fondo-oceanico" "fondo-oceanico"] 13,
+ ["formacion-terrestre" "ecosistema.magma-nutriets"] 8,
+ ["fondo-oceanico" "fuente-hidrotermal"] 7,
+ ["formacion-terrestre" "ecosistema.delay-ps-rain"] 5,
+ ["formacion-terrestre" "emergiendo-del-océano"] 34,
+ ["fondo-oceanico" "fondo-oceanico-ndef-query-1"] 13,
+ ["formacion-terrestre" "estratos"] 8,
+ ["erupcion" "al-interior-de-la-tierra-query"] 10,
+ ["erupcion" "movimientos-magmaticos"] 31}
+#+end_src
+** TODO Hay otras secciones que parecen haber estado afectadas por lo mismo, pero no estoy 100% seguro
+* TODO Sección de `:erupción/lava` no sonó tan impactante como en la primera grabación que tengo, analizar y recuperar parte de ese código, y revisar qué estaba haciendo en esa sección
+* TODO Revisar cómo evitar el limiting automático de Overtone, para que la señal no llegue clippeada a reaper y que reaper pueda comprimirla
