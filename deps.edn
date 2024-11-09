@@ -9,9 +9,10 @@
                                      :sha "d170c4650e43d0e6dbc8c90fcb6420ac187f195c"} #_{:local/root "../overtone" :deps/manifest :deps}
         videco/piratidal {:local/root "../../../code/piratidal" :deps/manifest :deps}
         io.github.diegovdc/time-time {:git/url "https://github.com/diegovdc/time-time.git"
-                                      :sha "29e04abec1fc290c162e34a18db57ef5ac33d3e6"} #_{:local/root "../time-tiem" :deps/manifest :deps}
+                                      :sha "29e04abec1fc290c162e34a18db57ef5ac33d3e6"}
+        #_{:local/root "../time-tiem" :deps/manifest :deps}
         io.github.diegovdc/erv {:git/url "https://github.com/diegovdc/erv.git"
-                                :sha "1fc6dd19c6a9acf253fb004c6fc1ad32afa4179a"
+                                :sha "45067bd2bd382642ee9677f6e25f022277ab42a9"
                                 ;; :tag "0.0.7"
                                 } #_{:local/root "../erv" :deps/manifest :deps}
         com.taoensso/timbre {:mvn/version "4.10.0"}
