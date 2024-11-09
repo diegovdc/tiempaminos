@@ -39,10 +39,11 @@ Controles:
 
 * V 2.2.10+
 ** TODO Compressor/saturador que permita continuar subiendo la amplitud en ciertos momentos
-** TODO Control de reverb
-*** TODO e independencia del reverb
-** TODO Control de velocidad de las armonías
-** TODO Control de profundidad **para sonidos cortos** (se sienten antinaturales, en 2D)
-** TODO Bancos de samples
-*** TODO Limpiar bancos
-** TODO agregar más sintes y poder cambiar entre ellos
+** STRT Control de reverb
+*** STRT e independencia del reverb
+**** TODO Control de profundidad **para sonidos cortos** (se sienten antinaturales, en 2D)
+** STRT Control de velocidad de las armonías
+** STRT Bancos de samples
+*** STRT Limpiar bancos
+** DONE agregar más sintes y poder cambiar entre ellos
+CLOSED: [2024-11-07 Thu 14:51]
