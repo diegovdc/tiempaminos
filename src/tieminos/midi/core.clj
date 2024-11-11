@@ -146,6 +146,7 @@
     - `:multi` allow any number of synths to be triggered on a single note
     - `:round-robin` allow only one note at a time, killing the previous synth playing on that note"
   [ev {:keys [note-on note-off cc auto-ctl? dup-note-mode]
+       :as params
        :or {dup-note-mode :multi}}]
   (try
     (let [cmd (:command ev)
@@ -178,7 +179,7 @@
           [false :note-on :round-robin] (note-on ev)
           [false :note-off :multi] (note-off ev)
           [false :note-off :round-robin] (note-off ev))))
-    (catch Exception e (timbre/error "MIDIError" e))))
+    (catch Exception e (timbre/error "MIDIError" e {:ev ev :params params}))))
 
 (defn midi-in-event
   "`note` events receive a map with the following keys

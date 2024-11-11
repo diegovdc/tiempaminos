@@ -8,23 +8,40 @@
 
 (comment
   "Usage"
-  (require '[erv-fib-synth.midi.core :refer [midi-in-event]]
-           '[erv.cps.core :as cps])
+  (require '[tieminos.midi.core :refer [midi-in-event get-oxygen!]]
+           '[erv.cps.core :as cps]
+           '[erv.edo.core :as edo])
   (def outy (midi/midi-out "VirMIDI"))
-  (def hex (cps/make 2 [1 3 5 7]))
+  (def hex (cps/make 2 [1 3 5 7] :norm-fac 7))
+  (-> hex  :scale)
+  (def tritone
+    (edo/from-pattern (repeat 12 1)))
+
+  (-> @midi-state)
+
+  (mpe-note-on :sink outy
+               :scale (:scale hex)
+               :base-freq 261.63
+               :get-pitch-class get-cps-pitch-class
+               :deg-offset 0
+               :midi-note 3
+               :vel 90)
+
+  (mpe-note-off outy 3)
 
   ;;  While receiving input from a midi keyboard
   (midi-in-event
-   :note-on (fn [msg]
-              (println "note-data"
-                       (mpe-note-on :sink outy
-                                    :scale (:scale hex)
-                                    :base-freq 30
-                                    :get-pitch-class get-cps-pitch-class
-                                    :deg-offset 10
-                                    :midi-note (msg :note)
-                                    :vel (msg :velocity))))
-   :note-off #(mpe-note-off outy (% :note))))
+    :midi-input (get-oxygen!)
+    :note-on (fn [msg]
+               (println "note-data"
+                        (mpe-note-on :sink outy
+                                     :scale (:scale hex)
+                                     :base-freq 261.63
+                                     :get-pitch-class get-cps-pitch-class
+                                     :deg-offset -60
+                                     :midi-note (msg :note)
+                                     :vel (msg :velocity))))
+    :note-off #(mpe-note-off outy (% :note))))
 
 (comment
   "Testing for synth mpe capabilities"
@@ -34,8 +51,7 @@
 (declare get-available-channel deg-mpe-note add-midi-note remove-midi-note deg->mpe-note)
 
 (def config
-  "`:bend-range` can be :8-bit (java interface) `:14-bit` (if using the osc to send to supercollider or something)"
-  (atom {:bend-range :8-bit}))
+  (atom {:bend-range :14-bit}))
 
 ;; "It's a map of channel numbers to note-data, and will also contain a
 ;; `:pitch-class` key that is a map of pitch-class to midi-channel
@@ -114,11 +130,12 @@
 (defn calculate-bend
   "Does an upward bend to a note. Has a resolution of ≈ 100/63 cents"
   [midi-decimals]
+  (println midi-decimals)
   ;; 64 is assumed to be the central note in an 8-bit pitch bend (at least for Reaper)
   (let [bend-center (case (@config :bend-range)
                       :14-bit 8192
                       :8-bit 64)]
-    (Math/round (+ bend-center (* midi-decimals (dec bend-center))))))
+    (Math/round (+ bend-center (* midi-decimals (/ (dec bend-center) 12))))))
 
 (defn midi->mpe-note
   [midi]
