@@ -3,10 +3,14 @@
    [clojure.math :refer [round]]
    [org.httpkit.client :as http]
    [taoensso.timbre :as timbre]
+   [tieminos.compositions.garden-earth.moments.two.harmonies :refer [meta-pelog]]
+   [tieminos.habitat.extended-sections.harmonies.chords :refer [fib-21
+                                                                meta-slendro1]]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.live-controls :as bardo.live-ctl]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.live-state :refer [live-state]]
+   [tieminos.habitat.extended-sections.tunel-cuantico-bardo.rec :refer [delete-bank-bufs]]
    [tieminos.habitat.osc :as habitat-osc]
-   [tieminos.math.utils :refer [linexp linlin]]
+   [tieminos.math.utils :refer [linlin]]
    [tieminos.utils :refer [throttle]]))
 
 (def default-rec-config
@@ -107,9 +111,9 @@
 (defn set-active-synth
   [player opt-num]
   (let [synth-key (case opt-num
-              0 :granular
-              1 :crystal
-              (throw (ex-info "Unkown synth" {:player player :opt-num opt-num})))]
+                    0 :granular
+                    1 :crystal
+                    (throw (ex-info "Unkown synth" {:player player :opt-num opt-num})))]
     (swap! live-state assoc-in [:algo-2.2.9-clouds player :active-synth] synth-key)))
 
 (defn set-active-bank
@@ -140,6 +144,15 @@
     (when (-> @live-state :algo-2.2.9-clouds player :on?)
       (timbre/info "Restarting player-clouds" :player))))
 
+(defn set-harmony
+  [player opt-num]
+  (let [env (case opt-num
+              0 :meta-slendro
+              1 :fib
+              2 :meta-pelog
+              (throw (ex-info "Unkown harmony:" {:player player :opt-num opt-num})))]
+    (swap! live-state assoc-in [:algo-2.2.9-clouds player :harmony] env)))
+
 (defn set-harmonic-speed
   [player harmonic-speed]
   (swap! live-state
@@ -150,7 +163,10 @@
   [hrange low? value]
   (assoc hrange
          (if low? :low :high)
-         (round (first (linlin 0 1 -30 30 [value])))))
+         (round (first (linlin 0 1
+                               (if low? -30 30)
+                               (if low? 30 -30)
+                               [value])))))
 
 (defn set-harmonic-range
   [{:keys [player low? value]}]
@@ -169,9 +185,10 @@
 
 (defn delete-bank
   "`k` is a key for where to find the active bank of the player"
-  [player k]
-  (let [active-bank (-> @live-state :rec k :active-bank)]
-    (println "TODO delete active-bank" player active-bank)))
+  [inputs]
+  (doseq [input-k inputs]
+    (let [active-bank (-> @live-state :rec input-k (:active-bank 0))]
+      (delete-bank-bufs input-k active-bank))))
 
 (do
   (defn init! []
@@ -191,10 +208,11 @@
            "/Milo/clouds-rhythm-radio" (set-clouds-rhythm :milo (first args))
            "/Milo/clouds-sample-lib-size-radio" (set-clouds-sample-lib-size :milo (first args))
            "/Milo/bank-rec-radio" (set-active-recorded-bank [:mic-1 :mic-2] (first args))
-           "/Milo/bank-delete-btn" (delete-bank :milo :mic-1)
+           "/Milo/bank-delete-btn" (when press? (delete-bank [:mic-1 :mic-2]))
            "/Milo/toggle-bank" (set-active-bank {:player :milo :bank (:index args-map) :on? (== 1 (:on args-map))})
-           "/Milo/synth-radio" (set-active-synth :milo (first args) )
-           "/Milo/harmonic-speed" (set-harmonic-speed :milo (first args) )
+           "/Milo/synth-radio" (set-active-synth :milo (first args))
+           "/Milo/harmony-radio" (set-harmony :milo (first args))
+           "/Milo/harmonic-speed" (set-harmonic-speed :milo (first args))
            "/Milo/harmonic-lowest-note" (set-harmonic-range {:player :milo :low? true :value (first args)})
            "/Milo/harmonic-highest-note" (set-harmonic-range {:player :milo :low?  false :value (first args)})
            "/Milo/rev-send-clean" (set-rev-send {:player :milo :clean? true :value (first args)})
@@ -209,9 +227,10 @@
            "/Diego/clouds-sample-lib-size-radio" (set-clouds-sample-lib-size :diego (first args))
            "/Diego/bank-rec-radio" (set-active-recorded-bank [:guitar] (first args))
            "/Diego/toggle-bank" (set-active-bank {:player :diego :bank (:index args-map) :on? (== 1 (:on args-map))})
-           "/Diego/bank-delete-btn" (delete-bank :diego :guitar)
-           "/Diego/synth-radio" (set-active-synth :diego (first args) )
-           "/Diego/harmonic-speed" (set-harmonic-speed :diego (first args) )
+           "/Diego/bank-delete-btn" (when press? (delete-bank [:guitar]))
+           "/Diego/synth-radio" (set-active-synth :diego (first args))
+           "/Diego/harmony-radio" (set-harmony :diego (first args))
+           "/Diego/harmonic-speed" (set-harmonic-speed :diego (first args))
            "/Diego/harmonic-lowest-note" (set-harmonic-range {:player :diego :low? true :value (first args)})
            "/Diego/harmonic-highest-note" (set-harmonic-range {:player :diego :low?  false :value (first args)})
            "/Diego/rev-send-clean" (set-rev-send {:player :diego :clean? true :value (first args)})

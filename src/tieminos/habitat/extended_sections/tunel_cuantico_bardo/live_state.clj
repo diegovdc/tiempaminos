@@ -9,3 +9,10 @@
   (add-watch live-state ::post-live-state
              (fn [_key _ref _old-value new-value]
                (f new-value))))
+
+(defn get-active-banks
+  [player-k]
+  (->> @live-state :algo-2.2.9-clouds player-k :active-banks
+       (filter second)
+       (map first)
+       set))

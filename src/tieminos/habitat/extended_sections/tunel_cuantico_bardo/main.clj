@@ -295,11 +295,6 @@
                            :action o/FREE))
              (#(o/pan-az 4 % (lfo-kr 0.1 -1 1))))))
 
-(comment
-  (doseq [i (range 60)]
-    (o/demo (o/in i
-                  1)))
-  (o/demo (o/sin-osc)))
 
 (comment
   (when @habitat/habitat-initialized?
