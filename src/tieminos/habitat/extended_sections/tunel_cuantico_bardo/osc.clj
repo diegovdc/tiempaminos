@@ -1,11 +1,10 @@
 (ns tieminos.habitat.extended-sections.tunel-cuantico-bardo.osc
   (:require
    [clojure.math :refer [round]]
+   [clojure.set :as set]
    [org.httpkit.client :as http]
+   [overtone.osc :as osc]
    [taoensso.timbre :as timbre]
-   [tieminos.compositions.garden-earth.moments.two.harmonies :refer [meta-pelog]]
-   [tieminos.habitat.extended-sections.harmonies.chords :refer [fib-21
-                                                                meta-slendro1]]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.live-controls :as bardo.live-ctl]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.live-state :refer [live-state]]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.rec :refer [delete-bank-bufs]]
@@ -93,18 +92,19 @@
   (swap! live-state
          assoc-in [:algo-2.2.9-clouds player :amp]
          ;; TODO lower extra vol
-         (+ 18 (first (linlin 0 1 -32 6 [amp])))))
+         (first (linlin 0 1 -36 36 [amp]))))
 (comment
   (set-clouds-amp :diego 1))
 
 (defn set-clouds-sample-lib-size
   [player opt-num]
   (let [env (case opt-num
-              0 1
-              1 2
-              2 3
-              3 5
-              4 8
+              0 ##Inf
+              1 1
+              2 2
+              3 3
+              4 5
+              5 8
               (throw (ex-info "Unkown clouds sample-lib-size" {:player player :opt-num opt-num})))]
     (swap! live-state assoc-in [:algo-2.2.9-clouds player :sample-lib-size] env)))
 
@@ -118,7 +118,9 @@
 
 (defn set-active-bank
   [{:keys [player bank on?]}]
-  (swap! live-state assoc-in [:algo-2.2.9-clouds player :active-banks (dec bank)] on?))
+  (swap! live-state update-in [:algo-2.2.9-clouds player :active-banks]
+         (if on? set/union set/difference)
+         #{(dec bank)}))
 
 (defn set-clouds-env
   [player opt-num]
@@ -181,7 +183,13 @@
   (let [out (if clean? :clean :processes)]
     (swap! live-state
            assoc-in [:algo-2.2.9-clouds player :reaper.send/reverb out]
-           value)))
+           value))
+
+  (condp = [player clean?]
+    [:diego true] (osc/osc-send @habitat-osc/reaper-client "/track/14/send/1/volume" (float value))
+    [:diego false] (osc/osc-send @habitat-osc/reaper-client "/track/15/send/1/volume" (float value))
+    [:milo true] (osc/osc-send @habitat-osc/reaper-client "/track/17/send/1/volume" (float value))
+    [:milo false] (osc/osc-send @habitat-osc/reaper-client "/track/18/send/1/volume" (float value))))
 
 (defn delete-bank
   "`k` is a key for where to find the active bank of the player"
@@ -193,6 +201,7 @@
 (do
   (defn init! []
     (habitat-osc/init)
+    (habitat-osc/make-reaper-osc-client)
     (habitat-osc/responder
      (fn [{:keys [path args] :as msg}]
        (let [args-map (habitat-osc/args->map args)

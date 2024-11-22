@@ -60,6 +60,9 @@
        (take lib-size)
        (#(when (seq %) (rand-nth %)))))
 
+(comment
+  (get-buf :milo 10000 #{0 1 2 3 4 5 6 7}))
+
 (defn delete-bank-bufs
   [input-k bank]
   (let [bank-bufs (->> @bufs
@@ -68,7 +71,6 @@
                           (and (= (:section meta) section-name)
                                (= (:subsection meta) bank)
                                (= (:input-name meta) (format "%s-bus" (name input-k)))))))]
-    (async/go
-      (timbre/info (format "Freeing %s buffers from bank %s of %s" (count bank-bufs) bank input-k))
-      (doseq [[_k buf] bank-bufs] (o/buffer-free buf))
-      (swap! bufs (fn [bufs-map] (apply dissoc bufs-map (keys bank-bufs)))))))
+    (timbre/info (format "Freeing %s buffers from bank %s of %s" (count bank-bufs) bank input-k))
+    (doseq [[_k buf] bank-bufs] (o/buffer-free buf))
+    (swap! bufs (fn [bufs-map] (apply dissoc bufs-map (keys bank-bufs))))))

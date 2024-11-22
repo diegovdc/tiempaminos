@@ -71,9 +71,13 @@
                            ;; ensure it doesn't go beyond stated max, if value is > 1
                            (min max*)))))
 
+(defonce reaper-client (atom nil))
+
 (defn make-reaper-osc-client
   []
-  (osc/osc-client (get-local-host) 65432))
+  (if @reaper-client
+    @reaper-client
+    (reset! reaper-client (osc/osc-client (get-local-host) 65432))))
 
 (defn make-internal-osc-client
   []
@@ -83,11 +87,14 @@
   (init)
   (reset! osc-server nil)
   (-> @osc-server)
+  (-> @reaper-client)
+  (make-reaper-osc-client)
+  (osc/osc-send @reaper-client "/track/14/send/1/volume" (float 0.6))
   (def client (osc/osc-client (get-local-host) 16180))
-  (osc/osc-send client "/holas" 1,2,3,4)
+  (osc/osc-send client "/holas" 1)
 
   (responder
-   (fn [{:keys [path args] :as msg}]
-     (let [args-map (args->map args)]
-       (case path
-         (println "Unknown path for message: " msg))))))
+    (fn [{:keys [path args] :as msg}]
+      (let [args-map (args->map args)]
+        (case path
+          (println "Unknown path for message: " msg))))))

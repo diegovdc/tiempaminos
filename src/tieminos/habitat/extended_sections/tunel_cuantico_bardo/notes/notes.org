@@ -42,8 +42,18 @@ Controles:
 ** STRT Control de reverb
 *** STRT e independencia del reverb
 **** TODO Control de profundidad **para sonidos cortos** (se sienten antinaturales, en 2D)
-** STRT Control de velocidad de las armonías
-** STRT Bancos de samples
-*** STRT Limpiar bancos
+** DONE Control de velocidad de las armonías
+CLOSED: [2024-11-20 Wed 16:21]
+** DONE Bancos de samples
+CLOSED: [2024-11-20 Wed 16:21]
+*** DONE Limpiar bancos
+CLOSED: [2024-11-20 Wed 16:21]
+** TODO Inicialización
+** DONE Lib size infinita
+CLOSED: [2024-11-20 Wed 16:20]
+** DONE Interfaz
+CLOSED: [2024-11-20 Wed 16:20]
+** TODO Envolventes cristal
+** TODO Monstruo
 ** DONE agregar más sintes y poder cambiar entre ellos
 CLOSED: [2024-11-07 Thu 14:51]

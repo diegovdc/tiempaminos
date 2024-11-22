@@ -12,7 +12,6 @@
 
 (defn get-active-banks
   [player-k]
-  (->> @live-state :algo-2.2.9-clouds player-k :active-banks
-       (filter second)
-       (map first)
-       set))
+  (->> @live-state :algo-2.2.9-clouds player-k :active-banks))
+
+

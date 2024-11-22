@@ -36,7 +36,8 @@
     dur))
 
 (comment
-  (-> @live-state :rec :mic-1 :dur))
+  (-> @live-state :rec :mic-1 :dur)
+  (def input-k :mic-2))
 
 (defn start-recording [{:keys [input-k]}]
   (timbre/info "starting rec on" input-k)
@@ -129,7 +130,7 @@
    amp 0.5
    pan 0
    out 0]
-  (let [dur (* (o/buf-dur buf) rate)]
+  (let [dur (/ (o/buf-dur buf) rate)]
     (o/out out
 
            (-> (o/play-buf 1 buf rate)
@@ -139,7 +140,6 @@
                   (o/env-gen
                    (o/envelope
                     [0 1 1 0]
-
                     [(* 0.1 dur)
                      (* 0.7 dur)
                      (* 0.2 dur)])
@@ -177,10 +177,10 @@
                           (:lorentz state))))
     :buf-fn (fn [_]
               (let [lib-size (-> @live-state :algo-2.2.9-clouds player-k :sample-lib-size)
-                    [_k buf] (bardo.rec/get-buf
-                              player-k
-                              lib-size
-                              (bardo.live-state/get-active-banks player-k))]
+                    [k buf] (bardo.rec/get-buf
+                             player-k
+                             lib-size
+                             (bardo.live-state/get-active-banks player-k))]
                 #_(println "get buf" k  (into {} buf))
                 buf))
     :rates-fn (fn [{:keys [index]}]
