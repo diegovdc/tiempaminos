@@ -427,11 +427,12 @@
                                                          :amp (* amp* (rrange 0 0.7) (norm-amp buf)))))))))))))
 (defn hacia-un-nuevo-universo-perc-refrain-v1p2
   "This version can handle rate chords (as a vector of rates)"
-  [{:keys [buf-fn period durs rates amp
+  [{:keys [id buf-fn period durs rates amp
            amp-fn ;; optional, takes the index and returns an amp value, if present `amp` will be overriden
            d-weights d-level-weights a-weights room-weights out-bus silence-thresh
            on-play]
-    :or {buf-fn rand-latest-buf
+    :or {id :hacia-un-nuevo-universo-perc2
+         buf-fn rand-latest-buf
          period 2.5
          durs (bzs/fsf 20 0.1 1)
          rates (range 1 10)
@@ -448,7 +449,7 @@
          silence-thresh 0.05}}]
   (let [rates* (map (fn [r] (if (sequential? r) r [r])) rates)]
     (ref-rain
-     :id :hacia-un-nuevo-universo-perc2
+     :id id
      :durs (periodize-durs period durs)
      :on-event (on-event
                 (when-let [buf (buf-fn {:index index})]

@@ -11,10 +11,11 @@
                                                                 meta-slendro1
                                                                 rate-chord-seq]]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.clouds :refer [clouds-refrain]]
+   [tieminos.habitat.extended-sections.tunel-cuantico-bardo.gusanos.gusano-2-2-6 :as bardo.gusano-2.2.6]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.live-state :as bardo.live-state :refer [live-state]]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.rec :as bardo.rec]
    [tieminos.habitat.recording :as rec]
-   [tieminos.habitat.routing :refer [inputs]]
+   [tieminos.habitat.routing :refer [inputs main-returns]]
    [tieminos.habitat.synths.granular :refer [amanecer*guitar-clouds]]
    [tieminos.math.bezier-samples :as bzs]
    [tieminos.overtone-extensions :as oe]
@@ -194,23 +195,27 @@
                        first)))
     :amp-fn (fn [_] (-> @live-state :algo-2.2.9-clouds player-k :amp (o/db->amp)))
     :on-play (fn [{:as config :keys [index]}]
-               (let [state @live-state]
+               (let [state @live-state
+                     out (main-returns (case player-k
+                                         :milo :percussion-processes
+                                         :diego :guitar-processes))]
                  ;; TODO update live state with event duration
                  (case (-> @live-state :algo-2.2.9-clouds player-k :active-synth)
-                   :crystal (cristal-liquidizado config)
+                   :crystal (cristal-liquidizado (assoc config :out out))
                    :granular (amanecer*guitar-clouds
                               (-> config
                                   (merge (get-envelope
                                           index
                                           (-> state :algo-2.2.9-clouds player-k :env)
-                                          (:lorentz state)))))
+                                          (:lorentz state)))
+                                  (assoc :out out)))
                    (amanecer*guitar-clouds
                     (-> config
                         (merge (get-envelope
                                 index
                                 (-> state :algo-2.2.9-clouds player-k :env)
-                                (:lorentz state))))))))}))
-
+                                (:lorentz state)))
+                        (assoc :out out))))))}))
 (comment
   (-> @live-state :algo-2.2.9-clouds :milo)
   (o/amp->db 0.0015420217847956035)
@@ -237,6 +242,16 @@
        reverse
        (filter (fn [[k _]]
                  (str/includes? (name k) "mic-")))))
+
 (defn stop-clouds
   [player-k]
   (gp/stop (make-clouds-id player-k)))
+
+(defn start-gusano
+  []
+  (let [{:keys [section amp]} (:gusano @live-state)]
+    (bardo.gusano-2.2.6/start section amp)))
+
+(defn stop-gusano
+  []
+  (bardo.gusano-2.2.6/stop))

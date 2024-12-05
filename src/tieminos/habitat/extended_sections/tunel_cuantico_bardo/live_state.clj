@@ -14,4 +14,5 @@
   [player-k]
   (->> @live-state :algo-2.2.9-clouds player-k :active-banks))
 
-
+(comment
+  (->> @live-state))

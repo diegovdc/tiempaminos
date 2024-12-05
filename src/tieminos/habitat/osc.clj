@@ -83,18 +83,35 @@
   []
   (osc/osc-client (get-local-host) 16180))
 
+(defonce receiver-clients (atom {}))
+
+(defn make-receiver-clients
+  "`clients` is a vector of [host port]"
+  [clients]
+  (doseq [client clients]
+    (when-not (@receiver-clients client)
+      (let [[host port] client]
+        (if (and (#{(get-local-host) "127.0.0.1"} host)
+                 (= port (-> @osc-server :port deref)))
+          (timbre/warn "Skipping: OSC receiver client cannot be the osc-server:"
+                       (format "%s@%s" host port))
+          (swap! receiver-clients assoc client (osc/osc-client host port)))))))
+
 (comment
   (init)
   (reset! osc-server nil)
-  (-> @osc-server)
+
   (-> @reaper-client)
   (make-reaper-osc-client)
   (osc/osc-send @reaper-client "/track/14/send/1/volume" (float 0.6))
   (def client (osc/osc-client (get-local-host) 16180))
   (osc/osc-send client "/holas" 1)
 
+  (def touchosc-fb-client (osc/osc-client (get-local-host) 16181))
+  (osc/osc-send touchosc-fb-client "/gusano/gusano-active-btn" (int 1))
+
   (responder
-    (fn [{:keys [path args] :as msg}]
-      (let [args-map (args->map args)]
-        (case path
-          (println "Unknown path for message: " msg))))))
+   (fn [{:keys [path args] :as msg}]
+     (let [args-map (args->map args)]
+       (case path
+         (println "Unknown path for message: " msg))))))

@@ -8,6 +8,8 @@
     :as hunu.4ch]
    [tieminos.habitat.extended-sections.harmonies.chords
     :refer [fib-chord-seq meta-slendro1 rate-chord-seq transpose-chord]]
+   [tieminos.habitat.extended-sections.tunel-cuantico-bardo.live-state :as bardo.live-state]
+   [tieminos.habitat.extended-sections.tunel-cuantico-bardo.osc :as bardo.osc]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.save-synths
     :as tc.synth-persistance]
    [tieminos.habitat.groups :as groups]
@@ -22,6 +24,7 @@
    [tieminos.habitat.synths.granular
     :refer [amanecer*guitar-clouds clouds2-4ch]]
    [tieminos.math.bezier-samples :as bzs]
+   [tieminos.network-utils :refer [get-local-host]]
    [tieminos.sc-utils.ndef.v1 :as ndef]
    [tieminos.sc-utils.synths.v1 :refer [lfo-kr]]
    [tieminos.utils :refer [rrange wrap-at]]
@@ -295,7 +298,6 @@
                            :action o/FREE))
              (#(o/pan-az 4 % (lfo-kr 0.1 -1 1))))))
 
-
 (comment
   (when @habitat/habitat-initialized?
     (reset! rec/recording? {})
@@ -306,6 +308,10 @@
   (o/kill rev-filter*)
 
   (habitat/init! {})
+
+  (bardo.osc/init! [#_["192.168.0.100" 16180]
+                    ["192.168.1.8" 16180]
+                    ["192.168.1.9" 16180]])
 
   ;; also part of the initialization of hacia un nuevo universo
   (def in1 (o/audio-bus 4 "algo-2.2.9-out"))
@@ -333,6 +339,10 @@
    #_{:mic-2 {:width 4}}
    {:mic-1 {:amp 1}
     :mic-2 {:amp 1}})
+
+  (add-watch bardo.live-state/live-state ::post-live-state
+             (fn [_key _ref _old-value new-value]
+               (bardo.osc/throttled-post (dissoc new-value :lorentz))))
 
   (algo-2-2-9 {:out-bus in1
                :chord [0 5 8 9]

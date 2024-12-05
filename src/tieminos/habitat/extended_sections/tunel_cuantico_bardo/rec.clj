@@ -71,6 +71,18 @@
                           (and (= (:section meta) section-name)
                                (= (:subsection meta) bank)
                                (= (:input-name meta) (format "%s-bus" (name input-k)))))))]
-    (timbre/info (format "Freeing %s buffers from bank %s of %s" (count bank-bufs) bank input-k))
+
+    (timbre/info (format "Freeing %s buffers from bank %s of %s"
+                         (count bank-bufs)
+                         bank
+                         input-k))
     (doseq [[_k buf] bank-bufs] (o/buffer-free buf))
     (swap! bufs (fn [bufs-map] (apply dissoc bufs-map (keys bank-bufs))))))
+
+(comment
+  (->> @bufs
+       vals
+       (sort-by :id))
+
+  (o/go
+    (doseq [buf bufs] (o/buffeassr-free buf))))
