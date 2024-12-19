@@ -11,7 +11,7 @@
                                                                 meta-slendro1
                                                                 rate-chord-seq]]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.clouds :refer [clouds-refrain]]
-   [tieminos.habitat.extended-sections.tunel-cuantico-bardo.gusanos.gusano-2-2-6 :as bardo.gusano-2.2.6]
+   [tieminos.habitat.extended-sections.tunel-cuantico-bardo.gusanos.core :as bardo.gusano]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.live-state :as bardo.live-state :refer [live-state]]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.rec :as bardo.rec]
    [tieminos.habitat.recording :as rec]
@@ -48,12 +48,10 @@
       :input-k input-k
       :input-bus input-bus
       :rec-dur-fn (fn [_]
-                    (println "INPUT" input-k)
                     (-> @live-state :rec input-k :dur))
       :rec-pulse (fn [_] (-> @live-state :rec input-k get-rec-pulse))
       ;; :print-info? true
       :on-rec-start (fn [_]
-                      (println "starting rec")
                       (swap! live-state
                              assoc-in
                              [:rec input-k :last-rec-timestamp]
@@ -249,9 +247,8 @@
 
 (defn start-gusano
   []
-  (let [{:keys [section amp]} (:gusano @live-state)]
-    (bardo.gusano-2.2.6/start section amp)))
+  (bardo.gusano/start))
 
 (defn stop-gusano
   []
-  (bardo.gusano-2.2.6/stop))
+  (bardo.gusano/stop))

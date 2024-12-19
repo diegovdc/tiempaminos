@@ -224,17 +224,34 @@
     (bardo.live-ctl/start-gusano)
     (bardo.live-ctl/stop-gusano)))
 
-(defn set-gusano-harmony-seq
-  [section]
-  (swap! live-state assoc-in [:gusano :section] section)
-  (when (-> @live-state :gusano :on?)
-    (bardo.live-ctl/start-gusano)))
+;; TODO set the resulting values of gusano in the live-state just as with the other values
+(defn set-gusano-rates
+  [i]
+  (swap! live-state assoc-in [:gusano :rates] i))
+
+(defn set-gusano-rates-seq-speed
+  [i]
+  (swap! live-state assoc-in [:gusano :rates-seq-speed] i))
 
 (defn set-gusano-amp
   [amp]
-  (swap! live-state assoc-in [:gusano :amp] (first (linlin 0 1 0 1.5 [amp])))
-  (when (-> @live-state :gusano :on?)
-    (bardo.live-ctl/start-gusano)))
+  (swap! live-state assoc-in [:gusano :amp] (first (linlin 0 1 0 1.5 [amp]))))
+
+(defn set-gusano-period
+  [i]
+  (swap! live-state assoc-in [:gusano :period] i))
+
+(defn set-gusano-durs
+  [i]
+  (swap! live-state assoc-in [:gusano :durs] i))
+
+(defn set-gusano-grain-trig
+  [x]
+  (swap! live-state assoc-in [:gusano :grain-trig-rate] x))
+
+(defn set-gusano-grain-dur
+  [x]
+  (swap! live-state assoc-in [:gusano :grain-dur] x))
 
 (comment
   (require '[tieminos.network-utils :refer [get-local-host]])
@@ -302,8 +319,13 @@
          "/Diego/rev-send-process" (set-rev-send {:player :diego :clean? false :value (first args)})
          ;; gusano
          "/gusano/gusano-active-btn" (toggle-gusano press?)
-         "/gusano/harmony-seq-radio" (set-gusano-harmony-seq (first args))
+         "/gusano/rates" (set-gusano-rates (first args))
+         "/gusano/rates-seq-speed" (set-gusano-rates-seq-speed (first args))
          "/gusano/amp" (set-gusano-amp (first args))
+         "/gusano/period" (set-gusano-period (first args))
+         "/gusano/durs" (set-gusano-durs (first args))
+         "/gusano/grain-trig" (set-gusano-grain-trig (first args))
+         "/gusano/grain-durs" (set-gusano-grain-dur (first args))
          (timbre/warn "Unknown path for message: " msg args-map))
 
        (doseq [client (map second @habitat-osc/receiver-clients)]
@@ -318,8 +340,9 @@
 
 (comment
   (get-local-host)
-  (init! [["192.168.0.100" 16181]
-          ["192.168.0.101" 16180]])
+  (init! [["127.0.0.1" 16181]
+          #_["192.168.0.100" 16181]
+          #_["192.168.0.101" 16180]])
   (ping))
 
 (defn post [endpoint body & {:keys [debug?]}]
