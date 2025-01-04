@@ -1,6 +1,5 @@
 
 * Procesos
-SCHEDULED: <2024-10-05 Sat>
 ** Por implementar
 *** TODO Sampler
 **** DONE [#A] Implementar Sampler
@@ -69,27 +68,34 @@ CLOSED: [2024-10-06 Sun 09:25]
 *** TODO [#C] REFRAIN: armónico
 
 * TODO Interfase
-SCHEDULED: <2024-10-14 Mon>
-** IDEA [#A] control de cambio de secciones
+** DONE [#A] control de cambio de secciones
+CLOSED: [2025-01-04 Sat 10:06]
 (siguiente y anterior)
-** IDEA [#A] control de refrains
-** TODO [#A] control de grabación
-** TODO [#A] control de grabación etiquetada
+** DONE [#A] control de refrains
+CLOSED: [2025-01-04 Sat 10:06]
+** DONE [#A] control de grabación
+CLOSED: [2025-01-04 Sat 10:06]
+** DONE [#A] control de grabación etiquetada
+CLOSED: [2025-01-04 Sat 10:07]
 Importante pero pensar más a detalle según la forma
-** TODO [#A] controles de parámetros de síntesis/refrains
+** DONE [#A] controles de parámetros de síntesis/refrains
+CLOSED: [2025-01-04 Sat 10:07]
 Idealmente relacionados con la sección (diferentes secciones, diferentes parámetros y sintes disponibles)
-** TODO [#B] Usar el pedal de expresión de algún modo
+** DONE [#B] Usar el pedal de expresión de algún modo
+CLOSED: [2025-01-04 Sat 10:07]
 ** TODO [#C] Usar pedales de sustain
-** TODO [#A] Implementar controles en código
-** TODO Implementar UI en el navegador
-** TODO [#A] Decidir sobre ideas
+** DONE [#A] Implementar controles en código
+CLOSED: [2025-01-04 Sat 10:07]
+** DONE Implementar UI en el navegador
+CLOSED: [2025-01-04 Sat 10:07]
 
 
 * TODO UI
-
-** TODO Visualizar la seccion
-** TODO Visualizar el estado de la pieza (synths/refrains activos)
-** TODO Cronometrar el performance
+** DONE Visualizar la seccion
+CLOSED: [2025-01-04 Sat 10:08]
+** IDEA Visualizar el estado de la pieza (synths/refrains activos)
+** DONE Cronometrar el performance
+CLOSED: [2025-01-04 Sat 10:08]
 
 * DONE Forma-Secciones
 CLOSED: [2024-10-08 Tue 21:19] SCHEDULED: <2024-10-04 Fri>
@@ -102,8 +108,8 @@ CLOSED: [2024-10-08 Tue 21:19]
 - Granulaciones Transparentes
       quizá, pero pocas
 
-* TODO Reaper
-SCHEDULED: <2024-10-12 Sat>
+* DONE Reaper
+CLOSED: [2025-01-04 Sat 10:05] SCHEDULED: <2024-10-12 Sat>
 
 * Palabras
 #  LocalWords:  gated adsr sintes buf clouds REFRAIN Reverb pitch shifts Freeze SYNTH FX refrains delay samples
