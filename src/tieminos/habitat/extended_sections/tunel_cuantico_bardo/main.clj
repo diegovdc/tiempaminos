@@ -335,10 +335,11 @@
   (hunu.4ch/open-inputs-with-rand-pan*
    {:inputs habitat.route/inputs
     :preouts habitat.route/preouts}
-   #_{}
-   #_{:mic-2 {:width 4}}
-   {:mic-1 {:amp 1}
-    :mic-2 {:amp 1}})
+   {:mic-1 {:width 3}
+    :mic-2 {:width 3}
+    :guitar {:width 3}}
+   #_{:mic-1 {:amp 1}
+      :mic-2 {:amp 1}})
 
   (add-watch bardo.live-state/live-state ::post-live-state
              (fn [_key _ref _old-value new-value]

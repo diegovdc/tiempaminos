@@ -8,6 +8,7 @@
    [taoensso.timbre :as timbre]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.live-controls :as bardo.live-ctl]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.live-state :refer [live-state]]
+   [tieminos.habitat.extended-sections.tunel-cuantico-bardo.live-state :as bardo.live-state]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.rec :refer [delete-bank-bufs]]
    [tieminos.habitat.osc :as habitat-osc]
    [tieminos.math.utils :refer [linlin]]
@@ -30,6 +31,18 @@
 (comment
   (toogle-rec {:input :guitar
                :on? true}))
+
+(defn mute-input
+  [input-k mute?]
+  (let [track (case input-k
+                :mic-1 4
+                :mic-2 5)]
+    (osc/osc-send @habitat-osc/reaper-client
+                  (format "/track/%s/mute" track)
+                  (int mute?))))
+
+(comment
+  (mute-input :mic-1 1))
 
 (defn switch-rec-durs [inputs dur]
   (let [dur* (case dur
@@ -280,6 +293,8 @@
        (case HACKED-path
          "/Milo/rec-mic-1-btn" (toogle-rec {:input :mic-1 :on? press? :dur (-> @live-state :rec :mic-1 :dur (or 0.5))})
          "/Milo/rec-mic-2-btn" (toogle-rec {:input :mic-2 :on? press? :dur (-> @live-state :rec :mic-2 :dur (or 0.5))})
+         "/Milo/mute-mic-1"    (mute-input :mic-1 (first args))
+         "/Milo/mute-mic-2"    (mute-input :mic-2 (first args))
          "/Milo/rec-durs-radio" (switch-rec-durs [:mic-1 :mic-2] (first args))
          "/Milo/rec-pulse-radio" (switch-rec-pulse [:mic-1 :mic-2] (first args))
          "/Milo/clouds-active-btn" (toggle-clouds :milo press?)
@@ -326,8 +341,11 @@
          "/gusano/durs" (set-gusano-durs (first args))
          "/gusano/grain-trig" (set-gusano-grain-trig (first args))
          "/gusano/grain-durs" (set-gusano-grain-dur (first args))
+         ;; presets
+         "/save-preset" (when press? (bardo.live-state/save-preset!))
          (timbre/warn "Unknown path for message: " msg args-map))
 
+       (swap! bardo.live-state/touch-osc-state assoc path args)
        (doseq [client (map second @habitat-osc/receiver-clients)]
          (apply osc/osc-send client path args))))))
 
