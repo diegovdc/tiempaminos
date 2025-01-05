@@ -78,7 +78,8 @@ https://nhahealth.com/brainwave-frequencies-what-are-they/
 CLOSED: [2024-12-11 Wed 17:01]
 ** DONE agregar más sintes y poder cambiar entre ellos
 CLOSED: [2024-11-07 Thu 14:51]
-** TODO Botón de mute de los micros
+** DONE Botón de mute de los micros
+CLOSED: [2025-01-04 Sat 12:06]
 ** TODO Encontrar configuraciones del slendro
 *** TODO Convertir en presets
 ** TODO Trabajar material de control de feebdack en gusano
