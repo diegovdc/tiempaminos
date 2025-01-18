@@ -237,6 +237,17 @@
     (bardo.live-ctl/start-gusano)
     (bardo.live-ctl/stop-gusano)))
 
+(defn toggle-gusano-active-sources
+  [src on?]
+  (swap! live-state update-in [:gusano :sources]
+         (fnil (if on? set/union set/difference) #{})
+         #{src}))
+
+(comment
+  (reset! live-state {})
+
+  (toggle-gusano-active-sources :milo true))
+
 ;; TODO set the resulting values of gusano in the live-state just as with the other values
 (defn set-gusano-rates
   [i]
@@ -265,6 +276,10 @@
 (defn set-gusano-grain-dur
   [x]
   (swap! live-state assoc-in [:gusano :grain-dur] x))
+
+(defn set-gusano-2nd-voice
+  [x]
+  (swap! live-state assoc-in [:gusano :second-voice-index] x))
 
 (comment
   (require '[tieminos.network-utils :refer [get-local-host]])
@@ -334,6 +349,8 @@
          "/Diego/rev-send-process" (set-rev-send {:player :diego :clean? false :value (first args)})
          ;; gusano
          "/gusano/gusano-active-btn" (toggle-gusano press?)
+         "/gusano/gusano-active-milo-src-btn" (toggle-gusano-active-sources :milo press?)
+         "/gusano/gusano-active-diego-src-btn" (toggle-gusano-active-sources :diego press?)
          "/gusano/rates" (set-gusano-rates (first args))
          "/gusano/rates-seq-speed" (set-gusano-rates-seq-speed (first args))
          "/gusano/amp" (set-gusano-amp (first args))
@@ -341,6 +358,7 @@
          "/gusano/durs" (set-gusano-durs (first args))
          "/gusano/grain-trig" (set-gusano-grain-trig (first args))
          "/gusano/grain-durs" (set-gusano-grain-dur (first args))
+         "/gusano/2nd-voice" (set-gusano-2nd-voice (first args))
          ;; presets
          "/save-preset" (when press? (bardo.live-state/save-preset!))
          (timbre/warn "Unknown path for message: " msg args-map))
@@ -357,6 +375,7 @@
                 (println "Async HTTP POST: " status)))))
 
 (comment
+  (-> @live-state)
   (get-local-host)
   (init! [["127.0.0.1" 16181]
           #_["192.168.0.100" 16181]

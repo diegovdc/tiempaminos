@@ -84,5 +84,7 @@ CLOSED: [2025-01-04 Sat 12:06]
 *** TODO Convertir en presets
 ** TODO Trabajar material de control de feebdack en gusano
 feebdack -> platillo
+** TODO Agregar grabaciones de 15 y 20
+** TODO Cargar configuraciones salvadas
 
 

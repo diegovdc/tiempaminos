@@ -2,9 +2,12 @@
   (:require
    [clojure.data.generators :refer [weighted]]
    [clojure.math :refer [floor]]
+   [erv.scale.core :refer [deg->freq]]
+   [erv.utils.core :refer [interval period-reduce]]
    [overtone.core :as o]
    [taoensso.timbre :as timbre]
-   [tieminos.habitat.extended-sections.harmonies.chords :refer [fib-chord-seq
+   [tieminos.habitat.extended-sections.harmonies.chords :refer [fib-21
+                                                                fib-chord-seq
                                                                 transpose-chord]]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.gusanos.gusano-2-2-4 :as g-2.2.4]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.gusanos.gusano-2-2-6 :as g-2.2.6]
@@ -12,6 +15,7 @@
    [tieminos.habitat.groups :as groups]
    [tieminos.habitat.recording :as rec :refer [norm-amp silence?]]
    [tieminos.habitat.routing :refer [main-returns]]
+   [tieminos.habitat.routing :as habitat.route]
    [tieminos.habitat.scratch.sample-rec2 :refer [periodize-durs
                                                  rand-latest-buf]]
    [tieminos.habitat.synths.granular :refer [amanecer*guitar-clouds]]
@@ -37,6 +41,11 @@
   (wrap-at 0 rates)
   #_(fib-chord-seq (transpose-chord [0 5 13 21] [-9])))
 
+(->> (get-rates!)
+     first
+     first
+     (period-reduce))
+
 (let [prev-index (atom 0)]
   (defn- next-rate-index! [speed]
     (let [prev-i @prev-index]
@@ -58,11 +67,15 @@
 
 (def ^:private durs
   [[2 3 5 3 8]
-   (bzs/fsf 20 0.1 1)])
+   (bzs/fsf 20 0.1 1)
+   (fn [] (map (fn [_] (+ 0.0001 (rand))) (range 5)))])
 
 (defn- get-durs!
   []
-  (-> @bardo.live-state/live-state :gusano (:durs 0) (wrap-at durs)))
+  (let [durs (-> @bardo.live-state/live-state :gusano (:durs 0) (wrap-at durs))]
+    (cond
+      (sequential? durs) durs
+      (fn? durs) (durs))))
 
 (def ^:private map-trig-rate
   (memoize (fn [trig-rate]
@@ -80,12 +93,79 @@
   []
   (-> @bardo.live-state/live-state :gusano (:grain-dur 0.5) map-grain-dur))
 
+(defn get-buf!
+  [_]
+  (timbre/spy :info
+              (->> @rec/bufs vals (sort-by :rec/time)
+                   reverse
+                   (filter (fn [data]
+                             (let [has-analysis? (:analysis data)
+                                   active-sources (-> @bardo.live-state/live-state :gusano (:sources #{}))
+                                   ins (->> (concat
+                                             (when (active-sources :diego) habitat.route/diego-ins)
+                                             (when (active-sources :milo) habitat.route/milo-ins))
+                                            (into #{}))]
+                               (if-not (seq active-sources)
+                                 has-analysis?
+                                 (and has-analysis?
+                                      (ins (:input-name (:rec/meta data))))))))
+                   (take 3)
+                   (#(when (seq %) (rand-nth %))))))
+
+(def fib-ratios-indexes
+  (->> fib-21
+       (map-indexed (fn [i {:keys [bounded-ratio]}] {bounded-ratio i}))
+       (into {})))
+
+(deg->freq fib-21 1 0)
+
+(let [degree-wave (concat (range 0 -37 -4)
+                          (range -37 37 4)
+                          (range 37 0 -5))]
+  (defn second-voice-wave
+    [index ratio]
+    (let [ratio-index* (fib-ratios-indexes (period-reduce ratio))
+          ratio-index (if ratio-index*
+                        ratio-index*
+                        (do
+                          (timbre/error "second-voice-wave: Ratio not found" {:index index :ratio ratio})
+                          0))
+          interval-deg (wrap-at index degree-wave)
+          deg-ratio (deg->freq fib-21 1 (+ ratio-index interval-deg))]
+      (* ratio (interval ratio deg-ratio)))))
+
+(defn rand-second-voice
+  [index ratio]
+  (let [ratio-index* (fib-ratios-indexes (period-reduce ratio))
+        ratio-index (if ratio-index*
+                      ratio-index*
+                      (do
+                        (timbre/error "second-voice-wave: Ratio not found" {:index index :ratio ratio})
+                        0))
+        interval-deg (rrand -21 21)
+        deg-ratio (deg->freq fib-21 1 (+ ratio-index interval-deg))]
+    (* ratio (interval ratio deg-ratio))))
+
+(def second-voice-fn
+  [(fn [_index _ratio] nil)
+   (fn [_index ratio] (* (rand-nth [2 3/2 5/4 7/4 1/2 1 1 1 1]) ratio))
+   (fn [index ratio] (second-voice-wave index ratio))
+   (fn [index ratio] (rand-second-voice index ratio))])
+
+(defn get-second-voice!
+  [index ratio]
+
+  (let [second-voice-index (-> @bardo.live-state/live-state :gusano (:second-voice-index 0))
+        f (wrap-at second-voice-index second-voice-fn)]
+    (f index ratio)))
+
 (def ^:private periodize-durs* (memoize periodize-durs))
 
 (comment
   (periodize-durs
    (get-period!)
    (get-durs!))
+
   (ref-rain
    :id :x
    :durs (fn [{:keys [index]}] (wrap-at index (periodize-durs* (get-period!) (get-durs!))))
@@ -106,7 +186,7 @@
          period 2.5
          durs (bzs/fsf 20 0.1 1)
          amp 1
-         a-weights {(rrange 0.01 0.1) 10
+         a-weights {(rrange 0.05 0.3) 5
                     (rrange 2 5) 1/2}
          d-weights {(rrange 0.2 0.3) 5
                     (rrange 0.3 0.5) 3
@@ -164,21 +244,20 @@
                                                        :rate (float r)
                                                        :interp (rand-nth [1 2 4])
                                                        :amp (* amp* (rrange 0.2 1) (norm-amp buf))))
-                        #_(amanecer*guitar-clouds (assoc config
-                                                         :rate (* (rand-nth [2 3/2 5/4 7/4 1/2 1 1 1 1]) r)
-                                                         :interp (rand-nth [4])
-                                                         :amp (* amp* (rrange 0 0.7) (norm-amp buf))))))))))))
+                        (when-let [rate* (get-second-voice! index r)]
+                          (amanecer*guitar-clouds (assoc config
+                                                         :rate rate*
+                                                         :interp 4
+                                                         :amp (* amp* (rrange 0 0.7) (norm-amp buf)))))))))))))
 
 (def default-config
   {:on-play (fn [& _] (println "playing"))
    :id ::gusano
    :out-bus (main-returns :mixed)
    :silence-thresh 0.0
-   :buf-fn (fn [_] (->> @rec/bufs vals (sort-by :rec/time) reverse (filter :analysis) (take 3) (#(when (seq %) (rand-nth %)))))
-   #_(fn [_] (->> @rec/bufs vals (sort-by :rec/time) reverse (filter :analysis) (take 5) (#(when (seq %) (rand-nth %)))))
+   :buf-fn get-buf!
    :rates (interleave (fib-chord-seq (transpose-chord [0 5 13 21] (range 0 (* 21 6) 5)))
                       (reverse (fib-chord-seq (transpose-chord [0 5 13 21] (range 0 (* 21 6) 5)))))
-   ;; FIXME implement control
    :amp-fn (fn [_i] 1)
    :period 30
    :durs [2 3 5 3 8]
@@ -194,6 +273,7 @@
                (rrange 0.2 0.8) 1
                (rrange 1 2) 3
                (rrange 2 5) 1}})
+
 (defn start
   []
   (gusano default-config))

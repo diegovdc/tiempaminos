@@ -311,7 +311,7 @@
 
   (bardo.osc/init! [["127.0.0.1" 16181]
                     ["192.168.0.101" 16180]
-                    ["192.168.0.102" 16180]])
+                    ["192.168.0.103" 16180]])
 
   ;; also part of the initialization of hacia un nuevo universo
   (def in1 (o/audio-bus 4 "algo-2.2.9-out"))
@@ -343,6 +343,7 @@
 
   (add-watch bardo.live-state/live-state ::post-live-state
              (fn [_key _ref _old-value new-value]
+               (println new-value)
                (bardo.osc/throttled-post (dissoc new-value :lorentz))))
 
   (algo-2-2-9 {:out-bus in1
