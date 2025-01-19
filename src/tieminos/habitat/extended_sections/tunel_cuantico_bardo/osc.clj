@@ -7,8 +7,8 @@
    [overtone.osc :as osc]
    [taoensso.timbre :as timbre]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.live-controls :as bardo.live-ctl]
-   [tieminos.habitat.extended-sections.tunel-cuantico-bardo.live-state :refer [live-state]]
-   [tieminos.habitat.extended-sections.tunel-cuantico-bardo.live-state :as bardo.live-state]
+   [tieminos.habitat.extended-sections.tunel-cuantico-bardo.live-state :as bardo.live-state :refer [live-state]]
+   [tieminos.habitat.extended-sections.tunel-cuantico-bardo.presets :as bardo.presets]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.rec :refer [delete-bank-bufs]]
    [tieminos.habitat.osc :as habitat-osc]
    [tieminos.math.utils :refer [linlin]]
@@ -52,6 +52,8 @@
                3 2.5
                4 4
                5 10
+               6 15
+               7 20
                (throw (ex-info "Unkown rec dur" {:dur dur})))]
     (swap! live-state (fn [state]
                         (reduce (fn [state* input] (assoc-in state* [:rec input :dur] dur*))
@@ -294,78 +296,86 @@
          (drop-last 1)
          (str/join "/"))))
 
+(def ^:private excluded-paths #{"/presets/load"})
+
 (defn init!
   "`clients` is a vector of [host port]"
   [clients]
   (habitat-osc/init)
   (habitat-osc/make-reaper-osc-client)
   (habitat-osc/make-receiver-clients clients)
-  (habitat-osc/responder
-   (fn [{:keys [path args] :as msg}]
-     (let [HACKED-path (HACK-parse-path path) ;; FIXME there should be a more elegant way to handle this (see fn definition).
-           args-map (habitat-osc/args->map args)
-           press? (= 1.0 (first args))]
-       (case HACKED-path
-         "/Milo/rec-mic-1-btn" (toogle-rec {:input :mic-1 :on? press? :dur (-> @live-state :rec :mic-1 :dur (or 0.5))})
-         "/Milo/rec-mic-2-btn" (toogle-rec {:input :mic-2 :on? press? :dur (-> @live-state :rec :mic-2 :dur (or 0.5))})
-         "/Milo/mute-mic-1"    (mute-input :mic-1 (first args))
-         "/Milo/mute-mic-2"    (mute-input :mic-2 (first args))
-         "/Milo/rec-durs-radio" (switch-rec-durs [:mic-1 :mic-2] (first args))
-         "/Milo/rec-pulse-radio" (switch-rec-pulse [:mic-1 :mic-2] (first args))
-         "/Milo/clouds-active-btn" (toggle-clouds :milo press?)
-         "/Milo/clouds-amp" (set-clouds-amp :milo (first args))
-         "/Milo/clouds-env-radio" (set-clouds-env :milo (first args))
-         "/Milo/clouds-rhythm-radio" (set-clouds-rhythm :milo (first args))
-         "/Milo/clouds-sample-lib-size-radio" (set-clouds-sample-lib-size :milo (first args))
-         "/Milo/bank-rec-radio" (set-active-recorded-bank [:mic-1 :mic-2] (first args))
-         "/Milo/bank-delete-btn" (when press? (delete-bank [:mic-1 :mic-2]))
-         "/Milo/bank-delete-all-btn" (when press? (delete-all-banks [:mic-1 :mic-2]))
-         "/Milo/toggle-bank" (set-active-bank {:player :milo :bank (:index args-map) :on? (== 1 (:on args-map))})
-         "/Milo/synth-radio" (set-active-synth :milo (first args))
-         "/Milo/harmony-radio" (set-harmony :milo (first args))
-         "/Milo/harmonic-speed" (set-harmonic-speed :milo (first args))
-         "/Milo/harmonic-lowest-note" (set-harmonic-range {:player :milo :low? true :value (first args)})
-         "/Milo/harmonic-highest-note" (set-harmonic-range {:player :milo :low?  false :value (first args)})
-         "/Milo/rev-send-clean" (set-rev-send {:player :milo :clean? true :value (first args)})
-         "/Milo/rev-send-process" (set-rev-send {:player :milo :clean? false :value (first args)})
-         "/Diego/rec-guitar-btn" (toogle-rec {:input :guitar :on? press? :dur (-> @live-state :rec :mic-1 :dur (or 0.5))})
-         "/Diego/rec-durs-radio" (switch-rec-durs [:guitar] (first args))
-         "/Diego/rec-pulse-radio" (switch-rec-pulse [:guitar] (first args))
-         "/Diego/clouds-active-btn" (toggle-clouds :diego press?)
-         "/Diego/clouds-amp" (set-clouds-amp :diego (first args))
-         "/Diego/clouds-env-radio" (set-clouds-env :diego (first args))
-         "/Diego/clouds-rhythm-radio" (set-clouds-rhythm :diego (first args))
-         "/Diego/clouds-sample-lib-size-radio" (set-clouds-sample-lib-size :diego (first args))
-         "/Diego/bank-rec-radio" (set-active-recorded-bank [:guitar] (first args))
-         "/Diego/toggle-bank" (set-active-bank {:player :diego :bank (:index args-map) :on? (== 1 (:on args-map))})
-         "/Diego/bank-delete-btn" (when press? (delete-bank [:guitar]))
-         "/Diego/bank-delete-all-btn" (when press? (delete-all-banks [:guitar]))
-         "/Diego/synth-radio" (set-active-synth :diego (first args))
-         "/Diego/harmony-radio" (set-harmony :diego (first args))
-         "/Diego/harmonic-speed" (set-harmonic-speed :diego (first args))
-         "/Diego/harmonic-lowest-note" (set-harmonic-range {:player :diego :low? true :value (first args)})
-         "/Diego/harmonic-highest-note" (set-harmonic-range {:player :diego :low?  false :value (first args)})
-         "/Diego/rev-send-clean" (set-rev-send {:player :diego :clean? true :value (first args)})
-         "/Diego/rev-send-process" (set-rev-send {:player :diego :clean? false :value (first args)})
-         ;; gusano
-         "/gusano/gusano-active-btn" (toggle-gusano press?)
-         "/gusano/gusano-active-milo-src-btn" (toggle-gusano-active-sources :milo press?)
-         "/gusano/gusano-active-diego-src-btn" (toggle-gusano-active-sources :diego press?)
-         "/gusano/rates" (set-gusano-rates (first args))
-         "/gusano/rates-seq-speed" (set-gusano-rates-seq-speed (first args))
-         "/gusano/amp" (set-gusano-amp (first args))
-         "/gusano/period" (set-gusano-period (first args))
-         "/gusano/durs" (set-gusano-durs (first args))
-         "/gusano/grain-trig" (set-gusano-grain-trig (first args))
-         "/gusano/grain-durs" (set-gusano-grain-dur (first args))
-         "/gusano/2nd-voice" (set-gusano-2nd-voice (first args))
-         ;; presets
-         "/save-preset" (when press? (bardo.live-state/save-preset!))
-         (timbre/warn "Unknown path for message: " msg args-map))
+  (let [internal-client (habitat-osc/make-internal-osc-client)]
+    (habitat-osc/responder
+     (fn [{:keys [path args] :as msg}]
+       (let [HACKED-path (HACK-parse-path path) ;; FIXME there should be a more elegant way to handle this (see fn definition).
+             args-map (habitat-osc/args->map args)
+             press? (= 1.0 (first args))]
+         (case HACKED-path
+           "/Milo/rec-mic-1-btn" (toogle-rec {:input :mic-1 :on? press? :dur (-> @live-state :rec :mic-1 :dur (or 0.5))})
+           "/Milo/rec-mic-2-btn" (toogle-rec {:input :mic-2 :on? press? :dur (-> @live-state :rec :mic-2 :dur (or 0.5))})
+           "/Milo/mute-mic-1"    (mute-input :mic-1 (first args))
+           "/Milo/mute-mic-2"    (mute-input :mic-2 (first args))
+           "/Milo/rec-durs-radio" (switch-rec-durs [:mic-1 :mic-2] (first args))
+           "/Milo/rec-pulse-radio" (switch-rec-pulse [:mic-1 :mic-2] (first args))
+           "/Milo/clouds-active-btn" (toggle-clouds :milo press?)
+           "/Milo/clouds-amp" (set-clouds-amp :milo (first args))
+           "/Milo/clouds-env-radio" (set-clouds-env :milo (first args))
+           "/Milo/clouds-rhythm-radio" (set-clouds-rhythm :milo (first args))
+           "/Milo/clouds-sample-lib-size-radio" (set-clouds-sample-lib-size :milo (first args))
+           "/Milo/bank-rec-radio" (set-active-recorded-bank [:mic-1 :mic-2] (first args))
+           "/Milo/bank-delete-btn" (when press? (delete-bank [:mic-1 :mic-2]))
+           "/Milo/bank-delete-all-btn" (when press? (delete-all-banks [:mic-1 :mic-2]))
+           "/Milo/toggle-bank" (set-active-bank {:player :milo :bank (:index args-map) :on? (== 1 (:on args-map))})
+           "/Milo/synth-radio" (set-active-synth :milo (first args))
+           "/Milo/harmony-radio" (set-harmony :milo (first args))
+           "/Milo/harmonic-speed" (set-harmonic-speed :milo (first args))
+           "/Milo/harmonic-lowest-note" (set-harmonic-range {:player :milo :low? true :value (first args)})
+           "/Milo/harmonic-highest-note" (set-harmonic-range {:player :milo :low?  false :value (first args)})
+           "/Milo/rev-send-clean" (set-rev-send {:player :milo :clean? true :value (first args)})
+           "/Milo/rev-send-process" (set-rev-send {:player :milo :clean? false :value (first args)})
+           "/Diego/rec-guitar-btn" (toogle-rec {:input :guitar :on? press? :dur (-> @live-state :rec :mic-1 :dur (or 0.5))})
+           "/Diego/rec-durs-radio" (switch-rec-durs [:guitar] (first args))
+           "/Diego/rec-pulse-radio" (switch-rec-pulse [:guitar] (first args))
+           "/Diego/clouds-active-btn" (toggle-clouds :diego press?)
+           "/Diego/clouds-amp" (set-clouds-amp :diego (first args))
+           "/Diego/clouds-env-radio" (set-clouds-env :diego (first args))
+           "/Diego/clouds-rhythm-radio" (set-clouds-rhythm :diego (first args))
+           "/Diego/clouds-sample-lib-size-radio" (set-clouds-sample-lib-size :diego (first args))
+           "/Diego/bank-rec-radio" (set-active-recorded-bank [:guitar] (first args))
+           "/Diego/toggle-bank" (set-active-bank {:player :diego :bank (:index args-map) :on? (== 1 (:on args-map))})
+           "/Diego/bank-delete-btn" (when press? (delete-bank [:guitar]))
+           "/Diego/bank-delete-all-btn" (when press? (delete-all-banks [:guitar]))
+           "/Diego/synth-radio" (set-active-synth :diego (first args))
+           "/Diego/harmony-radio" (set-harmony :diego (first args))
+           "/Diego/harmonic-speed" (set-harmonic-speed :diego (first args))
+           "/Diego/harmonic-lowest-note" (set-harmonic-range {:player :diego :low? true :value (first args)})
+           "/Diego/harmonic-highest-note" (set-harmonic-range {:player :diego :low?  false :value (first args)})
+           "/Diego/rev-send-clean" (set-rev-send {:player :diego :clean? true :value (first args)})
+           "/Diego/rev-send-process" (set-rev-send {:player :diego :clean? false :value (first args)})
+           ;; gusano
+           "/gusano/gusano-active-btn" (toggle-gusano press?)
+           "/gusano/gusano-active-milo-src-btn" (toggle-gusano-active-sources :milo press?)
+           "/gusano/gusano-active-diego-src-btn" (toggle-gusano-active-sources :diego press?)
+           "/gusano/rates" (set-gusano-rates (first args))
+           "/gusano/rates-seq-speed" (set-gusano-rates-seq-speed (first args))
+           "/gusano/amp" (set-gusano-amp (first args))
+           "/gusano/period" (set-gusano-period (first args))
+           "/gusano/durs" (set-gusano-durs (first args))
+           "/gusano/grain-trig" (set-gusano-grain-trig (first args))
+           "/gusano/grain-durs" (set-gusano-grain-dur (first args))
+           "/gusano/2nd-voice" (set-gusano-2nd-voice (first args))
+           ;; presets
+           "/save-preset" (when press? (bardo.presets/save-preset!))
+           "/presets/load" (bardo.presets/load-preset! internal-client @habitat-osc/receiver-clients (first args))
+           (timbre/warn "Unknown path for message: " msg args-map))
 
-       (swap! bardo.live-state/touch-osc-state assoc path args)
-       (doseq [client (map second @habitat-osc/receiver-clients)]
-         (apply osc/osc-send client path args))))))
+         ;; Save last update to touch-osc-state
+         (swap! bardo.live-state/touch-osc-state assoc path args)
+
+         ;; send update to other clients
+         (doseq [client (map second @habitat-osc/receiver-clients)]
+           (when-not (excluded-paths path)
+             (apply osc/osc-send client path args))))))))
 
 (defn ping []
   (http/get "http://localhost:5000/ping"
@@ -379,7 +389,7 @@
   (get-local-host)
   (init! [["127.0.0.1" 16181]
           #_["192.168.0.100" 16181]
-          #_["192.168.0.101" 16180]])
+          ["192.168.0.102" 16180]])
   (ping))
 
 (defn post [endpoint body & {:keys [debug?]}]
