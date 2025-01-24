@@ -37,8 +37,11 @@
   (+ 22 out))
 
 (defn my-malgo
-  [{:keys [sinks] :as config}]
+  "Takes and `malgo-note` config with an extra `:sinks` key which an be an array of sinks or a single sink.
+  The if multiple sinks are used the same event will be dispatched to each sink
 
+  NOTE: The default `sink` is `surge-suave`."
+  [{:keys [sinks] :as config}]
   (let [defaults {:sink surge-suave
                   :scale-size 29
                   :base-midi-deg 60
@@ -96,7 +99,8 @@ If using `mdeg->freq` this may show up only once because it is memoized, even if
                       1046 (bh 4)
                       2092 (bh 6)})
 
-(defn freq->out
+(defn ^:deprecated freq->out
+  ;; NOTE this doesn't really work
   "The key of the `freq->chan-map` is the top freq limit.
   All frequencies at or below this will go to the specified channel.
   For the highest limit, all frequencies above it will also go to the same channel."
@@ -111,7 +115,7 @@ If using `mdeg->freq` this may show up only once because it is memoized, even if
       (freq->chan-map (second (last sorted-list)))
       sorted-list))))
 
-(def out (memoize freq->out))
+(def ^:deprecated  out (memoize freq->out))
 
 (o/defsynth low
   [freq 85
