@@ -1,9 +1,9 @@
 (ns tieminos.harmonic-experience.drones.mathieu-5-limit
   "Full tuning for the tuning of lattice of The Harmonic Experience"
   (:require
-   [erv.scale.core :as scale]
    [erv.utils.conversions :refer [midi->cps]]
-   [erv.utils.core :refer [pow]]
+   [erv.utils.conversions :as conv]
+   [erv.utils.core :refer [pow round2]]
    [erv.utils.ratios :refer [ratios->scale]]
    [overtone.core :as o]
    [tieminos.harmonic-experience.drones.sounds :refer [drone harmonic]]
@@ -11,9 +11,9 @@
    [tieminos.lattice.v1.lattice :refer [add-played-ratio draw-lattice
                                         remove-played-ratio]]
    [tieminos.math.utils :refer [linexp*]]
-   [tieminos.midi.core :refer [get-lumatone! midi-in-event]]))
+   [tieminos.midi.core :refer [midi-in-event]]))
 
-(def ref-note 48)
+(def ref-note 52)
 (def root (midi->cps ref-note))
 
 (def harmonic-experience-12-tone
@@ -46,8 +46,9 @@
   (def sa (drone root))
   (o/ctl sa :gate 0)
 
-  (def pa (drone (* 3/2 root) :amp 0.6))
+  (def pa (drone (* 3/2 root) :amp 1))
   (o/ctl pa :gate 0)
+  (o/ctl pa :amp 0.6)
   (def ma (drone (* 4/3 root) :amp 0.6))
   (o/ctl ma :gate 0)
   (def h (harmonic (* root 9/8)))
@@ -57,20 +58,26 @@
 
   (> 3/2 45/32)
   (do
-    (def scale harmonic-experience-22-tone)
+    (def scale harmonic-experience-12-tone)
+    #_(def scale harmonic-experience-22-tone)
     (let [lattice-size 120]
       (def lattice-atom (draw-lattice
                          {:ratios (map :bounded-ratio scale)
                           :width (* 16 lattice-size)
                           :height (* 9 lattice-size)}))))
 
-  (def oxygen #_(get-oxygen!)
-    (get-lumatone!))
+  (def oxygen (tieminos.midi.core/get-oxygen!)
+    #_(tieminos.midi.core/get-lumatone!))
 
   (defn get-note-data [ev]
     (midi->ratio&freq {:ref-note 16
                        :root 1
                        :scale harmonic-experience-22-tone
+                       :midi-note (:note ev)}))
+  (defn get-note-data [ev]
+    (midi->ratio&freq {:ref-note ref-note
+                       :root root
+                       :scale harmonic-experience-12-tone
                        :midi-note (:note ev)}))
 
   (when oxygen
@@ -78,9 +85,10 @@
      :midi-input oxygen
      :note-on (fn [ev]
                 (let [{:keys [ratio freq]} (get-note-data ev)]
-                  (println (:note ev) ratio freq)
+                  (println (:note ev) ratio (round2 2 (conv/ratio->cents ratio)))
                   (add-played-ratio lattice-atom {:ratio ratio :stroke-weight 10  :color [200 200 120]})
-                  (harmonic freq :amp (linexp* 0 127 0.5 3 (:velocity ev)))))
+                  (harmonic freq :amp (linexp* 0 127 0.1 3 (:velocity ev))
+                            :a 5)))
      :note-off (fn [ev]
                  (let [{:keys [ratio]} (get-note-data ev)]
                    (remove-played-ratio lattice-atom {:ratio ratio}))))))
