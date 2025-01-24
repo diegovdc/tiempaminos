@@ -236,7 +236,9 @@
   ([buf] (silence? 0.05 buf))
   ([threshold buf]
    (if-let [max-amp (-> buf :analysis :max-amp)]
-     (< max-amp threshold)
+     (do
+       #_(timbre/info "silence? amp" max-amp)
+       (< max-amp threshold))
      (do (timbre/warn "Buffer has no `:analysis :max-amp` key. Assuming it is silent.")
          true))))
 
@@ -339,9 +341,9 @@
            second)
        (catch Exception e
          (timbre/warn "rand-queried-buf"
-                   [(:section rec-query)
-                    (:subsection rec-query)]
-                   e))))
+                      [(:section rec-query)
+                       (:subsection rec-query)]
+                      e))))
 
 (defn weigthed-rand-queried-buf
   [{:keys [rec-query

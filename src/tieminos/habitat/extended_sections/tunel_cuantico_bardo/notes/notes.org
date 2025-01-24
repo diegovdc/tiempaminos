@@ -42,8 +42,51 @@ Controles:
 ** STRT Control de reverb
 *** STRT e independencia del reverb
 **** TODO Control de profundidad **para sonidos cortos** (se sienten antinaturales, en 2D)
-** STRT Control de velocidad de las armonías
-** STRT Bancos de samples
-*** STRT Limpiar bancos
+** DONE Control de velocidad de las armonías
+CLOSED: [2024-11-20 Wed 16:21]
+** DONE Bancos de samples
+CLOSED: [2024-11-20 Wed 16:21]
+*** DONE Limpiar bancos
+CLOSED: [2024-11-20 Wed 16:21]
+** DONE Inicialización
+CLOSED: [2024-12-11 Wed 17:01]
+** DONE Lib size infinita
+CLOSED: [2024-11-20 Wed 16:20]
+** DONE Interfaz
+CLOSED: [2024-11-20 Wed 16:20]
+** TODO Envolventes cristal
+** TODO Interfaz monstruo
+*** DONE Amp
+CLOSED: [2024-12-11 Wed 17:28]
+*** STRT Periodo
+*** DONE Duraciones
+CLOSED: [2024-12-11 Wed 17:30]
+*** HOLD d-weights, d-level, a-weights
+**** TODO Dejar como espacio vacío en la interfaz
+**** TODO Pensar otras posibilidades, como generar adsr-weights incluso con delay
+*** STRT Patrones de acordes
+*** TODO Uso de bancos de grabación
+*** STRT Grain dur
+*** STRT Trigger dur
+*** STRT LPF
+*** STRT AMP LFO
+*** TODO Intervalos de las voces (en el on-play)
+** TODO Indagar efectos en ondas cerebrales y, más generalmente, lo que puede estar produciendo el gusano en el cerebro
+https://nhahealth.com/brainwave-frequencies-what-are-they/
+*** TODO Qué capas de materiales general el estado particular del gusano
+** DONE Monstruo
+CLOSED: [2024-12-11 Wed 17:01]
 ** DONE agregar más sintes y poder cambiar entre ellos
 CLOSED: [2024-11-07 Thu 14:51]
+** DONE Botón de mute de los micros
+CLOSED: [2025-01-04 Sat 12:06]
+** TODO Encontrar configuraciones del slendro
+*** TODO Convertir en presets
+** TODO Trabajar material de control de feebdack en gusano
+feebdack -> platillo
+** DONE Agregar grabaciones de 15 y 20
+CLOSED: [2025-01-18 Sat 12:10]
+** DONE Cargar configuraciones salvadas
+CLOSED: [2025-01-19 Sun 17:53]
+
+

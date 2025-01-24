@@ -133,6 +133,9 @@
 (defonce inputs (atom {}))
 (defonce special-inputs (atom {}))
 
+(def diego-ins #{"guitar-bus"})
+(def milo-ins #{"mic-1-bus" "mic-2-bus" "mic-3-bus" "mic-4-bus" "mic-5-bus" "mic-6-bus" "mic-7-bus"})
+
 (defn init-buses-and-input-vars! []
   #_:clj-kondo/ignore
   (do

@@ -6,16 +6,19 @@
    [overtone.core :as o]
    [taoensso.timbre :as timbre]
    [tieminos.attractors.lorentz :as lorentz]
-   [tieminos.habitat.extended-sections.harmonies.chords :refer [meta-slendro1
+   [tieminos.habitat.extended-sections.harmonies.chords :refer [fib-21
+                                                                meta-pelog
+                                                                meta-slendro1
                                                                 rate-chord-seq]]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.clouds :refer [clouds-refrain]]
-   [tieminos.habitat.extended-sections.tunel-cuantico-bardo.live-state :refer [live-state]]
+   [tieminos.habitat.extended-sections.tunel-cuantico-bardo.gusanos.core :as bardo.gusano]
+   [tieminos.habitat.extended-sections.tunel-cuantico-bardo.live-state :as bardo.live-state :refer [live-state]]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.rec :as bardo.rec]
    [tieminos.habitat.recording :as rec]
-   [tieminos.habitat.routing :refer [inputs]]
+   [tieminos.habitat.routing :refer [inputs main-returns]]
+   [tieminos.habitat.synths.granular :refer [amanecer*guitar-clouds]]
    [tieminos.math.bezier-samples :as bzs]
    [tieminos.overtone-extensions :as oe]
-   [tieminos.sc-utils.synths.v1 :refer [lfo-kr]]
    [tieminos.utils :refer [rrange wrap-at]]
    [time-time.dynacan.players.gen-poly :as gp]))
 
@@ -34,21 +37,21 @@
     dur))
 
 (comment
-  (-> @live-state :rec :mic-1 :dur))
+  (-> @live-state :rec :mic-1 :dur)
+  (def input-k :mic-2))
 
 (defn start-recording [{:keys [input-k]}]
   (timbre/info "starting rec on" input-k)
   (if-let [input-bus (-> @inputs input-k :bus)]
     (bardo.rec/start-rec-loop!
      {:id (make-rec-id input-k)
+      :input-k input-k
       :input-bus input-bus
       :rec-dur-fn (fn [_]
-                    (println "INPUT" input-k)
                     (-> @live-state :rec input-k :dur))
       :rec-pulse (fn [_] (-> @live-state :rec input-k get-rec-pulse))
-       ;; :print-info? true
+      ;; :print-info? true
       :on-rec-start (fn [_]
-                      (println "starting rec")
                       (swap! live-state
                              assoc-in
                              [:rec input-k :last-rec-timestamp]
@@ -113,14 +116,11 @@
       {:a 3 :d 3 :r 2})))
 
 (defn lorentz-chord
-  [index lorentz]
-  (let [min* -18
-        max* 18
-        lor-speed 50
-        index* (* lor-speed index)]
-    [(round (lorentz/bound (lorentz index*) :x min* max*))
-     (round (lorentz/bound (lorentz index*) :y min* max*))
-     (round (lorentz/bound (lorentz index*) :z min* max*))]))
+  [index lorentz lor-speed lowest-note highest-note]
+  (let [index* (* lor-speed index)]
+    [(round (lorentz/bound (lorentz index*) :x lowest-note highest-note))
+     (round (lorentz/bound (lorentz index*) :y lowest-note highest-note))
+     (round (lorentz/bound (lorentz index*) :z lowest-note highest-note))]))
 
 (oe/defsynth
   cristal-liquidizado
@@ -129,7 +129,7 @@
    amp 0.5
    pan 0
    out 0]
-  (let [dur (* (o/buf-dur buf) rate)]
+  (let [dur (/ (o/buf-dur buf) rate)]
     (o/out out
 
            (-> (o/play-buf 1 buf rate)
@@ -137,13 +137,12 @@
                #_(o/free-verb (lfo-kr 4 0 1))
                (* amp
                   (o/env-gen
-                    (o/envelope
-                      [0 1 1 0]
-
-                      [(* 0.1 dur)
-                       (* 0.7 dur)
-                       (* 0.2 dur)])
-                    :action o/FREE))
+                   (o/envelope
+                    [0 1 1 0]
+                    [(* 0.1 dur)
+                     (* 0.7 dur)
+                     (* 0.2 dur)])
+                   :action o/FREE))
                (#(o/pan-az:ar 4 % pan))))))
 
 (comment
@@ -151,6 +150,18 @@
        vals
        (map :duration)
        frequencies))
+
+(defn get-harmonic-data!
+  [player-k]
+  (-> @live-state :algo-2.2.9-clouds player-k))
+
+(defn get-harmony
+  [harmony-k]
+  (case harmony-k
+    :meta-slendro meta-slendro1
+    :fib fib-21
+    :meta-pelog meta-pelog
+    meta-slendro1))
 
 (defn start-clouds
   [player-k]
@@ -163,41 +174,48 @@
                  (get-dur index
                           rhythm
                           (:lorentz state))))
-     ;; TODO simplify
     :buf-fn (fn [_]
               (let [lib-size (-> @live-state :algo-2.2.9-clouds player-k :sample-lib-size)
-                    [_k buf] (->> @rec/bufs
-                                  (sort-by (comp :rec/time second))
-                                  reverse
-                                  (filter (fn [[k _]]
-                                            (str/includes? (name k)
-                                                           (if (= player-k :milo)
-                                                             "mic-"
-                                                             "guitar-"))))
-                                  (take lib-size)
-                                  (#(when (seq %) (rand-nth %))))]
+                    [k buf] (bardo.rec/get-buf
+                             player-k
+                             lib-size
+                             (bardo.live-state/get-active-banks player-k))]
                 #_(println "get buf" k  (into {} buf))
                 buf))
     :rates-fn (fn [{:keys [index]}]
-                (->> (lorentz-chord index (:lorentz @live-state))
-                     (#(rate-chord-seq meta-slendro1 [%]))
-                     first))
+                (let [{:keys [harmony harmonic-speed harmonic-range]} (get-harmonic-data! player-k)]
+                  (->> (lorentz-chord index
+                                      (:lorentz @live-state)
+                                      harmonic-speed
+                                      (:low harmonic-range)
+                                      (:high harmonic-range))
+                       (#(rate-chord-seq (get-harmony harmony) [%]))
+                       first)))
     :amp-fn (fn [_] (-> @live-state :algo-2.2.9-clouds player-k :amp (o/db->amp)))
     :on-play (fn [{:as config :keys [index]}]
-               (let [state @live-state]
-                 (println "=========" config)
+               (let [state @live-state
+                     out (main-returns (case player-k
+                                         :milo :percussion-processes
+                                         :diego :guitar-processes))]
                  ;; TODO update live state with event duration
-                 ;; TODO controlar selección de sintes
-                 (cristal-liquidizado config)
-                 #_(amanecer*guitar-clouds
+                 (case (-> @live-state :algo-2.2.9-clouds player-k :active-synth)
+                   :crystal (cristal-liquidizado (assoc config :out out))
+                   :granular (amanecer*guitar-clouds
+                              (-> config
+                                  (merge (get-envelope
+                                          index
+                                          (-> state :algo-2.2.9-clouds player-k :env)
+                                          (:lorentz state)))
+                                  (assoc :out out)))
+                   (amanecer*guitar-clouds
                     (-> config
                         (merge (get-envelope
                                 index
                                 (-> state :algo-2.2.9-clouds player-k :env)
-                                (:lorentz state)))))))}))
-
+                                (:lorentz state)))
+                        (assoc :out out))))))}))
 (comment
-  (-> @live-state :algo-2.2.9-clouds :milo :amp (o/db->amp))
+  (-> @live-state :algo-2.2.9-clouds :milo)
   (o/amp->db 0.0015420217847956035)
   (stop-clouds :milo)
   (start-clouds :milo)
@@ -222,6 +240,15 @@
        reverse
        (filter (fn [[k _]]
                  (str/includes? (name k) "mic-")))))
+
 (defn stop-clouds
   [player-k]
   (gp/stop (make-clouds-id player-k)))
+
+(defn start-gusano
+  []
+  (bardo.gusano/start))
+
+(defn stop-gusano
+  []
+  (bardo.gusano/stop))

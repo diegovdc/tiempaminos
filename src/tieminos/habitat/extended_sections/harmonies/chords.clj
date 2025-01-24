@@ -16,6 +16,16 @@
        (take 12)
        (ratios->scale)))
 
+(def meta-pelog
+  "5 tone meta-pelog"
+  (->> {:seed [1 1 1]
+        :formula :meta-pelog}
+       (meru/recurrent-series)
+       :series
+       (drop 5)
+       (take 5)
+       (ratios->scale)))
+
 (defn rate-chord
   [scale degs]
   (->> degs

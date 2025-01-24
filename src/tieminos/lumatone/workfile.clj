@@ -11,8 +11,8 @@
   ;; generate the keyboards
 
   (do
-    (def gen 7)
-    (def period 18)
+    (def gen 9)
+    (def period 23)
     (def keyboards (gral-kb/generate-keyboard-types->xy-intervals gen period))
     (def kbd-number 2)
     (-> keyboards))
@@ -20,7 +20,7 @@
   ;; generate keyboard data
   (def kbd-data
     ;; config
-    (let [offset 46 ;; NOTE explore different offsets for the lowest midi note
+    (let [offset 31 ;; NOTE explore different offsets for the lowest midi note
           ]
       (->> (gral-kb/make-ltn-data
             {:offset offset
@@ -36,10 +36,11 @@
 
 ;; print to choose mos rings
   (mos/make period gen)
-  (def mos-rings [[7 7 4]
-                  [3 4 3 4 4]
-                  [3 3 1 3 3 1 3 1]
-                  [2 1 2 1 1 2 1 2 1 1 2 1 1]])
+  (def mos-rings [[9 9 5]
+                  [4 5 4 5 5]
+                  [4 4 1 4 4 1 4 1]
+                  [3 1 3 1 1 3 1 3 1 1 3 1 1]
+                  [2 1 1 2 1 1 1 2 1 1 2 1 1 1 2 1 1 1]])
 
   ;; make lumatone file
   (let [root "/Users/diego/Music/diego/lumatone"
