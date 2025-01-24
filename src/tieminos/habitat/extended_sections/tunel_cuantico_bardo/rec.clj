@@ -45,6 +45,7 @@
                             :on-rec-start on-rec-start})))))
 
 (defn get-buf
+  ;; FIXME get lib-size from each bank
   [player-k lib-size active-banks-set]
   (->> @bufs
        (filter (fn [[_k {:keys [rec/meta]}]]

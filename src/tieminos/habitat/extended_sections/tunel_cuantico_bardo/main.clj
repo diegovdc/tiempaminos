@@ -310,7 +310,7 @@
   (habitat/init! {})
 
   (bardo.osc/init! [["127.0.0.1" 16181]
-                    ["192.168.0.101" 16180]
+                    ["192.168.0.102" 16180]
                     ["192.168.0.103" 16180]])
 
   ;; also part of the initialization of hacia un nuevo universo
