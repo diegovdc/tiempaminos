@@ -88,5 +88,10 @@ feebdack -> platillo
 CLOSED: [2025-01-18 Sat 12:10]
 ** DONE Cargar configuraciones salvadas
 CLOSED: [2025-01-19 Sun 17:53]
+** TODO Prevenir que los buffers que están siendo utilizados actualmente sean borrados
+SCHEDULED: <2025-01-27 Mon>
+** TODO Recuperar afinación del principio de 2.2.9.22
+SCHEDULED: <2025-01-29 Wed>
+También usada en varias de las sesiones anteriores
 
 
