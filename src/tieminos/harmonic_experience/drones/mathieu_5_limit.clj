@@ -1,13 +1,14 @@
 (ns tieminos.harmonic-experience.drones.mathieu-5-limit
   "Full tuning for the tuning of lattice of The Harmonic Experience"
   (:require
+   [clojure.set :as set]
    [erv.utils.conversions :refer [midi->cps]]
    [erv.utils.conversions :as conv]
    [erv.utils.core :refer [pow round2]]
    [erv.utils.ratios :refer [ratios->scale]]
    [overtone.core :as o]
    [tieminos.harmonic-experience.drones.sounds :refer [drone harmonic]]
-   [tieminos.harmonic-experience.utils :refer [midi->ratio&freq]]
+   [tieminos.harmonic-experience.utils :refer [intervals midi->ratio&freq]]
    [tieminos.lattice.v1.lattice :refer [add-played-ratio draw-lattice
                                         remove-played-ratio]]
    [tieminos.math.utils :refer [linexp*]]
@@ -41,6 +42,16 @@
          (map #(pow 3 %) (range -3 6))
          (map #(* 1/5 (pow 3 %)) (range -1 3))
          [1/25]))))
+
+(defonce played-ratios (atom #{}))
+
+(defn add-played-absolute-ratio
+  [ratio]
+  (swap! played-ratios set/union #{ratio}))
+
+(defn remove-played-absolute-ratio
+  [ratio]
+  (swap! played-ratios set/difference #{ratio}))
 
 (comment
   (def sa (drone root))
@@ -80,15 +91,25 @@
                        :scale harmonic-experience-12-tone
                        :midi-note (:note ev)}))
 
+  (add-watch played-ratios ::print-intervals
+             (fn [_ _ _ new-val]
+               (let [intervals* (intervals new-val)]
+                 (println "Intervals:" intervals* (map conv/ratio->cents intervals*)))))
+
   (when oxygen
     (midi-in-event
      :midi-input oxygen
      :note-on (fn [ev]
-                (let [{:keys [ratio freq]} (get-note-data ev)]
-                  (println (:note ev) ratio (round2 2 (conv/ratio->cents ratio)))
+                (let [{:keys [ratio freq absolute-ratio]} (get-note-data ev)]
                   (add-played-ratio lattice-atom {:ratio ratio :stroke-weight 10  :color [200 200 120]})
+
+                  (println (:note ev) ratio (round2 2 (conv/ratio->cents ratio)))
+                  (add-played-absolute-ratio absolute-ratio)
                   (harmonic freq :amp (linexp* 0 127 0.1 3 (:velocity ev))
                             :a 5)))
      :note-off (fn [ev]
-                 (let [{:keys [ratio]} (get-note-data ev)]
-                   (remove-played-ratio lattice-atom {:ratio ratio}))))))
+                 (let [{:keys [ratio absolute-ratio]} (get-note-data ev)]
+                   (remove-played-ratio lattice-atom {:ratio ratio})
+                   (remove-played-absolute-ratio absolute-ratio))))))
+
+(-> lattice-atom)
