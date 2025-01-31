@@ -152,6 +152,15 @@ If using `mdeg->freq` this may show up only once because it is memoized, even if
     (tieminos.core/connect))
   (groups/init-groups!))
 
+(defn stop!
+  "Stop all refrains except those from `:tieminos-algo-note` because they stop themselves."
+  []
+  (doseq [id (->> @gp/refrains
+                  keys
+                  (remove (fn [k] (and (keyword? k)
+                                       (= "tieminos-algo-note"  (namespace k))))))]
+    (gp/stop id)))
+
 (def mempan
   (memoize (fn [_deg-mod]
              (rrand -1.0 1))))

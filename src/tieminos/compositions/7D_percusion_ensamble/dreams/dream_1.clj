@@ -2,30 +2,32 @@
   "From exploration4"
   (:require
    [clojure.data.generators :refer [weighted]]
+   [overtone.midi :as midi]
    [tieminos.compositions.7D-percusion-ensamble.base
-    :refer [bh deg->freq diat->polydori-degree init! mempan my-malgo pbell
-            root ssuave surge-suave synths]]
-   [tieminos.midi.core :refer [all-notes-off]]
+    :refer [bh deg->freq diat->polydori-degree init! mempan my-malgo root
+            stop! synths]]
    [tieminos.utils :refer [rrange]]
    [time-time.dynacan.players.gen-poly :as gp :refer [on-event ref-rain]]
    [time-time.standard :refer [rrand]]))
 
-(comment
-  (init!)
-  (gp/stop)
-  (doseq [s [surge-suave pbell]]
-    (all-notes-off s)))
-
-(comment
-  (init!)
-  (gp/stop)
-  (doseq [s [surge-suave pbell]]
-    (all-notes-off s)))
-
 ;; stereo outs
+
 (def bass (bh 0))
 (def m1-vibes (bh 2))
 (def m2-vibes (bh 4))
+;; midi
+
+(def suave-m1 (midi/midi-out "Bus 1"))
+(def suave-m2 (midi/midi-out "Bus 2"))
+(def suave-bass (midi/midi-out "Bus 3"))
+(def suave-mod (midi/midi-out "Bus 4"))
+(def pbell (midi/midi-out "Bus 5"))
+(def pbell-mod (midi/midi-out "Bus 6"))
+
+(comment
+  (init!)
+  (stop!)
+  (gp/stop))
 
 ;; TODO first two sections (tentatively)
 ;; TODO define different stereo outputs for the different instruments
@@ -67,7 +69,8 @@
      :on-event (on-event
                 (let [deg (degs at-i)]
                   (when (> bprob (rand))
-                    (my-malgo {:deg (diat->polydori-degree 0 (+ (at-i [4 -4 3 -4 -3]) deg))
+                    (my-malgo {:sink suave-bass
+                               :deg (diat->polydori-degree 0 (+ (at-i [4 -4 3 -4 -3]) deg))
                                :dur (weighted {1 9 1.5 8})
                                :vel 100})))))
     (ref-rain
@@ -79,10 +82,12 @@
                              (weighted {0 5 4 4 8 3}))]
                   (when (> mprob (rand))
                     (if (> mmix (rand))
-                      (my-malgo {:deg (diat->polydori-degree 2 (+ m2t deg) :modal)
+                      (my-malgo {:sink suave-m1
+                                 :deg (diat->polydori-degree 2 (+ m2t deg) :modal)
                                  :dur (weighted {0.1 9 1 5})
                                  :vel 80})
-                      (my-malgo {:deg (diat->polydori-degree 0 (+ m1t  deg) :modal)
+                      (my-malgo {:sink suave-m2
+                                 :deg (diat->polydori-degree 0 (+ m1t  deg) :modal)
                                  :dur (weighted {0.1 9 1 5})
                                  :vel 100})))))))
 
@@ -114,7 +119,7 @@
         ;; to modulate harmonically
         modum 2
         moduprob 0.
-        moduws {2 3 6 1 1 3}
+        moduws {2 3 6 1 1 0 8 0} ;; scale 8 also works well
         modut -6]
     (ref-rain
      :id ::1 :durs [3 2 2] :ratio 1/9
@@ -142,7 +147,8 @@
      :on-event (on-event
                 (let [deg (degs at-i bm)]
                   (when (> bprob (rand))
-                    (my-malgo {:deg (diat->polydori-degree 0
+                    (my-malgo {:sink suave-bass
+                               :deg (diat->polydori-degree 0
                                                            (+ (at-i [#_4 -4 3 -4 -3]) deg))
                                :dur (weighted {1 9 1.5 8})
                                :vel 100})))))
@@ -156,11 +162,12 @@
                   (when (> mprob (rand))
 
                     (if (> mmix (rand))
-                      (my-malgo {:sinks [ssuave #_pbell]
+                      (my-malgo {:sinks [suave-m1 pbell]
                                  :deg (diat->polydori-degree 0 (+ m1t  deg))
                                  :dur (weighted {0.1 9 1 mdur1w})
                                  :vel 80})
-                      (my-malgo {:deg (diat->polydori-degree 2 (+ m2t deg))
+                      (my-malgo {:sink suave-m2
+                                 :deg (diat->polydori-degree 2 (+ m2t deg))
                                  :dur (weighted {0.1 9 1 mdur1w})
                                  :vel 80}))))))
     #_(gp/stop ::1-modulator)
@@ -172,7 +179,7 @@
                              (at-i [2 2 3 2 3])
                              (weighted {0 5 4 4 8 3}))]
                   (when (> moduprob (rand))
-                    (my-malgo {:sink pbell
+                    (my-malgo {:sink pbell-mod
                                :deg (diat->polydori-degree
                                      (weighted moduws)
                                      (+ modut
