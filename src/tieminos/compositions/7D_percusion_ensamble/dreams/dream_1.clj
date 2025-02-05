@@ -2,19 +2,22 @@
   "From exploration4"
   (:require
    [clojure.data.generators :refer [weighted]]
+   [overtone.core :as o]
    [overtone.midi :as midi]
    [tieminos.compositions.7D-percusion-ensamble.base
     :refer [bh deg->freq diat->polydori-degree init! mempan my-malgo root
-            stop! synths]]
-   [tieminos.utils :refer [rrange]]
+            stop!] :as *7d-base]
+   [tieminos.sc-utils.groups.v1 :as groups]
+   [tieminos.sc-utils.synths.v1 :refer [lfo-kr]]
+   [tieminos.utils :refer [rrange wrap-at]]
    [time-time.dynacan.players.gen-poly :as gp :refer [on-event ref-rain]]
    [time-time.standard :refer [rrand]]))
 
 ;; stereo outs
 
-(def bass (bh 0))
-(def m1-vibes (bh 2))
-(def m2-vibes (bh 4))
+(def m1-vibes (bh 0))
+(def m2-vibes (bh 2))
+(def bass (bh 4))
 ;; midi
 
 (def suave-m1 (midi/midi-out "Bus 1"))
@@ -24,13 +27,63 @@
 (def pbell (midi/midi-out "Bus 5"))
 (def pbell-mod (midi/midi-out "Bus 6"))
 
+;; TODO first two sections (tentatively)
+;; TODO define different stereo outputs for the different instruments
+;;
+
+(o/defsynth short-plate
+  [freq 200
+   amp 0.5
+   mod-freq 1000
+   pan 0
+   atk 0.01
+   dcy 1
+   out 0]
+  (o/out out
+         (-> (o/range-lin (o/pulse mod-freq) (- freq 200) (+ freq 200))
+
+             (o/pan2 pan)
+             (* (o/env-gen (o/env-perc atk dcy) :action o/FREE))
+             (* amp (o/amp-comp-a freq)))))
+(o/defsynth low2
+  ;; Has some more harmonics and optional sub-bass
+  [freq 85
+   amp 0.5
+   mod-freq 8300
+   sub 0
+   sub2 0
+   pan 0
+   atk 0.01
+   dcy 1
+   out 0]
+  (let [c (fn [freq] (+ (* (lfo-kr 1/2 0.9 1) (o/sin-osc freq))
+                        (* sub (lfo-kr 1 0.8 1) (o/sin-osc (/ freq 2)))
+                        (* sub2 (lfo-kr 1 0.8 1) (o/sin-osc (/ freq 4)))
+                        (* 0.03 (lfo-kr 3 0.5 1) (o/sin-osc (* 2 freq)))))]
+    (o/out out (-> (o/range-lin (* 2 (o/sin-osc mod-freq)) (- freq 15) (+ freq 15))
+                   c
+                   (o/pan2 pan)
+                   (* (o/env-gen (o/env-perc atk dcy :curve (o/rand -3 -2))
+                                 :time-scale 1
+                                 :action o/FREE))
+                   (* amp (o/amp-comp-a freq))))))
+
+(def synths (map #(partial % (groups/early)) [*7d-base/low *7d-base/short-plate low2]))
+
+(defn delay* [ref* delay-ratio f]
+  (ref-rain
+   :id (random-uuid)
+   :ref ref*
+   :durs [delay-ratio 1]
+   :loop? false
+   :on-event (on-event
+              (when (= i 1) (f)))))
+
 (comment
   (init!)
   (stop!)
   (gp/stop))
 
-;; TODO first two sections (tentatively)
-;; TODO define different stereo outputs for the different instruments
 (comment
   :start-section-1
 ;;;;;;;;;;;;
@@ -46,10 +99,12 @@
     (ref-rain
      :id ::1 :durs [3 2 2] :ratio 1/9
      :on-event (on-event
-                (let [synth (rand-nth synths)
+                (let [synth (rand-nth [low2 *7d-base/short-plate *7d-base/low])
                       deg (degs at-i)
                       f1 (deg->freq :base-freq root :scale 0 :degree deg)
-                      f2 (deg->freq :base-freq root :scale 2 :degree deg)]
+                      f2 (deg->freq :base-freq root :scale 2 :degree (degs #(wrap-at (+ 0 i) %)))
+                      pan (rrange -1 1)]
+
                   (synth
                    :freq f1
                    :mod-freq (rrand 6000 10000)
@@ -57,12 +112,20 @@
                    :amp (rrange 0.5 0.8)
                    :out m1-vibes)
 
-                  #_(when (or #_true (#{1 3} (mod (inc index) 5)))
-                      (synth
-                       :freq f2
-                       :mod-freq (rrand 6000 10000)
-                       :amp (rrange 0.5 0.8)
-                       :out m2-vibes)))))
+                  (when (or true (#{1 3} (mod (inc index) 5)))
+                    #_(delay*
+                       ::1 (at-i [1 1])
+                       (fn []))
+                    (synth
+                     :freq (* 1 f2)
+                      ;; :sub 1
+                      ;; :sub2 2
+                     :atk (rrange 0.01 0.03)
+                     :pan (* -1 pan)
+                     :mod-freq (rrand 6000 10000)
+                      ;; :dcy (* (rrange 2 4) dur-s)
+                     :amp (rrange 0.5 0.8)
+                     :out m2-vibes)))))
     (ref-rain
      :id ::1-bass :ref ::1
      :durs [3 2 2] :ratio 1/9
@@ -127,7 +190,8 @@
                 (let [synth (rand-nth synths)
                       deg (degs at-i mainm)
                       f1 (deg->freq :base-freq root :scale 0 :degree deg)
-                      f2 (deg->freq :base-freq root :scale 2 :degree deg)]
+                      f2 (deg->freq :base-freq root :scale 2 :degree deg)
+                      pan (rrange -1 1)]
                   (synth
                    :freq f1
                    :mod-freq (rrand 6000 10000)
@@ -136,9 +200,17 @@
                    :out m1-vibes)
 
                   (when (or #_true (#{1 3} (mod (inc index) 5)))
+                    #_(delay*
+                       ::1 (at-i [1 1])
+                       (fn []))
                     (synth
-                     :freq f2
+                     :freq (* 1 f2)
+                      ;; :sub 1
+                      ;; :sub2 2
+                     :atk (rrange 0.01 0.03)
+                     :pan (* -1 pan)
                      :mod-freq (rrand 6000 10000)
+                      ;; :dcy (* (rrange 2 4) dur-s)
                      :amp (rrange 0.5 0.8)
                      :out m2-vibes)))))
     (ref-rain
