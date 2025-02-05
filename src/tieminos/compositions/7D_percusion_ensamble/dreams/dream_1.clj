@@ -90,12 +90,12 @@
 ;;; INTRO
 ;;;;;;;;;;;;;
 
-  (let [degs (fn [at-i] (at-i [0 #_#_#_2 0 (at-i [2 #_3]) #_(at-i [#_7 4]) #_#_(at-i [4 5]) 3]))
-        bprob 0.
-        m1t -1
-        m2t 0
-        mprob 0.
-        mmix 0]
+  (let [degs (fn [at-i] (at-i [0 2 1 (at-i [2 3]) (at-i [7 4]) (at-i [4 5]) 3]))
+        bprob 0.7
+        m1t 6
+        m2t 7
+        mprob 0.8
+        mmix 0.5]
     (ref-rain
      :id ::1 :durs [3 2 2] :ratio 1/9
      :on-event (on-event
@@ -108,24 +108,25 @@
                   (synth
                    :freq f1
                    :mod-freq (rrand 6000 10000)
-                      ;; :pan (mempan (mod deg 2))
+                   :pan pan
+                    ;; :pan (mempan (mod deg 2))
                    :amp (rrange 0.5 0.8)
                    :out m1-vibes)
 
-                  (when (or true (#{1 3} (mod (inc index) 5)))
-                    #_(delay*
-                       ::1 (at-i [1 1])
-                       (fn []))
-                    (synth
-                     :freq (* 1 f2)
-                      ;; :sub 1
-                      ;; :sub2 2
-                     :atk (rrange 0.01 0.03)
-                     :pan (* -1 pan)
-                     :mod-freq (rrand 6000 10000)
-                      ;; :dcy (* (rrange 2 4) dur-s)
-                     :amp (rrange 0.5 0.8)
-                     :out m2-vibes)))))
+                  (when (or (#{1 3} (mod (inc index) 5)))
+                    (delay*
+                     ::1 (at-i [0 1 1/2 0 3/2 0])
+                     (fn []
+                       (synth
+                        :freq (* 1 f2)
+                        :sub 0.1
+                          ;; :sub2 2
+                        :atk (rrange 0.01 0.03)
+                        :pan (* -1 pan)
+                        :mod-freq (rrand 6000 10000)
+                          ;; :dcy (* (rrange 2 4) dur-s)
+                        :amp (rrange 0.5 0.8)
+                        :out m2-vibes)))))))
     (ref-rain
      :id ::1-bass :ref ::1
      :durs [3 2 2] :ratio 1/9
@@ -135,7 +136,7 @@
                     (my-malgo {:sink suave-bass
                                :deg (diat->polydori-degree 0 (+ (at-i [4 -4 3 -4 -3]) deg))
                                :dur (weighted {1 9 1.5 8})
-                               :vel 100})))))
+                               :vel (at-i [110 100 120])})))))
     (ref-rain
      :id ::1-m :ref ::1
      :durs [3 2 2] :ratio 1/9
@@ -167,52 +168,86 @@
                           (at-i [1 -7])
                           (at-i [8 2 8])
                           (at-i [4 7 3])
-                          #_(at-i [6 5])
+                          (at-i [6 5])
                           (at-i [3 8 9])])))
         mainm 1
         bm 2
         bprob 0.
         mm 2
         mprob 0.
-        mmix 1
-        m1t 30
-        m2t 10
-        mratio 1/9
-        mdur1w 5
+        mmix 0.5
+        m1t 13
+        m2t -7
+        mratio 1/15
+        mdur1w 2
         ;; to modulate harmonically
         modum 2
-        moduprob 0.
-        moduws {2 3 6 1 1 0 8 0} ;; scale 8 also works well
-        modut -6]
+        moduprob 0.0
+        moduws {2 2 11 2 1 0 8 0 0 1} ;; scale 8 also works well
+        modut 6]
     (ref-rain
      :id ::1 :durs [3 2 2] :ratio 1/9
      :on-event (on-event
                 (let [synth (rand-nth synths)
                       deg (degs at-i mainm)
-                      f1 (deg->freq :base-freq root :scale 0 :degree deg)
-                      f2 (deg->freq :base-freq root :scale 2 :degree deg)
+                      f1 (deg->freq :base-freq root :scale 2 :degree deg)
+                      f1* (deg->freq :base-freq root :scale 0 :degree deg)
+                      f2 (deg->freq :base-freq root :scale 11 :degree (degs #(wrap-at (+ 2 i) %) mainm))
                       pan (rrange -1 1)]
-                  (synth
-                   :freq f1
-                   :mod-freq (rrand 6000 10000)
-                   :pan (mempan (mod deg 2))
-                   :amp (rrange 0.5 0.8)
-                   :out m1-vibes)
-
-                  (when (or #_true (#{1 3} (mod (inc index) 5)))
-                    #_(delay*
-                       ::1 (at-i [1 1])
-                       (fn []))
+                  (when (> 0. (rand))
                     (synth
-                     :freq (* 1 f2)
-                      ;; :sub 1
-                      ;; :sub2 2
-                     :atk (rrange 0.01 0.03)
-                     :pan (* -1 pan)
+                     :freq f1
                      :mod-freq (rrand 6000 10000)
-                      ;; :dcy (* (rrange 2 4) dur-s)
+                     :atk (at-i [0.01
+                                 0.01
+                                 0.01
+                                 0.01
+                                 0.01
+                                 (rrange 0.5 3)])
+                     :pan (mempan (mod deg 2))
                      :amp (rrange 0.5 0.8)
-                     :out m2-vibes)))))
+                     :out m1-vibes)
+                    (synth
+                     :freq f1*
+                     :mod-freq (rrand 6000 10000)
+                     :atk (at-i [0.01
+                                 0.01
+                                 0.01
+                                 0.01
+                                 0.01
+                                 (rrange 0.5 3)])
+                     :pan (mempan (mod deg 2))
+                     :amp (rrange 0.5 0.8)
+                     :out m1-vibes))
+
+                  #_(when (or #_true (#{1} (mod (inc index) 5)))
+                      (delay*
+                       ::1 (at-i [1 0 1 0 1/2])
+                       (fn []
+                         (synth
+                          :freq (* (at-i [1 1 1/2]) f2)
+                          :sub 1
+                          :sub2 (at-i [1 0 0.7 0.3])
+                          :atk (rrange 0.01 0.03)
+                          :pan (* -1 pan)
+                          :mod-freq (rrand 6000 10000)
+                          :dcy (* (rrange 2 4) dur-s)
+                          :amp (rrange 0.5 0.9)
+                          :out m2-vibes))))
+                  #_(when (or #_true (#{1} (mod (inc index) 7)))
+                      (delay*
+                       ::1 (at-i [1/3 1/4])
+                       (fn []
+                         (synth
+                          :freq (* (at-i [1 1/2]) f2)
+                          :sub 1
+                          :sub2 1
+                          :atk (rrange 0.01 0.03)
+                          :pan (* -1 pan)
+                          :mod-freq (rrand 6000 10000)
+                          :dcy (* (rrange 7 8) dur-s)
+                          :amp (rrange 0.5 0.9)
+                          :out m2-vibes)))))))
     (ref-rain
      :id ::1-bass :ref ::1
      :durs [3 2 2] :ratio 1/9
@@ -220,10 +255,10 @@
                 (let [deg (degs at-i bm)]
                   (when (> bprob (rand))
                     (my-malgo {:sink suave-bass
-                               :deg (diat->polydori-degree 0
-                                                           (+ (at-i [#_4 -4 3 -4 -3]) deg))
+                               :deg (diat->polydori-degree 8
+                                                           (+ (at-i [4 -4 3 -4 -3]) deg))
                                :dur (weighted {1 9 1.5 8})
-                               :vel 100})))))
+                               :vel 120})))))
     (ref-rain
      :id ::1-m :ref ::1
      :durs [3 2 2] :ratio mratio
@@ -235,13 +270,13 @@
 
                     (if (> mmix (rand))
                       (my-malgo {:sinks [suave-m1 pbell]
-                                 :deg (diat->polydori-degree 0 (+ m1t  deg))
-                                 :dur (weighted {0.1 9 1 mdur1w})
-                                 :vel 80})
+                                 :deg (diat->polydori-degree (weighted moduws) (+ m1t  deg))
+                                 :dur (weighted {0.1 9 1 mdur1w 2 5})
+                                 :vel (+ (rand-int 30) 80)})
                       (my-malgo {:sink suave-m2
                                  :deg (diat->polydori-degree 2 (+ m2t deg))
                                  :dur (weighted {0.1 9 1 mdur1w})
-                                 :vel 80}))))))
+                                 :vel (+ (rand-int 30) 80)}))))))
     #_(gp/stop ::1-modulator)
     (ref-rain
      :id ::1-modulator :ref ::1
