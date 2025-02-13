@@ -90,6 +90,8 @@ CLOSED: [2025-01-18 Sat 12:10]
 CLOSED: [2025-01-19 Sun 17:53]
 ** TODO Prevenir que los buffers que están siendo utilizados actualmente sean borrados
 SCHEDULED: <2025-01-27 Mon>
+** TODO [#A] BUG - rec -> toggle de clouds genera error de OSC
+SCHEDULED: <2025-02-13 Thu>
 ** DONE Recuperar afinación del principio de 2.2.9.22
 CLOSED: [2025-02-03 Mon 08:42] SCHEDULED: <2025-01-29 Wed>
 También usada en varias de las sesiones anteriores
