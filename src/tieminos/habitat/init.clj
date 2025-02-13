@@ -60,9 +60,15 @@
 
 (defonce habitat-initialized? (atom false))
 
+(defn overtone-output-vol!
+  [db]
+  (timbre/info (format "Output volume set to: %sdb" db))
+  (o/volume (o/db->amp db)))
+
 (defn init!
-  [& {:keys [_add-custom-groups-fn return-n-chans]
-      :or {return-n-chans 4}
+  [& {:keys [_add-custom-groups-fn return-n-chans volume-db]
+      :or {return-n-chans 4
+           volume-db -12}
       :as init-config}]
   (when-not @habitat-initialized?
     (when (o/server-disconnected?)
@@ -80,6 +86,7 @@
     (init-texto-sonoro-rand-mixer-synth! @special-inputs)
     (init-recordable-inputs! main-returns)
     (init-analyzers! @inputs @recordable-outputs)
+    (overtone-output-vol! volume-db)
     (reset! habitat-initialized? true))
   (timbre/info (format "Habitat initialized! (%s channels)" return-n-chans))
   {:inputs (keys @inputs)})
