@@ -1,6 +1,7 @@
 (ns tieminos.utils
   (:require
    [clojure.core.async :as a]
+   [clojure.math :refer [ceil]]
    [erv.cps.core :as cps]
    [erv.scale.core :as scale]
    [erv.utils.conversions :as conv]
@@ -161,7 +162,7 @@
   Also automatically stops if there is an uncaught error when calling `f`.
 
   Useful for sequencing `o/ctl` calls."
-  ([f] (iter-async-call 200 f))
+  ([f] (iter-async-call2 200 f))
   ([interval-ms f]
    (let [stop-chan (a/chan)
          stop-chan-fn (memoize #(a/>!! stop-chan true))]
@@ -178,16 +179,84 @@
          stop-chan (timbre/debug "Stopping iter-async-call2...")))
      ;; memoize to prevent a subsequent call from stopping the thread
      stop-chan-fn)))
-(/ 0.71 30)
+
 (comment
-  (def stop-me (iter-async-call 1000 #(do (println "hola" %)
-                                          (flush))))
+  (def stop-me (iter-async-call2 1000 #(do (println "hola" %)
+                                           (flush))))
   (def stop-me2 (iter-async-call 500 #(do (println "adios" %)
                                           (flush))))
   (stop-me)
   (stop-me2)
 
   (-> @async-channels))
+
+(defonce interpolators (atom {}))
+
+(defn get-interpolation-data
+  [{:keys [id dur-ms tick-ms init-val target-val cb]
+    :as interpolator-config
+    :or {init-val 0 tick-ms 100}}]
+  (let [val-diff (- target-val init-val)
+        ticks (int (/ dur-ms tick-ms))
+        delta (/ val-diff ticks)]
+    {:ticks ticks :delta delta}))
+
+(defn make-interpolator
+  [{:keys [id dur-ms tick-ms init-val target-val cb]
+    :as interpolator-config
+    :or {init-val 0 tick-ms 100}}]
+  (let [in-chan  (a/chan)
+        stop-chan (a/chan)
+        {:keys [ticks delta]} (get-interpolation-data interpolator-config)]
+    (a/go-loop [delta delta
+                ticks-left ticks
+                val init-val]
+      (let [ticks-left? (>= ticks-left 1)]
+        (a/alt!
+          in-chan ([interpolator-config]
+                   (println interpolator-config)
+                   (let [{:keys [ticks delta]} (get-interpolation-data (assoc interpolator-config
+                                                                              :init-val val))]
+                     (cb "new interplation config" interpolator-config)
+                     (recur delta ticks val)))
+          (a/timeout (if ticks-left? tick-ms 2000)) (if ticks-left?
+                                                      (let [new-val (+ val delta)]
+                                                        (cb "interpolating something" {:ticks-left ticks-left
+                                                                                       :val new-val})
+                                                        (recur delta (dec ticks-left) new-val))
+                                                      (recur delta ticks-left val))
+          stop-chan (timbre/debug "Stopping interpolator:" id))))
+    (swap! interpolators
+           assoc id (merge interpolator-config
+                           {:in-chan in-chan
+                            :stop-chan stop-chan}))))
+
+(defn cb-interpolate
+  [{:keys [id dur-ms tick-ms init-val target-val cb]
+    :as interpolator-config}]
+  (if-let [interpolator (@interpolators id)]
+    (a/put! (:in-chan interpolator) interpolator-config)
+    (make-interpolator interpolator-config)))
+
+(comment
+  (cb-interpolate {:id :hola
+                   :dur-ms 5000
+                   :tick-ms 500
+                   :init-val 0
+                   :target-val 10
+                   :cb println})
+
+  (cb-interpolate {:id :hola
+                   :dur-ms 5000
+                   :tick-ms 500
+                   :init-val 10
+                   :target-val 0
+                   :cb println})
+
+  (-> @interpolators :hola)
+  (a/put! (-> @interpolators :hola :stop-chan) :stop)
+
+  (reset! interpolators {}))
 
 (defonce async-channels (atom {}))
 
