@@ -88,12 +88,20 @@ feebdack -> platillo
 CLOSED: [2025-01-18 Sat 12:10]
 ** DONE Cargar configuraciones salvadas
 CLOSED: [2025-01-19 Sun 17:53]
-** TODO Prevenir que los buffers que están siendo utilizados actualmente sean borrados
-SCHEDULED: <2025-01-27 Mon>
-** TODO [#A] BUG - rec -> toggle de clouds genera error de OSC
+** DONE Prevenir que los buffers que están siendo utilizados actualmente sean borrados
+CLOSED: [2025-02-15 Sat 12:44] SCHEDULED: <2025-01-27 Mon>
+** TODO [#C] BUG - rec -> toggle de clouds genera error de OSC
 SCHEDULED: <2025-02-13 Thu>
+** DONE [#A] Clipeos que parece van de reaper a collider
+CLOSED: [2025-02-19 Wed 09:54] SCHEDULED: <2025-02-17 Mon>
+** IDEA [#C] Agregar control de volumen en el return clean de la guitarra (?)
+SCHEDULED: <2025-02-24 Mon>
 ** DONE Recuperar afinación del principio de 2.2.9.22
 CLOSED: [2025-02-03 Mon 08:42] SCHEDULED: <2025-01-29 Wed>
 También usada en varias de las sesiones anteriores
+** TODO Automatización de EQ
+SCHEDULED: <2025-02-24 Mon>
+** TODO Async para interpolar valores de OSC/MIDI
+SCHEDULED: <2025-02-23 Sun>
 
 
