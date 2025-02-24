@@ -1,0 +1,134 @@
+
+To recall, this 4)7 CPS with factors 1.3.9.15.10.21 is made by using the factors of 7 different hexanies. These hexanies have the property of having notes close to any 6 of the 7 notes of 12EDO diatonic. In that sense they are diatonique-esque but are all missing some note of the diatonic structure. Each of this 7 hexanies appears 3 times in the 4)7 CPS. For example, the 1.3.9.19 hexany appears as 7.15-1.3.9.19, 7.21-1.3.9.19 and 15.21-1.3.9.19 (the numbers to the left of the "-" are the common factors to all of the hexany's notes). This three hexanies are the one's closest to 12EDO diatonic. During the piece this three are used, plus 3 more.
+
+In this piece I am considering a melody to be a sequence of degrees (independent of the scale). So very much like one would label degrees 0-6 for the 7 notes of any diatonic in 12EDO regardless of whether the scale is built on C or Bb. This allows for creating a melody that can be "transposed" from one hexany to another.
+
+This is of course different from transposition within a hexany itself which would transpose the intervals up or down a certain number of degrees (here melody 0,2,0,3 would become 1,3,1,4 if transposed up by 1 degree).
+
+In this piece both types of transposition are used (plus two variations on these types).
+
+Another type of transposition is possible which implies using a sequence of degrees; in the previous example 1 one was added to every note of the melodic sequence, however we can also add a sequence, such as [1,2] in which case the resulting melody (from 0,2,0,3) would become 1,4,1,5 (or 0+1,2+2,0+1,3+2); if the sequence for transposition was a co-prime number, then the melody will become longer until it repeats. For example for [1,0,2] we would get a 12 (4x3) note sequence 1,2,2,4,0,2,1,3,2,3,0,5 (or 0+1,2+0,0+2,3+1,0+0,2+2,0+1,3+0,0+2,2+1,0+0,3+2) 
+
+And one last type of transposition involves transposing different segments of the melody to different hexanies so one could use a hexany sequence like [hex0, hex2] and then have a melody like 0[hex0],2[hex2],0[hex0],3[hex2].
+
+And also one could use statistical values instead of a transposition sequence. So that at some point in the sequence certain transpositional values are more likely than another one.
+
+For rhythm similar things can be done. The base rhythmic-durational sequence is 3,2,2. With the classic isorhythmic technique, if we apply the melody we get. 
+xooxoxo xooxoxo xooxoxo xooxoxo
+0  2 0  3  0 2  0  3 0  2  0 3
+
+
+But one can apply a 3,2 pattern to filter the events and only let the 0th and 4th events (in a five event cycle to be played). For example (take "x" as sound-event and "o" as nothing) for the pattern 3,2,2:
+xooxoxo xooxoxo xooxoxo xooxoxo xooxoxo
+x  o o  x  o x  o  o x  o  x o  o  x o
+
+So the resulting attack pattern is a 7,5. However if the melody is applied then a larger pattern can emerge (using the 4 note melody the pattern becomes quite large 4*5*7):
+
+xooxoxo xooxoxo xooxoxo xooxoxo xooxoxo ...
+0  2 0  3  0 2  0  3 0  2  0 3  0  2 0  ...
+x  o o  x  o x  o  o x  o  x o  o  x o  ...
+0       3    2       0     0       2    - The resultant pattern.
+
+This 0,3,2,0,0,2... pattern is what's heard but to an ear that already knows the pattern played by combining the 3,2,2 rhythm and the 0,2,0,3 melody, then it may be possible to trace the connection to the other pattern (for example by filling in the missing notes).
+
+Another similar rhythmic transpositions can be made by changing the tempo by some ratio. If we consider this piece to be in 7/16, then the 16th has a tempo of 60*9. At the middle of the piece some tempo transpositions start to happen, the first one involves a momentary transition to a tempo of 60*8. By returning the 60*9 then a melodic sequence becomes offset by some number of 60*8 16ths. By the end of the piece the fastest line is at 60*19 (with a lot of statistically filtered out events - so a lot of "silences".)
+
+If we combine this rhythmic processes with the melodic transformations within hexanies then a huge number of rhythmic and melodic variations can be generated.
+
+At the beginning of the piece (around 2 or minutes) two hexanies are used, which are a fifth apart, 7.15-1.3.9.19 (hex0) and 15.21-1.3.9.19 (hex2).
+
+If we show the correspondence between each degree of each hexany we get this:
+({:deg 0, :hex0-hex2 [64/57 32/19], :interval 3/2}
+ {:deg 1, :hex0-hex2 [32/27 16/9], :interval 3/2}
+ {:deg 2, :hex0-hex2 [4/3 1], :interval 3/4}
+ {:deg 3, :hex0-hex2 [256/171 64/57], :interval 3/4}
+ {:deg 4, :hex0-hex2 [32/19 24/19], :interval 3/4}
+ {:deg 5, :hex0-hex2 [16/9 4/3], :interval 3/4}
+ {:deg 6, :hex0-hex2 [128/57 64/19], :interval 3/2})
+
+ Note that hex2 has it's lowest note at degree 2, this is an (unintentional) implementation detail which nevertheless is useful for giving variety of register (see the intervals).
+
+ One of the first melodic sequences 0,2,0,3 (a reduced version of the first melody) will then look like this:
+ ({:deg 0, :hex0-hex2 [64/57 32/19], :interval 3/2}
+  {:deg 2, :hex0-hex2 [4/3 1], :interval 3/4}
+  {:deg 0, :hex0-hex2 [64/57 32/19], :interval 3/2}
+  {:deg 3, :hex0-hex2 [256/171 64/57], :interval 3/4})
+
+With the 3,2 rhythmic filter it results in this:
+({:deg 0, :hex0-hex2 [64/57 32/19], :interval 3/2}
+ {:deg 2, :hex0-hex2 [4/3 :silence]}
+ {:deg 0, :hex0-hex2 [64/57 :silence]}
+ {:deg 3, :hex0-hex2 [256/171 64/57], :interval 3/4}
+ {:deg 0, :hex0-hex2 [64/57 :silence]}
+ {:deg 2, :hex0-hex2 [4/3 1], :interval 3/4}
+ {:deg 0, :hex0-hex2 [64/57 :silence]}
+ {:deg 3, :hex0-hex2 [256/171 :silence]})
+
+
+ 
+ The counterpoint line that appears is a 20 note cycle with degrees:
+ 4,-2,3,-1,-3,6,-4,6,-4,-1,4,-1,3,-2,-3,7,-4,5,-4,0
+
+ This is derived from a sequence transposition over the same melodic line using the interval sequence [4,-4,3,-4,-3]. This counterpoint uses hex0 (7.15-1.3.9.19) and has a random probabilistic filter so not all the notes are played in the sequence, just a certain percentage.
+
+
+ The last line that appears in the first part of the piece, which is the sort of soloist line, uses also hex0 and hex2. There is probabilistic selector that chooses between one or the other and there is a probabilistic filter that defines the percentage of notes to played. Of interest is that to each hexany corresponds a different transposition by degree, so one hexany can be playing on a higher octave than the other, viceversa, or their lines can be combined. Likewise this soloist line uses the same melody (although at that point in the piece the melody has a few added notes), but for these examples we can still use the 0,2,0,3 sequence:
+
+ With the tranpositions for each hexany to 0,and 50% change of any being played we'd get this sample sequence:
+ ({:degree 0, :hexany :hex0, :note 64/57}
+  {:degree 2, :hexany :hex0, :note 4/3}
+  {:degree 0, :hexany :hex2, :note 32/19}
+  {:degree 3, :hexany :hex0, :note 256/171}
+  {:degree 0, :hexany :hex0, :note 64/57}
+  {:degree 2, :hexany :hex2, :note 1}
+  {:degree 0, :hexany :hex2, :note 32/19}
+  {:degree 3, :hexany :hex0, :note 256/171})
+
+If hex0 has a transposition of 2 and hex2 one of -1 a sample would look like:
+({:degree 0, :hexany :hex2, :note 2/3}
+ {:degree 2, :hexany :hex0, :note 32/19}
+ {:degree 0, :hexany :hex2, :note 2/3}
+ {:degree 3, :hexany :hex2, :note 1}
+ {:degree 0, :hexany :hex2, :note 2/3}
+ {:degree 2, :hexany :hex0, :note 32/19}
+ {:degree 0, :hexany :hex2, :note 2/3}
+ {:degree 3, :hexany :hex2, :note 1}
+ {:degree 0, :hexany :hex0, :note 4/3}
+ {:degree 2, :hexany :hex0, :note 32/19}
+ {:degree 0, :hexany :hex2, :note 2/3}
+ {:degree 3, :hexany :hex2, :note 1})
+
+And hex0=1 and hex2=2 (using a longer sample to show statistical patterns):
+({:degree 0, :hexany :hex0, :note 32/27}
+ {:degree 2, :hexany :hex2, :note 24/19}
+ {:degree 0, :hexany :hex2, :note 1}
+ {:degree 3, :hexany :hex0, :note 32/19}
+ {:degree 0, :hexany :hex0, :note 32/27}
+ {:degree 2, :hexany :hex2, :note 24/19}
+ {:degree 0, :hexany :hex2, :note 1}
+ {:degree 3, :hexany :hex0, :note 32/19}
+ {:degree 0, :hexany :hex2, :note 1}
+ {:degree 2, :hexany :hex2, :note 24/19}
+ {:degree 0, :hexany :hex2, :note 1}
+ {:degree 3, :hexany :hex2, :note 4/3}
+ {:degree 0, :hexany :hex0, :note 32/27}
+ {:degree 2, :hexany :hex2, :note 24/19}
+ {:degree 0, :hexany :hex0, :note 32/27}
+ {:degree 3, :hexany :hex2, :note 4/3}
+ {:degree 0, :hexany :hex2, :note 1}
+ {:degree 2, :hexany :hex2, :note 24/19}
+ {:degree 0, :hexany :hex2, :note 1}
+ {:degree 3, :hexany :hex0, :note 32/19}
+ {:degree 0, :hexany :hex0, :note 32/27}
+ {:degree 2, :hexany :hex0, :note 256/171}
+ {:degree 0, :hexany :hex2, :note 1}
+ {:degree 3, :hexany :hex2, :note 4/3}
+ {:degree 0, :hexany :hex0, :note 32/27}
+ {:degree 2, :hexany :hex2, :note 24/19}
+ {:degree 0, :hexany :hex0, :note 32/27}
+ {:degree 3, :hexany :hex0, :note 32/19}
+ {:degree 0, :hexany :hex2, :note 1}
+ {:degree 2, :hexany :hex0, :note 256/171}
+ {:degree 0, :hexany :hex0, :note 32/27}
+ {:degree 3, :hexany :hex2, :note 4/3})
+ 
