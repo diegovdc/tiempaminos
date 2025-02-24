@@ -1,8 +1,17 @@
 (ns tieminos.harmonic-experience.lattice
   (:require
+   [clojure.set :as set]
    [clojure.string :as str]
    [erv.lattice.v2 :refer [base-coords ratios->lattice-data]]
-   [quil.core :as q]))
+   [erv.utils.conversions :as conv]
+   [erv.utils.core :refer [round2]]
+   [quil.core :as q]
+   [tieminos.harmonic-experience.drones.sounds :refer [harmonic]]
+   [tieminos.harmonic-experience.utils :refer [intervals midi->ratio&freq]]
+   [tieminos.lattice.v1.lattice :as lattice.v1 :refer [add-played-ratio
+                                                       remove-played-ratio]]
+   [tieminos.math.utils :refer [linexp*]]
+   [tieminos.midi.core :refer [midi-in-event]]))
 
 (defn draw [text-type width height lattice-data]
   (fn []
@@ -98,3 +107,67 @@
          merge
          (ratios->lattice-data base-coords
                                new-ratios)))
+
+(defonce lattice-sketch-atom (atom nil))
+
+(defn draw-lattice2
+  [ratios lattice-size]
+  (if @lattice-sketch-atom
+    (lattice.v1/update-ratios! @lattice-sketch-atom ratios)
+    (reset! lattice-sketch-atom
+            (lattice.v1/draw-lattice
+             {:ratios ratios
+              :width (* 16 lattice-size)
+              :height (* 9 lattice-size)
+              :on-close (fn [] (reset! lattice-sketch-atom nil))})))
+  lattice-sketch-atom)
+(comment
+  (-> @lattice-sketch-atom))
+
+(defn get-lattice-atom!
+  []
+  @lattice-sketch-atom)
+
+(defonce played-ratios (atom #{}))
+
+(defn add-played-absolute-ratio
+  [ratio]
+  (swap! played-ratios set/union #{ratio}))
+
+(defn remove-played-absolute-ratio
+  [ratio]
+  (swap! played-ratios set/difference #{ratio}))
+
+(defn setup-kb
+  [{:keys [midi-kb ref-note root scale lattice? lattice-size]
+    :or {lattice? true
+         lattice-size 120}}]
+  (let [get-note-data (fn [ev] (midi->ratio&freq {:ref-note ref-note
+                                                  :root root
+                                                  :scale scale
+                                                  :midi-note (:note ev)}))
+        lattice-atom (when lattice? @(draw-lattice2 (map :bounded-ratio scale) lattice-size))]
+
+    (add-watch played-ratios ::print-intervals
+               (fn [_ _ _ new-val]
+                 (let [intervals* (intervals new-val)]
+                   (println "Intervals:" intervals* (map conv/ratio->cents intervals*)))))
+
+    (when midi-kb
+      (midi-in-event
+       :midi-input midi-kb
+       :note-on (fn [ev]
+                  (let [{:keys [ratio freq absolute-ratio]} (get-note-data ev)]
+                    (when lattice? (add-played-ratio lattice-atom {:ratio ratio :stroke-weight 10  :color [200 200 120]}))
+
+                    (println (:note ev) ratio (round2 2 (conv/ratio->cents ratio)))
+                    (add-played-absolute-ratio absolute-ratio)
+                    (harmonic freq :amp (linexp* 0 127 0.1 3 (:velocity ev))
+                              :a 5)))
+       :note-off (fn [ev]
+                   (let [{:keys [ratio absolute-ratio]} (get-note-data ev)]
+                     (when lattice? (remove-played-ratio lattice-atom {:ratio ratio}))
+                     (remove-played-absolute-ratio absolute-ratio)))))))
+
+(comment
+  (reset! lattice-sketch-atom nil))

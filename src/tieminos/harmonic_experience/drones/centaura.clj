@@ -1,30 +1,38 @@
 (ns tieminos.harmonic-experience.drones.centaura
   (:require
    [erv.utils.conversions :refer [midi->cps]]
-   [erv.utils.core :refer [period-reduce]]
+   [erv.utils.ratios :refer [ratios->scale]]
    [overtone.core :as o]
-   [taoensso.timbre :as timbre]
    [tieminos.harmonic-experience.drones.sounds :refer [drone drone2 harmonic]]
-   [tieminos.harmonic-experience.lattice :refer [draw-lattice]]
-   [tieminos.math.utils :refer [linexp*]]
-   [tieminos.midi.core :refer [get-oxygen! midi-in-event]]
-   [tieminos.utils :refer [wrap-at]]))
+   [tieminos.harmonic-experience.lattice :as hexp.lattice]
+   [tieminos.harmonic-experience.trainer :as hexp.trainer]
+   [tieminos.midi.core]))
 
-(def root (midi->cps 48))
-(def note-mappings [1
-                    21/20
+(def ref-note 48)
+(def root (midi->cps ref-note))
+(def note-mappings [33/32
                     9/8
                     7/6
                     5/4
                     4/3
-                    7/5
+                    11/8
                     3/2
                     14/9
                     5/3
                     7/4
-                    15/8])
+                    15/8
+                    2/1])
+(def scale (ratios->scale note-mappings))
 
 (comment
+  (hexp.lattice/setup-kb {:ref-note 48
+                          :root root
+                          :scale scale
+                          :midi-kb (tieminos.midi.core/get-oxygen!)})
+  (hexp.trainer/trainer {:scale scale
+                         :root (midi->cps 60)
+                         :degrees [0 3 6  10]})
+  (hexp.trainer/stop)
   (def sa (drone root))
   (o/ctl sa :gate 0)
   (def sa2 (drone2 root :amp 0.6))
@@ -33,33 +41,8 @@
   (o/ctl pa :gate 0)
   (def ma (drone (* 14/18 root) :amp 0.8))
   (o/ctl ma :gate 0)
+
   (def h (harmonic (* root 9/8)))
-
   (o/ctl h :gate 0)
-  (o/stop)
 
-  (def lattice-data (draw-lattice
-                     {:ratios (into #{} (map period-reduce
-                                             note-mappings))}))
-
-  (def oxygen (get-oxygen!))
-
-  (when oxygen
-    (midi-in-event
-     :midi-input oxygen
-     :note-on (fn [ev]
-                (let [ratio* (wrap-at (:note ev) note-mappings)
-                      ratio (* (inc (quot (- (:note ev) 48)
-                                          12))
-                               ratio*)]
-                  (println (- (:note ev) 48)
-                           (quot (- (:note ev) 48)
-                                 12))
-                  (swap! lattice-data update :played-notes conj (period-reduce ratio))
-                  (harmonic (* root ratio) :amp (linexp* 0 127 0.5 3 (:velocity ev)))))
-     :note-off (fn [ev]
-                 (let [ratio (period-reduce (wrap-at (:note ev) note-mappings))]
-                   (swap! lattice-data update :played-notes #(->> %
-                                                                  (remove (fn [r] (= r ratio)))
-                                                                  (into #{})))
-                   nil)))))
+  (o/stop))
