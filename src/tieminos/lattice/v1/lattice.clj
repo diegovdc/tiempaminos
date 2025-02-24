@@ -66,9 +66,10 @@
   (fn [] (draw* text-type width height lattice-data)))
 
 (defn draw-lattice
-  [{:keys [ratios width height text-type]
+  [{:keys [ratios width height text-type on-close]
     :or {width 800
          height 800
+         on-close (fn [])
          text-type :ratios              ; #{:factors :ratios}
          }}]
   (let [lattice-data (atom (assoc (ratios->lattice-data base-coords
@@ -83,6 +84,7 @@
                #_(q/pixel-density 2)
                (q/frame-rate 24))
       :draw (#'draw (atom text-type) width height lattice-data)
+      :on-close (fn [] (on-close))
       :size [width height])
     lattice-data))
 
