@@ -8,6 +8,7 @@
    [tieminos.harmonic-experience.drones.sounds :refer [drone harmonic]]
    [tieminos.harmonic-experience.lattice :as hexp.lattice]
    [tieminos.harmonic-experience.trainer :refer [trainer]]
+   [tieminos.harmonic-experience.trainer :as hexp.trainer]
    [tieminos.midi.core]
    [time-time.dynacan.players.gen-poly :as gp]))
 
@@ -61,10 +62,13 @@
                        (tieminos.midi.core/get-oxygen!)
                        (tieminos.midi.core/get-lumatone!)))))
 
-  (trainer (assoc (configs :oxygen) :root (midi->cps 60) :degrees [0 2 4 5 7 9 10]))
-
+  (trainer (assoc (configs :oxygen) :root (midi->cps 48) :degrees [0 2 3 5 7 8 10]))
+  (hexp.trainer/stop)
   (def sa (drone root))
+  (o/ctl sa :amp 0.5)
   (o/ctl sa :gate 0)
+  (def sa2 (drone (* 2 root)))
+  (o/ctl sa2 :gate 0)
   (def pa (drone (* 3/2 root) :amp 1))
   (o/ctl pa :gate 0)
   (o/ctl pa :amp 0.6)

@@ -139,9 +139,13 @@
   (swap! played-ratios set/difference #{ratio}))
 
 (defn setup-kb
-  [{:keys [midi-kb ref-note root scale lattice? lattice-size]
+  [{:keys [midi-kb ref-note root scale lattice? lattice-size
+           stroke-width note-color sound? on-note-on]
     :or {lattice? true
-         lattice-size 120}}]
+         lattice-size 120
+         stroke-width 10
+         note-color [200 200 120]
+         sound? true}}]
   (let [get-note-data (fn [ev] (midi->ratio&freq {:ref-note ref-note
                                                   :root root
                                                   :scale scale
@@ -158,12 +162,18 @@
        :midi-input midi-kb
        :note-on (fn [ev]
                   (let [{:keys [ratio freq absolute-ratio]} (get-note-data ev)]
-                    (when lattice? (add-played-ratio lattice-atom {:ratio ratio :stroke-weight 10  :color [200 200 120]}))
+                    (when lattice? (add-played-ratio lattice-atom {:ratio ratio
+                                                                   :stroke-weight stroke-width
+                                                                   :color note-color}))
 
                     (println (:note ev) ratio (round2 2 (conv/ratio->cents ratio)))
                     (add-played-absolute-ratio absolute-ratio)
-                    (harmonic freq :amp (linexp* 0 127 0.1 3 (:velocity ev))
-                              :a 5)))
+                    (when on-note-on)
+                    (on-note-on {:ratio ratio :absolute-ratio absolute-ratio})
+                    (when sound?
+                      (harmonic freq
+                                :amp (linexp* 0 127 0.1 3 (:velocity ev))
+                                :a 5))))
        :note-off (fn [ev]
                    (let [{:keys [ratio absolute-ratio]} (get-note-data ev)]
                      (when lattice? (remove-played-ratio lattice-atom {:ratio ratio}))

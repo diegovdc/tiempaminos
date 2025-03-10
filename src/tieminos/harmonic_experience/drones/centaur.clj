@@ -22,7 +22,7 @@
                     7/4
                     15/8])
 
-(def scale (ratios->scale note-mappings))
+(def scale (ratios->scale (map #(/ % 7/6) note-mappings)))
 
 (comment
   (hexp.lattice/setup-kb {:ref-note 48
@@ -31,13 +31,13 @@
                           :midi-kb (tieminos.midi.core/get-oxygen!)})
   (hexp.trainer/trainer {:scale scale
                          :root (midi->cps 60)
-                         :degrees [0 3 6  10]})
+                         :degrees [9 0 5 11 2]})
   (hexp.trainer/stop)
   (def sa (drone root))
   (o/ctl sa :gate 0)
   (def sa2 (drone2 root :amp 0.6))
   (o/ctl sa2 :gate 0)
-  (def pa (drone (* 3/2 root)))
+  (def pa (drone (* 9/7 root)))
   (o/ctl pa :gate 0)
   (def ma (drone (* 14/18 root) :amp 0.8))
   (o/ctl ma :gate 0)

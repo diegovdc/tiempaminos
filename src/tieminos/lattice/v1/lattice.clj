@@ -66,14 +66,23 @@
   (fn [] (draw* text-type width height lattice-data)))
 
 (defn draw-lattice
-  [{:keys [ratios width height text-type on-close]
+  [{:keys [ratios
+           coords
+           period
+           width
+           height
+           text-type
+           custom-edges
+           on-close]
     :or {width 800
          height 800
          on-close (fn [])
          text-type :ratios              ; #{:factors :ratios}
-         }}]
-  (let [lattice-data (atom (assoc (ratios->lattice-data base-coords
-                                                        ratios)
+         period 2
+         custom-edges #{} ;; a set of ratios that should also be connected
+         coords base-coords}}]
+  (let [lattice-data (atom (assoc (ratios->lattice-data coords ratios {:custom-edges custom-edges
+                                                                       :period period})
                                   :played-notes {}
                                   :text-type text-type))]
     (q/defsketch lattice-tool
