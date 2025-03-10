@@ -37,3 +37,35 @@
   (stop)
   (rec)
   (basic-insert-marker "Tieminos Marker"))
+
+;; Helper functions
+(def ^:private reaeq-freq->lin-map
+  {0     0
+   300   0.29
+   600   0.395
+   1000  0.476
+   2000  0.589
+   3000  0.655
+   5000  0.74
+   10000 0.855
+   15000 0.922
+   24000 1})
+
+(comment
+  (require '[tieminos.habitat.osc :as habitat-osc])
+  ;; to find a new frequency: on a new reaper proyect insert an eq on track 1
+  (osc/osc-send
+   @habitat-osc/reaper-client
+   "/track/1/fxeq/loshelf/freq"
+    ;; use a value between 0 - 1
+   (float 1)))
+
+(defn reaeq-freq->lin
+  "Convert reaeq freqs to their linear approximate representation"
+  ;; NOTE only certain frequencies are represented
+  [freq]
+  (if-let [lin-val (reaeq-freq->lin-map freq)]
+    lin-val
+    (throw (ex-info "Unknown frequency"
+                    {:freq freq
+                     :freq-map reaeq-freq->lin-map}))))

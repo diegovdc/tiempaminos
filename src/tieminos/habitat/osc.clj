@@ -100,7 +100,7 @@
 (comment
   (init)
   (reset! osc-server nil)
-
+  (osc/osc-debug true)
   (-> @reaper-client)
   (make-reaper-osc-client)
   (osc/osc-send @reaper-client "/track/14/send/1/volume" (float 0.6))

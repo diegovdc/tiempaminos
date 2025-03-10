@@ -133,8 +133,6 @@
     (o/out out
 
            (-> (o/play-buf 1 buf rate)
-               ;; TODO agregar control de reverb via OSC
-               #_(o/free-verb (lfo-kr 4 0 1))
                (* amp
                   (o/env-gen
                    (o/envelope
@@ -144,12 +142,6 @@
                      (* 0.2 dur)])
                    :action o/FREE))
                (#(o/pan-az:ar 4 % pan))))))
-
-(comment
-  (->> @rec/bufs
-       vals
-       (map :duration)
-       frequencies))
 
 (defn get-harmonic-data!
   [player-k]

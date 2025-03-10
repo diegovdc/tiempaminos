@@ -12,7 +12,8 @@
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.rec :refer [delete-bank-bufs]]
    [tieminos.habitat.osc :as habitat-osc]
    [tieminos.math.utils :refer [linlin]]
-   [tieminos.utils :refer [throttle]]))
+   [tieminos.osc.reaper :refer [reaeq-freq->lin]]
+   [tieminos.utils :refer [cb-interpolate stop-all-interpolators! throttle]]))
 
 (def default-rec-config
   {:on? true
@@ -298,6 +299,155 @@
 
 (def ^:private excluded-paths #{"/presets/load"})
 
+;; main eq controls
+
+(def ^:private eq-param-defaults
+  {:eq/loshelf.freq {:init-val 0 :path "/track/23/fxeq/loshelf/freq"}
+   :eq/loshelf.gain {:init-val 0 :path "/track/23/fxeq/loshelf/gain"}
+   :eq/hishelf.freq {:init-val 24000 :path "/track/23/fxeq/hishelf/freq"}
+   :eq/hishelf.gain {:init-val 0 :path "/track/23/fxeq/hishelf/gain"}
+   ;; a simple band pass assumed to have a gain > 0.5
+   :eq/bell.freq {:init-val 1000 :path "/track/23/fxeq/band/0/freq"}
+   :eq/bell.gain {:init-val 0.5 :path "/track/23/fxeq/band/0/gain"}
+   ;; a simple band pass assumed to have a gain < 0.5
+   :eq/notch.freq {:init-val 2000 :path "/track/23/fxeq/band/1/freq"}
+   :eq/notch.gain {:init-val 0.5 :path "/track/23/fxeq/band/1/gain"}})
+
+(defn interpolate-premaster-eq-band-vals
+  ;; NOTE for the ids to reference see the `eq-param-defaults` var.
+  [{:keys [band freq gain dur-ms tick-ms]
+    :or {tick-ms 100}}]
+  (let [freq-id (keyword "eq" (str (name band) ".freq"))
+        gain-id (keyword "eq" (str (name band) ".gain"))]
+    (doseq [id [freq-id gain-id]]
+      (when-not (eq-param-defaults id) (throw (ex-info "Unknown freq or gain id" {:band band :param-id id :known-param-ids (keys eq-param-defaults)}))))
+
+    (cb-interpolate
+     {:id freq-id
+      :dur-ms dur-ms
+      :tick-ms tick-ms
+      :init-val (reaeq-freq->lin (:init-val (eq-param-defaults freq-id)))
+      :target-val (reaeq-freq->lin freq)
+      :cb (fn [{:keys [val]}]
+            (osc/osc-send
+             @habitat-osc/reaper-client
+             (:path (eq-param-defaults freq-id))
+             (float val)))})
+
+    (cb-interpolate
+     {:id gain-id
+      :dur-ms dur-ms
+      :tick-ms tick-ms
+      :init-val (:init-val (eq-param-defaults gain-id))
+      :target-val gain
+      :cb (fn [{:keys [val]}]
+            (osc/osc-send
+             @habitat-osc/reaper-client
+             (:path (eq-param-defaults gain-id))
+             (float val)))})))
+
+(comment
+  (interpolate-premaster-eq-band-vals
+   {:band :loshelf
+    :freq 0
+    :gain 0.5
+    :dur-ms 5000})
+
+  (interpolate-premaster-eq-band-vals
+   {:band :bell
+    :freq 1000
+    :gain 1
+    :dur-ms 5000})
+
+  (stop-all-interpolators!)
+  (osc/osc-send @habitat-osc/reaper-client "/track/23/fxeq/band/0/freq" (float 0.2))
+  (osc/osc-send @habitat-osc/reaper-client "/track/23/fxeq/loshelf/gain" (float 0.2))
+  (osc/osc-send @habitat-osc/reaper-client "/track/23/fxeq/hishelf/freq/hz" (float (+ 2000 (rand-int 2000)))))
+
+(defn set-eq-interpolation-dur
+  [opt-num]
+  (if-let [dur (nth [5 10 20 40 60 120 180 240] opt-num nil)]
+    (swap! live-state assoc-in [:main-eq :interpolation-dur-ms] (* dur 1000))
+    (throw (ex-info "Unkown eq-interpolation-dur " {:opt-num opt-num}))))
+
+(defn set-loshelf-freq
+  [opt-num]
+  (if-let [freq (nth [0 300 600 1000 2000] opt-num nil)]
+    (let [gain 0]
+      (swap! live-state assoc-in [:main-eq :loshelf :freq] freq)
+      (swap! live-state assoc-in [:main-eq :loshelf :gain] gain)
+      (interpolate-premaster-eq-band-vals
+       {:band :loshelf
+        :freq freq
+        :gain gain
+        :dur-ms (get-in @live-state [:main-eq :interpolation-dur-ms] 10000)}))
+    (throw (ex-info "Unkown loshelf-freq " {:opt-num opt-num}))))
+
+(defn set-hishelf-freq
+  [opt-num]
+  (if-let [freq (nth [2000 3000 5000 10000 24000] opt-num nil)]
+    (let [gain 0]
+      (swap! live-state assoc-in [:main-eq :hishelf :freq] freq)
+      (swap! live-state assoc-in [:main-eq :hishelf :gain] gain)
+      (interpolate-premaster-eq-band-vals
+       {:band :hishelf
+        :freq freq
+        :gain gain
+        :dur-ms (get-in @live-state [:main-eq :interpolation-dur-ms] 10000)}))
+    (throw (ex-info "Unkown hishelf-freq " {:opt-num opt-num}))))
+
+(defn set-bell-freq
+  [opt-num]
+  (if-let [freq* (nth [:off 600 1000 2000 3000 5000 10000 15000] opt-num nil)]
+    (let [freq (if (= :off freq*) 1000 freq*)
+          gain (if (= :off freq*) 0.5 0.8)]
+      (swap! live-state assoc-in [:main-eq :bell :freq] freq)
+      (swap! live-state assoc-in [:main-eq :bell :gain] gain)
+      (interpolate-premaster-eq-band-vals
+       {:band :bell
+        :freq freq
+        :gain gain
+        :dur-ms (get-in @live-state [:main-eq :interpolation-dur-ms] 10000)}))
+    (throw (ex-info "Unkown hishelf-freq " {:opt-num opt-num}))))
+
+(defn set-notch-freq
+  [opt-num]
+  (if-let [freq* (nth [:off 600 1000 2000 3000 5000 10000 15000] opt-num nil)]
+    (let [freq (if (= :off freq*) 2000 freq*)
+          gain (if (= :off freq*) 0.5 0)]
+      (swap! live-state assoc-in [:main-eq :bell :freq] freq)
+      (swap! live-state assoc-in [:main-eq :bell :gain] gain)
+      (interpolate-premaster-eq-band-vals
+       {:band :notch
+        :freq freq
+        :gain gain
+        :dur-ms (get-in @live-state [:main-eq :interpolation-dur-ms] 10000)}))
+    (throw (ex-info "Unkown hishelf-freq " {:opt-num opt-num}))))
+
+(defn set-flat-eq
+  []
+  (let [dur-ms (get-in @live-state [:main-eq :interpolation-dur-ms] 10000)]
+    (interpolate-premaster-eq-band-vals
+     {:band :loshelf
+      :freq 0
+      :gain 0.5
+      :dur-ms dur-ms})
+    (interpolate-premaster-eq-band-vals
+     {:band :hishelf
+      :freq 24000
+      :gain 0.5
+      :dur-ms dur-ms})
+    (interpolate-premaster-eq-band-vals
+     {:band :bell
+      :freq 1000
+      :gain 0.5
+      :dur-ms dur-ms})
+    (interpolate-premaster-eq-band-vals
+     {:band :notch
+      :freq 2000
+      :gain 0.5
+      :dur-ms dur-ms})))
+
 (defn init!
   "`clients` is a vector of [host port]"
   [clients]
@@ -367,12 +517,19 @@
            ;; presets
            "/save-preset" (when press? (bardo.presets/save-preset!))
            "/presets/load" (bardo.presets/load-preset! internal-client @habitat-osc/receiver-clients (first args))
+           ;; eq
+           "/FX/durs-radio"  (set-eq-interpolation-dur (first args))
+           "/FX/loshelf-radio" (set-loshelf-freq (first args))
+           "/FX/hishelf-radio" (set-hishelf-freq (first args))
+           "/FX/notch-radio" (set-notch-freq (first args))
+           "/FX/bell-radio" (set-bell-freq (first args))
+           "/FX/flat-eq" (set-flat-eq)
            (timbre/warn "Unknown path for message: " msg args-map))
 
-         ;; Save last update to touch-osc-state
+          ;; Save last update to touch-osc-state
          (swap! bardo.live-state/touch-osc-state assoc path args)
 
-         ;; send update to other clients
+          ;; send update to other clients
          (doseq [client (map second @habitat-osc/receiver-clients)]
            (when-not (excluded-paths path)
              (apply osc/osc-send client path args))))))))
