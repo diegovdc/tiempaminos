@@ -100,3 +100,47 @@
       :scale-name "dev/17o7"})
     scale-data)
   (gp/stop))
+
+(comment
+  (require '[tieminos.lattice.v1.lattice :as lattice.v1])
+
+  (lattice.v1/draw-lattice
+   {:ratios (let [cell [1 17/7 4/3]]
+              (concat cell
+                      (map #(* 3/2 %) cell)
+                      (map #(* 3/2 4/3 %) cell)))
+    :period 3
+    :custom-edges #{17/7}
+    :coords (erv.lattice.v2/swap-coords erv.lattice.v2/base-coords [[2 3]])})
+
+  ;; analysis of
+
+  (->> (let [cell [1 17/7 4/3]]
+         (concat cell
+                 (map #(* 3/2 %) cell)
+                 (map #(* 3/2 4/3 %) cell)))
+       (ratios->scale 3)
+       (map :ratio)
+       sort
+       (dedupe)))
+
+(comment
+
+  ;; as two pentatonic scales a fifth appart
+
+  (map #(* % 2/3) [#_3/2 34/21 2/1 17/7 8/3 3/1]) ;; (68/63 4/3 34/21 16/9 2N)
+
+  [17/14 4/3 3/2 34/21 2]
+  [68/63 4/3 34/21 16/9 2N]
+
+  (map :ratio (dedupe-scale (ratios->scale (concat
+                                            [17/14 4/3 3/2 34/21 2]
+                                            (map #(/ % 16/9) [68/63 4/3 34/21 16/9 2N])))))
+  (ratios->scale [17/14 4/3 3/2 34/21 2])
+  (surge/set-scale
+   {:scale {:meta {:scl/name "second child of 17/7"
+                   :scl/description "An experiment"}
+            :scale  (dedupe-scale (ratios->scale (concat
+                                                  [17/14 4/3 3/2 34/21 2]
+                                                  (map #(/ % 16/9) [68/63 4/3 34/21 16/9 2N]))))}
+    :scale-name "dev/17o7-penta1"}))
