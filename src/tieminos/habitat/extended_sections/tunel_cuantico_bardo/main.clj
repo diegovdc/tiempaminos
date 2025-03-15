@@ -307,7 +307,7 @@
   (o/kill qbr)
   (o/kill rev-filter*)
 
-  (habitat/init! {})
+  (habitat/init! {:volume-db -24})
 
   (bardo.osc/init! [["127.0.0.1" 16181]
                     ["192.168.0.101" 16180]
