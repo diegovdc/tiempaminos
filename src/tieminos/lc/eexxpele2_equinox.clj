@@ -30,8 +30,8 @@
   ;; init
   (midi/midi-sinks)
   (def sink (midi/midi-out "VirMIDI"))
-  (def sink2 (midi/midi-out "VirMIDI Bus 3"))
-  (def sink3 (midi/midi-out "VirMIDI Bus 4"))
+  (def sink2 (midi/midi-out "VirMIDI Bus 2"))
+  (def sink3 (midi/midi-out "VirMIDI Bus 3"))
   (surge/init)
   (gp/stop))
 
@@ -95,7 +95,7 @@
    :tempo 90
    :durs [1]
    :on-event (gp/on-event
-              (algo-note {:sink sink
+              (algo-note {:sink sink2
                           :dur (at-i [1])
                           :vel (min 127 (int (* 12 (at-i [3 4 5 3]))))
                           :chan 0
@@ -109,7 +109,7 @@
    :durs [1/2]
    :on-event (gp/on-event
               (when (#{0 3 5 7 8} (mod i 10))
-                (algo-note {:sink sink
+                (algo-note {:sink sink2
                             :dur (at-i [1])
                             :vel (min 127 (int (* 8 (seq-cycle :bd/vel [10 14 15 3]))))
                             :chan 2
@@ -124,108 +124,116 @@
    :durs [1 1/4 1 1 1/2 2 1]
    :on-event (gp/on-event
               (when (> (rand) 0.5)
-                (algo-note {:sink sink
+                (algo-note {:sink sink2
                             :dur (at-i [30 40])
                             :vel (min 127 (int (* 12 (at-i [3 4 5 3]))))
                             :chan 1
                             :offset 50
                             :tempo 90
-                            :note (seq-cycle :bd (concat [0 2 0 4 7]
-                                                         [0 2 10 4 7]
-                                                         [0 2 1 4 7]
-                                                         [0 2 0 4 10]))}))))
+                            :note (seq-cycle :bd (concat [[0 2 0 4 7]]
+                                                         #_[0 2 1 4 7]
+                                                         #_[0 2 1 4 7]
+
+                                                         #_[0 2 0 4 10]))}))))
+
+  ;; Controlar env-amp, wavshaper, y hpf, feedback, fm
+  (gp/stop :pad)
   (gp/ref-rain
    :id :pad
    :ref :bd
-   :tempo 90
-   :durs [1/8]
+    ;; will break if not initialized with a :durs vector
+   :durs [1/8] #_(fn [_] (weighted {1/8 10
+                                     ;; 1/16 9
+                                     ;; 1 1
+                                    }))
    :on-event (gp/on-event
-              #_(when (#{0 2 4 6 8 10 12 13} (mod i 14))
-                  (algo-note {:sink sink
-                              :dur (weighted {1/16 8
-                                              1/8 5
-                                                ;; 1 1/2
-                                                ;; 3/2 4
-                                                ;; 1/3 2
-                                                ;; 1/2 3
-                                              })
-                              :vel (min 127 (int (* 7 (seq-cycle :pad/vel #_[20 4 11 5 3 8]
+              (when (#{0 2 4 6 8 10 12 13} (mod i 14))
+                (algo-note {:sink sink2
+                            :dur (weighted {1/16 8
+                                              ;; 1/8 5
+                                              ;; 1 1/2
+                                              ;; 3/2 4
+                                              ;; 1/3 2
+                                              ;; 1/2 3
+                                            })
+                            :vel (min 127 (int (* 0.5 (seq-cycle :pad/vel #_[20 4 11 5 3 8]
                                                                  [6 7 8 9 10 11 12]))))
-                              :chan 3
-                              :offset (weighted {70 8
-                                                   ;; 65 1
-                                                   ;; 50 4
-                                                   ;; 30 1
-                                                 })
-                              :tempo 90
-                              :note (seq-cycle :pad (weighted {[0 1 2 3 4 5 6 7 8 9 10] 6
-                                                               #_#_[0 2 4 5 6 7 9] 3}))}))))
+                            :chan 3
+                            :offset (weighted {80 3
+                                                 ;; 70 8
+                                                 ;; 65 1
+                                                 ;; low register works well with bp at highest levels
+                                                 ;; 50 1
+                                                 ;; 30 1
+                                               })
+                            :tempo 90
+                            :note (seq-cycle :pad (weighted {[0 3] 16
+                                                             [0 1 2 3 4 5 6 7 8 9 10] 6
+                                                             [0 2 4 5 6 7 9] 3}))}))))
 
   (gp/stop))
 
-#_(comment
+(comment
   ;;  NOT too good
   ;; Scene 3
-    (gp/ref-rain
-     :id :bd
-     :tempo 120
-     :durs [1/3]
-     :on-event (gp/on-event
-                (if (#{0 1 2 3 4 6 7 8 9 11} (mod i 12))
-                  (algo-note {:sink sink
-                              :dur (at-i [1 1/3 1/3])
-                              :vel (min 127 (int (* 12 (at-i [10 4 4]))))
-                              :chan 0
-                              :offset (+ 5 (at-i [50]))
-                              :tempo 120
-                              :note (at-i [0 0 0 0 0 1 2 0 0 0 4 5])})
+  (gp/ref-rain
+   :id :bd
+   :tempo 90
+   :durs [1/3]
+   :on-event (gp/on-event
+              (if (#{0 1 2 3 4 6 7 8 9 11} (mod i 12))
+                (algo-note {:sink sink3
+                            :dur (at-i [1 1/3 1/3])
+                            :vel (min 127 (int (* 12 (at-i [10 4 4]))))
+                            :chan 0
+                            :offset (+ 5 (at-i [50]))
+                            :tempo 120
+                            :note (at-i [0 0 0 0 0 1 2 0 0 0 4 5])})
 
-                  (algo-note {:sink sink
-                              :dur (at-i [1 1/3 1/3 2 2])
-                              :vel (min 127 (int (* 12 (at-i [10 4 4]))))
-                              :chan 0
-                              :offset (+ 10 (at-i [50 51 50 50]))
-                              :tempo 120
-                              :note (at-i [1 1 2 1 1])}))))
+                (algo-note {:sink sink3
+                            :dur (at-i [1 1/3 1/3 2 2])
+                            :vel (min 127 (int (* 12 (at-i [10 4 4]))))
+                            :chan 0
+                            :offset (+ 10 (at-i [50 51 50 50]))
+                            :tempo 120
+                            :note (at-i [1 1 2 1 1])}))))
 
-    (gp/ref-rain
-     :id :hh
-     :ref :bd
-     :tempo 120
-     :durs [1/6]
-     :on-event (gp/on-event
-                (when (> (rand) 0.05)
-                  (algo-note {:sink sink
-                              :dur (* 2 dur-s)
-                              :vel (min 127 (int (*  1
-                                                     (at-i [5 5 10 6 2 3])
-                                                     (seq-cycle :hh/vel [1 2 3 4 5 6 7 8 9 10 11 12]))))
-                              :chan 3
-                              :offset (at-i [55])
-                              :tempo 60
-                              :note (at-i [0 [2 3] 4 5 4])}))))
-    (gp/stop :leady)
-    (gp/ref-rain
-     :id :leady
-     :ref :bd
-     :tempo 120
-     :durs [2/3]
-     :on-event (gp/on-event
-                (algo-note {:sink sink
-                            :dur (* (at-i [1 1 1 2]) dur-s)
-                            :vel (min 127 (int (* 10 (seq-cycle :pad/vel [10 10 5]))))
-                            :chan 4                           :offset 60
+  (gp/ref-rain
+   :id :hh
+   :ref :bd
+   :durs [1/3]
+   :on-event (gp/on-event
+              (when (> (rand) 0.3)
+                (algo-note {:sink sink3
+                            :dur (* 2 dur-s)
+                            :vel (min 127 (int (*  1
+                                                   (at-i [5 5 10 6 2 3])
+                                                   (seq-cycle :hh/vel [1 2 3 4 5 6 7 8 9 10 11 12]))))
+                            :chan 3
+                            :offset (at-i [55])
                             :tempo 60
-                            :note (at-i [0
-                                         (seq-cycle :bass/n2 [0 1 2 0 0 -6])
-                                         0
-                                         (seq-cycle :bass/n4 [6 6 5 3 6])
-                                         (seq-cycle :bass/n1 [0 0 0 2])
-                                         (seq-cycle :bass/n2 [0 1 2 0 0 -6])
-                                         0
-                                         (seq-cycle :bass/n4b [6 12 12 5 3 6])])})))
+                            :note (at-i [0 [2 3] 4 5 4])}))))
+  (gp/stop :leady)
+  (gp/ref-rain
+   :id :leady
+   :ref :bd
+   :durs [2/3]
+   :on-event (gp/on-event
+              (algo-note {:sink sink
+                          :dur (* (at-i [1 1 1 2]) dur-s)
+                          :vel (min 127 (int (* 10 (seq-cycle :pad/vel [10 10 5]))))
+                          :chan 4                           :offset 60
+                          :tempo 60
+                          :note (at-i [0
+                                       (seq-cycle :bass/n2 [0 1 2 0 0 -6])
+                                       0
+                                       (seq-cycle :bass/n4 [6 6 5 3 6])
+                                       (seq-cycle :bass/n1 [0 0 0 2])
+                                       (seq-cycle :bass/n2 [0 1 2 0 0 -6])
+                                       0
+                                       (seq-cycle :bass/n4b [6 12 12 5 3 6])])})))
 
-    (gp/stop))
+  (gp/stop))
 (comment
 
   ;; Scene 3b
@@ -234,19 +242,19 @@
    :tempo 120
    :durs [1/4]
    :on-event (gp/on-event
-              (let [config {:sink sink
+              (let [config {:sink sink3
                             :dur (at-i [1 1/3 1/3])
                             :vel (min 127 (int (* 12 (at-i [10 4 10]))))
                             :chan 0
                             :offset (at-i [50 52])
                             :tempo 120
                             :note 0}]
-                #_(case (at-i (str/split "baab" #""))
-                    "a" (algo-note (assoc config :chan 0 :note 0))
-                    "b" (algo-note (assoc config :chan 1 :note 0))
-                    "e" (algo-note (assoc config :chan 3 :note 0))
-                    "c" nil)
-                #_(case (at-i (str/split "ededddeddedeeeeeeeedddd" #""))
+                (case (at-i (str/split "aca" #""))
+                  "a" (algo-note (assoc config :chan 0 :note 0))
+                  "b" (algo-note (assoc config :chan 1 :note 0))
+                  "e" (algo-note (assoc config :chan 3 :note 0))
+                  "c" nil)
+                #_(case (at-i (str/split "ceddd" #""))
                     "d" (algo-note (assoc config :chan 2 :note 0))
                     "e" (algo-note (assoc config :chan 3 :note 0))
                     "c" nil)
