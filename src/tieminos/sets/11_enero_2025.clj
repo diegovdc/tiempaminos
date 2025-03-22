@@ -1,4 +1,5 @@
 (ns tieminos.sets.11-enero-2025
+  "Set para Viejo Vago Brujo"
   (:require
    [clojure.data.generators :refer [weighted]]
    [overtone.core :as o]
@@ -85,7 +86,7 @@
               (when-not (and (> (rand) 0.5) (= dur 1/4))
                 (let [bd* (weighted {bd 3 bd2 1})
                       player (if (= bd* bd) st-smpl mono-smpl)]
-                  (player bd* :out bd-out)))))
+                  (player bd* :out bd-out :amp 1)))))
   (ref-rain
    :id :rim
    :ref :bd
@@ -125,7 +126,7 @@
    :ratio 1/2
    :durs [2 2 2 2 2 2 2 2 1 2 1]
    :on-event (on-event
-              (when (or true #_(#{0 1 2 3 4} (mod i 3)))
+              (when (or true (#{0 4} (mod i 5)))
                 (st-smpl (rand-nth [conga-low conga-high congao])
                          :out congas-out
                          :amp (+ (at-i [0.5 0 0 0])
@@ -134,11 +135,13 @@
                                             0.8 2
                                             0.7 3}))
                          :rate (weighted {1 8
-                                           ;; 12/11 2
-                                          13/11 8
-                                           ;; 7/4 5
+                                            ;; 12/11 2
+                                            ;; 13/11 8
+                                            ;; 7/4 5
+                                            ;; 2 8
+                                            ;; 3 10
                                           3/2 2})))))
-  (gp/stop :congas)
+  (gp/stop)
   (ref-rain
    :id :sd
    :ref :bd
@@ -156,16 +159,6 @@
   (def sink2 (midi/midi-out "VirMIDI Bus 3"))
   (def sink3 (midi/midi-out "VirMIDI Bus 4"))
 
-  (ref-rain
-   :id :bd
-   :tempo 180
-   :ratio 1/4
-   :durs [4 2 2 4 1 2 1 1 3 4 2 1 1 2 2]
-   :on-event (on-event
-              (when-not (and (> (rand) 0.5) (= dur 1/4))
-                (mono-smpl (weighted {bd 3
-                                      bd2 1})
-                           :amp 1))))
   (gp/stop)
   (ref-rain
    :id :melody
@@ -199,16 +192,16 @@
    :on-event (on-event
 
               #_(let [{:keys [durs]} data])
-              #_(when-not (= dur 1)
-                  (algo-note {:sink sink
-                              :dur (weighted {1 3
-                                              1/2 1
-                                              1/10 1
-                                              1/5 2})
-                              :vel (min 127 (int (* 12 (at-i [8 3 4 5 3]))))
-                              :chan 1
-                              :offset (at-i [60 60 62 60 60 60 60 63 65])
-                              :note (+ (at-i [0 3 5 7 8 8 12 13 15]))}))))
+              (when-not (= dur 1)
+                (algo-note {:sink sink
+                            :dur (weighted {1 3
+                                            1/2 1
+                                            1/10 1
+                                            1/5 2})
+                            :vel (min 127 (int (* 1 (at-i [8 3 4 5 3]))))
+                            :chan 1
+                            :offset (at-i [60 60 62 60 60 60 60 63 65])
+                            :note (+ (at-i [0 3 5 7 8 8 12 13 15]))}))))
 
   (ref-rain
    :id :hh
@@ -225,4 +218,11 @@
                                          0.5 4})
                          :pan 0.5)))
 
-  (gp/stop))
+  (gp/stop :hh)
+  (gp/stop :bd)
+  (gp/stop :pad)
+  (gp/stop :melody)
+  (gp/stop :melody2)
+  (gp/stop :rim)
+  (gp/stop :congas)
+  (gp/stop :sd))

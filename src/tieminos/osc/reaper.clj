@@ -16,8 +16,39 @@
 (defn stop [] (osc/osc-send @osc-client "/stop"))
 (defn rec [] (osc/osc-send @osc-client "/record"))
 
-(defn set-vol [track vol]
+(defn set-vol
+  "0.7158 is approximately 0db"
+  [track vol]
   (osc/osc-send @osc-client (format "/track/%s/volume" track) (float vol)))
+
+(def reaper-db {:-inf 0
+                -6 0.59
+                -3 0.649
+                0 0.7158
+                3 0.79
+                6 0.86})
+
+(defn from-db [db]
+  (if-let [vol (reaper-db db)]
+    vol
+    (throw (ex-info "Unknown db value" {:db db :available-values (keys reaper-db)}))))
+
+(defn set-track-rec [track arm?]
+  (osc/osc-send @osc-client (format "/track/%s/recarm" track) (int (if arm? 1 0))))
+
+(defn set-autotrim
+  "Set automation mode to trim"
+  [track]
+  (osc/osc-send @osc-client (format "/track/%s/autotrim" track)))
+
+(defn set-autowrite
+  "Set automation mode to write"
+  [track]
+  (osc/osc-send @osc-client (format "/track/%s/autowrite" track)))
+
+(comment
+  (set-vol 1 0.59)
+  (set-track-rec 22 false))
 
 (defn basic-insert-marker
   "This is a very simple way to insert markers. It may produce duplicate markers"
