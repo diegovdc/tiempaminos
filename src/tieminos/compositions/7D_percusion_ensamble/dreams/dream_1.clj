@@ -2,11 +2,11 @@
   "From exploration4"
   (:require
    [clojure.data.generators :refer [weighted]]
+   [clojure.string :as str]
    [overtone.core :as o]
    [overtone.midi :as midi]
    [tieminos.compositions.7D-percusion-ensamble.base
-    :refer [bh deg->freq diat->polydori-degree init! mempan my-malgo root
-            stop!] :as *7d-base]
+    :refer [bh diat->polydori-degree init! mempan my-malgo root] :as *7d-base]
    [tieminos.sc-utils.groups.v1 :as groups]
    [tieminos.sc-utils.synths.v1 :refer [lfo-kr]]
    [tieminos.utils :refer [rrange wrap-at]]
@@ -74,10 +74,11 @@
 
 (def synths (map #(partial % (groups/early)) [*7d-base/low *7d-base/short-plate low2]))
 
-(defn delay* [ref* delay-ratio f]
+(defn delay* [ratio delay-ratio f]
   (ref-rain
    :id (random-uuid)
-   :ref ref*
+    ;; :ref ref*
+   :ratio ratio
    :durs [delay-ratio 1]
    :loop? false
    :on-event (on-event
@@ -136,36 +137,58 @@
 
                   (when (or #_true (#{1 3} (mod (inc index) 5)))
                     #_(delay*
-                       ::1 (at-i [1 1])
+                       (:ratio data) (at-i [1 1])
                        (fn []))
                     (synth
                      :freq (* 1 f2)
-                      ;; :sub 1
-                      ;; :sub2 2
+                        ;; :sub 1
+                        ;; :sub2 2
                      :atk (rrange 0.01 0.03)
                      :pan (* -1 pan)
                      :mod-freq (rrand 6000 10000)
-                      ;; :dcy (* (rrange 2 4) dur-s)
+                        ;; :dcy (* (rrange 2 4) dur-s)
                      :amp (* m2-amp (rrange 0.5 0.8))
                      :out m2-vibes)
                     (sc-midi-data :sink sc-m2 :deg (:polydori-degree f2-data) :dur 1))
 
                     ;; bass (NOTE the mod 7)
-                  #_(when (or #_true (#{1 3} (mod (inc index) 7)))
-                      #_(delay*
-                         ::1 (at-i [1 1])
-                         (fn []))
-                      (synth
+
+                  (when (or #_true (#{1 3} (mod (inc index) 7)))
+                    (synth
+                     :freq (* 1 f2)
+                     :sub 0.9
+                     :sub2 0.7
+                     :atk (rrange 0.01 0.03)
+                     :pan (* -1 pan)
+                     :mod-freq (rrand 6000 10000)
+                      ;; :dcy (* (rrange 2 4) dur-s)
+                     :amp (* bass-amp (rrange 0.5 0.8))
+                     :out bass)
+                    #_(delay*
+                       1
+                       (at-i [4/3 0 0 1/4 0])
+                       (fn []))
+                    #_(synth
                        :freq (* 1/2 f2)
-                        ;; :sub 0.9
-                        ;; :sub2 0.7
+                       :sub 0.9
+                       :sub2 0.7
                        :atk (rrange 0.01 0.03)
                        :pan (* -1 pan)
                        :mod-freq (rrand 6000 10000)
-                        ;; :dcy (* (rrange 2 4) dur-s)
+                      ;; :dcy (* (rrange 2 4) dur-s)
                        :amp (* bass-amp (rrange 0.5 0.8))
                        :out bass)
-                      (sc-midi-data :sink sc-bass :deg (:polydori-degree f2-data) :dur 1)))))
+                    #_(synth
+                       :freq (* 1/4 f2)
+                       :sub 0.9
+                       :sub2 0.7
+                       :atk (rrange 0.01 0.03)
+                       :pan (* -1 pan)
+                       :mod-freq (rrand 6000 10000)
+                      ;; :dcy (* (rrange 2 4) dur-s)
+                       :amp (* bass-amp (rrange 0.5 0.8))
+                       :out bass)
+                    (sc-midi-data :sink sc-bass :deg (:polydori-degree f2-data) :dur 1)))))
     (ref-rain
      :id ::1-bass :ref ::1
      :durs [3 2 2] :ratio 1/9
