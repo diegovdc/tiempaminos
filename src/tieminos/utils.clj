@@ -1,7 +1,7 @@
 (ns tieminos.utils
   (:require
    [clojure.core.async :as a]
-   [clojure.math :refer [ceil]]
+   [clojure.string :as str]
    [erv.cps.core :as cps]
    [erv.scale.core :as scale]
    [erv.utils.conversions :as conv]
@@ -19,6 +19,9 @@
   "Random range"
   [min max]
   (+ min (rand (- max min))))
+
+(defn rbool [prob]
+  (> prob (rand)))
 
 (defn period [seconds durs]
   (let [ratio (/ seconds (apply + durs))]
@@ -353,3 +356,18 @@
 (comment
   (def tprint2 (throttle2 #(println "hola" %) 2000))
   (doseq [x (range 6)] (tprint2 x)))
+
+(defn- parse-xo
+  [xo-str]
+  (-> xo-str
+      (str/replace #" " "")
+      (str/split #"")
+      (->> (map-indexed (fn [i x]
+                          (if (= x "x") i nil)))
+           (remove nil?)
+           set)))
+
+(defn xo
+  ([xo-str index]
+   (let [index-set (parse-xo xo-str)]
+     (index-set (mod index (count xo-str))))))
