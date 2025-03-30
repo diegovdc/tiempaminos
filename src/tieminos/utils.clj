@@ -369,5 +369,6 @@
 
 (defn xo
   ([xo-str index]
-   (let [index-set (parse-xo xo-str)]
-     (index-set (mod index (count xo-str))))))
+   (when-not (zero? (count xo-str))
+     (let [index-set (parse-xo xo-str)]
+       (index-set (mod index (count xo-str)))))))
