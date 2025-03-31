@@ -142,7 +142,7 @@
                   (when (> mprob (rand))
 
                     (if (> mmix (rand))
-                      (my-malgo {:sinks [ssuave #_pbell]
+                      (my-malgo {:sink [ssuave #_pbell]
                                  :deg (diat->polydori-degree 0 (+ m1t  deg))
                                  :dur (weighted {0.1 9 1 mdur1w})
                                  :vel 80})
