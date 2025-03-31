@@ -96,7 +96,6 @@
              :dur dur
              :vel 100}))
 
-
 (comment
   :start-section-1
 ;;;;;;;;;;;;
@@ -236,9 +235,9 @@
         mainm 1
         mainf2m 1
         mainf2m-offset 0
-        mamp 1
-        m2vibesamp 1
-        mbassamp 1
+        m1-amp 1
+        m2-amp 1
+        bass-amp 1
         bm 2
         sbass-amp (fn [at-i] (at-i [100]))
         bprob 0.
@@ -270,46 +269,64 @@
                    :freq f1
                    :mod-freq (rrand 6000 10000)
                    :pan (mempan (mod deg 2))
-                   :amp (* mamp (rrange 0.5 0.8))
+                   :amp (* m1-amp (rrange 0.5 0.8))
                    :out m1-vibes)
                   (sc-midi-data :sink sc-m1 :deg (:polydori-degree f1-data) :dur 1)
 
                   (when (or #_true (#{1 3} (mod (inc index) 5)))
                     #_(delay*
-                       ::1 (at-i [1 1])
+                       (:ratio data) (at-i [1 1])
                        (fn []))
-                    (let [atk (rrange 0.01 0.03)
-                          dcy 1 #_(* (rrange 2 4) dur-s)]
-                      (synth
-                       :freq (* 1 f2)
+                    (synth
+                     :freq (* 1 f2)
                         ;; :sub 1
                         ;; :sub2 2
-                       :atk atk
+                     :atk (rrange 0.01 0.03)
+                     :pan (* -1 pan)
+                     :mod-freq (rrand 6000 10000)
+                        ;; :dcy (* (rrange 2 4) dur-s)
+                     :amp (* m2-amp (rrange 0.5 0.8))
+                     :out m2-vibes)
+                    (sc-midi-data :sink sc-m2 :deg (:polydori-degree f2-data) :dur 1))
+
+                    ;; bass (NOTE the mod 7)
+
+                  (when (or #_true (#{1 3} (mod (inc index) 7)))
+                    (synth
+                     :freq (* 1 f2)
+                     :sub 0.9
+                     :sub2 0.7
+                     :atk (rrange 0.01 0.03)
+                     :pan (* -1 pan)
+                     :mod-freq (rrand 6000 10000)
+                      ;; :dcy (* (rrange 2 4) dur-s)
+                     :amp (* bass-amp (rrange 0.5 0.8))
+                     :out bass)
+                    #_(delay*
+                       1
+                       (at-i [4/3 0 0 1/4 0])
+                       (fn []))
+                    #_(synth
+                       :freq (* 1/2 f2)
+                       :sub 0.9
+                       :sub2 0.7
+                       :atk (rrange 0.01 0.03)
                        :pan (* -1 pan)
                        :mod-freq (rrand 6000 10000)
-                       :dcy dcy
-                       :amp (* m2vibesamp (rrange 0.5 0.8))
-                       :out m2-vibes)
-                      (sc-midi-data :sink sc-m2 :deg (:polydori-degree f2-data) :dur (+ atk dcy))))
-
-                  ;; bass (NOTE the mod 7)
-                  #_(when (or #_true (#{1 3} (mod (inc index) 7)))
-                      #_(delay*
-                         ::1 (at-i [1 1])
-                         (fn []))
-                      (let [atk (rrange 0.01 0.03)
-                            dcy 1 #_(* (rrange 2 4) dur-s)]
-                        (synth
-                         :freq (* 1/2 f2)
-                          ;; :sub 0.9
-                          ;; :sub2 0.7
-                         :atk atk
-                         :pan (* -1 pan)
-                         :mod-freq (rrand 6000 10000)
-                          ;; :dcy dcy
-                         :amp (* mbassamp (rrange 0.5 0.8))
-                         :out  bass)
-                        (sc-midi-data :sink sc-bass :deg (:polydori-degree f2-data) :dur (+ atk dcy)))))))
+                      ;; :dcy (* (rrange 2 4) dur-s)
+                       :amp (* bass-amp (rrange 0.5 0.8))
+                       :out bass)
+                    #_(synth
+                       :freq (* 1/4 f2)
+                       :sub 0.9
+                       :sub2 0.7
+                       :atk (rrange 0.01 0.03)
+                       :pan (* -1 pan)
+                       :mod-freq (rrand 6000 10000)
+                      ;; :dcy (* (rrange 2 4) dur-s)
+                       :amp (* bass-amp (rrange 0.5 0.8))
+                       :out bass)
+                    (sc-midi-data :sink sc-bass :deg (:polydori-degree f2-data) :dur 1)))))
     (ref-rain
      :id ::1-bass :ref ::1
      :durs [3 2 2] :ratio 1/9
