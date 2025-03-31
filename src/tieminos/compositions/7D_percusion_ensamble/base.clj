@@ -36,24 +36,28 @@
   [out]
   (+ 22 out))
 
+(def ^:private my-algo-default-config
+  {:sink surge-suave
+   :scale-size 29
+   :base-midi-deg 60
+   :base-midi-chan 0})
+
 (defn my-malgo
-  "Takes and `malgo-note` config with an extra `:sinks` key which an be an array of sinks or a single sink.
-  The if multiple sinks are used the same event will be dispatched to each sink
+  "Takes and `malgo-note` config but `:sink` can be an array of sinks or a single sink.
+  The multiple sinks are used the same event will be dispatched to each sink.
+  The velocity can be independently controlled for each sink by appending the `:malgo/vel-amp` key to the sink
 
   NOTE: The default `sink` is `surge-suave`."
-  [{:keys [sinks] :as config}]
-  (let [defaults {:sink surge-suave
-                  :scale-size 29
-                  :base-midi-deg 60
-                  :base-midi-chan 0}]
-
-    (if-not (seq sinks)
-      (malgo-note (merge defaults config))
-      (doseq [sink sinks]
-        (malgo-note (-> defaults
+  [{:keys [sink] :as config}]
+  (println (dissoc  config :sink))
+  (if-not (sequential? sink)
+    (malgo-note (merge my-algo-default-config config))
+    (doseq [sink* sink]
+      (let [vel-amp (:malgo/vel-amp sink* 1)]
+        (malgo-note (-> my-algo-default-config
                         (merge config)
-                        (dissoc :sinks)
-                        (assoc :sink sink)))))))
+                        (assoc :sink sink*)
+                        (update :vel * vel-amp)))))))
 
 #_{:clj-kondo/ignore [:deprecated-var]}
 (def subscales-list-map {:original dorian-hexanies-in-polydori
