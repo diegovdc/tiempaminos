@@ -11,6 +11,7 @@
    [tieminos.sc-utils.synths.v1 :refer [lfo-kr]]
    [tieminos.utils :refer [rrange wrap-at]]
    [time-time.dynacan.players.gen-poly :as gp :refer [on-event ref-rain]]
+   [time-time.dynacan.players.gen-poly-test :refer [stop!]]
    [time-time.standard :refer [rrand]]))
 
 ;; stereo outs
