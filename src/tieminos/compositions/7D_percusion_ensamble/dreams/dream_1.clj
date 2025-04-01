@@ -8,6 +8,7 @@
     :refer [bh diat->polydori-degree init! mempan my-malgo root stop!] :as *7d-base]
    [tieminos.sc-utils.groups.v1 :as groups]
    [tieminos.sc-utils.synths.v1 :refer [lfo-kr]]
+   [tieminos.seq-utils.core :refer [mseq]]
    [tieminos.utils :refer [rrange wrap-at]]
    [time-time.dynacan.players.gen-poly :as gp :refer [on-event ref-rain]]
    [time-time.standard :refer [rrand]]))
@@ -219,43 +220,42 @@
 (comment
   :start-section-2
   ;; [0 5 5] 2 [1 -7] 8 [4 7 3] [6 5] [3 3 8 9]
-
-  (let [degs (fn [at-i m]
+  (let [degs (fn [m]
                (case m
-                 1 (at-i [0 2 0 (at-i [2 3]) (at-i [7 4]) (at-i [4 5]) 3])
-                 2 (at-i [(at-i [0 5 5])
-                          2
-                          (at-i [1 -7])
-                          (at-i [8 2 8])
-                          (at-i [4 7 3])
-                          #_(at-i [6 5])
-                          (at-i [3 8 9])])))
+                 1 [0 2 0 [2 #_3] #_#_#_[7 #_4] [4 5] 3]
+                 2 [[0 5 5]
+                    2
+                    [1 -7]
+                    [8 2 8]
+                    [4 7 3]
+                    #_[6 5]
+                    [3 8 9]]))
         mainm 1
         mainf2m 1
         mainf2m-offset 0
         m1-amp 1
-        m2-amp  1
-        bass-amp 1
+        m2-amp  0
+        bass-amp 0
         bm 2
-        sbass-amp (fn [at-i] (at-i [100]))
+        sbass-amp [100]
         bprob 0.4
         ;; line
         mm 1
-        mprob 0.7
+        mprob 1
         mmix 0.5
         m1t 3
         m2t 1
-        sm2-sinks [suave-m1 (assoc pbell :malgo/vel-amp 0.3)]
-        sm1-sinks [suave-m2 (assoc pbell :malgo/vel-amp 0.3)]
-        sm1-amp (fn [at-i] (at-i [80]))
-        sm2-amp (fn [at-i] (at-i [80]))
+        sm2-sinks [suave-m1 #_(assoc pbell :malgo/vel-amp 0.3)]
+        sm1-sinks [suave-m2 #_(assoc pbell :malgo/vel-amp 0.3)]
+        sm1-amp [80]
+        sm2-amp [80]
         mratio 1/9
         mdur1w 5
         m-reset? false
         ;; to modulate harmonically
         modum 2
-        modu-amp (fn [at-i] (+ 20 (at-i [10 30])))
-        moduprob 1
+        modu-amp (map #(+ % 20) [10 30])
+        moduprob 0
         modut -6
         modulator-reset? false
         ;; scales
@@ -270,9 +270,9 @@
      :id ::1 :durs [3 2 2] :ratio 1/9
      :on-event (on-event
                 (let [synth (rand-nth synths)
-                      deg (degs at-i mainm)
+                      deg (mseq i (degs mainm))
                       f1-data (*7d-base/deg->data :base-freq root :scale (m1-scale) :degree deg)
-                      f2-data (*7d-base/deg->data :base-freq root :scale (m2-scale) :degree (degs #(wrap-at (+ mainf2m-offset i) %) mainf2m))
+                      f2-data (*7d-base/deg->data :base-freq root :scale (m2-scale) :degree (mseq (+ mainf2m-offset i) (degs mainf2m)))
                       f1 (:freq f1-data)
                       f2 (:freq f2-data)
                       pan (rrange -1 1)]
@@ -341,13 +341,13 @@
      :id ::1-bass :ref ::1
      :durs [3 2 2] :ratio 1/9
      :on-event (on-event
-                (let [deg (degs at-i bm)]
+                (let [deg (mseq i (degs bm))]
                   (when (> bprob (rand))
                     (my-malgo {:sink suave-bass
                                :deg (diat->polydori-degree (sbass-scale)
                                                            (+ (at-i [#_4 -4 3 -4 -3]) deg))
                                :dur (weighted {1 9 1.5 8})
-                               :vel (sbass-amp at-i)})))))
+                               :vel (mseq i sbass-amp)})))))
 
     (when m-reset? (gp/stop ::1-m))
     (ref-rain
@@ -355,19 +355,19 @@
      :durs [3 2 2] :ratio mratio
      :on-event (on-event
                 (when (> mprob (rand))
-                  (let [deg (+ (degs at-i mm)
+                  (let [deg (+ (mseq i (degs mm))
                                (at-i [2 2 3 2 3])
                                (weighted {0 5 4 4 8 3}))]
                     (if (> (rand) mmix)
                       (my-malgo {:sink sm1-sinks
                                  :deg (diat->polydori-degree (sm1-scale) (+ m1t deg) :modal)
                                  :dur (weighted {0.1 9 1 mdur1w})
-                                 :vel (sm1-amp at-i)})
+                                 :vel (mseq i sm1-amp)})
                       (my-malgo {:sink sm2-sinks
                                  :deg (diat->polydori-degree (sm2-scale) (+ m2t  deg) :modal)
                                    ;; TODO move weights to let
                                  :dur (weighted {0.1 9 1 mdur1w})
-                                 :vel (sm2-amp at-i)}))))))
+                                 :vel (mseq i sm2-amp)}))))))
 
     (when modulator-reset? (gp/stop ::1-modulator))
     (ref-rain
@@ -375,7 +375,7 @@
      :durs [3 2 2] :ratio 1/9
      :on-event (on-event
                 (when (> moduprob (rand))
-                  (let [deg (+ (degs at-i modum)
+                  (let [deg (+ (mseq i (degs modum))
                                (at-i [2 2 3 2 3])
                                (weighted {0 5 4 4 8 3}))]
                     (my-malgo {:sink pbell-mod
@@ -386,7 +386,7 @@
                                         (weighted {0 5 4 4 -4 4})
                                         deg))
                                :dur (weighted {0.1 3 1 5 2 5})
-                               :vel (modu-amp at-i)}))))))
+                               :vel (mseq i modu-amp)}))))))
 
   :end-section-2)
 

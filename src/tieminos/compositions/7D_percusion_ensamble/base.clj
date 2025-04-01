@@ -49,7 +49,7 @@
 
   NOTE: The default `sink` is `surge-suave`."
   [{:keys [sink] :as config}]
-  (println (dissoc  config :sink))
+
   (if-not (sequential? sink)
     (malgo-note (merge my-algo-default-config config))
     (doseq [sink* sink]
