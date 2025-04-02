@@ -1,13 +1,11 @@
 (ns tieminos.utils
   (:require
    [clojure.core.async :as a]
-   [clojure.string :as str]
    [erv.cps.core :as cps]
    [erv.scale.core :as scale]
    [erv.utils.conversions :as conv]
    [overtone.core :as o]
-   [taoensso.timbre :as timbre]
-   [tieminos.seq-utils.core :refer [xo lin get-next-item]]))
+   [taoensso.timbre :as timbre]))
 
 (defn now []
   (System/currentTimeMillis))
@@ -357,4 +355,3 @@
 (comment
   (def tprint2 (throttle2 #(println "hola" %) 2000))
   (doseq [x (range 6)] (tprint2 x)))
-

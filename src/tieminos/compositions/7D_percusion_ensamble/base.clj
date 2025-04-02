@@ -97,9 +97,11 @@ If using `mdeg->freq` this may show up only once because it is memoized, even if
       :or {base-freq root
            type :original}
       :as _config}]
-  (let [polydori-degree (diat->polydori-degree scale degree type)]
+  (let [scale* (if (sequential? scale) (first scale) scale)
+        offset (if (and (sequential? scale) (> (count scale) 1)) (second scale) 0)
+        polydori-degree (diat->polydori-degree scale* (+ offset degree) type)]
     {:polydori-degree polydori-degree
-     :scale scale
+     :scale scale*
      :scale-degree degree
      :type type
      :freq (scale/deg->freq (:scale polydori-v2)

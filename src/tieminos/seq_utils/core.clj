@@ -3,7 +3,8 @@
   (:require
    [clojure.data.generators :refer [weighted]]
    [clojure.string :as str]
-   [tieminos.utils :refer [wrap-at]]))
+   [tieminos.utils :refer [wrap-at]]
+   [time-time.standard :refer [rotate]]))
 
 ;; XO
 (defn- parse-xo
@@ -17,10 +18,26 @@
            set)))
 
 (defn xo
+  ([xo-str]
+   (let [index-set (parse-xo xo-str)]
+     (fn [index]
+       (when-not (zero? (count xo-str))
+         (index-set (mod index (count xo-str)))))))
   ([xo-str index]
    (when-not (zero? (count xo-str))
      (let [index-set (parse-xo xo-str)]
        (index-set (mod index (count xo-str)))))))
+
+(defn- concat-chars
+  [chars]
+  (apply str chars))
+
+(defn rot [n xs]
+  (let [meta* (meta xs)]
+    (cond-> (rotate xs n)
+      (string? xs) concat-chars
+      ;; preserve meta for lin/rand/etc.
+      meta* (with-meta meta*))))
 
 ;; melodic sequencing
 (defonce linear-state (atom {}))
