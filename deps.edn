@@ -7,7 +7,7 @@
         org.clojure/data.generators {:mvn/version "1.0.0"}
         io.github.diegovdc/overtone {:git/url "https://github.com/diegovdc/overtone.git"
                                      :sha "9436febbb819887bfdc8316034a6e1f5b7f51fcf"} #_{:local/root "../overtone" :deps/manifest :deps}
-        videco/piratidal {:local/root "../../../code/piratidal" :deps/manifest :deps}
+        ;; videco/piratidal {:local/root "../../../code/piratidal" :deps/manifest :deps}
         io.github.diegovdc/time-time {:git/url "https://github.com/diegovdc/time-time.git"
                                       :sha "29e04abec1fc290c162e34a18db57ef5ac33d3e6"}
         #_{:local/root "../time-tiem" :deps/manifest :deps}
