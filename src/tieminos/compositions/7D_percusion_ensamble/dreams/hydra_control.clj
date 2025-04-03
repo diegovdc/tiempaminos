@@ -23,31 +23,48 @@
 (defn fade-from-black [] (fade {:cc 74 :fade-to 0}))
 (defn fade-to-black [] (fade {:cc 74 :fade-to 127}))
 
+(defn interpolate-ad-envelope
+  [{:keys [id tick-ms atk-ms atk-val dcy-ms dcy-val cb]
+    :or {tick-ms 100}}]
+  (cb-interpolate
+   {:id id
+    :dur-ms atk-ms
+    :tick-ms tick-ms
+    :init-val 0
+    :target-val atk-val
+    :cb cb
+    :on-end (fn [{:keys [val]}]
+              (cb-interpolate {:id id
+                               :dur-ms dcy-ms
+                               :tick-ms tick-ms
+                               :init-val val
+                               :target-val dcy-val
+                               :cb cb
+                               :on-end nil}))}))
+
+(comment
+  (interpolate-ad-envelope {:id :ad-interpolation :tick-ms 500 :atk-ms 1000 :atk-val 1 :dcy-ms 2000 :dcy-val 0 :cb println}))
+
 (comment
   (fade-from-black)
   (fade-to-black)
   (habitat-osc/init :port 7777)
   (habitat-osc/responder
-    (fn [{:keys [path args] :as msg}]
-      (println msg)
-      (try
-        (case path
-          "/fade-from-black" (fade-from-black)
-          "/fade-to-black" (fade-to-black))
-        (catch Exception _ (timbre/error "Unknown path" msg)))
-      ))
+   (fn [{:keys [path args] :as msg}]
+     (println msg)
+     (try
+       (case path
+         "/fade-from-black" (fade-from-black)
+         "/fade-to-black" (fade-to-black))
+       (catch Exception _ (timbre/error "Unknown path" msg)))))
 
-
-  (def cc {
-           :black-fade 74
+  (def cc {:black-fade 74
            :fractal-add 75
            :fractal-hue 76
            :kaleid-mod-amp 77
            :preout-mod 78
            :in-blend 79
-           :voronoi-mod 80
-           }
-    )
+           :voronoi-mod 80})
 
   (midi/midi-control sink (cc :black-fade) 0)
   (midi/midi-control sink (cc :fractal-add) 0)
