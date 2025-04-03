@@ -220,14 +220,16 @@
     {:ticks ticks :delta delta}))
 
 (defn make-interpolator
-  [{:keys [id _dur-ms tick-ms init-val _target-val cb]
+  [{:keys [id _dur-ms tick-ms init-val _target-val cb on-end]
     :as interpolator-config
-    :or {init-val 0 tick-ms 100}}]
+    :or {init-val 0 tick-ms 100
+         on-end (fn [_data])}}]
   (let [in-chan  (a/chan)
         stop-chan (a/chan)
         {:keys [ticks delta]} (get-interpolation-data interpolator-config)]
     (a/go-loop [delta delta
                 cb cb
+                on-end on-end
                 tick-ms tick-ms
                 ticks-left ticks
                 val init-val]
@@ -235,14 +237,18 @@
         (a/alt!
           in-chan ([{:keys [tick-ms] :as interpolator-config}]
                    (let [{:keys [ticks delta]} (get-interpolation-data (assoc interpolator-config
-                                                                              :init-val val))]
-                     (cb {:ticks-left ticks :val val})
-                     (recur delta cb tick-ms ticks val)))
+                                                                              :init-val val))
+                         cb* (:cb interpolator-config cb)
+                         on-end* (:on-end interpolator-config on-end)]
+                     (cb* {:ticks-left ticks :val val})
+                     (recur delta cb* on-end* tick-ms ticks val)))
           (a/timeout (if ticks-left? tick-ms 2000)) (if ticks-left?
                                                       (let [new-val (+ val delta)]
                                                         (cb {:ticks-left ticks-left :val new-val})
-                                                        (recur delta cb tick-ms (dec ticks-left) new-val))
-                                                      (recur delta cb tick-ms ticks-left val))
+                                                        (when (and on-end (= 1 ticks-left))
+                                                          (on-end {:ticks-left ticks-left :val new-val}))
+                                                        (recur delta cb on-end tick-ms (dec ticks-left) new-val))
+                                                      (recur delta cb on-end tick-ms ticks-left val))
           stop-chan (stop-interpolator!* id))))
     (swap! interpolators
            assoc id (merge interpolator-config
@@ -261,7 +267,14 @@
                    :tick-ms 500
                    :init-val 0
                    :target-val 10
-                   :cb println})
+                   :cb println
+                   :on-end (fn [_] (println "interpolation end"))})
+  (cb-interpolate {:id :hola
+                   :dur-ms 5000
+                   :tick-ms 500
+                   :init-val 0
+                   :target-val 10
+                   :cb (fn [data] (println "new cb" data))})
 
   (stop-all-interpolators!)
   (stop-interpolator! :hola)
