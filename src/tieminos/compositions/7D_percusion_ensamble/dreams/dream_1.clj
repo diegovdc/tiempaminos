@@ -8,8 +8,8 @@
     :refer [bh diat->polydori-degree init! mempan my-malgo root stop!] :as *7d-base]
    [tieminos.sc-utils.groups.v1 :as groups]
    [tieminos.sc-utils.synths.v1 :refer [lfo-kr]]
-   [tieminos.seq-utils.core :refer [mseq]]
-   [tieminos.utils :refer [rrange wrap-at]]
+   [tieminos.seq-utils.core :refer [mseq rot xo]]
+   [tieminos.utils :refer [rbool rrange wrap-at]]
    [time-time.dynacan.players.gen-poly :as gp :refer [on-event ref-rain]]
    [time-time.standard :refer [rrand]]))
 
@@ -72,7 +72,26 @@
                                  :action o/FREE))
                    (* amp (o/amp-comp-a freq))))))
 
-(def synths (map #(partial % (groups/early)) [*7d-base/low *7d-base/short-plate low2]))
+(defn sc-midi-data [& {:keys [sink deg dur]}]
+  (my-malgo {:sink sink
+             :deg deg
+             :dur dur
+             :vel 100}))
+
+(def synths (map (fn [synth]
+                   (fn [{:as args
+                         :keys [sink deg-data freq-mul]
+                         :or {freq-mul 1}}]
+                     (let [args* (-> args
+                                     (dissoc :sink :deg-data)
+                                     (assoc :freq (* freq-mul (:freq deg-data)))
+                                     seq
+                                     flatten)]
+                       (apply synth (groups/early) args*)
+                       (sc-midi-data :sink sink
+                                     :deg (:polydori-degree deg-data)
+                                     :dur (+ (:atk args 0.01) (:dcy args 1))))))
+                 [*7d-base/low *7d-base/short-plate low2]))
 
 (defn delay* [ratio delay-ratio f]
   (ref-rain
@@ -83,16 +102,10 @@
    :loop? false
    :on-event (on-event
               (when (= i 1) (f)))))
-
 (comment
   (init!)
   (stop!)
   (gp/stop))
-(defn sc-midi-data [& {:keys [sink deg dur]}]
-  (my-malgo {:sink sink
-             :deg deg
-             :dur dur
-             :vel 100}))
 
 (comment
   :start-section-1
@@ -154,8 +167,8 @@
                   (when (or #_true (#{1 3} (mod (inc index) 7)))
                     (synth
                      :freq (* 1 f2)
-                     :sub 0.9
-                     :sub2 0.7
+                     :sub 0.8
+                     :sub2 0.5
                      :atk (rrange 0.01 0.03)
                      :pan (* -1 pan)
                      :mod-freq (rrand 6000 10000)
@@ -222,7 +235,7 @@
   ;; [0 5 5] 2 [1 -7] 8 [4 7 3] [6 5] [3 3 8 9]
   (let [degs (fn [m]
                (case m
-                 1 [0 2 0 [2 #_3] #_#_#_[7 #_4] [4 5] 3]
+                 1 [0 2 0 [2 3 8 5] [7 4 3 4 2 1] [4 5] 3]
                  2 [[0 5 5]
                     2
                     [1 -7]
@@ -233,19 +246,23 @@
         mainm 1
         mainf2m 1
         mainf2m-offset 0
+        m2xos (xo (rot 0 "xoxoo"))
+        m2prob+ 1
         m1-amp 1
-        m2-amp  0
-        bass-amp 0
+        m2-amp  1
+        bassxos (xo "xoxoooo")
+        bassprob+ 0.2
+        bass-amp 1
         bm 2
         sbass-amp [100]
-        bprob 0.4
+        bprob 0.
         ;; line
         mm 1
-        mprob 1
+        mprob 0.5
         mmix 0.5
         m1t 3
         m2t 1
-        sm2-sinks [suave-m1 #_(assoc pbell :malgo/vel-amp 0.3)]
+        sm2-sinks [suave-m1 (assoc pbell :malgo/vel-amp 0.3)]
         sm1-sinks [suave-m2 #_(assoc pbell :malgo/vel-amp 0.3)]
         sm1-amp [80]
         sm2-amp [80]
@@ -254,89 +271,96 @@
         m-reset? false
         ;; to modulate harmonically
         modum 2
-        modu-amp (map #(+ % 20) [10 30])
-        moduprob 0
+        modu-amp (map #(+ % 0) [10 30])
+        moduprob 0.1
         modut -6
         modulator-reset? false
         ;; scales
-        m1-scale (fn [] 0)
+        m1-scale (fn [] [9 0])
         m2-scale (fn [] 2)
-        sbass-scale (fn [] 0)
-        sm1-scale (fn [] 0)
+        bass-scale (fn [] 2)
+        sbass-scale (fn [] 9)
+        sm1-scale (fn [] 9)
         sm2-scale (fn [] 2)
-        modu-scale (fn [] (weighted {2 3 6 1 1 0 8 0})) ;; scale 8 also works well
-        ]
+        modu-scale (fn [] (weighted {2 3 9 3 6 0 1 0 8 0}))]
     (ref-rain
      :id ::1 :durs [3 2 2] :ratio 1/9
      :on-event (on-event
                 (let [synth (rand-nth synths)
-                      deg (mseq i (degs mainm))
-                      f1-data (*7d-base/deg->data :base-freq root :scale (m1-scale) :degree deg)
-                      f2-data (*7d-base/deg->data :base-freq root :scale (m2-scale) :degree (mseq (+ mainf2m-offset i) (degs mainf2m)))
-                      f1 (:freq f1-data)
-                      f2 (:freq f2-data)
                       pan (rrange -1 1)]
-                  (synth
-                   :freq f1
-                   :mod-freq (rrand 6000 10000)
-                   :pan (mempan (mod deg 2))
-                   :amp (* m1-amp (rrange 0.5 0.8))
-                   :out m1-vibes)
-                  (sc-midi-data :sink sc-m1 :deg (:polydori-degree f1-data) :dur 1)
+                  (synth {:deg-data (*7d-base/deg->data :base-freq root
+                                                        :scale (m1-scale)
+                                                        :degree (mseq i (degs mainm)))
+                          :mod-freq (rrand 6000 10000)
+                          :pan pan #_(mempan (mod deg 2))
+                          :amp (* m1-amp (rrange 0.5 0.8))
+                          :sink sc-m1
+                          :out m1-vibes})
+                  #_(delay* 1 (mseq i [1 0 0 1])
+                            (fn [] (synth {:deg-data (*7d-base/deg->data :base-freq root
+                                                                         :scale (m1-scale)
+                                                                         :degree (mseq (+ 1 i) (degs mainm)))
+                                           :freq-mul 2
+                                           :mod-freq (rrand 6000 10000)
+                                           :pan pan #_(mempan (mod deg 2))
+                                           :amp (* m1-amp (rrange 0.1 0.4))
+                                           :sink sc-m1
+                                           :out m1-vibes})))
 
-                  (when (or #_true (#{1 3} (mod (inc index) 5)))
+                  (when (or (rbool m2prob+) (m2xos i))
                     #_(delay*
                        (:ratio data) (at-i [1 1])
                        (fn []))
-                    (synth
-                     :freq (* 1 f2)
-                      ;; :sub 1
-                      ;; :sub2 2
-                     :atk (rrange 0.01 0.03)
-                     :pan (* -1 pan)
-                     :mod-freq (rrand 6000 10000)
-                      ;; :dcy (* (rrange 2 4) dur-s)
-                     :amp (* m2-amp (rrange 0.5 0.8))
-                     :out m2-vibes)
-                    (sc-midi-data :sink sc-m2 :deg (:polydori-degree f2-data) :dur 1))
+                    (synth {:deg-data (*7d-base/deg->data :base-freq root :scale (m2-scale) :degree (mseq (+ mainf2m-offset i) (degs mainf2m)))
+                            ;; :sub 1
+                            ;; :sub2 2
+                            :atk (rrange 0.01 0.03)
+                            :pan (* -1 pan)
+                            :mod-freq (rrand 6000 10000)
+                            ;; :dcy (* (rrange 2 4) dur-s)
+                            :amp (* m2-amp (rrange 0.5 0.8))
+                            :sink sc-m2
+                            :out m2-vibes}))
 
                   ;; bass (NOTE the mod 7)
-                  (when (or #_true (#{1 3} (mod (inc index) 7)))
-                    (synth
-                     :freq (* 1 f2)
-                     :sub 0.9
-                     :sub2 0.7
-                     :atk (rrange 0.01 0.03)
-                     :pan (* -1 pan)
-                     :mod-freq (rrand 6000 10000)
-                      ;; :dcy (* (rrange 2 4) dur-s)
-                     :amp (* bass-amp (rrange 0.5 0.8))
-                     :out bass)
+                  (when (or (rbool bassprob+) (bassxos i))
+                    (synth {:deg-data (*7d-base/deg->data :base-freq root :scale (bass-scale) :degree (mseq (+ mainf2m-offset i) (degs mainf2m)))
+                            :freq-mul 1
+                            :sub 0.9
+                            :sub2 0.7
+                            :atk (rrange 0.01 0.03)
+                            :pan (rrange -1 1)
+                            :mod-freq (rrand 6000 10000)
+                            ;; :dcy (* (rrange 2 4) dur-s)
+                            :amp (* bass-amp (rrange 0.5 0.8))
+                            :sink sc-bass
+                            :out bass})
                     #_(delay*
                        1
                        (at-i [4/3 0 0 1/4 0])
                        (fn []))
-                    #_(synth
-                       :freq (* 1/2 f2)
-                       :sub 0.9
-                       :sub2 0.7
-                       :atk (rrange 0.01 0.03)
-                       :pan (* -1 pan)
-                       :mod-freq (rrand 6000 10000)
-                        ;; :dcy (* (rrange 2 4) dur-s)
-                       :amp (* bass-amp (rrange 0.5 0.8))
-                       :out bass)
-                    #_(synth
-                       :freq (* 1/4 f2)
-                       :sub 0.9
-                       :sub2 0.7
-                       :atk (rrange 0.01 0.03)
-                       :pan (* -1 pan)
-                       :mod-freq (rrand 6000 10000)
-                        ;; :dcy (* (rrange 2 4) dur-s)
-                       :amp (* bass-amp (rrange 0.5 0.8))
-                       :out bass)
-                    (sc-midi-data :sink sc-bass :deg (:polydori-degree f2-data) :dur 1)))))
+                    #_(synth {:deg-data (*7d-base/deg->data :base-freq root :scale (m2-scale) :degree (mseq (+ mainf2m-offset i) (degs mainf2m)))
+                              :freq 1/2
+                              :sub 0.9
+                              :sub2 0.7
+                              :atk (rrange 0.01 0.03)
+                              :pan 0
+                              :mod-freq (rrand 6000 10000)
+                              ;; :dcy (* (rrange 2 4) dur-s)
+                              :amp (* bass-amp (rrange 0.5 0.8))
+                              :sink sc-bass
+                              :out bass})
+                    #_(synth {:deg-data (*7d-base/deg->data :base-freq root :scale (m2-scale) :degree (mseq (+ mainf2m-offset i) (degs mainf2m)))
+                              :freq-mul 1/4
+                              :sub 0.9
+                              :sub2 0.7
+                              :atk (rrange 0.01 0.03)
+                              :pan 0
+                              :mod-freq (rrand 6000 10000)
+                              ;; :dcy (* (rrange 2 4) dur-s)
+                              :amp (* bass-amp (rrange 0.5 0.8))
+                              :sink sc-bass
+                              :out bass})))))
     (ref-rain
      :id ::1-bass :ref ::1
      :durs [3 2 2] :ratio 1/9
@@ -394,3 +418,17 @@
   (init!)
   (stop!)
   (gp/stop))
+
+(comment
+  (delay* 1 (mseq i [1 0 0 1])
+          (fn [] (synth
+                  {:deg-data (*7d-base/deg->data
+                              :base-freq root
+                              :scale (m1-scale)
+                              :degree (mseq (+ 1 i) (degs mainm)))
+                   :freq-mul 2
+                   :mod-freq (rrand 6000 10000)
+                   :pan pan #_(mempan (mod deg 2))
+                   :amp (* m1-amp (rrange 0.1 0.3))
+                   :sink sc-m1
+                   :out m1-vibes}))))
