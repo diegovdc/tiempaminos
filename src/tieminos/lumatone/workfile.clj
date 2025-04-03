@@ -44,7 +44,7 @@
   ;; make lumatone file
   (let [root "/Users/diego/Music/diego/lumatone"
         filenote "" ;; a description appened near the end of the filename
-        filename (format "%sEDO-gen%s_%s-%skb.ltn"
+        filename (format "%sEDO-gen%s_%s-%skb%s.ltn"
                          period
                          gen
                          (first (nth (keys keyboards) kbd-number))
