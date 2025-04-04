@@ -3,7 +3,8 @@
    [overtone.midi :as midi]
    [taoensso.timbre :as timbre]
    [tieminos.habitat.osc :as habitat-osc]
-   [tieminos.utils :refer [cb-interpolate]]))
+   [tieminos.utils :refer [cb-interpolate]]
+   [time-time.dynacan.players.gen-poly :as gp]))
 
 ;; Intended to run on linux machineso the following may need to be done
 ;; Setup of VirMIDI: https://github.com/anton-k/linux-audio-howto/blob/master/doc/os-setup/virtual-midi.md#virtual-midi-1
@@ -64,7 +65,14 @@
            :kaleid-mod-amp 77
            :preout-mod 78
            :in-blend 79
-           :voronoi-mod 80})
+           :voronoi-mod 80
+           :hept-x-speed 81
+           :hept-x-pos 82
+           :hept-y-speed 83
+           :hept-y-pos 84
+           :hept-scale 85
+           :hept-repeat 86
+           })
 
   (midi/midi-control sink (cc :black-fade) 0)
   (midi/midi-control sink (cc :fractal-add) 0)
@@ -73,3 +81,186 @@
   (midi/midi-control sink (cc :preout-mod) 0)
   (midi/midi-control sink (cc :in-blend) 0)
   (midi/midi-control sink (cc :voronoi-mod) 0))
+
+
+(comment
+  (gp/ref-rain
+    :id :test
+    :durs [1 2]
+    :on-event (gp/on-event
+
+                (midi/midi-control
+                  sink
+                  (cc :hept-x-pos)
+                  (rand-int 127))
+                (midi/midi-control
+                  sink
+                  (cc :hept-y-pos)
+                  (rand-int 127))
+                (midi/midi-control
+                  sink
+                  (cc :hept-x-speed)
+                  (rand-int 127))
+                (midi/midi-control
+                  sink
+                  (cc :hept-y-speed)
+                  (rand-int 127))
+                (midi/midi-control
+                  sink
+                  (cc :hept-scale)
+                  (rand-int 127))
+                (midi/midi-control
+                  sink
+                  (cc :hept-repeat)
+                  (rand-int 127))
+                )
+    )
+  (gp/stop)
+  )
+
+
+(comment
+  ;;  very cool, explosion-like
+  ;; extasis of the 7th dimension
+  (midi/midi-control sink (cc :black-fade) 0)
+  (midi/midi-control sink (cc :fractal-add) 0)
+  (midi/midi-control sink (cc :fractal-hue) 0)
+  (midi/midi-control sink (cc :kaleid-mod-amp) 100)
+  (midi/midi-control sink (cc :preout-mod) 10)
+  (midi/midi-control sink (cc :in-blend) 100)
+  (midi/midi-control sink (cc :voronoi-mod) 90)
+  (gp/ref-rain
+    :id :test
+    :durs [1 2]
+    :on-event (gp/on-event
+
+                (midi/midi-control
+                  sink
+                  (cc :hept-x-pos)
+                  (rand-int 127))
+                (midi/midi-control
+                  sink
+                  (cc :hept-y-pos)
+                  (rand-int 127))
+                (midi/midi-control
+                  sink
+                  (cc :hept-x-speed)
+                  (rand-int 127))
+                (midi/midi-control
+                  sink
+                  (cc :hept-y-speed)
+                  (rand-int 127))
+                (midi/midi-control
+                  sink
+                  (cc :hept-scale)
+                  (rand-int 127))
+                (midi/midi-control
+                  sink
+                  (cc :hept-repeat)
+                  (rand-int 127))
+                )
+    )
+  (gp/stop)
+  ;; hydra
+  "
+await loadScript(
+	'https://cdn.jsdelivr.net/npm/hydra-midi@latest/dist/index.js'
+)
+
+// Use midi messages from all channels of all inputs.
+await midi.start({
+	channel: '*',
+	input: '*'
+})
+// Show a small midi monitor (similar to hydra's `a.show()`).
+midi.show()
+
+//s0.initScreen()
+
+
+// cc
+blackFade = 74
+fractalAdd = 75
+fractalHue = 76
+kaleidModulateAmp = 77
+preOutMod = 78
+inBlend = 79
+voronoiMod = 80
+heptXSpeed = 81
+heptXPos = 82
+heptYSpeed = 83
+heptYPos = 84
+heptScale = 85
+heptRepeat = 86
+//base
+noise()
+	.kaleid(10)
+	.mult(osc(5, 0.1, 3)
+		.kaleid())
+	.modulateRotate(noise(), 0.2)
+	.out(o1)
+
+//shapes
+voronoi(2, 3, 10)
+	.mult(osc(1, 2, 0.9), 1.5)
+	.modulate(shape(7, 0.8)
+		.scale(() => cc(heptScale)() * 0.5)
+		.repeat(() => cc(heptRepeat)() * 20)
+		.mult(osc(1, 1.5, 0.9)
+			.kaleid(), 4)
+		.scrollX(cc(heptXPos), () => cc(heptXSpeed)() * 2 - 1)
+		.scrollY(cc(heptYPos), () => cc(heptYSpeed)() * 2 - 1)
+		.rotate(0, 0.1)
+		.modulateRotate(voronoi()), 6)
+	// 	.add(shape(7)
+	// 		.scale(0.5)
+	// 		.mult(osc(1, 0.5, 0.9)
+	// 			.kaleid())
+	// 		.scrollX([0, 0.5, 0.3], 0.1)
+	// 		.scrollY(0, 0.1)
+	// 		.modulateRotate(noise(1)), 0.1)
+	// 	.add(shape(7)
+	// 		.repeat([3, 1, 5, 10])
+	// 		.mult(osc(1, 0.5, 0.9)
+	// 			.kaleid())
+	// 		.scrollX(0, 0.03)
+	// 		.scrollY(0, -0.1), 0.1)
+	.blend(o3, 0.97)
+	.out(o3)
+
+src(o1)
+
+	.add(src(o2)
+		.scale(() => Math.sin(time * 0.7) * 0.1 + 1, () => Math.sin(time * 0.8) * 0.1 + 1), 0.1)
+	.blend(src(o2), cc(inBlend))
+	.modulate(voronoi()
+		.saturate(1.2), () => cc(voronoiMod)() * 4)
+	.add(src(o2)
+		.saturate(5)
+		.modulateRotate(noise()), 0.01)
+	//.modulate(src(o2), 0.2)
+
+	.hue(cc(fractalHue))
+	//.saturate(1.5)
+	//.brightness(-0.04)
+	.add(src(o2)
+		.scale(1.2), () => cc(fractalAdd)() * 1.5 * 0.95)
+	.mult(solid(.7, 0.4, 0.4), () => cc(fractalAdd)() * 1.5 * 0.8)
+	.blend(src(o2)
+		.modulateScale(noise(0.1), 0.8)
+		.kaleid(7), cc(kaleidModulateAmp))
+	.diff(o3, 1)
+
+	.modulate(src(o2), cc(preOutMod))
+	//.mult(solid(1, 0.5, 1))
+	//.mult(solid(), cc(blackFade))
+	.out(o2)
+
+src(o2)
+	.add(src(s0)
+		.modulate(o0, 0.01)
+		.scale(0.9 * 16 / 9, 0.9), 0.3)
+
+	.out()
+"
+  )
