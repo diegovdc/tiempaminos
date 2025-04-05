@@ -17,7 +17,8 @@
          to-color
          moment-1
          play-main
-         ending)
+         ending
+         init)
 
 (defn init-osc-server []
   (habitat-osc/init :port 7777)
@@ -32,7 +33,8 @@
           "/to-color" (to-color)
           "/moment-1" (moment-1)
           "/play-main" (play-main)
-          "/end" (ending))
+          "/end" (ending)
+          "/to-init" (init))
         (catch Exception _ (timbre/error "Unknown path" msg))))))
 
 ;; Intended to run on linux machineso the following may need to be done
@@ -52,7 +54,7 @@
 (defn fade-from-black [] (fade {:cc 74 :fade-to 0}))
 (defn fade-to-black [dur-ms] (fade {:cc 74 :fade-to 127 :dur-ms dur-ms}))
 
-(defn interpolate-ad-envelope
+#_(defn interpolate-ad-envelope
   [{:keys [id tick-ms atk-ms atk-val dcy-ms dcy-val cb]
     :or {tick-ms 100}}]
   (cb-interpolate
@@ -70,15 +72,6 @@
                                :target-val dcy-val
                                :cb cb
                                :on-end nil}))}))
-
-(comment
-  (interpolate-ad-envelope {:id :ad-interpolation
-                            :tick-ms 500
-                            :atk-ms 1000
-                            :atk-val 127
-                            :dcy-ms 2000
-                            :dcy-val 0
-                            :cb println}))
 
 (def cc* {:black-fade 74
           :fractal-add 75
@@ -143,62 +136,9 @@
 (defn to-gray [] (cc-interp :out-saturation 0 5000 100))
 (defn to-color [] (cc-interp :out-saturation 127 5000 100))
 
-(comment
-
-  (stop-all-interpolators!)
-  (cc :out-saturation 127)
-  (cc-interp :fractal-hue 60 10000 30)
-  (cc-interp :out-saturation 127 5000 100))
-
-(comment
-  (fade-from-black)
-  (fade-to-black 7000)
-
-  (midi/midi-control sink (cc* :black-fade) 0)
-  (midi/midi-control sink (cc* :fractal-add) 0)
-  (midi/midi-control sink (cc* :fractal-hue) 0)
-  (midi/midi-control sink (cc* :kaleid-mod-amp) 0)
-  (midi/midi-control sink (cc* :preout-mod) 0)
-  (midi/midi-control sink (cc* :in-blend) 0)
-  (midi/midi-control sink (cc* :voronoi-mod) 0))
-
-(comment
-  (gp/ref-rain
-   :id :test
-   :durs [1 2]
-   :on-event (gp/on-event
-
-              (midi/midi-control
-               sink
-               (cc* :hept-x-pos)
-               (rand-int 127))
-              (midi/midi-control
-               sink
-               (cc* :hept-y-pos)
-               (rand-int 127))
-              (midi/midi-control
-               sink
-               (cc* :hept-x-speed)
-               (rand-int 127))
-              (midi/midi-control
-               sink
-               (cc* :hept-y-speed)
-               (rand-int 127))
-              (midi/midi-control
-               sink
-               (cc* :hept-scale)
-               (rand-int 127))
-              (midi/midi-control
-               sink
-               (cc* :hept-repeat)
-               (rand-int 127))))
-
-  (gp/stop))
-
 (defn init []
+  (gp/stop)
   (stop-all-interpolators!)
-  (to-gray)
-  (fade-to-black 7000)
   (doseq [[k v] {:fractal-add 0
                  :fractal-hue 0
                  :kaleid-mod-amp 0
@@ -211,10 +151,12 @@
                  :hept-dancer-add 0}]
 
     (cc k v))
-  (gp/stop))
+  (to-gray)
+  (fade-to-black 7000))
 
 (comment
   (cc-interp :voronoi-mod 0 2000 200)
+  (cc :hept-dancer-add 0 )
   (cc-interp :preout-mod 0 2000 200))
 
 (defn moment-1 []
@@ -229,33 +171,30 @@
   (cc-interp :fractal-add 90 20000 (rrange 400 500))
   (cc-interp :fractal-hue 30 20000 (rrange 400 500)))
 
-(do
-  (defn moment-4 []
-    (timbre/info "Moment 4")
-    (doseq [[k v] {:hept-dancer-repeat 127
-                   :hept-dancer-add 127}]
+(defn moment-4 []
+  (timbre/info "Moment 4")
+  (doseq [[k v] {:hept-dancer-repeat 127
+                 :hept-dancer-add 127}]
 
-      (cc-interp k v (rrange 2000 4000) (rrange 400 500)))
-    (cc-interp :kaleid-mod-amp 105 (* 6 60 1000) 857)
-    (gp/ref-rain
-     :id :hept-pattern
-     :durs [1 2]
-     :on-event (gp/on-event
+    (cc-interp k v (rrange 2000 4000) (rrange 400 500)))
+  (cc-interp :kaleid-mod-amp 105 (* 6 60 1000) 857)
+  (gp/ref-rain
+    :id :hept-pattern
+    :durs [1 2]
+    :on-event (gp/on-event
                 (midi/midi-control
-                 sink
-                 (cc* :hept-dancer-scroll-x)
-                 (rand-int 127))
+                  sink
+                  (cc* :hept-dancer-scroll-x)
+                  (rand-int 127))
                 (midi/midi-control
-                 sink
-                 (cc* :hept-dancer-scroll-y)
-                 (rand-int 127))
+                  sink
+                  (cc* :hept-dancer-scroll-y)
+                  (rand-int 127))
 
                 (midi/midi-control
-                 sink
-                 (cc* :hept-dancer-repeat)
-                 (rand-int 127)))))
-
-  (moment-4))
+                  sink
+                  (cc* :hept-dancer-repeat)
+                  (rand-int 127)))))
 
 (defn moment-5 []
   (timbre/info "Moment 5")
@@ -340,7 +279,9 @@
   (ending)
   (gp/stop)
   (midi/midi-control sink (cc* :hept-luma) 127)
-  (cc-interp :kaleid-mod-amp 105 (* 6  1000) 857))
+  (cc-interp :kaleid-mod-amp 105 (* 6  1000) 857)
+  (cc :hept-dancer-add 0)
+  (cc :kaleid-mod-amp 0))
 
 (comment
   ;;  very cool, explosion-like
