@@ -1,5 +1,6 @@
 (ns tieminos.compositions.7D-percusion-ensamble.dreams.hydra-control
   (:require
+   [clojure.core.async :as a]
    [clojure.data.generators :refer [weighted]]
    [overtone.midi :as midi]
    [taoensso.timbre :as timbre]
@@ -20,6 +21,9 @@
          ending
          init)
 
+(def controller-state (atom {:moment-1-called? false
+                             :play-main-called? false
+                             :end-called? false}))
 (defn init-osc-server []
   (habitat-osc/init :port 7777)
   (habitat-osc/responder
@@ -31,10 +35,20 @@
           "/fade-to-black" (fade-to-black 7000)
           "/to-gray" (to-gray)
           "/to-color" (to-color)
-          "/moment-1" (moment-1)
-          "/play-main" (play-main)
-          "/end" (ending)
-          "/to-init" (init))
+          "/moment-1" (if-not (:moment-1-called? @controller-state)
+                        (do (moment-1)
+                            (swap! controller-state assoc :moment-1-called? true))
+                        (timbre/warn "moment-1 already called"))
+          "/play-main" (if-not (:play-main-called? @controller-state)
+                         (do (play-main)
+                             (swap! controller-state assoc :play-main-called? true))
+                         (timbre/warn "play-main already called"))
+          "/end" (if-not (:end-called? @controller-state)
+                   (do (ending)
+                       (swap! controller-state assoc :end-called? true))
+                   (timbre/warn "end already called"))
+          "/to-init" (do (init)
+                         (reset! controller-state {})))
         (catch Exception _ (timbre/error "Unknown path" msg))))))
 
 ;; Intended to run on linux machineso the following may need to be done
@@ -140,6 +154,8 @@
   (gp/stop)
   (stop-all-interpolators!)
   (doseq [[k v] {:fractal-add 0
+                 :black-fade 127
+                 :out-saturation 0
                  :fractal-hue 0
                  :kaleid-mod-amp 0
                  :preout-mod 0
@@ -151,8 +167,7 @@
                  :hept-dancer-add 0}]
 
     (cc k v))
-  (to-gray)
-  (fade-to-black 7000))
+  )
 
 (comment
   (cc-interp :voronoi-mod 0 2000 200)
