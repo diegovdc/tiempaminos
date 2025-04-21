@@ -103,8 +103,8 @@ También usada en varias de las sesiones anteriores
 CLOSED: [2025-02-27 Thu 14:19] SCHEDULED: <2025-02-25 Tue>
 ** DONE Async para interpolar valores de OSC/MIDI
 CLOSED: [2025-02-24 Mon 22:59] SCHEDULED: <2025-02-23 Sun>
-** TODO [#A] Bajarle más a la salida de collider, aún clippea
-SCHEDULED: <2025-03-03 Mon>
+** DONE [#A] Bajarle más a la salida de collider, aún clippea
+CLOSED: [2025-04-14 Mon 16:26] SCHEDULED: <2025-03-03 Mon>
 ** TODO Reorganizar grabación y ruteo de audio para que eq se grabe y esté después de la grabación de audio
 ** TODO Automatizar la grabación de audio en REAPER, que arme y desarme el canal de EQ
 
