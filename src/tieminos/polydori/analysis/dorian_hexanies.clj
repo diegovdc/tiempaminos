@@ -3,6 +3,7 @@
    [clojure.math.combinatorics :as combo]
    [clojure.set :as set]
    [clojure.string :as str]
+   [erv.constant-structures.core :as cs]
    [erv.cps.core :as cps]
    [erv.cps.similarity :as cpss]
    [tieminos.piraran.dorian-scales :as ds]
@@ -333,3 +334,111 @@
   (-> dorian-hex-connections
       (select-keys ["diat3v3"])
       add-scale-index))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Hexany unions
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(def polydori-hexanies-12-tone-unions
+  (->> (combo/combinations
+        dorian-hexanies-in-polydori-2
+        2)
+       (map (comp
+             dedupe
+             sort
+             (partial map :bounded-ratio)
+             flatten
+             (partial map :hexany)))
+       (filter #(= 12 (count %)))
+       #_(map (partial map erv.utils.conversions/ratio->cents))))
+(-> polydori-hexanies-12-tone-unions)
+
+(->> (combo/combinations
+      dorian-hexanies-in-polydori-2
+      2)
+     (map (fn [hexanies]
+            [(apply format "%s+%s"
+                    (map :name hexanies))
+             ((comp
+               dedupe
+               sort
+               (partial map :bounded-ratio)
+               flatten
+               (partial map :hexany))
+              hexanies)]))
+     (filter #(= 12 (count (second %))))
+     #_(map (partial map erv.utils.conversions/ratio->cents)))
+
+(defn get-notes [degrees]
+  (map #(nth (:scale polydori-v2)
+             (mod % (count (:scale polydori-v2))))
+       degrees))
+
+(def polydori-2hex-12t
+  (->> (combo/combinations
+        dorian-hexanies-in-polydori-2
+        2)
+       (map (fn [hexanies]
+              [(->> hexanies
+                    (map :name)
+                    (str/join "+")
+                    (#(str/replace % #"diat" "")))
+               (->> hexanies
+                    (map (comp get-notes :degrees))
+                    flatten
+                    (sort-by :bounded-ratio)
+                    dedupe)]))
+       (filter #(= 12 (count (second %))))
+       (map (fn [[names scale]]
+              [names (:constant-structure? (cs/analyze scale))
+               scale]))
+       (filter second)))
+
+(def polydori-3hex-12t
+  (->> (combo/combinations
+        dorian-hexanies-in-polydori-2
+        3)
+       (map (fn [hexanies]
+              [(->> hexanies
+                    (map :name)
+                    (str/join "+")
+                    (#(str/replace % #"diat" "")))
+               (->> hexanies
+                    (map (comp get-notes :degrees))
+                    flatten
+                    (sort-by :bounded-ratio)
+                    dedupe)]))
+       (filter #(= 12 (count (second %))))
+       (map (fn [[names scale]]
+              [names (:constant-structure? (cs/analyze scale))
+               scale]))
+       (filter second)))
+
+(def polydori-4hex-12t)
+(->> (combo/combinations
+      dorian-hexanies-in-polydori-2
+      10)
+     (map (fn [hexanies]
+            [(->> hexanies
+                  (map :name)
+                  (str/join "+")
+                  (#(str/replace % #"diat" "")))
+             (->> hexanies
+                  (map (comp get-notes :degrees))
+                  flatten
+                  (sort-by :bounded-ratio)
+                  dedupe)]))
+     #_(filter #(= 12 (count (second %))))
+     (map (fn [[names scale]]
+            [names (:constant-structure? (cs/analyze scale))
+             (count scale)]))
+     (filter second))
+
+(comment
+  (require '[tieminos.osc.surge :as surge])
+  (let [[scale-name cs? scale] (nth polydori-4hex-12t 0)]
+
+    (surge/set-scale
+     {:scale {:meta {:scl/name scale-name
+                     :scl/description (str "12 tone scale made with 3 hexanies from polydori: " scale-name (when cs? ". Constant Structure."))}
+              :scale scale}
+      :scale-name (str "polydori-12-t/" (str (when cs? "cs_") scale-name))})))
