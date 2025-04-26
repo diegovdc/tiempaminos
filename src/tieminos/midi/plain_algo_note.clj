@@ -40,7 +40,7 @@
   [sink dur note vel chan tempo offset]
   (let [note* (+ offset note)]
     (ref-rain
-     :id (random-uuid)
+     :id (keyword "tieminos-algo-note" (str (random-uuid)))
      :durs [dur 0.1]
      :tempo 60
      :loop? false

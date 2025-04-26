@@ -187,7 +187,8 @@
   [& {:keys [midi-input note-on note-off cc auto-ctl?]
       :or   {midi-input oxygen
              auto-ctl?  true
-             note-off   (fn [_] nil)}}]
+             note-off   (fn [_] nil)
+             cc (fn [_] nil)}}]
   (midi/midi-handle-events
    midi-input
    (fn [ev] (handle-midi-event ev

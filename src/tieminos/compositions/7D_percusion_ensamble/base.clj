@@ -75,14 +75,32 @@ If using `mdeg->freq` this may show up only once because it is memoized, even if
                         degree))))
 
 (defn deg->freq
-  "NOTE: scale is an index to `scales-list`. `type` is the key of `scales-list-map`."
+  "Converts a polydori degree to a frequency.
+  NOTE: scale is an index to `scales-list`. `type` is the key of `scales-list-map`."
   [& {:keys [base-freq scale degree type]
       :or {base-freq root
            type :original}
-      :as config}]
+      :as _config}]
   (scale/deg->freq (:scale polydori-v2)
                    base-freq
                    (diat->polydori-degree scale degree type)))
+
+;; TODO test
+(defn deg->data
+  "Converts a polydori `scale` degree to a map including frequency.
+  NOTE: scale is an index to `scales-list`. `type` is the key of `scales-list-map`."
+  [& {:keys [base-freq scale degree type]
+      :or {base-freq root
+           type :original}
+      :as _config}]
+  (let [polydori-degree (diat->polydori-degree scale degree type)]
+    {:polydori-degree polydori-degree
+     :scale scale
+     :scale-degree degree
+     :type type
+     :freq (scale/deg->freq (:scale polydori-v2)
+                            base-freq
+                            polydori-degree)}))
 
 (def mdeg->freq (memoize deg->freq))
 
@@ -151,6 +169,15 @@ If using `mdeg->freq` this may show up only once because it is memoized, even if
   (when (o/server-disconnected?)
     (tieminos.core/connect))
   (groups/init-groups!))
+
+(defn stop!
+  "Stop all refrains except those from `:tieminos-algo-note` because they stop themselves."
+  []
+  (doseq [id (->> @gp/refrains
+                  keys
+                  (remove (fn [k] (and (keyword? k)
+                                       (= "tieminos-algo-note"  (namespace k))))))]
+    (gp/stop id)))
 
 (def mempan
   (memoize (fn [_deg-mod]

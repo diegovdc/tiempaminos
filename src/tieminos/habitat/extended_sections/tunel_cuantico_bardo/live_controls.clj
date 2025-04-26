@@ -133,8 +133,6 @@
     (o/out out
 
            (-> (o/play-buf 1 buf rate)
-               ;; TODO agregar control de reverb via OSC
-               #_(o/free-verb (lfo-kr 4 0 1))
                (* amp
                   (o/env-gen
                    (o/envelope
@@ -144,12 +142,6 @@
                      (* 0.2 dur)])
                    :action o/FREE))
                (#(o/pan-az:ar 4 % pan))))))
-
-(comment
-  (->> @rec/bufs
-       vals
-       (map :duration)
-       frequencies))
 
 (defn get-harmonic-data!
   [player-k]
@@ -196,24 +188,26 @@
                (let [state @live-state
                      out (main-returns (case player-k
                                          :milo :percussion-processes
-                                         :diego :guitar-processes))]
-                 ;; TODO update live state with event duration
-                 (case (-> @live-state :algo-2.2.9-clouds player-k :active-synth)
-                   :crystal (cristal-liquidizado (assoc config :out out))
-                   :granular (amanecer*guitar-clouds
+                                         :diego :guitar-processes))
+                     ;; TODO update live state with event duration
+                     synth (case (-> @live-state :algo-2.2.9-clouds player-k :active-synth)
+                             :crystal (cristal-liquidizado (assoc config :out out))
+                             :granular (amanecer*guitar-clouds
+                                        (-> config
+                                            (merge (get-envelope
+                                                    index
+                                                    (-> state :algo-2.2.9-clouds player-k :env)
+                                                    (:lorentz state)))
+                                            (assoc :out out)))
+                             (amanecer*guitar-clouds
                               (-> config
                                   (merge (get-envelope
                                           index
                                           (-> state :algo-2.2.9-clouds player-k :env)
                                           (:lorentz state)))
-                                  (assoc :out out)))
-                   (amanecer*guitar-clouds
-                    (-> config
-                        (merge (get-envelope
-                                index
-                                (-> state :algo-2.2.9-clouds player-k :env)
-                                (:lorentz state)))
-                        (assoc :out out))))))}))
+                                  (assoc :out out))))]
+                 (swap! bardo.rec/currently-playing-bufs update (:buf config) conj synth)))}))
+
 (comment
   (-> @live-state :algo-2.2.9-clouds :milo)
   (o/amp->db 0.0015420217847956035)

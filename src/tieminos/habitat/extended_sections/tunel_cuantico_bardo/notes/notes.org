@@ -88,5 +88,24 @@ feebdack -> platillo
 CLOSED: [2025-01-18 Sat 12:10]
 ** DONE Cargar configuraciones salvadas
 CLOSED: [2025-01-19 Sun 17:53]
+** DONE Prevenir que los buffers que están siendo utilizados actualmente sean borrados
+CLOSED: [2025-02-15 Sat 12:44] SCHEDULED: <2025-01-27 Mon>
+** TODO [#C] BUG - rec -> toggle de clouds genera error de OSC
+SCHEDULED: <2025-02-13 Thu>
+** DONE [#A] Clipeos que parece van de reaper a collider
+CLOSED: [2025-02-19 Wed 09:54] SCHEDULED: <2025-02-17 Mon>
+** IDEA [#C] Agregar control de volumen en el return clean de la guitarra (?)
+SCHEDULED: <2025-02-24 Mon>
+** DONE Recuperar afinación del principio de 2.2.9.22
+CLOSED: [2025-02-03 Mon 08:42] SCHEDULED: <2025-01-29 Wed>
+También usada en varias de las sesiones anteriores
+** DONE [#A] Automatización de EQ
+CLOSED: [2025-02-27 Thu 14:19] SCHEDULED: <2025-02-25 Tue>
+** DONE Async para interpolar valores de OSC/MIDI
+CLOSED: [2025-02-24 Mon 22:59] SCHEDULED: <2025-02-23 Sun>
+** TODO [#A] Bajarle más a la salida de collider, aún clippea
+SCHEDULED: <2025-03-03 Mon>
+** TODO Reorganizar grabación y ruteo de audio para que eq se grabe y esté después de la grabación de audio
+** TODO Automatizar la grabación de audio en REAPER, que arme y desarme el canal de EQ
 
 

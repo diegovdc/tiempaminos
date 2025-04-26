@@ -119,6 +119,9 @@
                      (fn [degrees] (modal-sort (count (:scale polydori-v2))
                                                degrees))))))
 
+(comment
+  (-> dorian-hexanies-in-polydori-2))
+
 (def dorian-hexanies-in-polydori-by-name
   (reduce (fn [m hx] (assoc m (:name hx) hx))
           {}

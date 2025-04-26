@@ -11,10 +11,10 @@
   ;; generate the keyboards
 
   (do
-    (def gen 9)
-    (def period 23)
+    (def gen 11)
+    (def period 29)
     (def keyboards (gral-kb/generate-keyboard-types->xy-intervals gen period))
-    (def kbd-number 2)
+    (def kbd-number 3)
     (-> keyboards))
 
   ;; generate keyboard data
@@ -36,11 +36,10 @@
 
 ;; print to choose mos rings
   (mos/make period gen)
-  (def mos-rings [[9 9 5]
-                  [4 5 4 5 5]
-                  [4 4 1 4 4 1 4 1]
-                  [3 1 3 1 1 3 1 3 1 1 3 1 1]
-                  [2 1 1 2 1 1 1 2 1 1 2 1 1 1 2 1 1 1]])
+  (def mos-rings [[4 7 4 7 7]
+                  [4 4 3 4 4 3 4 3]
+                  [1 3 1 3 3 1 3 1 3 3 1 3 3]
+                  [1 1 2 1 1 2 1 2 1 1 2 1 1 2 1 2 1 1 2 1 2]])
 
   ;; make lumatone file
   (let [root "/Users/diego/Music/diego/lumatone"

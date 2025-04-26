@@ -31,6 +31,7 @@
                                     (/ 1 (* 11 11))]))
 (comment
   (-> scale-11-tones)
+  (map :bounded-ratio scale-11-tones)
   (update-state cs-tool
                 scale-11-tones
                 [])

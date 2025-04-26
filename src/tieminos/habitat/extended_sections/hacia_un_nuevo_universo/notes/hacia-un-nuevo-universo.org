@@ -19,7 +19,6 @@
 Adds controls for switching harmonies and controls for playing samples
 Also work on panning
 ** IDEA Nueva idea para el final
-SCHEDULED: <2024-05-22 Wed>
 Gong de Milo: encontrar fundamental/bajo, darle un boost con eq, y panearlo en círculos (quizá a la vez clock/counterclock), que tenga su propia interacción con la una o varias constelaciones y la guitarra
 *** IDEA Micro del gong puede tener una sola constelación y los otros tener distintas e ir mutando
 ** Técnica de guitarra para la tercera parte:

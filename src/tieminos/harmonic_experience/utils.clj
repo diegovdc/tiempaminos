@@ -1,6 +1,7 @@
 (ns tieminos.harmonic-experience.utils
   (:require
-   [erv.scale.core :as scale]))
+   [erv.scale.core :as scale :refer [interval->ratio]]
+   [erv.utils.core :refer [interval]]))
 
 (defn ratios->deg->ratio-map
   [sorted-ratios]
@@ -14,6 +15,16 @@
        (mod (- midi-note ref-note)
             (count sorted-ratios))))
 
+(defn intervals [ratios]
+  (->> ratios
+       (sort)
+       (partition 2 1)
+       (map #(apply interval %))))
+
+(defn- absolute-ratio
+  [scale ref-note midi-note]
+  (interval->ratio scale 0 (- midi-note ref-note)))
+
 (def midi->ratio (memoize midi->ratio*))
 
 (def ^:private scale->sorted-ratios
@@ -23,7 +34,10 @@
 
 (defn- midi->ratio&freq*
   [{:keys [ref-note root scale midi-note]}]
-  {:ratio (midi->ratio ref-note (scale->sorted-ratios scale) midi-note)
-   :freq (scale/deg->freq scale root (- midi-note ref-note))})
+  (let [ratio  (midi->ratio ref-note (scale->sorted-ratios scale) midi-note)
+        absolute-ratio* (absolute-ratio scale ref-note midi-note)]
+    {:ratio ratio
+     :absolute-ratio absolute-ratio*
+     :freq (scale/deg->freq scale root (- midi-note ref-note))}))
 
 (def midi->ratio&freq #'midi->ratio&freq*)

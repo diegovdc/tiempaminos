@@ -65,30 +65,77 @@
 (defn draw [text-type width height lattice-data]
   (fn [] (draw* text-type width height lattice-data)))
 
+(defonce lattices (atom {}))
+
 (defn draw-lattice
-  [{:keys [ratios width height text-type]
-    :or {width 800
+  [{:keys [id
+           scale-data
+           ratios
+           coords
+           period
+           width
+           height
+           text-type
+           custom-edges ;; a set of ratios that should also be connected, i.e. #{17/7}
+           on-close]
+    :or {width 1300
          height 800
-         text-type :ratios              ; #{:factors :ratios}
+         on-close (fn [])
+         text-type :ratios ;; #{:factors :ratios}
          }}]
-  (let [lattice-data (atom (assoc (ratios->lattice-data base-coords
-                                                        ratios)
-                                  :played-notes {}
-                                  :text-type text-type))]
-    (q/defsketch lattice-tool
-      :title "Lattice Tool"
-      :host "lattice-canvas"
-      :settings #(q/smooth 80)
-      :setup (fn []
-               #_(q/pixel-density 2)
-               (q/frame-rate 24))
-      :draw (#'draw (atom text-type) width height lattice-data)
-      :size [width height])
+  (let [ratios (if scale-data
+                 (->> scale-data :scale (map :bounded-ratio))
+                 ratios)
+        custom-edges (or custom-edges (-> scale-data :meta :lattice/custom-edges) #{})
+        period (or period (-> scale-data :meta :period) 2)
+        coords (or coords (-> scale-data :meta :lattice/coords) base-coords)
+        scl-name (-> scale-data :meta :scl/name)
+        title (if scl-name
+                (format "%s (%s)" scl-name (str id))
+                (format "(%s)" id))
+        existing-lattice (get @lattices id)
+        lattice-data* (assoc (ratios->lattice-data coords
+                                                   ratios
+                                                   {:custom-edges custom-edges
+                                                    :period period})
+                             :custom-edges custom-edges
+                             :period period
+                             :played-notes {}
+                             :text-type text-type)
+        lattice-data (if existing-lattice
+                       (do (reset! (:data-atom existing-lattice) lattice-data*)
+                           (:data-atom existing-lattice))
+                       (atom lattice-data*))
+        _ (println existing-lattice)
+        applet (if existing-lattice
+                 (:applet existing-lattice)
+                 (var-get (q/defsketch lattice-tool
+                            :title "Lattice Tool"
+                            :host "lattice-canvas"
+                            :settings #(q/smooth 80)
+                            :setup (fn []
+                                     #_(q/pixel-density 2)
+                                     (q/frame-rate 24))
+                            :draw (#'draw (atom text-type) width height lattice-data)
+                            :on-close (fn []
+                                        (when id (swap! lattices dissoc id))
+                                        (on-close))
+                            :resizable true
+                            :size [width height])))]
+
+    (when title
+      (Thread/sleep 500) ;; wait until the applet is created to set the title
+      (-> applet .getSurface (.setTitle title)))
+    (when id
+      (swap! lattices assoc id {:data-atom lattice-data
+                                :applet applet}))
     lattice-data))
 
 (comment
   (def lattice-atom (draw-lattice
-                     {:ratios (into #{} [1 3/2 5/4])}))
+                     {:id :my-lattice
+                      :ratios [1 3/2 5/4 7/4]
+                      #_#_:scale-data (user/scales :17o7 :22t-by-parallel-transpositions)}))
 
   (add-played-ratio lattice-atom {:ratio 1 :group-id 0 :color [200 0 0]})
   (remove-played-ratio lattice-atom {:ratio 1 :group-id 1})
@@ -140,4 +187,6 @@
   (swap! lattice-atom
          merge
          (ratios->lattice-data base-coords
-                               new-ratios)))
+                               new-ratios
+                               :custom-edges (:custom-edges @lattice-atom)
+                               :period (:period @lattice-atom))))
