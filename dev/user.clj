@@ -1,6 +1,7 @@
 (ns user
   (:require
    [clojure.java.shell :refer [sh]]
+   [clojure.pprint :refer [pprint]]
    [clojure.string :as str]
    [clojure.tools.namespace.repl :as repl :refer [refresh set-refresh-dirs]]
    [erv.scale.scl :as scl]
@@ -151,16 +152,21 @@
     (throw (ex-info "`:meta :scl/name` is required" scale-data))
     (scl/spit-file (str default-scl-dir (:scl/name meta) ".scl") scale-data)))
 
-(defn scales [& path]
-  (if-not (seq path)
-    (var-get #'scales/scales)
-    (get-in (var-get #'scales/scales) path)))
+(defn scales
+  ([] (scales []))
+  ([path]
+   (if-not (seq path)
+     (var-get #'scales/scales)
+     (get-in (var-get #'scales/scales) path))))
 
 (defn scales-keys
-  []
-  (->> (scales)
-       (map (fn [[k scales*]] [k (sort (keys scales*))]))
-       (sort-by first)))
+  [& {:keys [pprint?]}]
+  (let [data (->> (scales)
+                  (mapcat (fn [[k scales*]] (map (fn [scale-k] [k scale-k])
+                                                 (sort (keys scales*)))))
+                  (sort-by first))]
+    (when pprint? (pprint data))
+    data))
 
 (comment
   (scales)
