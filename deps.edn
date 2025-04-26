@@ -12,7 +12,7 @@
                                       :sha "d6d7379dbadc8cdcfe07aff6c5929649436720b7"}
         #_{:local/root "../time-tiem" :deps/manifest :deps}
         io.github.diegovdc/erv {:git/url "https://github.com/diegovdc/erv.git"
-                                :sha "17f14a2c03469c3f61aae12fcc547b9762f519f4"
+                                :sha "77132a99e8235ea0cc66568c3434f679dad3624a"
                                 ;; :tag "0.0.7"
                                 }#_{:local/root "../erv" :deps/manifest :deps}
         com.taoensso/timbre {:mvn/version "4.10.0"}

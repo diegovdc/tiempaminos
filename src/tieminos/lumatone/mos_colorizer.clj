@@ -3,7 +3,7 @@
    [clojure.string :as str]
    [erv.mos.mos :as mos]
    [tieminos.learning.cps-lumatone.analysis.1-3-7-9-11-15 :refer [dek-3-5-a-b-c-d-e wilson-22-eik-midi-note->scale-note]]
-   [erv.marwa.core :as marwa]
+   [erv.marwa.v1 :as marwa]
    [tieminos.lumatone.ltn :refer [get-keys make-ltn parse-ltn]]
    [thi.ng.color.core :as color]
    [thi.ng.color.gradients :as grad]
@@ -93,7 +93,7 @@
 (comment
   (mos/make 31 6)
   (marwa/get-possible-generator-sequences [4 3 4 3 4 3 4 3 3])
-  (marwa/mos-permutations 31 [7 7 7 7 7 7 7 7 6]))
+  (marwa/all-permutations 31 [7 7 7 7 7 7 7 7 6]))
 
 (defn mos-degs-rings-with-gradient
   [gradient-scheme mos]
