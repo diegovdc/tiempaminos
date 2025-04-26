@@ -1,4 +1,4 @@
-# erv-fib-synth
+# Tieminos
 
 My current music workshop, all my clojure code-music creation since mid-2021 lives here.
 
