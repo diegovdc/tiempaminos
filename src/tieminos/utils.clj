@@ -372,3 +372,13 @@
    (when-not (zero? (count xo-str))
      (let [index-set (parse-xo xo-str)]
        (index-set (mod index (count xo-str)))))))
+
+(defn careful-merge
+  [& ms]
+  (let [total-keys (->> ms
+                        (map (comp count keys))
+                        (apply +))
+        merged (apply merge ms)]
+    (when (not= total-keys (count (keys merged)))
+      (throw (ex-info "Some keys are being overwritten by the merge" {:keys (map keys ms)})))
+    merged))

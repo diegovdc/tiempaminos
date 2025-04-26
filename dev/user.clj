@@ -9,6 +9,7 @@
    [taoensso.timbre :as timbre]
    [tieminos.osc.core :refer [osc-servers stop-server]]
    [tieminos.overtone-extensions :as oe]
+   [tieminos.scales.core :as scales]
    [time-time.dynacan.players.gen-poly :as gp]))
 
 (timbre/set-level! :info)
@@ -150,7 +151,20 @@
     (throw (ex-info "`:meta :scl/name` is required" scale-data))
     (scl/spit-file (str default-scl-dir (:scl/name meta) ".scl") scale-data)))
 
+(defn scales [& path]
+  (if-not (seq path)
+    (var-get #'scales/scales)
+    (get-in (var-get #'scales/scales) path)))
+
+(defn scales-keys
+  []
+  (->> (scales)
+       (map (fn [[k scales*]] [k (sort (keys scales*))]))
+       (sort-by first)))
+
 (comment
+  (scales)
+  (scales-keys)
   (connect)
   (test-sound)
   (test-4chan-surround)
