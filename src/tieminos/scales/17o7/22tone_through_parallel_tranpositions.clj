@@ -102,7 +102,7 @@
 (comment
   ;; dynamically calculate the CS subsets (takes a long time)
   (def cs-of-22t (->> *22tone17o7 (cs.brute-force/quick-cs-subsets 11)))
-  (spit "src/tieminos/scales/17o7/constant-structures-of-22tone-17o7_v1.edn"
+  (spit "resources/data-sets/17o7-constant-structures/constant-structures-of-22tone-17o7_v1.edn"
         (str (into [] cs-of-22t)))
   (-> cs-of-22t)
   ;; A quicker way
@@ -110,7 +110,7 @@
     (do
       (timbre/info "Reading the constant-structures-of-22tone-17o7_v1.edn file. This may take some time.")
       (let [data (edn/read-string
-                  (slurp "src/tieminos/scales/17o7/constant-structures-of-22tone-17o7_v1.edn"))]
+                  (slurp "resources/data-sets/17o7-constant-structures/constant-structures-of-22tone-17o7_v1.edn"))]
         (timbre/info "Done!")
         data)))
 

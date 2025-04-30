@@ -33,7 +33,8 @@
   (take 1 subsets)
   (->  subsets count)
   (nth subsets 0)
-  (spit "src/tieminos/scales/17o7/17t-cs-from-27-tone-no1.edn"
+
+  (spit "resources/data-sets/17o7-constant-structures/17t-cs-from-27-tone-no1.edn"
         (str (into [] subsets)))
   ;; 12, 15, 16, 18, 19, 20, 21,
 
@@ -49,7 +50,7 @@
 
 (comment
   (def cs-of-22t-from-30t
-    (->> (slurp "src/tieminos/scales/17o7/22t-cs-from-30-tone-no1.edn")
+    (->> (slurp "resources/data-sets/17o7-constant-structures/22t-cs-from-30-tone-no1.edn")
          edn/read-string))
 
   (->> cs-of-22t-from-30t
