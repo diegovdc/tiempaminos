@@ -1,0 +1,39 @@
+name: Test Suite
+
+on:
+  push:
+    branches: [ main, dev ]
+  pull_request:
+    branches: [ main, dev ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Clojure CLI
+        uses: DeLaGuardo/setup-clojure@10.1
+        with:
+          cli: latest
+
+      - name: Cache Maven dependencies
+        uses: actions/cache@v3
+        with:
+          path: ~/.m2
+          key: ${{ runner.os }}-m2-${{ hashFiles('deps.edn') }}
+          restore-keys: |
+            ${{ runner.os }}-m2-
+
+      - name: Cache gitlibs
+        uses: actions/cache@v3
+        with:
+          path: ~/.gitlibs
+          key: ${{ runner.os }}-gitlibs-${{ hashFiles('deps.edn') }}
+          restore-keys: |
+            ${{ runner.os }}-gitlibs-
+
+      - name: Run tests
+        run: clojure -M:test
