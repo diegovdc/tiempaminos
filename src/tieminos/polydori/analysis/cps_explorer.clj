@@ -10,9 +10,8 @@
 
 ;; TODO move this a polydori
 
-(def sink (midi/midi-out "VirMIDI"))
-
 (comment
+  (def sink (midi/midi-out "VirMIDI"))
 
   (->> polydori-v2 :scale
        (map :bounded-ratio)
@@ -35,7 +34,7 @@
      {}
      (:scale polydori-v2)))
 
-  (swap! current-key-index inc)         ;; TODO left at 14
+  (swap! current-key-index inc) ;; TODO left at 14
 
   (let [dekany-key (nth dekany-keys @current-key-index)
         scale (-> polydori-v2 :subcps

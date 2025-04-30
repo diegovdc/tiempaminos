@@ -15,23 +15,22 @@
    [time-time.converge :refer [converge]]
    [time-time.sequencing :refer [sequencer]]))
 
-(def sink (midi/midi-out "VirMIDI"))
+(declare sink)
+(defn algo-note
+  [data]
+  (malgo-note (merge {:sink sink
+                      :scale-size 6
+                      :base-midi-deg 60
+                      :base-midi-chan 2}
+                     data)))
 
-(defn algo-note [data] (malgo-note (merge {:sink sink
-                                           :scale-size 6
-                                           :base-midi-deg 60
-                                           :base-midi-chan 2}
-                                          data)))
-
-(do
-  (defn f
-    ([steps] (f steps  0.03 0.1))
-    ([steps min-dur max-dur]
-     (linexp min-dur max-dur (bz/curve steps [20 0.1 30 6 1]))))
-
-  (bz/plot (f 20 0.5 5)))
+(defn f
+  ([steps] (f steps  0.03 0.1))
+  ([steps min-dur max-dur]
+   (linexp min-dur max-dur (bz/curve steps [20 0.1 30 6 1]))))
 
 (comment
+  (def sink (midi/midi-out "VirMIDI"))
   (o/stop)
   (all-notes-off sink)
   ;; (c) = pa comenzar; (m) = medio; (f) = final

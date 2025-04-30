@@ -8,10 +8,6 @@
    [time-time.dynacan.players.gen-poly :as gp :refer [on-event ref-rain]]
    [time-time.standard :refer [rrand wrap-at]]))
 
-(def sink (midi/midi-out "VirMIDI"))
-
-(def iac2 (get-iac2!))
-
 (defn bh "Blackhole outs" [out] (+ 20 out))
 
 (defn my-malgo
@@ -23,6 +19,10 @@
 
 ;; tempo 540, bar 7/16
 (comment
+  (do
+    (def sink (midi/midi-out "VirMIDI"))
+    (def iac2 (get-iac2!)))
+
   (gp/stop)
 
   (condp contains? 1
