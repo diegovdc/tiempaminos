@@ -11,8 +11,8 @@
 ;;- sending midi from keyboad to reaper
 ;;- mapping midi notes for a subcps
 ;;- saving chords
-
-(def sink (midi/midi-out "VirMIDI"))
+(comment
+  (def sink (midi/midi-out "VirMIDI")))
 
 (def current-sets (atom {}))
 

@@ -64,7 +64,8 @@
                   false))
    (gp/stop)))
 
-(def midi-out-1 (midi/midi-out "VirMIDI"))
+(def midi-out-1 (try (midi/midi-out "VirMIDI")
+                     (catch Exception _e (println "VirMIDI not found."))))
 
 (def eik (-> [1 3 5 7 9 11]
              (->> (cps/make 3)

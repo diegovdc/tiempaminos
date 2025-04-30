@@ -21,9 +21,12 @@
   (midi/midi-devices)
   (midi/midi-out "VirMIDI")
   (midi/midi-out "Bus 3"))
-(def surge-suave (midi/midi-out "VirMIDI"))
+;; TODO create midi function to load this abstracting the error handling
+(def surge-suave (try (midi/midi-out "VirMIDI")
+                      (catch Exception e (timbre/error e))))
 (def ssuave surge-suave)
-(def plasmonic-bell (midi/midi-out "Bus 3"))
+(def plasmonic-bell (try (midi/midi-out "Bus 3")
+                         (catch Exception e (timbre/error e))))
 (def pbell plasmonic-bell)
 (def iac2 (get-iac2!))
 

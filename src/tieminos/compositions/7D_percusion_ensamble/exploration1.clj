@@ -5,10 +5,8 @@
    [tieminos.synths :as synth]
    [time-time.dynacan.players.gen-poly :as gp :refer [on-event ref-rain]]))
 
-(def sink (midi/midi-out "VirMIDI"))
-
 (comment
-
+  (def sink (midi/midi-out "VirMIDI"))
   (gp/stop)
 
   (let [my-malgo #(malgo-note (merge {:sink sink

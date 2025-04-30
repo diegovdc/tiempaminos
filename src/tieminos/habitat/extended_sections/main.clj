@@ -9,7 +9,7 @@
    [tieminos.habitat.extended-sections.hacia-un-nuevo-universo.synths
     :refer [algo-basic-pitch-shifter]]
    [tieminos.habitat.extended-sections.harmonies.chords :refer [fib-chord-seq
-                                                               transpose-chord]]
+                                                                transpose-chord]]
    [tieminos.habitat.groups :as groups]
    [tieminos.habitat.init :refer [habitat-initialized? init!]]
    [tieminos.habitat.main :as main]
@@ -21,11 +21,12 @@
     :refer [inputs main-returns percussion-processes-main-out preouts]]
    [tieminos.habitat.scratch.sample-rec2
     :refer [hacia-un-nuevo-universo-perc-refrain
-            hacia-un-nuevo-universo-perc-refrain-v1p2 hacia-un-nuevo-universo-perc-refrain-v2-scalable-durs
-            quad-router-2o rev-filter rising-upwards start-rec-loop! start-rec-loop2!
-            start-rec-loop3!]]
+            hacia-un-nuevo-universo-perc-refrain-v1p2
+            hacia-un-nuevo-universo-perc-refrain-v2-scalable-durs
+            quad-router-2o rev-filter rising-upwards start-rec-loop!
+            start-rec-loop2! start-rec-loop3!]]
    [tieminos.habitat.utils :refer [open-inputs-with-rand-pan]]
-   [tieminos.midi.core :refer [midi-in-event oxygen]]
+   [tieminos.midi.core :refer [get-oxygen! midi-in-event]]
    [tieminos.utils :refer [rrange]]
    [time-time.dynacan.players.gen-poly :as gp :refer [on-event ref-rain]]))
 
@@ -798,7 +799,7 @@
   (gp/stop)
   (def cps (cps/make 2 [1 3 5 7]))
   (midi-in-event
-   :midi-input oxygen
+   :midi-input (get-oxygen!)
    :note-on (fn [{:as event}]
               (let [vel (:velocity event)
                     note (:note event)

@@ -12,14 +12,6 @@
 
 ;; NOTE on virmidi, if overtone starts to crash on load, maybe virmidi was corrupted (has already happend to me once)
 
-(defonce ks (try (midi/midi-in "VirMIDI")
-                 (catch Exception e
-                   (timbre/warn (str "Could not connect to VirMIDI: " (.getMessage e))))))
-
-(defonce oxygen (try (midi/midi-in "USB MIDI")
-                     (catch Exception e
-                       (timbre/warn (str "Could not connect to USB MIDI: " (.getMessage e))))))
-
 (defonce oxygen* (atom nil))
 (defn get-oxygen!
   []
@@ -63,7 +55,7 @@
 (comment
   ;; basic USAGE
   (midi-in-event
-   :midi-input oxygen
+   :midi-input (get-oxygen!)
    :note-on (fn [_] (println "pepe"))))
 
 (comment
@@ -77,7 +69,6 @@
 (defn note-on
   "`f` receives a map with the following keys
    `'(:data2 :command :channel :msg :note :status :data1 :device :timestamp :velocity)`"
-  ([f] (note-on ks f))
   ([midi-input f]
    (println midi-input f)
    (midi/midi-handle-events
@@ -185,7 +176,7 @@
   "`note` events receive a map with the following keys
    `'(:data2 :command :channel :msg :note :status :data1 :device :timestamp :velocity)`"
   [& {:keys [midi-input note-on note-off cc auto-ctl?]
-      :or   {midi-input oxygen
+      :or   {midi-input (get-oxygen!)
              auto-ctl?  true
              note-off   (fn [_] nil)
              cc (fn [_] nil)}}]
@@ -203,6 +194,6 @@
     (midi/midi-note-off sink n chan)))
 (comment
   (note-on (fn [_] (println (:note _))))
-  (all-notes-off oxygen)
+  (all-notes-off (get-oxygen!))
   (midi-in-event :note-on (fn [_] (println "on" ((juxt :channel :note) _)))
                  :note-off (fn [_] (println "off" ((juxt :channel :note) _)))))

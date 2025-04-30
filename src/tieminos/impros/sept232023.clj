@@ -7,7 +7,8 @@
    [tieminos.utils :refer [map-subscale-degs rrange]]
    [time-time.dynacan.players.gen-poly :as gp :refer [on-event ref-rain]]))
 
-(def sink (midi/midi-out "VirMIDI"))
+(comment
+  (def sink (midi/midi-out "VirMIDI")))
 
 (comment
   (-> polydori-v2 :subcps

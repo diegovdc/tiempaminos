@@ -76,7 +76,6 @@
                 :on-event (make-on-event synth)))))
 
 (comment
-  (-> oxygen)
   (groups/init-groups!)
   (def delay-in (o/audio-bus 1 "delay-in"))
   (def delay-in2 (o/audio-bus 1 "delay-in2"))
