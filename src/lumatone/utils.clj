@@ -1,4 +1,4 @@
-(ns tieminos.lumatone.utils)
+(ns lumatone.utils)
 
 (defn multichan-mapper
   "Replicates the functionality of Pianoteq and Surge XT for mapping multichannel MIDI values into a specific scale octave and degree.

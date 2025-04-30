@@ -16,6 +16,7 @@
 
 (comment
   (-> scales keys)
+  (->> scales :22t-by-parallel-transpositions :scale (map :bounded-ratio))
   (generate-22t-ltn-mapping-intervals))
 
 (def *22tone17o7-development-version
@@ -100,10 +101,10 @@
 
 (comment
   ;; dynamically calculate the CS subsets (takes a long time)
-  (def cs-of-22t (->> *22tone17o7 (cs.brute-force/cs-subsets 11)))
+  (def cs-of-22t (->> *22tone17o7 (cs.brute-force/quick-cs-subsets 11)))
   (spit "src/tieminos/scales/17o7/constant-structures-of-22tone-17o7_v1.edn"
         (str (into [] cs-of-22t)))
-
+  (-> cs-of-22t)
   ;; A quicker way
   (def cs-of-22t
     (do

@@ -1,11 +1,11 @@
-(ns tieminos.lumatone.workfile
+(ns lumatone.workfile
   (:require
    [erv.mos.mos :as mos]
-   [thi.ng.color.gradients :as grad]
-   [tieminos.lumatone.coord-system :as gral-kb]
-   [tieminos.lumatone.ltn :refer [make-ltn parse-ltn]]
-   [tieminos.lumatone.mos-colorizer :refer [color-fn2
-                                            mos-degs-rings-with-gradient update-key-colors]]))
+   [lumatone.colorizer
+    :refer [color-fn colorize-ltn mos-degs-rings-with-gradient]]
+   [lumatone.coord-system :as gral-kb]
+   [lumatone.ltn :refer [make-ltn parse-ltn]]
+   [thi.ng.color.gradients :as grad]))
 
 (comment
   ;; generate the keyboards
@@ -20,7 +20,7 @@
   ;; generate keyboard data
   (def kbd-data
     ;; config
-    (let [offset 31 ;; NOTE explore different offsets for the lowest midi note
+    (let [offset 30 ;; NOTE explore different offsets for the lowest midi note
           ]
       (->> (gral-kb/make-ltn-data
             {:offset offset
@@ -55,10 +55,10 @@
     (->> kbd-data
          gral-kb/ltn-data->ltn
          parse-ltn
-         (update-key-colors (partial color-fn2
-                                     (mos-degs-rings-with-gradient
-                                      (grad/cosine-schemes :yellow-green-blue)
-                                      mos-rings)
-                                     0))
+         (colorize-ltn (partial color-fn
+                                (mos-degs-rings-with-gradient
+                                 (grad/cosine-schemes :yellow-green-blue)
+                                 mos-rings)
+                                0))
          make-ltn
          (spit path))))

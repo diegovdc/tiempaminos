@@ -1,7 +1,7 @@
-(ns tieminos.lumatone.utils-test
+(ns lumatone.utils-test
   (:require
    [clojure.test :refer [deftest is testing]]
-   [tieminos.lumatone.utils :refer [multichan-mapper]]))
+   [lumatone.utils :refer [multichan-mapper]]))
 
 (deftest multichan-mapper-test
   (testing "Basic transpositions"

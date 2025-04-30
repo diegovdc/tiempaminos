@@ -1,4 +1,4 @@
-(ns tieminos.lumatone.ltn
+(ns lumatone.ltn
   "Manipulate .ltn files"
   (:require [clojure.edn :as edn]
             [clojure.string :as str]))

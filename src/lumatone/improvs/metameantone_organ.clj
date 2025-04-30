@@ -1,11 +1,11 @@
-(ns tieminos.lumatone.improvs.metameantone-organ
+(ns lumatone.improvs.metameantone-organ
   (:require
    [clojure.math.combinatorics :as combo]
    [erv.scale.core :as scale]
    [erv.utils.conversions :as convo]
    [erv.utils.core :refer [round2]]
+   [lumatone.utils :refer [multichan-mapper]]
    [overtone.core :as o]
-   [tieminos.lumatone.utils :refer [multichan-mapper]]
    [tieminos.math.utils :refer [linexp*]]
    [tieminos.midi.core :refer [get-lumatone! midi-in-event]]
    [tieminos.sc-utils.synths.v1 :refer [lfo]]))

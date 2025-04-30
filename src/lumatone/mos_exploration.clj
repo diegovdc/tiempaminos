@@ -1,4 +1,4 @@
-(ns tieminos.lumatone.mos-exploration
+(ns lumatone.mos-exploration
   (:require
    [erv.constant-structures.core :as cs]
    [erv.edo.core :as edo]

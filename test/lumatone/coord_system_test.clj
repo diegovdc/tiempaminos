@@ -1,7 +1,7 @@
-(ns tieminos.lumatone.coord-system-test
+(ns lumatone.coord-system-test
   (:require
    [clojure.test :refer [deftest is testing]]
-   [tieminos.lumatone.coord-system
+   [lumatone.coord-system
     :refer
     [add-coords
      board-keys
