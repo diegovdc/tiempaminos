@@ -116,7 +116,8 @@
     (lattice.v1/update-ratios! @lattice-sketch-atom ratios)
     (reset! lattice-sketch-atom
             (lattice.v1/draw-lattice
-             {:ratios ratios
+             {:id "Harmonic Experience Lattice"
+              :ratios ratios
               :width (* 16 lattice-size)
               :height (* 9 lattice-size)
               :on-close (fn [] (reset! lattice-sketch-atom nil))})))
