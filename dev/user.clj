@@ -145,7 +145,6 @@
   :surrounding...?)
 
 (def default-scl-dir "/Users/diego/Music/tunings/")
-
 (defn spit-scl
   [{:keys [meta] :as scale-data}]
   (if-not (:scl/name meta)
@@ -167,6 +166,8 @@
                   (sort-by first))]
     (when pprint? (pprint data))
     data))
+
+(def datasets-dir "/Users/diego/Music/code/tieminos-datasets")
 
 (comment
   (scales)

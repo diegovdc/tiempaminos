@@ -106,7 +106,6 @@
                        (do (reset! (:data-atom existing-lattice) lattice-data*)
                            (:data-atom existing-lattice))
                        (atom lattice-data*))
-        _ (println existing-lattice)
         applet (if existing-lattice
                  (:applet existing-lattice)
                  (var-get (q/defsketch lattice-tool
