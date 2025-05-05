@@ -2,8 +2,8 @@
   (:require
    [erv.constant-structures.core :refer [analyze]]
    [erv.cps.core :as cps]
-   [erv.edo.core :as edo]
    [erv.utils.conversions :as convo]
+   [erv.utils.ratios :refer [ratios->scale]]
    [quil.core :as q]))
 
 (defn setup []
@@ -93,7 +93,8 @@
   (fn []
     (draw* state)))
 
-(defn concat-scales [& scales]
+(defn concat-scales
+  [& scales]
   (->> (flatten scales)
        (sort-by (juxt :bounded-ratio :scale-order))
        (reduce (fn [scale note]
@@ -107,10 +108,13 @@
                [])))
 
 (defn make-state
-  [{:keys [scale period added-notes analyze-cs?]
-    :or {period 2
-         added-notes []}}]
-  (let [scale+added-notes* (concat-scales scale added-notes)
+  [{:keys [scale-data ratios period added-notes analyze-cs?]
+    :or {added-notes []}}]
+  (let [period (or period (-> scale-data :meta :period) 2)
+        scale (if scale-data
+                (->> scale-data :scale)
+                (ratios->scale period ratios))
+        scale+added-notes* (concat-scales scale added-notes)
         state (let [analysis (-> (analyze scale+added-notes*) :non-cs-intervals)
                     arcs (make-arcs analysis period)]
                 {:scale scale
@@ -124,55 +128,50 @@
     state))
 
 (defn update! [state {:keys [_scale _period _added-notes _analyze-cs?] :as config}]
-  (reset! state (make-state (merge
-                             {:scale (:scale @state)
-                              :period (:period @state)
-                              :added-notes (:added-notes @state)}
-                             config))))
+  (reset! state (make-state config)))
 
-(defn init! [{:keys [_scale _period _added-notes] :as config}]
-  (let [state (atom (make-state config))]
-    (q/defsketch pitch-wheel
-      :title "Pitch Wheel"
-      :settings #(q/smooth 80)
-      :setup setup
-      :draw (draw state)
-      :size [width height])
+(defonce pitch-wheels (atom {}))
+
+(defn init! [{:keys [id scale-data _ratios _period _added-notes on-close]
+              :or {on-close (fn [])}
+              :as config}]
+  (let [scl-name (-> scale-data :meta :scl/name)
+        title (if scl-name
+                (format "%s (%s)" scl-name (str id))
+                (format "(%s)" id))
+        data* (make-state config)
+        existing-pitchwheel (get @pitch-wheels id)
+        state  (if existing-pitchwheel
+                 (do (reset! (:data-atom existing-pitchwheel) data*)
+                     (:data-atom existing-pitchwheel))
+                 (atom data*))
+
+        applet (if existing-pitchwheel
+                 (:applet existing-pitchwheel)
+                 (var-get (q/defsketch pitch-wheel
+                            :title "Pitch Wheel"
+                            :settings #(q/smooth 80)
+                            :setup setup
+                            :draw (draw state)
+                            :size [width height]
+                            :on-close (fn []
+                                        (when id (swap! pitch-wheels dissoc id))
+                                        (on-close))
+                            :resizable true)))]
+    (when title
+      (Thread/sleep 500) ;; wait until the applet is created to set the title
+      (-> applet .getSurface (.setTitle title)))
+    (when id
+      (swap! pitch-wheels assoc id {:data-atom state
+                                    :applet applet}))
     state))
 
 (comment
-  (def scale (:scale (cps/make 2 [1 3 5 7 11] :norm-fac 77)))
-  (println (map :bounded-ratio scale))
-  (def scale (:scale (cps/make 2 [1 2 5 7]  :period 3)))
-  (map (juxt :ratio :bounded-ratio :set) scale)
-  (clojure.pprint/pprint scale)
-  (def s (init! {:scale scale
-                 :added-notes [;; 57/49
-                              ;; 7/6
-                              ;; 19/16
-                              ;; 76/63
-                              ;; 1701/1444
-                               #_(convo/cents->ratio 400)
-                              ;; 19/16
-                              ;; 5/4
-                              ;; 76/63
-                              ;; 24/19
-                              ;; 700
-                              ;; 900
-                              ;; 1020
-                               ]}))
-  (update! s scale [#_(convo/cents->ratio 780)
-                    #_(convo/cents->ratio 0)
-                    #_(convo/cents->ratio 780)
-                    #_(convo/cents->ratio 280)
-                    #_(convo/cents->ratio 120)
-                    #_(convo/cents->ratio 290)
-                    11/9
-                    #_(convo/cents->ratio 580)
-                    11/8
-                    #_(convo/cents->ratio 350)
-                    #_(convo/cents->ratio 850)
-                    8/5
-                    #_(convo/cents->ratio 750)
-                    #_(convo/cents->ratio 820)
-                    #_(convo/cents->ratio 930)]))
+  (def s (init! {:id ::my-pw
+                 :scale-data (update-in (cps/make 2 [1 3 5 7 11] :norm-fac 77)
+                                        [:meta]
+                                        assoc :scl/name "my-cps.scl")
+                 :added-notes (->> [57/49
+                                    19/16]
+                                   (ratios->scale 2)
+                                   (map #(assoc % :color [255 0 0])))})))
