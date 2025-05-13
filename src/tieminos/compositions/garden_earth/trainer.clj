@@ -111,7 +111,7 @@
      :durs (fn [_] (rand-nth [5 8 10]))
      :on-event
      (on-event
-       (let [degrees (cond
+      (let [degrees (cond
                       (< index 10) [2 3]
                       (< index 20) [0 2 3]
                       (< index 40) [1 2 3]

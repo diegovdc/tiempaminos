@@ -29,7 +29,6 @@
    [tieminos.utils :refer [rrange]]
    [time-time.dynacan.players.gen-poly :as gp :refer [on-event ref-rain]]))
 
-
 (defonce analyzers-registry (atom {}))
 
 (defn- merge-analyzers-inputs
@@ -50,9 +49,9 @@
     (reset! analyzers-registry
             (into {}
                   (map
-                    (fn [[input-name {:keys [bus]}]]
-                      {input-name (habitat.rec/start-signal-analyzer :input-bus bus)})
-                    inputs*)))))
+                   (fn [[input-name {:keys [bus]}]]
+                     {input-name (habitat.rec/start-signal-analyzer :input-bus bus)})
+                   inputs*)))))
 
 (defn stop!
   [{:keys [reset-bufs?]
@@ -65,38 +64,35 @@
       (timbre/warn "Buffs from the previous session are being preserved")))
   (reset! habitat.rec/recording? {}))
 
-
-
 (defn init!
   []
   (let [{:keys [inputs outputs]
          :as init-data}
         (ge.init/init!
-          {:inputs-config {:in-1 {:amp (o/db->amp 8)}}
-           :outputs-config {:rain-1 {:bh-out 2}
-                            :ndef-1 {:bh-out 4}
+         {:inputs-config {:in-1 {:amp (o/db->amp 8)}}
+          :outputs-config {:rain-1 {:bh-out 2}
+                           :ndef-1 {:bh-out 4}
                             ;; TODO maybe use another `:bh-out`
-                            :magma-rain {:bh-out 2}
-                            :magma-ndef {:bh-out 4}
-                            :estratos-rain {:bh-out 2}
-                            :clean-ndef {:bh-out 4}
-                            :mantle-plume-rev {:bh-out 4}
-                            :mantle-plume-main {:bh-out 6}
-                            :erupcion-rain {:bh-out 8}
-                            :erupcion-ndef {:bh-out 10}
-                            :totalidad-ecosistema {:bh-out 12}
-                            :with-rev-send {:bh-out 14}
-                            }
-           :controls-config {:exp/pedal-1 {:chans 1}
-                             :exp/btn-a {:chans 1}
-                             :exp/btn-b {:chans 1}
-                             :exp/btn-c {:chans 1}
-                             :exp/btn-d {:chans 1}
-                             :exp/btn-1 {:chans 1}
-                             :exp/btn-2 {:chans 1}
-                             :exp/btn-3 {:chans 1}
-                             :exp/btn-4 {:chans 1}
-                             :exp/btn-5 {:chans 1}}})
+                           :magma-rain {:bh-out 2}
+                           :magma-ndef {:bh-out 4}
+                           :estratos-rain {:bh-out 2}
+                           :clean-ndef {:bh-out 4}
+                           :mantle-plume-rev {:bh-out 4}
+                           :mantle-plume-main {:bh-out 6}
+                           :erupcion-rain {:bh-out 8}
+                           :erupcion-ndef {:bh-out 10}
+                           :totalidad-ecosistema {:bh-out 12}
+                           :with-rev-send {:bh-out 14}}
+          :controls-config {:exp/pedal-1 {:chans 1}
+                            :exp/btn-a {:chans 1}
+                            :exp/btn-b {:chans 1}
+                            :exp/btn-c {:chans 1}
+                            :exp/btn-d {:chans 1}
+                            :exp/btn-1 {:chans 1}
+                            :exp/btn-2 {:chans 1}
+                            :exp/btn-3 {:chans 1}
+                            :exp/btn-4 {:chans 1}
+                            :exp/btn-5 {:chans 1}}})
         ;; Amp analyzer
         amp-analyzers (init-analyzers! inputs outputs)]
     (reaper/init)
@@ -113,19 +109,18 @@
   #_(do (stop! {:reset-bufs? true}) (aseq/stop))
   (aseq/stop)
   (let [sections (concat
-                   fondo-oceanico/sections
-                   formacion-terrestre/sections
-                   erupcion/sections
-                   totalidad/sections)]
+                  fondo-oceanico/sections
+                  formacion-terrestre/sections
+                  erupcion/sections
+                  totalidad/sections)]
     (stop! {:reset-bufs? false})
     (init!)
     (aseq/run-sections
-      (merge aseq/reaper-events
-             {:sections sections
-              :start-at 0
-              :initial-countdown-seconds 40
-              :on-sequencer-end (fn [] (stop! {:reset-bufs? false}))})))
-
+     (merge aseq/reaper-events
+            {:sections sections
+             :start-at 0
+             :initial-countdown-seconds 40
+             :on-sequencer-end (fn [] (stop! {:reset-bufs? false}))})))
 
   (erupcion/init-section-buses&outs!)
   (two.ls/set-section (-> erupcion/sections (nth 4)))
@@ -141,9 +136,7 @@
        deref
        vals
        (map (comp (juxt :section :subsection) :rec/meta))
-       frequencies
-       )
-  )
+       frequencies))
 
 (comment
   (require '[tieminos.compositions.garden-earth.moments.two.habitat-in-volcanic-temporality :as ivt])
@@ -153,15 +146,12 @@
   (init!*)
   (-> init-data)
 
-
-  ;; TODO make this an init function
+;; TODO make this an init function
   ;; For some reason amp via o/sound-in is coming 8db lower than it should be
   ;; so allowing here for compensation.
   ;; FIXME find the cause for the above.
   (ge.init/init!
-    {:inputs-config {:in-1 {:amp (o/db->amp 8)}}}))
-
-
+   {:inputs-config {:in-1 {:amp (o/db->amp 8)}}}))
 
 (comment
   (oe/defsynth io

@@ -23,19 +23,19 @@
          section "in-volcanic-time"
          subsection "default-subsection"}}]
   (ref-rain
-    :id id
-    :durs rec-pulse
-    :on-event (on-event
-                (let [dur-s (-> (rec-dur-fn {:index index})
-                                (- 0.05)
-                                (max 0.01))]
-                  (rec-input {:group (groups/output-rec)
-                              :section section
-                              :subsection subsection
-                              :input-name (:name input-bus)
-                              :input-bus input-bus
-                              :dur-s dur-s
-                              :on-end on-end
-                              :print-info? false
-                              :countdown countdown
-                              :on-rec-start on-rec-start})))))
+   :id id
+   :durs rec-pulse
+   :on-event (on-event
+              (let [dur-s (-> (rec-dur-fn {:index index})
+                              (- 0.05)
+                              (max 0.01))]
+                (rec-input {:group (groups/output-rec)
+                            :section section
+                            :subsection subsection
+                            :input-name (:name input-bus)
+                            :input-bus input-bus
+                            :dur-s dur-s
+                            :on-end on-end
+                            :print-info? false
+                            :countdown countdown
+                            :on-rec-start on-rec-start})))))

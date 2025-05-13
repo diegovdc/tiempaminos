@@ -33,8 +33,6 @@
   (def scale-1 (+names base-freq (subcps "1)4 of 3)6 5.9-1.3.7.11")))
   (def scale-2 (+names base-freq (subcps "3)4 of 3)6 1.5.7.9")))
 
-
-
   (-> scale-1)
   (let [last-sets (atom '())]
     (defn on-receive-pitch
@@ -44,7 +42,6 @@
                                              eik-freq-ref))
             set* (pitch-class->note-set pitch-class)]
 
-        
         (when (not= (first @last-sets) set*)
           (swap! last-sets #(take 6 (conj % set*))))
         (println pitch-class diff-cents)
@@ -56,30 +53,30 @@
   (start-signal-analyzer {:in 5
                           :freq 10
                           :pitch-path "/receive-pitch-5"
-                          #_ #_  :scale-freqs-ranges (make-scale-freqs-ranges
-                                                       scale-freqs-map
-                                                       (set (map (comp :class :pitch)
-                                                                 scale-1)))
+                          #_#_:scale-freqs-ranges (make-scale-freqs-ranges
+                                                   scale-freqs-map
+                                                   (set (map (comp :class :pitch)
+                                                             scale-1)))
                           :on-receive-pitch #'on-receive-pitch})
 
   (* 440.0 135/128)
   (ndef/ndef
-      ::pitch-chords
-      (-> (o/sound-in 5)
-          #_(o/delay-l 1 1)
-          (o/pitch-shift 0.1 [7/6 4/3 11/12])
-          (o/mix)
-          (o/free-verb 0.5 3)
-          (o/pan2)
-          (* 8)))
+   ::pitch-chords
+   (-> (o/sound-in 5)
+       #_(o/delay-l 1 1)
+       (o/pitch-shift 0.1 [7/6 4/3 11/12])
+       (o/mix)
+       (o/free-verb 0.5 3)
+       (o/pan2)
+       (* 8)))
   (gp/stop)
 
   (defn intervals-from-pitch-class
     "Generate a seq of intervals as related to the `bounded-ratio` of a `pitch-class`"
     [pitch-class scale]
     (map
-      #(/ (:bounded-ratio %) (pitch-class->bounded-ratio pitch-class))
-      scale))
+     #(/ (:bounded-ratio %) (pitch-class->bounded-ratio pitch-class))
+     scale))
 
   (defn rm-1
     "Remove 1/1"
@@ -98,35 +95,34 @@
   (gp/stop)
   (let [last-pc (atom nil)]
     (gp/ref-rain
-      :id ::pitch-chord-control
-      :durs [1/5]
-      :on-event (gp/on-event
-                  (let [new-pc (-> @freq-history first :pitch-class)]
-                    (cond
-                      (not new-pc) nil
-                      (and (not new-pc) (not @last-pc)) nil #_(println "no last-pc")
-                      (= new-pc @last-pc)  nil #_(println "same pc")
-                      :else (let [scale (->> scale-1
-                                             shuffle
-                                             ) #_(scales new-pc)
-                                  ratios (->> scale
-                                              (intervals-from-pitch-class new-pc)
-                                              rm-1
-                                              (take (inc (rand-int 4)))
-                                              (map * [1/2 1 2]))]
-                              (println ratios)
-                              (reset! last-pc new-pc)
-                              (println "new ndef"  @last-pc)
-                              (if-not ratios
-                                (timbre/error "NO RATIOS=========================================")
-                                (ndef/ndef
-                                    ::pitch-chords
-                                    (-> (o/sound-in 5)
-                                        #_(o/delay-l 1 1)
-                                        (o/pitch-shift 0.1 ratios)
-                                        ((fn [sig] (if (> (count ratios) 1) (o/mix sig) sig)))
-                                        (o/free-verb 0.5 0.5)
-                                        (o/pan2)
-                                        (* 8 (lfo-kr 1 0.5 1)))
-                                    {:fade-time 5
-                                     :out (bh 2)})))))))))
+     :id ::pitch-chord-control
+     :durs [1/5]
+     :on-event (gp/on-event
+                (let [new-pc (-> @freq-history first :pitch-class)]
+                  (cond
+                    (not new-pc) nil
+                    (and (not new-pc) (not @last-pc)) nil #_(println "no last-pc")
+                    (= new-pc @last-pc)  nil #_(println "same pc")
+                    :else (let [scale (->> scale-1
+                                           shuffle) #_(scales new-pc)
+                                ratios (->> scale
+                                            (intervals-from-pitch-class new-pc)
+                                            rm-1
+                                            (take (inc (rand-int 4)))
+                                            (map * [1/2 1 2]))]
+                            (println ratios)
+                            (reset! last-pc new-pc)
+                            (println "new ndef"  @last-pc)
+                            (if-not ratios
+                              (timbre/error "NO RATIOS=========================================")
+                              (ndef/ndef
+                               ::pitch-chords
+                               (-> (o/sound-in 5)
+                                   #_(o/delay-l 1 1)
+                                   (o/pitch-shift 0.1 ratios)
+                                   ((fn [sig] (if (> (count ratios) 1) (o/mix sig) sig)))
+                                   (o/free-verb 0.5 0.5)
+                                   (o/pan2)
+                                   (* 8 (lfo-kr 1 0.5 1)))
+                               {:fade-time 5
+                                :out (bh 2)})))))))))

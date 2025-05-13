@@ -105,9 +105,9 @@
   (-> @outputs)
   (groups/init-groups!)
   (init-outputs!
-    {:outputs outputs
-     :config {:sc-1 {:bh-out 2}
-              :sc-2 {:bh-out 4}}})
+   {:outputs outputs
+    :config {:sc-1 {:bh-out 2}
+             :sc-2 {:bh-out 4}}})
 
   (oe/defsynth testy
     [out 0]
@@ -164,7 +164,7 @@
                        bus))
   (-> default-ctl-1 (into {}))
   (init-control-buses!
-    {:exp/pedal-1 {:chans 1}})
+   {:exp/pedal-1 {:chans 1}})
 
   (set-ctl :exp/pedal-1 127)
 
@@ -180,5 +180,5 @@
                   (o/pan2 (o/sin-osc 200)))))
 
   (def test-sini (sini
-                   {:amp-ctl (ctl-bus :exp/pedal-1)}))
+                  {:amp-ctl (ctl-bus :exp/pedal-1)}))
   (o/kill test-sini))

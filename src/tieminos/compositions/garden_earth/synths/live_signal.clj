@@ -54,11 +54,11 @@
            analyzer-amp 1}}]
   (println "SIG ANALIZER Bus:" in "amp:" analyzer-amp)
   ((o/synth
-       (let [input  (* analyzer-amp (o/sound-in in))]
-         (o/send-reply (o/impulse freq) pitch-path
-                       [(o/lag2 (o/pitch:kr input) 0.1) ;; smooth out signal
-                        (o/amplitude:kr input)]
-                       in)))))
+    (let [input  (* analyzer-amp (o/sound-in in))]
+      (o/send-reply (o/impulse freq) pitch-path
+                    [(o/lag2 (o/pitch:kr input) 0.1) ;; smooth out signal
+                     (o/amplitude:kr input)]
+                    in)))))
 
 (defn run-receive-pitch
   "Gets pitches from `sound-in` 0 in almost real time
@@ -98,51 +98,50 @@
                      :on-receive-pitch on-receive-pitch
                      :scale-freqs-ranges scale-freqs-ranges)
   (run-get-signal-pitches
-    :in in
-    :analyzer-amp analyzer-amp
-    :freq freq
-    :pitch-path pitch-path))
-
+   :in in
+   :analyzer-amp analyzer-amp
+   :freq freq
+   :pitch-path pitch-path))
 
 #_(defn add-analysis
-  [dur-s buf-key input-bus]
-  (let [now (o/now)
-        sample-start (- now (* 1000 dur-s)
+    [dur-s buf-key input-bus]
+    (let [now (o/now)
+          sample-start (- now (* 1000 dur-s)
                         ;; ensure samples window corresponds to dur-s
-                        (hz->ms analyzer-freq))
+                          (hz->ms analyzer-freq))
         ;; TODO allow multiple inputs: (get @freq-history (keyword (:name input-bus)))
-        analysis (->> @freq-history
-                      (drop-while #(> (:timestamp %) now))
-                      (take-while #(>= (:timestamp %) sample-start))
-                      (reduce (fn [acc {:keys [amp freq freq?]}]
-                                (-> acc
-                                    (update :min-amp min amp)
-                                    (update :max-amp max amp)
-                                    (update :amps conj amp)
-                                    (cond-> freq? (update :freqs conj freq))))
+          analysis (->> @freq-history
+                        (drop-while #(> (:timestamp %) now))
+                        (take-while #(>= (:timestamp %) sample-start))
+                        (reduce (fn [acc {:keys [amp freq freq?]}]
+                                  (-> acc
+                                      (update :min-amp min amp)
+                                      (update :max-amp max amp)
+                                      (update :amps conj amp)
+                                      (cond-> freq? (update :freqs conj freq))))
 
-                              {:min-amp 0
-                               :max-amp 0
-                               :amps ()
-                               :freqs ()}))
-        avg-amp (avg (:amps analysis))
-        avg-freq? (boolean (seq (:freqs analysis)))
-        avg-freq (when avg-freq? (avg (:freqs analysis)))
-        amp-norm-mult (normalize-amp (:max-amp analysis))]
-    (swap! bufs update buf-key
-           assoc
-           :rec/time sample-start
-           :analysis (-> analysis
-                         (assoc :avg-amp avg-amp)
-                         (assoc :avg-freq? avg-freq?)
-                         (cond-> avg-freq? (assoc :avg-freq avg-freq))
-                         (dissoc :amps :freqs))
-           :amp-norm-mult amp-norm-mult)))
+                                {:min-amp 0
+                                 :max-amp 0
+                                 :amps ()
+                                 :freqs ()}))
+          avg-amp (avg (:amps analysis))
+          avg-freq? (boolean (seq (:freqs analysis)))
+          avg-freq (when avg-freq? (avg (:freqs analysis)))
+          amp-norm-mult (normalize-amp (:max-amp analysis))]
+      (swap! bufs update buf-key
+             assoc
+             :rec/time sample-start
+             :analysis (-> analysis
+                           (assoc :avg-amp avg-amp)
+                           (assoc :avg-freq? avg-freq?)
+                           (cond-> avg-freq? (assoc :avg-freq avg-freq))
+                           (dissoc :amps :freqs))
+             :amp-norm-mult amp-norm-mult)))
 
 #_(defn add-amp-analysis
-  "For use in thread in the `:on-end` key of `sc.rec.v1/start-recording`"
-  [buf-key]
-  (add-analysis dur-s buf-key input-bus))
+    "For use in thread in the `:on-end` key of `sc.rec.v1/start-recording`"
+    [buf-key]
+    (add-analysis dur-s buf-key input-bus))
 
 (comment
   (o/stop)

@@ -27,29 +27,29 @@
 (defn init-osc-server []
   (habitat-osc/init :port 7777)
   (habitat-osc/responder
-    (fn [{:keys [path args] :as msg}]
-      (println msg)
-      (try
-        (case path
-          "/fade-from-black" (fade-from-black)
-          "/fade-to-black" (fade-to-black 7000)
-          "/to-gray" (to-gray)
-          "/to-color" (to-color)
-          "/moment-1" (if-not (:moment-1-called? @controller-state)
-                        (do (moment-1)
-                            (swap! controller-state assoc :moment-1-called? true))
-                        (timbre/warn "moment-1 already called"))
-          "/play-main" (if-not (:play-main-called? @controller-state)
-                         (do (play-main)
-                             (swap! controller-state assoc :play-main-called? true))
-                         (timbre/warn "play-main already called"))
-          "/end" (if-not (:end-called? @controller-state)
-                   (do (ending)
-                       (swap! controller-state assoc :end-called? true))
-                   (timbre/warn "end already called"))
-          "/to-init" (do (init)
-                         (reset! controller-state {})))
-        (catch Exception _ (timbre/error "Unknown path" msg))))))
+   (fn [{:keys [path args] :as msg}]
+     (println msg)
+     (try
+       (case path
+         "/fade-from-black" (fade-from-black)
+         "/fade-to-black" (fade-to-black 7000)
+         "/to-gray" (to-gray)
+         "/to-color" (to-color)
+         "/moment-1" (if-not (:moment-1-called? @controller-state)
+                       (do (moment-1)
+                           (swap! controller-state assoc :moment-1-called? true))
+                       (timbre/warn "moment-1 already called"))
+         "/play-main" (if-not (:play-main-called? @controller-state)
+                        (do (play-main)
+                            (swap! controller-state assoc :play-main-called? true))
+                        (timbre/warn "play-main already called"))
+         "/end" (if-not (:end-called? @controller-state)
+                  (do (ending)
+                      (swap! controller-state assoc :end-called? true))
+                  (timbre/warn "end already called"))
+         "/to-init" (do (init)
+                        (reset! controller-state {})))
+       (catch Exception _ (timbre/error "Unknown path" msg))))))
 
 ;; Intended to run on linux machineso the following may need to be done
 ;; Setup of VirMIDI: https://github.com/anton-k/linux-audio-howto/blob/master/doc/os-setup/virtual-midi.md#virtual-midi-1
@@ -69,23 +69,23 @@
 (defn fade-to-black [dur-ms] (fade {:cc 74 :fade-to 127 :dur-ms dur-ms}))
 
 #_(defn interpolate-ad-envelope
-  [{:keys [id tick-ms atk-ms atk-val dcy-ms dcy-val cb]
-    :or {tick-ms 100}}]
-  (cb-interpolate
-   {:id id
-    :dur-ms atk-ms
-    :tick-ms (min tick-ms atk-ms)
-    :init-val 0
-    :target-val atk-val
-    :cb cb
-    :on-end (fn [{:keys [val]}]
-              (cb-interpolate {:id id
-                               :dur-ms dcy-ms
-                               :tick-ms tick-ms
-                               :init-val val
-                               :target-val dcy-val
-                               :cb cb
-                               :on-end nil}))}))
+    [{:keys [id tick-ms atk-ms atk-val dcy-ms dcy-val cb]
+      :or {tick-ms 100}}]
+    (cb-interpolate
+     {:id id
+      :dur-ms atk-ms
+      :tick-ms (min tick-ms atk-ms)
+      :init-val 0
+      :target-val atk-val
+      :cb cb
+      :on-end (fn [{:keys [val]}]
+                (cb-interpolate {:id id
+                                 :dur-ms dcy-ms
+                                 :tick-ms tick-ms
+                                 :init-val val
+                                 :target-val dcy-val
+                                 :cb cb
+                                 :on-end nil}))}))
 
 (def cc* {:black-fade 74
           :fractal-add 75
@@ -166,12 +166,11 @@
                  :hept-luma 127
                  :hept-dancer-add 0}]
 
-    (cc k v))
-  )
+    (cc k v)))
 
 (comment
   (cc-interp :voronoi-mod 0 2000 200)
-  (cc :hept-dancer-add 0 )
+  (cc :hept-dancer-add 0)
   (cc-interp :preout-mod 0 2000 200))
 
 (defn moment-1 []
@@ -194,22 +193,22 @@
     (cc-interp k v (rrange 2000 4000) (rrange 400 500)))
   (cc-interp :kaleid-mod-amp 105 (* 6 60 1000) 857)
   (gp/ref-rain
-    :id :hept-pattern
-    :durs [1 2]
-    :on-event (gp/on-event
-                (midi/midi-control
-                  sink
-                  (cc* :hept-dancer-scroll-x)
-                  (rand-int 127))
-                (midi/midi-control
-                  sink
-                  (cc* :hept-dancer-scroll-y)
-                  (rand-int 127))
+   :id :hept-pattern
+   :durs [1 2]
+   :on-event (gp/on-event
+              (midi/midi-control
+               sink
+               (cc* :hept-dancer-scroll-x)
+               (rand-int 127))
+              (midi/midi-control
+               sink
+               (cc* :hept-dancer-scroll-y)
+               (rand-int 127))
 
-                (midi/midi-control
-                  sink
-                  (cc* :hept-dancer-repeat)
-                  (rand-int 127)))))
+              (midi/midi-control
+               sink
+               (cc* :hept-dancer-repeat)
+               (rand-int 127)))))
 
 (defn moment-5 []
   (timbre/info "Moment 5")

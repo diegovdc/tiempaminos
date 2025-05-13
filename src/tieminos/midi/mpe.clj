@@ -31,17 +31,17 @@
 
   ;;  While receiving input from a midi keyboard
   (midi-in-event
-    :midi-input (get-oxygen!)
-    :note-on (fn [msg]
-               (println "note-data"
-                        (mpe-note-on :sink outy
-                                     :scale (:scale hex)
-                                     :base-freq 261.63
-                                     :get-pitch-class get-cps-pitch-class
-                                     :deg-offset -60
-                                     :midi-note (msg :note)
-                                     :vel (msg :velocity))))
-    :note-off #(mpe-note-off outy (% :note))))
+   :midi-input (get-oxygen!)
+   :note-on (fn [msg]
+              (println "note-data"
+                       (mpe-note-on :sink outy
+                                    :scale (:scale hex)
+                                    :base-freq 261.63
+                                    :get-pitch-class get-cps-pitch-class
+                                    :deg-offset -60
+                                    :midi-note (msg :note)
+                                    :vel (msg :velocity))))
+   :note-off #(mpe-note-off outy (% :note))))
 
 (comment
   "Testing for synth mpe capabilities"

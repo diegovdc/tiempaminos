@@ -39,24 +39,24 @@
                     (map (juxt first
                                (comp first :steps second)
                                (comp
-                                 #(str/join ", " %)
-                                 (partial map (comp #(str/join "-" %) :interval))
-                                 :intervals
-                                 second)))
+                                #(str/join ", " %)
+                                (partial map (comp #(str/join "-" %) :interval))
+                                :intervals
+                                second)))
                     (sort-by (juxt second first))
                     (map #(str/join "," %))
                     (str/join "\n"))))
   (init-cs-tool! (ratios->scale evangelina) [])
 
   (->> (combo/cartesian-product
-         (->> (combo/combinations evangelina 21)
-              (map ratios->scale)
-              (filter (comp :constant-structure? cs/analyze))
-              (map #(map :ratio %)))
-         (->> (combo/combinations evangelina 20)
-              (map ratios->scale)
-              (filter (comp :constant-structure? cs/analyze))
-              (map #(map :ratio %))))
+        (->> (combo/combinations evangelina 21)
+             (map ratios->scale)
+             (filter (comp :constant-structure? cs/analyze))
+             (map #(map :ratio %)))
+        (->> (combo/combinations evangelina 20)
+             (map ratios->scale)
+             (filter (comp :constant-structure? cs/analyze))
+             (map #(map :ratio %))))
        (filter (fn [pair]
                  (let [[a b] (sort-by count pair)]
                    (set/subset? (set a) (set b))))))

@@ -7,7 +7,6 @@
    [tieminos.compositions.garden-earth.synths.granular :refer [grain]]
    [tieminos.sc-utils.recording.v1 :as sc.rec.v1]))
 
-
 (defn replay [buf-key & {:keys [speed]
                          :or {speed 1}}]
   (let [b (@sc.rec.v1/bufs buf-key)]

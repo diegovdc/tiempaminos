@@ -3,7 +3,6 @@
    [erv.meru.core :as meru]
    [erv.utils.ratios :refer [ratios->scale]]))
 
-
 (def meta-pelog
   "5 tone meta-pelog"
   (->> {:seed [1 1 1]
@@ -23,7 +22,6 @@
        (drop 5)
        (take 5)
        (ratios->scale)))
-
 
 (def meta-slendro1
   "12 tone meta-slendro"

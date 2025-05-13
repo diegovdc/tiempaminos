@@ -11,7 +11,6 @@
     (reset! osc-client (osc/osc-client "0.0.0.0" 53280))
     @osc-client))
 
-
 (defn set-tuning
   ;; NOTE avoid extension
   [path-to-scl]

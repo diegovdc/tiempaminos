@@ -35,8 +35,8 @@
   (->> eik :subcps
        (filter (fn [[k data]]
                  (= sets (set/intersection
-                           (set (map :set (:scale data)))
-                           sets))))))
+                          (set (map :set (:scale data)))
+                          sets))))))
 (comment
   ;; TODO convert into tests
   (sort (keys (find-supersets #{#{3 11 9}
@@ -45,9 +45,9 @@
   (sort (keys (find-supersets #{#{7 3 9}
                                 #{3 11 9}})))
   (sort (keys (find-supersets
-                (set (map :set (subcps "1)4 of 3)6 1.11-3.5.7.9"))))))
+               (set (map :set (subcps "1)4 of 3)6 1.11-3.5.7.9"))))))
   (sort (keys (find-supersets
-                #{#{7 1 11} #{1 11 9} #{1 11 5}})))
+               #{#{7 1 11} #{1 11 9} #{1 11 5}})))
   (sort (keys (find-supersets #{#{1 11 9} #{1 11 5}})))
 
   ;; e and g# cluster
@@ -85,9 +85,9 @@
 (comment
     ;; TODO convert into test
   (find-subcps-intersections
-    "1)4 of 3)6 1.3-5.7.9.11" #{"2)4"})
+   "1)4 of 3)6 1.3-5.7.9.11" #{"2)4"})
   (find-subcps-intersections
-    "2)4 of 3)6 11-1.5.7.9" #{"2)4"}))
+   "2)4 of 3)6 11-1.5.7.9" #{"2)4"}))
 
 (comment
   ;; projections (transpositions/stellations)

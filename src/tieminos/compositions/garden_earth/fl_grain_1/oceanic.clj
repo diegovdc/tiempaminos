@@ -41,9 +41,9 @@
                 (when (and rec? (not @rec/recording?))
                   (reset! rec/recording? true)
                   (rec/rec-flute
-                    (+ 2 (rand-int 3))
-                    (gen-bufkey!)
-                    (fn [_] (println (count @generated-bufkeys) "/10"))))))))
+                   (+ 2 (rand-int 3))
+                   (gen-bufkey!)
+                   (fn [_] (println (count @generated-bufkeys) "/10"))))))))
 (comment
 
   (do #_(reset! rec/bufs {})
