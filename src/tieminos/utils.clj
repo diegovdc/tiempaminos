@@ -1,7 +1,6 @@
 (ns tieminos.utils
   (:require
    [clojure.core.async :as a]
-   [clojure.string :as str]
    [erv.cps.core :as cps]
    [erv.scale.core :as scale]
    [erv.utils.conversions :as conv]
