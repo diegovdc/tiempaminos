@@ -10,6 +10,7 @@
 
 (defn bh "Blackhole outs" [out] (+ 20 out))
 
+(declare sink)
 (defn my-malgo
   [config]
   (malgo-note (merge {:sink sink

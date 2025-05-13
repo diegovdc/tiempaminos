@@ -103,7 +103,7 @@
                             (->> data :match-data :data (mapcat :degrees) set count))))
 
          reverse))
-  (analyse-subsets cs-of-19t-from-27t))
+  #_(analyse-subsets cs-of-19t-from-27t))
 
 (comment
 
