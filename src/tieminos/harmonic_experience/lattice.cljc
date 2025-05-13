@@ -116,7 +116,8 @@
     (lattice.v1/update-ratios! @lattice-sketch-atom ratios)
     (reset! lattice-sketch-atom
             (lattice.v1/draw-lattice
-             {:ratios ratios
+             {:id "Harmonic Experience Lattice"
+              :ratios ratios
               :width (* 16 lattice-size)
               :height (* 9 lattice-size)
               :on-close (fn [] (reset! lattice-sketch-atom nil))})))
@@ -168,8 +169,8 @@
 
                     (println (:note ev) ratio (round2 2 (conv/ratio->cents ratio)))
                     (add-played-absolute-ratio absolute-ratio)
-                    (when on-note-on)
-                    (on-note-on {:ratio ratio :absolute-ratio absolute-ratio})
+                    (when on-note-on
+                      (on-note-on {:ratio ratio :absolute-ratio absolute-ratio}))
                     (when sound?
                       (harmonic freq
                                 :amp (linexp* 0 127 0.1 3 (:velocity ev))

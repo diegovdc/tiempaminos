@@ -22,7 +22,7 @@
                     7/4
                     15/8])
 
-(def scale (ratios->scale (map #(/ % 7/6) note-mappings)))
+(def scale (ratios->scale (map #(/ % 7/6) note-mappings))) ;; archytas ionian on white keys - major sounding, but with a touch of sadness/nostalgia
 
 (comment
   (hexp.lattice/setup-kb {:ref-note 48
@@ -31,7 +31,7 @@
                           :midi-kb (tieminos.midi.core/get-oxygen!)})
   (hexp.trainer/trainer {:scale scale
                          :root (midi->cps 60)
-                         :degrees [9 0 5 11 2]})
+                         :degrees [0 2 4 7 9]})
   (hexp.trainer/stop)
   (def sa (drone root))
   (o/ctl sa :gate 0)

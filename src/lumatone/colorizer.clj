@@ -10,16 +10,17 @@
       [dek-3-5-a-b-c-d-e wilson-22-eik-midi-note->scale-note]]))
 
 (defn note-in-degs-seq?
-  [degs-seq base-midi midi-note]
-  (->> degs-seq
-       last
-       (mod (- midi-note base-midi))
-       ((set degs-seq))
-       boolean))
+  "Define is a midi-note is a member of the degrees seq.
+  The `deg-0-midi` defines the midi note where the root is set.
+  Usually it is `60`, but some synth/plugin configs can modify it (e.g. kbm files)"
+  ([scale-size degs-seq deg-0-midi midi-note]
+   (->> (mod (- midi-note deg-0-midi) scale-size)
+        ((set degs-seq))
+        boolean)))
 
 (defn color-fn
   "Return the color for the given key"
-  [degs-seqs-colors base-midi
+  [scale-size degs-seqs-colors deg-0-midi
    {:keys [key-type-val key-val _chan-val color-val]
     :as _lumatone-key-data}]
 
@@ -28,7 +29,7 @@
      (fn [_default-color [degs-seq color]]
        (cond
          (= "0" key-type-val) "111111"
-         (note-in-degs-seq? degs-seq base-midi midi-note) (reduced color)
+         (note-in-degs-seq? scale-size degs-seq deg-0-midi midi-note) (reduced color)
          :else "111111"))
      color-val
      degs-seqs-colors)))
@@ -50,9 +51,9 @@
 
 (defn degs-rings-with-gradient
   "Get the colors for a collection of collections of degrees"
-  [gradient-scheme degrees-coll]
+  [gradient-scheme degrees-coll scale-size]
   (let [gradient (grad/cosine-gradient (count degrees-coll) gradient-scheme)
-        all-degrees (->> degrees-coll first last inc range)]
+        all-degrees (range scale-size)]
     (map-indexed (fn [i degrees]
                    [degrees
                     (if (= degrees all-degrees)
@@ -65,7 +66,7 @@
   [gradient-scheme mos]
   (let [gradient (grad/cosine-gradient (count mos) gradient-scheme)]
     (map-indexed (fn [i mos*]
-                   [(scale-steps->degrees mos* false)
+                   [(scale-steps->degrees mos*)
                     (if (every? #(= 1 %) mos*)
                       "111111"
                       (str/replace @(color/as-css (color/as-int24 (gradient i)))
@@ -76,4 +77,6 @@
   "Get the colors for a collection of collections of mos-rings (i.e. a whole mos)"
   [gradient-scheme mos]
   (degs-rings-with-gradient
-   gradient-scheme (map #(scale-steps->degrees % false) mos)))
+   gradient-scheme
+   (map #(scale-steps->degrees %) mos)
+   (->> mos first (apply +))))
