@@ -1,1 +1,2 @@
-{:paths ["src" "dev" "test"]} ;; exclude "dev"
+{:paths ["src" "dev" "test"]  ;; exclude "dev"
+ :parallel? true}
