@@ -50,6 +50,15 @@
   (set-vol 1 0.59)
   (set-track-rec 22 false))
 
+(defn set-fx
+  "Set fx param"
+  [track fx param val]
+  ;; n/track/@/fx/@/fxparam/@/value
+  (osc/osc-send @osc-client (format "/track/%s/fx/%s/fxparam/%s/value" track fx param) (float val)))
+
+(comment
+  (set-fx 2 1 8 (rand)))
+
 (defn basic-insert-marker
   "This is a very simple way to insert markers. It may produce duplicate markers"
   [marker-name]
