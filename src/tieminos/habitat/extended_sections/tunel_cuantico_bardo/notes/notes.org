@@ -95,7 +95,6 @@ SCHEDULED: <2025-02-13 Thu>
 ** DONE [#A] Clipeos que parece van de reaper a collider
 CLOSED: [2025-02-19 Wed 09:54] SCHEDULED: <2025-02-17 Mon>
 ** IDEA [#C] Agregar control de volumen en el return clean de la guitarra (?)
-SCHEDULED: <2025-02-24 Mon>
 ** DONE Recuperar afinación del principio de 2.2.9.22
 CLOSED: [2025-02-03 Mon 08:42] SCHEDULED: <2025-01-29 Wed>
 También usada en varias de las sesiones anteriores
