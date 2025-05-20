@@ -1,5 +1,13 @@
 # Tieminos
 
+## Synthdefs
+
+### Tips
+When writting macros this `ns` gives access to the ugen operators
+```clojure
+[overtone.sc.ugen-collide-list :as oc]
+```
+
 My current music workshop, all my clojure code-music creation since mid-2021 lives here.
 
 Mainly uses `Supercollider` via `Overtone`, my microtonality library [`erv`](https://github.com/diegovdc/erv) and my sequencing library [`time-tiem`](https://github.com/diegovdc/time-tiem).
