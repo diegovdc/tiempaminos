@@ -21,25 +21,24 @@
             (str/replace #"-"  "t")))
       (rename-cps-name "1)2 1.9.15-7.19"))
   (do
-    #dbg
-     (defn subcps-map->tidal-scale-record-string
-       [subcps-map]
-       (->> subcps-map
-            (mapv
-             (fn [[k v]]
-               (format "(\"%s\", %s)"
-                       (rename-cps-name (str/join " "
-                                                  ((juxt #(nth % 0) #(nth % 3))
-                                                   (str/split k #" "))))
-                       (-> v
-                           cps->tidal-scale
-                           vec
-                           str
-                           (str/replace #" "  ",")))))
+    (defn subcps-map->tidal-scale-record-string
+      [subcps-map]
+      (->> subcps-map
+           (mapv
+            (fn [[k v]]
+              (format "(\"%s\", %s)"
+                      (rename-cps-name (str/join " "
+                                                 ((juxt #(nth % 0) #(nth % 3))
+                                                  (str/split k #" "))))
+                      (-> v
+                          cps->tidal-scale
+                          vec
+                          str
+                          (str/replace #" "  ",")))))
 
-            (str/join ",")
-            (format "[%s]")
-            (spit "resources/polidori.txt")))
+           (str/join ",")
+           (format "[%s]")
+           (spit "resources/polidori.txt")))
 
     #_(subcps-map->tidal-scale-record-string (-> polydori :subcps)))
   (subcps-map->tidal-scale-record-string (->> polydori-v2 :subcps (take 2)))
