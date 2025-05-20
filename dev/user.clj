@@ -169,6 +169,8 @@
 
 (def datasets-dir "/Users/diego/Music/code/tieminos-datasets")
 
+(def tieminos-path (System/getProperty "user.dir"))
+
 (comment
   (scales)
   (scales-keys)
