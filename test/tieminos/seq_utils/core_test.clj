@@ -1,13 +1,15 @@
 (ns tieminos.seq-utils.core-test
   (:require
    [clojure.test :refer [deftest is testing use-fixtures]]
-   [tieminos.seq-utils.core :refer [** ++ -- choose div lin mirror mirror2
-                                    mseq op rev rev2 xo] :as su]
+   [tieminos.seq-utils.core :refer [** ++ -- choose div graph lin mirror
+                                    mirror2 mseq op rev rev2 xo] :as su]
    [tieminos.utils :refer [wrap-at]]))
 
 (defn- reset-states-fixture
   [f]
-  (with-redefs [su/linear-state (atom {})]
+  (with-redefs [su/mseq-state (atom {})
+                su/linear-state (atom {})
+                su/graph-state (atom {})]
     (f)))
 
 (defn- test-seq
@@ -189,4 +191,100 @@
       (is (= {:tieminos.seq-utils.core/linear? true, :linear/id [4 3]}
              (meta (first res)))))))
 
-
+(deftest graph-test
+  (let [g (graph {1 [2 3]
+                  2 [3]
+                  3 [1]})]
+    (is (= {1 #{2 3}
+            2 #{3}
+            3 #{1}}
+           g))
+    (testing "has metadata"
+      (is (= {:tieminos.seq-utils.core/graph? true,
+              :graph/id {:config {}, :graph {1 #{3 2}, 2 #{3}, 3 #{1}}},
+              :graph/start-node nil,
+              :graph/autonomous? true}
+             (meta (graph {1 [2 3]
+                           2 [3]
+                           3 [1]})))))
+    (testing "can have a custom id"
+      (is (= {:tieminos.seq-utils.core/graph? true,
+              :graph/id :my-graph,
+              :graph/start-node nil
+              :graph/autonomous? true}
+             (meta (graph :my-graph
+                          {1 [2 3]
+                           2 [3]
+                           3 [1]})))))
+    (testing "can have a `start-node`"
+      (is (= {:tieminos.seq-utils.core/graph? true,
+              :graph/id :my-graph,
+              :graph/start-node 1
+              :graph/autonomous? true}
+             (meta (graph {:id :my-graph :start-node 1}
+                          {1 [2 3]
+                           2 [3]
+                           3 [1]})))))
+    (testing "can have be influenced by the previous items from the `mseq`"
+      (is (= {:tieminos.seq-utils.core/graph? true,
+              :graph/id :my-graph,
+              :graph/start-node nil
+              :graph/autonomous? false}
+             (meta (graph {:id :my-graph :auto? false}
+                          {1 [2 3]
+                           2 [3]
+                           3 [1]}))))))
+  (testing "will throw if a node is terminal"
+    (is (thrown? clojure.lang.ExceptionInfo
+                 (graph {1 [2 3]
+                         2 [3]
+                         3 []}))))
+  (testing "can run on an mseq"
+    (let [g (graph {1 [2]
+                    2 [3]
+                    3 [1]})]
+      (testing "returns either one of these sequences"
+        (is (#{[1 2 3 1 2 3]
+               [2 3 1 2 3 1]
+               [3 1 2 3 1 2]}
+             (mapv #(mseq % g)
+                   (range 6)))))))
+  (testing "when `:auto?` is `false` it can take the previous value from the mseq as it's previous node. So here it will always start getting the node from the `2` node."
+    (let [g (graph {:auto? false}
+                   {1 [2 3]
+                    2 [3]
+                    3 [1]})]
+      (is (= (flatten (repeat 50 [2 3]))
+             (mapv #(mseq :mseq-id % [2 g])
+                   (range 100))))
+      (is (= (flatten (repeat 50 [2 3 1]))
+             (mapv #(mseq :mseq-id % [2 g g])
+                   (range 150))))))
+  (testing "when `:auto?` is `true` (default) it will run independently of the rest of the seq"
+    (let [g (graph {:start-node 1}
+                   {1 [2]
+                    2 [3]
+                    3 [1]})]
+      (is (= [5 1 5 2 5 3 5 1 5 2]
+             (mapv #(mseq :mseq-id % [5 g])
+                   (range 10))))))
+  (testing "when no `id` and `config` are the same the graphs will share the same state (i.e. previous node)"
+    (with-redefs [su/graph-state (atom {})]
+      (let [g1 (graph {:start-node 1} {1 [2], 2 [3], 3 [1]})
+            g2 (graph {:start-node 1} {1 [2], 2 [3], 3 [1]})]
+        (is (= [1 2 3 1 2 3 1 2 3 1]
+               (mapv #(mseq % [g1 g2])
+                     (range 10)))))))
+  (testing "when an `id` or a different `config` is given then even the same graphs will behave independently"
+    (with-redefs [su/graph-state (atom {})]
+      (let [g1 (graph {:id :a :start-node 1} {1 [2], 2 [3], 3 [1]})
+            g2 (graph {:id :b :start-node 1} {1 [2], 2 [3], 3 [1]})]
+        (is (= [1 1 2 2 3 3 1 1 2 2]
+               (mapv #(mseq % [g1 g2])
+                     (range 10))))))
+    (with-redefs [su/graph-state (atom {})]
+      (let [g1 (graph {:start-node 1} {1 [2], 2 [3], 3 [4], 4 [1]})
+            g2 (graph {:start-node 3} {1 [2], 2 [3], 3 [4], 4 [1]})]
+        (is (= [1 3 2 4 3 1 4 2]
+               (mapv #(mseq % [g1 g2])
+                     (range 8))))))))

@@ -79,7 +79,66 @@
   [coll]
   (::rand?  (meta coll)))
 
+(defn- graph*
+  [{:keys [id auto? start-node]
+    :as config
+    :or {auto? true}} m]
+  (let [g (->> m
+               (map (fn [[k v]]
+                      (when-not (seq v)
+                        (throw (ex-info "A graph should not have terminal nodes."
+                                        {:graph m
+                                         :empty-node k})))
+                      [k (into #{} v)]))
+               (into {}))]
+    (with-meta g {::graph? true
+                  :graph/id (or id {:config config :graph g})
+                  :graph/start-node (when (m start-node) start-node)
+                  :graph/autonomous? (boolean auto?)})))
+
+(defn- dispatch-graph
+  ([_m] :graph-only)
+  ([x _m] (cond (keyword? x) :id
+                (map? x) :config
+                :else :unknown)))
+
+(defmulti graph #'dispatch-graph)
+
+(defmethod graph :graph-only
+  [m]
+  (graph* {} m))
+
+(defmethod graph :id
+  [id m]
+  (graph* {:id id} m))
+
+(defmethod graph :config
+  [config m]
+  (graph* config m))
+
+(defonce graph-state (atom {}))
+
+(defn- get-next-graph-node!
+  [prev-val graph]
+  (let [{:keys [graph/id graph/autonomous? graph/start-node]} (meta graph)
+        graph-in-state? (@graph-state id)
+        next-node (if (and (not graph-in-state?) start-node)
+                    start-node
+                    (let [prev-node* (when (and (not autonomous?) (graph prev-val))
+                                       prev-val)
+                          prev-node (or prev-node*
+                                        (get @graph-state id)
+                                        (-> graph keys rand-nth))]
+                      (rand-nth (seq (get graph prev-node)))))]
+    (swap! graph-state assoc id next-node)
+    next-node))
+
+;;;;;;;;;;;;;;;;;;;;
+;; Transformations
+;;;;;;;;;;;;;;;;;;;
+
 ;; operations
+
 (defn op [f] (fn [& xs] (with-meta xs  {::op? true :op/fn f})))
 
 (def plus (op clojure.core/+))
@@ -134,7 +193,9 @@
 
         (port-meta coll coll*)))))
 
-(defn mirror2 [coll]
+(defn mirror2
+  "Deep mirror (mirrors all nested sequences as well)"
+  [coll]
   (let [coll* (walk/postwalk
                (fn [x] (if (sequential? x) (mirror x) x))
                coll)]
@@ -147,7 +208,7 @@
       (port-meta coll coll*))))
 
 (defn rev2
-  "Deep reverse"
+  "Deep reverse (reverses all nested sequences as well)"
   [coll]
   (let [coll* (-> (walk/postwalk
                    (fn [x] (if (sequential? x) (rev x) x))
@@ -156,15 +217,7 @@
 
 (def ^:private inc* (fnil inc -1))
 
-(defn- get-next-special-index!
-  [coll]
-  (let [seq-meta (meta coll)
-        id (:linear/id seq-meta)]
-    (cond
-      (::linear? seq-meta) (get (swap! linear-state update id inc*) id)
-      (::rand? seq-meta) (rand-int (count coll)))))
-
-(defn- get-next-item [index coll]
+(defn- get-next-item [prev-item index coll]
   (let [seq-meta (meta coll)
         id (:linear/id seq-meta)
         index* (cond
@@ -172,18 +225,32 @@
                  (::rand? seq-meta) (rand-int (count coll))
                  :else index)]
     (cond
-      (map? coll)      (weighted coll)
-      (::op? seq-meta) (do-op index coll)
+      (::graph? seq-meta) (get-next-graph-node! prev-item coll)
+      (::op? seq-meta)    (do-op index coll)
+      (map? coll)         (weighted coll)
       :else (wrap-at index* coll))))
 
+(def mseq-state (atom {}))
+
 (defn mseq
-  ([index melodic-sequence] (mseq nil index melodic-sequence))
+  ([index item-seq] (mseq item-seq index item-seq))
   ([id index melodic-sequence]
-   (loop [sequence* melodic-sequence]
-     (let [item (get-next-item index sequence*)]
-       (if (or (sequential? item) (map? item))
-         (recur item)
-         item)))))
+   (let [{:keys [prev-item]} (@mseq-state id)]
+     (loop [sequence* melodic-sequence]
+       (let [item (get-next-item prev-item index sequence*)]
+         (if (or (sequential? item) (map? item))
+           (recur item)
+           (do
+             (swap! mseq-state assoc-in [id :prev-item] item)
+             item)))))))
+
+(defn gen-seq [len item-seq]
+  (mapv #(mseq % item-seq) (range len)))
+
+(comment
+  (let [g (graph {1 [2 3], 2 [3], 3 [1]})
+        my-seq [6 g g g]]
+    (gen-seq 20 my-seq)))
 
 (comment
 
