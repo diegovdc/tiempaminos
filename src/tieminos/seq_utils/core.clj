@@ -217,7 +217,8 @@
 
 (def ^:private inc* (fnil inc -1))
 
-(defn- get-next-item [prev-item index coll]
+(defn- get-next-item
+  [prev-item index coll]
   (let [seq-meta (meta coll)
         id (:linear/id seq-meta)
         index* (cond
