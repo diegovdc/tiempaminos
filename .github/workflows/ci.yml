@@ -37,3 +37,6 @@ jobs:
 
       - name: Run tests
         run: clojure -M:test
+
+      - name: Build docs
+        run: clojure -X:codox
