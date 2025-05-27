@@ -79,6 +79,11 @@
   [coll]
   (::rand?  (meta coll)))
 
+(defn ret
+  "Returns the contained items. Useful for returning chords."
+  [& x]
+  (with-meta x {::return? true}))
+
 (defn- graph*
   [{:keys [id auto? start-node]
     :as config
@@ -142,7 +147,6 @@
 (defn op [f] (fn [& xs] (with-meta xs  {::op? true :op/fn f})))
 
 (def plus (op clojure.core/+))
-
 (def + plus)
 (def ++ plus)
 
@@ -157,12 +161,14 @@
 (def / div)
 
 (declare mseq)
+
 (defn- do-op [index op]
   (let [f (-> op meta :op/fn)
         values (mapv (fn [x]
                        (if (number? x)
                          x
-                         (mseq index x))) op)]
+                         (mseq index x)))
+                     op)]
     (apply f values)))
 
 (defn- ensure-vector
@@ -236,14 +242,17 @@
 (defn mseq
   ([index item-seq] (mseq item-seq index item-seq))
   ([id index melodic-sequence]
-   (let [{:keys [prev-item]} (@mseq-state id)]
-     (loop [sequence* melodic-sequence]
-       (let [item (get-next-item prev-item index sequence*)]
-         (if (or (sequential? item) (map? item))
-           (recur item)
-           (do
-             (swap! mseq-state assoc-in [id :prev-item] item)
-             item)))))))
+   (if (::return? (meta melodic-sequence))
+     melodic-sequence
+     (let [{:keys [prev-item]} (@mseq-state id)]
+       (loop [sequence* melodic-sequence]
+         (let [item (get-next-item prev-item index sequence*)]
+           (cond
+             (::return? (meta item)) item
+             (or (sequential? item) (map? item)) (recur item)
+             :else (do
+                     (swap! mseq-state assoc-in [id :prev-item] item)
+                     item))))))))
 
 (defn gen-seq [len item-seq]
   (mapv #(mseq % item-seq) (range len)))

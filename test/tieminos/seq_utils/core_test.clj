@@ -1,8 +1,8 @@
 (ns tieminos.seq-utils.core-test
   (:require
    [clojure.test :refer [deftest is testing use-fixtures]]
-   [tieminos.seq-utils.core :refer [** ++ -- choose div graph lin mirror
-                                    mirror2 mseq op rev rev2 xo] :as su]
+   [tieminos.seq-utils.core :refer [** ++ -- choose div gen-seq graph lin
+                                    mirror mirror2 mseq op ret rev rev2 xo] :as su]
    [tieminos.utils :refer [wrap-at]]))
 
 (defn- reset-states-fixture
@@ -288,3 +288,8 @@
         (is (= [1 3 2 4 3 1 4 2]
                (mapv #(mseq % [g1 g2])
                      (range 8))))))))
+
+(deftest ret-test
+  (testing "`mseq` will return anything contained in a `ret`"
+    (is (= [1 2 3] (mseq 0 (ret 1 2 3))))
+    (is (= [1 2 3] (mseq 0 [(ret 1 2 3)])))))
