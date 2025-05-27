@@ -24,17 +24,18 @@
 (defn subgraph
   "Select a subset from a graph data structure."
   [graph node-set]
-  (->> node-set
-       (select-keys graph)
-       (map (fn [[node edges]]
-              (let [edges* (->> edges
-                                (filter (fn [e] (node-set e)))
-                                set)]
-                (when (and (seq edges) (not (seq edges*)))
-                  (timbre/warn (format "Node with no edges found: %s. Consider using a bidirectional graph."
-                                       node)))
-                [node edges*])))
-       (into {})))
+  (let [node-set*  (into #{} node-set)]
+    (->> node-set*
+         (select-keys graph)
+         (map (fn [[node edges]]
+                (let [edges* (->> edges
+                                  (filter (fn [e] (node-set* e)))
+                                  set)]
+                  (when (and (seq edges) (not (seq edges*)))
+                    (timbre/warn (format "Node with no edges found: %s. Consider using a bidirectional graph."
+                                         node)))
+                  [node edges*])))
+         (into {}))))
 
 (defn seq->graph
   ;; TODO improve to handle other pattern types
