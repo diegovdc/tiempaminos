@@ -138,6 +138,86 @@
     (swap! graph-state assoc id next-node)
     next-node))
 
+(defn- mancha*
+  [{:keys [id
+           start-node
+           max-mem
+           drop%
+           get-prev-node-fn
+           get-next-node-fn
+           get-start-node-fn]
+    :or {max-mem 5
+         drop% 0.5
+         get-prev-node-fn (fn [prev-nodes] (rand-nth prev-nodes))
+         get-next-node-fn (fn [prev-node mancha] (rand-nth (seq (get mancha prev-node))))
+         get-start-node-fn (fn [mancha] (rand-nth (keys mancha)))}
+    :as config} m]
+  (let [g (->> m
+               (map (fn [[k v]]
+                      (when-not (seq v)
+                        (throw (ex-info "A mancha-graph should not have terminal nodes."
+                                        {:mancha-graph m
+                                         :empty-node k})))
+                      [k (into #{} v)]))
+               (into {}))]
+    (with-meta g {::mancha? true
+                  :mancha/id (or id {:config config :mancha g})
+                  :mancha/max-mem max-mem
+                  :mancha/drop% drop%
+                  :mancha/start-node (when (m start-node) start-node)
+                  :mancha/get-prev-node-fn get-prev-node-fn
+                  :mancha/get-next-node-fn get-next-node-fn
+                  :mancha/get-start-node-fn get-start-node-fn})))
+
+(defn- dispatch-mancha
+  ([_m] :mancha-only)
+  ([x _m] (cond (keyword? x) :id
+                (map? x) :config
+                :else :unknown)))
+
+(defmulti mancha #'dispatch-mancha)
+
+(defmethod mancha :graph-only
+  [m]
+  (mancha* {} m))
+
+(defmethod mancha :id
+  [id m]
+  (mancha* {:id id} m))
+
+(defmethod mancha :config
+  [config m]
+  (mancha* config m))
+(def mancha-state (atom {}))
+
+;; TODO add tests
+(defn- get-next-mancha-node!
+  [mancha]
+  (let [{:keys [mancha/id
+                mancha/start-node
+                mancha/max-mem
+                mancha/drop%
+                mancha/get-prev-node-fn
+                mancha/get-next-node-fn
+                mancha/get-start-node-fn]} (meta mancha)
+        {prev-nodes :nodes
+         :as current-mancha} (@mancha-state id)
+        next-node (cond
+                    (seq prev-nodes) (let [prev-node (get-prev-node-fn prev-nodes)]
+                                       (get-next-node-fn prev-node mancha))
+                    (and (not (seq prev-nodes)) start-node) start-node
+                    :else (get-start-node-fn mancha))
+        nodes* (conj prev-nodes next-node)
+        nodes (take max-mem
+                    (if (and (> (count nodes*) 1)
+                             (> drop% (clojure.core/rand)))
+                      (drop-last 1 nodes*)
+                      nodes*))
+        current-mancha* (assoc current-mancha :nodes nodes)]
+
+    (swap! mancha-state assoc id current-mancha*)
+    next-node))
+
 ;;;;;;;;;;;;;;;;;;;;
 ;; Transformations
 ;;;;;;;;;;;;;;;;;;;
@@ -233,6 +313,7 @@
                  :else index)]
     (cond
       (::graph? seq-meta) (get-next-graph-node! prev-item coll)
+      (::mancha? seq-meta) (get-next-mancha-node! coll)
       (::op? seq-meta)    (do-op index coll)
       (map? coll)         (weighted coll)
       :else (wrap-at index* coll))))

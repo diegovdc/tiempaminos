@@ -1,7 +1,7 @@
 (ns tieminos.seq-utils.core-test
   (:require
    [clojure.test :refer [deftest is testing use-fixtures]]
-   [tieminos.seq-utils.core :refer [** ++ -- choose div gen-seq graph lin
+   [tieminos.seq-utils.core :refer [** ++ -- choose div graph lin mancha
                                     mirror mirror2 mseq op ret rev rev2 xo] :as su]
    [tieminos.utils :refer [wrap-at]]))
 
@@ -9,12 +9,9 @@
   [f]
   (with-redefs [su/mseq-state (atom {})
                 su/linear-state (atom {})
-                su/graph-state (atom {})]
+                su/graph-state (atom {})
+                su/mancha-state (atom {})]
     (f)))
-
-(defn- test-seq
-  [len mseq-instance]
-  (mapv mseq-instance (range len)))
 
 (use-fixtures :each reset-states-fixture)
 
@@ -293,3 +290,38 @@
   (testing "`mseq` will return anything contained in a `ret`"
     (is (= [1 2 3] (mseq 0 (ret 1 2 3))))
     (is (= [1 2 3] (mseq 0 [(ret 1 2 3)])))))
+
+(deftest mancha-test
+  (testing "Will return a sequence of alternating 1 and 2 (becase of the first `get-next-node-fn`)"
+    (let [mancha (mancha {:id :mancha/one
+                          :start-node 1
+                          :get-prev-node-fn (fn [prev-nodes] (first prev-nodes))
+                          :get-next-node-fn (fn [prev-node mancha] (first (sort (seq (get mancha prev-node)))))
+                          :drop% 0}
+                         {1 [2]
+                          2 [1 3]
+                          3 [1]})]
+      (is (= [1 2 1 2 1 2 1 2 1 2]
+             (mapv #(mseq % [mancha])
+                   (range 10))))))
+  (testing "The next-node can always be accessed by a node persisted in the mancha prev-nodes state"
+    (let [_ (reset! su/mancha-state {})
+          mancha (mancha {:id :mancha/two
+                          :start-node 1
+                          :drop% 0}
+                         {1 [2]
+                          2 [1 3]
+                          3 [1 4]
+                          4 [2]})
+          node-data (mapv (fn [i] [(-> @su/mancha-state :mancha/two :nodes)
+                                   (mseq i [mancha])])
+                          (range 1000))]
+      (is (every? true?
+                  (map (fn [[prev-nodes next-node]]
+                         (if (nil? prev-nodes) true
+                             (reduce
+                              (fn [acc item]
+                                (or acc (boolean ((mancha item) next-node))))
+                              false
+                              prev-nodes)))
+                       node-data))))))
