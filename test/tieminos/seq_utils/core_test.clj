@@ -1,8 +1,10 @@
 (ns tieminos.seq-utils.core-test
   (:require
    [clojure.test :refer [deftest is testing use-fixtures]]
+   [taoensso.timbre :as timbre]
    [tieminos.seq-utils.core :refer [** ++ -- choose div graph lin mancha
-                                    mirror mirror2 mseq op ret rev rev2 xo] :as su]
+                                    mirror mirror2 mseq op rainseq ret rev
+                                    rev2 xo] :as su]
    [tieminos.utils :refer [wrap-at]]))
 
 (defn- reset-states-fixture
@@ -325,3 +327,27 @@
                               false
                               prev-nodes)))
                        node-data))))))
+
+(deftest rainseq-test
+  (if (@su/known-seqs [4 5 7])
+    (is (= [4 5 7 4 5 7 4 5 7 4]
+           (mapv (fn [i]
+                   (rainseq [4 5 7]))
+                 (range 10))
+           (mapv (fn [i]
+                   (rainseq [4 5 7]))
+                 (range 10))))
+    (timbre/warn "`known-seqs` has been reset, please recompile this namespaces to run the test"))
+
+  (testing "Respects the behavior of `lin`"
+    (if (@su/known-seqs '(lin 4 5 7))
+      (do (is (= [4 5 7 4 5 7 4 5 7 4]
+                 (mapv (fn [i] (rainseq (lin 4 5 7)))
+                       (range 10))))
+          (is (= [5 7 4 5 7 4 5 7 4 5]
+                 (mapv (fn [i] (rainseq (lin 4 5 7)))
+                       (range 10))))
+          (is (= [7 4 5 7 4 5 7 4 5 7]
+                 (mapv (fn [i] (rainseq (lin 4 5 7)))
+                       (range 10)))))
+      (timbre/warn "`known-seqs` has been reset, please recompile this namespaces to run the test"))))

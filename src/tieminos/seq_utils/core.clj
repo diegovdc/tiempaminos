@@ -5,6 +5,7 @@
    [clojure.data.generators :refer [weighted]]
    [clojure.string :as str]
    [clojure.walk :as walk]
+   [taoensso.timbre :as timbre]
    [tieminos.utils :refer [wrap-at]]
    [time-time.standard :refer [rotate]]))
 
@@ -343,8 +344,41 @@
         my-seq [6 g g g]]
     (gen-seq 20 my-seq)))
 
-(comment
+;;;;;;;;;;;;;;;;;
+;; rainseq
+;;;;;;;;;;;;;;;;;
 
+(defonce id->seqs (atom {}))
+(defonce known-seqs (atom {}))
+(defn memoize-seq
+  "Eval and save the seq to `know-seqs`, and returns a function that when called returns the seq."
+  [item-seq]
+  #_(timbre/debug "memoize-seq called...")
+  (let [s* (@known-seqs item-seq)
+        seq-id (or s* (random-uuid))]
+    (when-not s*
+      (timbre/debug "memoizing sequence:" item-seq "as" seq-id)
+      (swap! id->seqs assoc seq-id (eval item-seq))
+      (swap! known-seqs assoc item-seq seq-id))
+    seq-id))
+
+(comment
+  (timbre/set-level! :debug)
+  (reset! id->seqs {})
+  (reset! known-seqs {}))
+
+(defmacro rainseq
+  "Within a `ref-rain`, evaluate an `item-seq` only once and memoize it to the `known-seqs` atom.
+  Must use the `on-event` macro. When called the function, then derefernces the `item-seq`, calls `mseq` with it and passes in the current `index`."
+  [item-seq]
+  `(mseq ~'i (@id->seqs ~(memoize-seq item-seq))))
+
+;;;;;;;
+;; WIP
+;;;;;;;
+
+(comment
+  ;; IDEA
   ;; TODO  seqcat
   (defn seqcat
     "Append a sequence to another sequence"
@@ -363,37 +397,3 @@
   ;; more relevant use-case
   [1 2 3 (every 4 (seqcat (lin 4 5)))] ;; 1 2 3 1 2 3 1 2 3 1 2 3 4 5
   (concat (flatten (repeat 4 [1 2 3])) [(lin 4 5)]))
-
-(comment
-  ;; TODO convert into test
-
-  (defn at-i-degs [at-i] (at-i [0 2 0 (at-i [2 3]) (at-i [7 4]) (at-i [4 5]) 3]))
-  (def degs [0 2 0 [2 3] [7 4] [4 5] 3])
-
-  (= (map
-      (fn [i] (at-i-degs (partial wrap-at i)))
-      (range 1000))
-     (map
-      (fn [i] (mseq i degs))
-      (range 1000))))
-
-(comment
-  ;; WIP
-  ;; TODO memoize mseqs inside refrains, by saving then into atoms
-  (def id->seqs (atom {}))
-  (def known-seqs (atom {}))
-
-  (defmacro memoize-seqs
-    [x]
-    (let [s*# (@known-seqs x)
-          s# (or s*# (random-uuid))]
-      (when-not s*#
-        (swap! id->seqs assoc s# (eval x))
-        (swap! known-seqs assoc x s#))
-      `(println ((deref id->seqs) ~s#))))
-
-  (macroexpand-1 `(memoize-seqs 5))
-  (memoize-seqs [1 (lin 3 4)])
-  (mseq 1 (@id->seqs  #uuid "96945ed6-e59f-429c-be66-38ec452c0479"))
-
-  (-> @known-seqs))
