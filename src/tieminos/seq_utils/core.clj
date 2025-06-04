@@ -364,12 +364,16 @@
 
 (comment
   (timbre/set-level! :debug)
-  (reset! id->seqs {})
-  (reset! known-seqs {}))
+  (-> @id->seqs)
+  (-> @known-seqs)
+  (do (reset! id->seqs {})
+      (reset! known-seqs {})))
 
 (defmacro rainseq
   "Within a `ref-rain`, evaluate an `item-seq` only once and memoize it to the `known-seqs` atom.
-  Must use the `on-event` macro. When called the function, then derefernces the `item-seq`, calls `mseq` with it and passes in the current `index`."
+  Must use the `on-event` macro. When called the function, then derefernces the `item-seq`, calls `mseq` with it and passes in the current `index`.
+
+  NOTE: Due to macro limitations, the `item-seq` or parts of it cannot be defined in a `let` or a `def`. If that is necessary, use `mseq`. With some changes values could be defed, but then this requires the form to be evaled twice, and `memoize-seq` to be updated without the `when-not*` conditional. That could work but is neither ergonomic nor a predictable behaviour."
   [item-seq]
   `(mseq ~'i (@id->seqs ~(memoize-seq item-seq))))
 
