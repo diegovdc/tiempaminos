@@ -178,7 +178,7 @@
 
 (defmulti mancha #'dispatch-mancha)
 
-(defmethod mancha :graph-only
+(defmethod mancha :mancha-only
   [m]
   (mancha* {} m))
 

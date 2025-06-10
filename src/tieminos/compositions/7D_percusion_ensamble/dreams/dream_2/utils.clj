@@ -7,12 +7,12 @@
     [on-event ref-rain]]))
 
 (defn subrain
-  [{:keys [ref ratio durs on-event]
-    :or {ratio 1}}]
+  [{:keys [ref ratio delay durs on-event]}]
   (ref-rain
-   :id (random-uuid)
-   :ref ref
-   :ratio ratio
-   :durs durs
-   :on-event on-event
-   :loop? false))
+   (cond->
+    {:id (random-uuid)
+     :ref ref
+     :durs (if-not delay durs (concat [delay] durs))
+     :on-event on-event
+     :loop? false}
+     ratio (assoc :ratio ratio))))

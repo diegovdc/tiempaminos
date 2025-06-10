@@ -171,6 +171,14 @@
 
 (def tieminos-path (System/getProperty "user.dir"))
 
+(defmacro spy
+  [& args]
+  `(timbre/spy :info ~@args))
+
+(comment
+  (spy (+ 1 2 3))
+  (macroexpand '(spy (+ 1 2 3))))
+
 (comment
   (scales)
   (scales-keys)
