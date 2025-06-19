@@ -99,30 +99,80 @@
 (def cube-back
   (seq->bigraph [21 5 6 22 23 7 8 24]))
 
-(def octa-low
-  (subgraph main-graph [1 2 3 4 5 6 7 8]))
+(def octa-low-seq [1 2 3 4 5 6 7 8])
+(def octa-low (subgraph main-graph octa-low-seq))
 
-(def hepta-mid
-  (seq->bigraph [10 11 12 13 14 15 16]))
+(def hepta-mid-seq [9 11 12 13 14 15 16])
+(def hepta-mid (seq->bigraph hepta-mid-seq))
 
-(def octa-top
-  (subgraph main-graph [17 18 19 20 21 22 23 24]))
+(def octa-top-seq [17 18 19 20 21 22 23 24])
+(def octa-top (subgraph main-graph octa-top-seq))
 
 (def tri6-1
   (subgraph main-graph (map dec [17 11 3 13 21 19])))
 
 (defn- make-tri
   [nodes]
-  (subgraph main-graph (map dec nodes)))
+  (subgraph main-graph nodes))
 
-(def tri-11d
-  (make-tri  [17 19 11]))
+(def tri-11d-seq (map dec [17 19 11]))
+(def tri-11d (make-tri tri-11d-seq))
 
-(def tri-15d
-  (make-tri  [15 21 23]))
+(def tri-15d-seq (map dec [15 21 23]))
+(def tri-15d (make-tri  tri-15d-seq))
 
-(def tri-12d
-  (make-tri  [12 18 20]))
+(def tri-12d-seq (map dec [12 18 20]))
+(def tri-12d (make-tri tri-12d-seq))
 
-(def tri-16d
-  (make-tri  [16 22 24]))
+(def tri-16d-seq (map dec [16 22 24]))
+(def tri-16d (make-tri tri-16d-seq))
+
+(def spiral-left-up-seq
+  (map dec [1 3 5 7 8 6 4 2
+            9
+            11 13 15 16 14 12
+            10
+            17 19 21 23 24 22 20 18]))
+
+(def spiral-left-down-seq
+  (reverse spiral-left-up-seq))
+
+(def spiral-right-up-seq
+  (map dec [2 4 6 8 7 5 3 1
+            9
+            12 14 16 15 13 11
+            10
+            18 20 22 24 23 21 19 17]))
+
+(def spiral-right-down-seq
+  (reverse spiral-right-up-seq))
+
+(def spiral-up-down-1-seq
+  (concat spiral-left-up-seq
+          (->> spiral-left-down-seq
+               (drop 1)
+               (drop-last 1))))
+
+(def spiral-up-down-1
+  (subgraph main-graph spiral-up-down-1-seq))
+
+(def spiral-up-down-2-seq
+  (concat spiral-right-up-seq
+          (->> spiral-right-down-seq
+               (drop 1)
+               (drop-last 1))))
+
+(def spiral-up-down-2
+  (subgraph main-graph spiral-up-down-2-seq))
+
+(def up-l1 (map dec [3 11 17]))
+(def up-l1b (map dec [3 13 17]))
+(def up-l2 (map dec [5 13 19]))
+(def up-l2b (map dec [5 15 19]))
+(def up-l3 (map dec [7 15 21]))
+
+(def up-r1 (map dec [4 12 18]))
+(def up-r1b (map dec [4 14 20]))
+(def up-r2 (map dec [6 14 20]))
+(def up-r2b (map dec [6 16 20]))
+(def up-r3 (map dec [8 16 22]))

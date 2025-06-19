@@ -12,8 +12,8 @@
    [tieminos.polydori.analysis.dorian-hexanies :refer [dorian-hexanies-in-polydori-2]]
    [tieminos.polydori.scale :refer [polydori-v2]]
    [tieminos.sc-utils.synths.v1 :refer [lfo-kr]]
-   [tieminos.seq-utils.core :refer [** ++ choose graph lin mancha mseq rainseq
-                                    ret rev xo]]
+   [tieminos.seq-utils.core :refer [** ++ choose graph lin mancha mirror mseq
+                                    rainseq ret rev xo]]
    [tieminos.synths :as s]
    [tieminos.utils :refer [rrange wrap-at]]
    [time-time.dynacan.players.refrain.v2 :as rain.v2]
@@ -512,3 +512,253 @@
           :ladder-ratio 2
           :ladder-reso 1
           :out (+  (rainseq [0 1 2 3 4]))}))))))
+
+(comment
+  (do
+    (oe/defsynth bd
+      [freq 80
+       amp 0.5
+       dur 1
+       out 0]
+      (o/out out
+             (let [sig (o/sin-osc (o/line:kr 15000 freq 0.001))]
+               (-> (+ sig (o/moog-ladder sig))
+                   (* amp
+                      (o/amp-comp-a freq)
+                      (o/env-gen (o/env-perc 0 dur)
+                                 :action o/FREE))))))
+
+    (do
+      (rain.v2/stop)
+      (def scale (atom 13))
+      (rain.v2/ref-rain
+       :id :bd-thingy
+       :durs [1]
+       :ratio 1/2
+       :on-event (rain.v2/on-event
+                  (bd {:amp 1
+                       :freq (:freq (*7d-base/deg->data
+                                     :base-freq (* (/ root 2))
+                                     :scale @scale
+                                     :degree (rainseq [-2 -2 -2 -3 [-1 0]])))
+                       :out (at-i [0 8 14 7])})))
+      (rain.v2/ref-rain
+       :id :bass
+       :ref :bd-thingy
+       :durs (concat [1 2 3/2 1/2]
+                     [1 2 3/2 1/2]
+                     [1 2 3/2 1/2]
+                     (map #(* 1/2 %) [1 2 3/2 1/2])
+                     #_(map #(* 1/2 %) [1 2 3/2 1/2])
+                     (map #(* 1/4 %) [1 2])
+                     [1 2 3/2 1/2]
+
+                     #_(map #(* 1/4 %) [3/2 1/2])
+                     (map #(* 1/4 %) [3/2 1/2])
+                     #_(map #(* 1/4 %) (repeat 16 1/2))
+                     #_(map #(* 1/4 %) (repeat 4 1/4)))
+       :ratio 1/2
+       :on-event (rain.v2/on-event
+                  (when (> (rand) 0.7)
+                    (bd {:amp 0.2
+                         :dur (* 6 dur-s)
+                         :freq (:freq (*7d-base/deg->data
+                                       :base-freq (* (/ root 2))
+                                       :scale @scale
+                                       :degree (rainseq (++ [8 8 8 8 8 2 2 2 2 8 8]
+                                                            (concat [0 3 2])))))
+                         :out (rainseq (graph space/left-wall))}))))
+      #_(rain.v2/stop :bd-thingy2)
+      (rain.v2/ref-rain
+       :id :bd-thingy2
+       :ref :bd-thingy
+       :durs [1]
+       :ratio 1/4
+       :on-event (rain.v2/on-event
+                  (when (xo "oxoxoxoo" i)
+                    (perky {:amp 0.1
+                            :dur 0.7
+                            :freq (:freq (*7d-base/deg->data
+                                          :base-freq (* (/ root 2))
+                                          :scale @scale
+                                          :degree (mseq i (lin 11 [13 1]))))
+                            :out 9}))
+                  (when (xo "ooooxo" i)
+                    (let [t (rainseq {1 8 2 1 3 1})]
+                      (subrain {:ref :bd-thingy2
+                                :durs (repeat 6 (rainseq [1/2 3/2 {1/4 2 1/3 5}]))
+                                :delay (rand-nth [0 1/3])
+                                :on-event
+                                (rain.v2/on-event
+                                 (when (> (rand) 0.5)
+                                   (perky {:amp 0.2
+                                           :dur (rainseq {0.7 5
+                                                          1 5
+                                                          1.5 3
+                                                          2 5})
+                                           :atk (rainseq {0.01 4 0.1 1 0.2 1})
+                                           :freq (:freq (*7d-base/deg->data
+                                                         :base-freq (* (/ root 2) (if (= dur 3/8) 2 1) t)
+                                                         :scale @scale
+                                                         :degree (mseq i (++ (concat (repeat 8 0)
+                                                                                     (repeat 8 2)
+                                                                                     (repeat 8 0)
+                                                                                     (repeat 8 1))
+                                                                             {(rev (lin 11 13)) 4
+                                                                              (lin 11 13) 1}))))
+                                           :out (rainseq (graph space/main-graph))})))})))))
+      (rain.v2/ref-rain
+       :id :t3
+       :ref :bd-thingy
+       :durs [1]
+       :ratio 1/15
+       :on-event (rain.v2/on-event
+                  (when (xo "xooooo" i)
+                    (low {:amp 0.1
+                          :dur 5
+                          :atk 0.01
+                          :mod-freq 1800
+                          :freq (:freq (*7d-base/deg->data
+                                        :base-freq (* root (rainseq [1 1 1 1 1 2 2 2 2 2 1/2]))
+                                        :scale @scale
+                                        :degree (mseq i (lin 11 [16 18]))))
+                          :out (rainseq (graph space/main-graph))}))))
+      (rain.v2/ref-rain
+       :id :scale
+       :ref :bd-thingy
+       :durs [1]
+       :ratio 1
+       :on-event (rain.v2/on-event
+                  (reset! scale (rainseq (concat #_(repeat 12 16)
+                                          #_(repeat 12 13)
+                                          #_(repeat 12 11)
+                                          #_(repeat 12 12)
+                                          #_(repeat 12 8)
+                                          #_(repeat 24 5)
+                                          #_(repeat 24 4)
+                                          (repeat 48 3)))))))))
+
+(comment
+
+  (rain.v2/ref-rain
+   :id :space-atters
+   :durs [1]
+   :ratio 1/6
+   :on-event (rain.v2/on-event
+              (let [out (rainseq (mirror (++ -1
+                                             (concat
+                                              (repeat 6 space/tri-16d-seq)
+                                              (repeat 6 space/tri-12d-seq)
+                                              (repeat 6 space/tri-11d-seq)
+                                              (repeat 6 space/tri-15d-seq)))))]
+                (perky2 {:freq (* 100 (rainseq [1 3 2 [1 1 4]]))
+                         :amp 0.5
+                         :dcy (* 2 dur-s (rainseq [1 1 4 1]))
+                         :out out})
+
+                (when (xo "xooxoxoo" i)
+                  (bd {:out (mod (+ 6 out) 24)}))
+                (when (xo "ooxoxxox" i)
+                  (perky2 {:freq (* 100 (* 2 (rainseq (lin 1 [3 13/8] 2 [1 1 4] [7/4]))))
+                           :amp 0.5
+                           :dcy (* 4 dur-s (rainseq [1 1 4 {1 8 8 1}]))
+                           :out out})
+                  (when (xo "ooxoxxox" i)
+                    (subrain
+                     {:ref :space-atters
+                      :durs (repeat 8 1)
+                      :ratio 1/2
+                      :on-event (rain.v2/on-event
+                                 (let [freq (* 400
+                                               (rainseq {1 20 1/2 3 1/4 1})
+                                               (* 2 (rainseq (lin 10/7 10/6 [26/10 13/10] 2 [1 20/13 13/2] [7/4 42/13]))))]
+                                   (perky2 {:freq freq
+                                            :amp (rainseq {0.1 10 0.2 4 0.5 1})
+                                            :atk (rainseq {0 8 0.4 1})
+                                            :ladder-ratio (rrange 0.5 8)
+                                            :ladder-reso (rand 1.5)
+                                            :dcy (*  dur-s (rainseq [1 1 4 {1 18 8 1}]))
+                                            :out out})
+                                   (when (xo "xoxoo" i)
+                                     (low {:freq (* freq (rainseq (lin 1 1 1/2)))
+                                           :amp (* 0.9 (rainseq (lin 1 1/4 1/2 1)))
+                                           :mod-freq (rrange 300 800) :dcy 2}))))})))
+                (when (rainseq (concat (repeat 15 false)
+                                       (repeat 7 true)
+                                       (repeat 15 [false true false])
+                                       (repeat 7 true)
+                                       (repeat 15 false)
+                                       (repeat (+ 16 7) true)))
+                  (perky {:freq (* (rainseq (concat
+                                             (repeat 7 300)
+                                             (repeat 15 200)
+                                             (repeat 7 300)
+                                             (repeat 15 200)
+                                             (repeat (+ 16 7) 300)
+                                             (repeat 15 200)))
+                                   (* 2 (rainseq (lin 1 [3 13/8] 2 [1 1 4] [7/4]))))
+                          :amp 0.8
+                          :dcy (rainseq {0.1 4 0.3 1 2 1/2})
+                          :out (rainseq (graph space/main-graph))})))))
+
+  (rain.v2/stop :space-atters)
+  (rain.v2/ref-rain
+   :id :space-atters
+   :durs [1]
+   :ratio 1/6
+   :on-event (rain.v2/on-event
+              (let [out (rainseq (mirror (++ -1
+                                             (concat
+                                              (repeat 6 space/tri-16d-seq)
+                                              (repeat 6 space/tri-12d-seq)
+                                              (repeat 6 space/tri-11d-seq)
+                                              (repeat 6 space/tri-15d-seq)))))]
+                (perky2 {:freq (* 100 (rainseq [1 3 2 [1 1 4]]))
+                         :amp 0.5
+                         :dcy (* 2 dur-s (rainseq [1 1 4 1]))
+                         :out out})
+
+                (when (xo "xooxoxoo" i)
+                  (bd {:out (mod (+ 6 out) 24)}))
+                (when (xo "ooxoxxox" i)
+                  (perky2 {:freq (* 100 (* 2 (rainseq (lin 1 [3 13/8] 2 [1 1 4] [7/4]))))
+                           :amp 0.5
+                           :dcy (* 4 dur-s (rainseq [1 1 4 {1 8 8 1}]))
+                           :out out})
+                  (when (xo "ooxooxox" i)
+                    (subrain
+                     {:ref :space-atters
+                      :durs (repeat 2 1)
+                      :ratio 1/2
+                      :on-event (rain.v2/on-event
+                                 (let [freq (* 200
+                                               (rainseq {1 10 1/2 5 1/4 4})
+                                               (* 2 (rainseq (lin 10/7  10/6 #_#_#_#_[26/10 13/10] 2 [1 20/13 13/2] [7/4 42/13]))))]
+                                   (perky2 {:freq freq
+                                            :amp (rainseq {0.1 10 0.2 4 0.5 1})
+                                            :atk (rainseq {0 8 0.4 1})
+                                            :ladder-ratio (rrange 0.5 8)
+                                            :ladder-reso (rand 1.5)
+                                            :dcy (*  dur-s (rainseq [1 1 4 {1 18 8 3}]))
+                                            :out out})
+                                   (when (xo "oxooo" i)
+                                     (low {:freq (* freq (rainseq (lin 1 1 1/2)))
+                                           :amp (* 0.9 (rainseq (lin 1 1/4 1/2 1)))
+                                           :mod-freq (rrange 300 800) :dcy 4}))))})))
+                (when (rainseq (concat (repeat 15 false)
+                                       (repeat 7 true)
+                                       (repeat 15 [false  false])
+                                       #_(repeat 7 true)
+                                       (repeat 15 false)
+                                       #_(repeat (+ 16 7) true)))
+                  (perky {:freq (* (rainseq (concat
+                                             (repeat 7 300)
+                                             (repeat 15 200)
+                                             (repeat 7 300)
+                                             (repeat 15 200)
+                                             (repeat (+ 16 7) 300)
+                                             (repeat 15 200)))
+                                   (* 2 (rainseq (lin 1 [3 13/8] 2 [1 1 4] [7/4]))))
+                          :amp 0.8
+                          :dcy (rainseq {0.1 4 0.3 1 2 1/2 4 4})
+                          :out (rainseq (graph space/main-graph))}))))))

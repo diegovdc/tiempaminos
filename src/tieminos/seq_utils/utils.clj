@@ -37,6 +37,13 @@
                   [node edges*])))
          (into {}))))
 
+(defn repcat
+  "Does a (concat (repeat n x) ...), where `nxs` are vectors with pairs of n (repetitions) and xs (items to repeat)."
+  [& nxs]
+  (when-not (every? #(= 2 (count %)) nxs)
+    (throw (ex-info "repcat takes vectors with two elements each (repetition count and items to repeat)." {:nxs  nxs})))
+  (mapcat #(repeat (first %) (second %)) nxs))
+
 (defn seq->graph
   ;; TODO improve to handle other pattern types
   [xs]

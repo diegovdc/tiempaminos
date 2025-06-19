@@ -9,7 +9,7 @@
                                      :sha "9436febbb819887bfdc8316034a6e1f5b7f51fcf"} #_{:local/root "../overtone" :deps/manifest :deps}
         ;; videco/piratidal {:local/root "../../../code/piratidal" :deps/manifest :deps}
         io.github.diegovdc/time-time {:git/url "https://github.com/diegovdc/time-time.git"
-                                      :sha "d6d7379dbadc8cdcfe07aff6c5929649436720b7"}
+                                      :sha "3b58639a340b85fbc96837434132da66b6275607"}
         #_{:local/root "../time-tiem" :deps/manifest :deps}
         io.github.diegovdc/erv {:git/url "https://github.com/diegovdc/erv.git"
                                 :sha "8a2edb7aab50d8b443ac5df4fc7ec208ebaff112"

@@ -11,17 +11,17 @@
    [time-time.standard :refer [rrand]]
    [user]))
 
-(do
-  (defn get-sample-num-from-path
-    [path]
-    (-> path
-        (str/split #"/")
-        last
-        (str/split #"\.")
-        first
-        (str/split #"_")
-        last
-        edn/read-string))
+(defn- get-sample-num-from-path
+  [path]
+  (-> path
+      (str/split #"/")
+      last
+      (str/split #"\.")
+      first
+      (str/split #"_")
+      last
+      edn/read-string))
+(comment
   (get-sample-num-from-path "/Users/diego/Music/code/tieminos/samples/AKWF-wavetable/AKWF_bw_sin/AKWF_sin_1.wav"))
 
 (defn available-dirs
@@ -144,6 +144,7 @@
     (o/out out (-> sig
                    (* amp env)
                    (o/pan2 pan)))))
+
 (oe/defsynth mono-mooglad
   [freq 220
    min-wave 0

@@ -378,3 +378,7 @@
     (when (not= total-keys (count (keys merged)))
       (throw (ex-info "Some keys are being overwritten by the merge" {:keys (map keys ms)})))
     merged))
+
+(defn ensure-seq
+  [x]
+  (if (sequential? x) x [x]))

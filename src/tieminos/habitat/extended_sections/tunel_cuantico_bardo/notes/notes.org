@@ -91,7 +91,6 @@ CLOSED: [2025-01-19 Sun 17:53]
 ** DONE Prevenir que los buffers que están siendo utilizados actualmente sean borrados
 CLOSED: [2025-02-15 Sat 12:44] SCHEDULED: <2025-01-27 Mon>
 ** TODO [#C] BUG - rec -> toggle de clouds genera error de OSC
-SCHEDULED: <2025-02-13 Thu>
 ** DONE [#A] Clipeos que parece van de reaper a collider
 CLOSED: [2025-02-19 Wed 09:54] SCHEDULED: <2025-02-17 Mon>
 ** IDEA [#C] Agregar control de volumen en el return clean de la guitarra (?)
