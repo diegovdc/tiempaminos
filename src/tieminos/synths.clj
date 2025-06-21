@@ -1,5 +1,8 @@
 (ns tieminos.synths
-  (:require [overtone.core :as o]))
+  (:require
+   [overtone.core :as o]
+   [tieminos.overtone-extensions :as oe]
+   [tieminos.sc-utils.synths.v1 :refer [lfo]]))
 
 ;;;;;;;;;;;
 ;; Basic ;;
@@ -182,3 +185,30 @@
 (comment
   (noise-tone :amp 1)
   (o/stop))
+
+(oe/defsynth hh2
+  [freq 100
+   amp 1
+   pan 0
+   atk 0
+   dcy 0.5
+   perc-curve -5
+   lpf-freq 6000
+   hpf-freq 6000
+   out 0]
+  (o/out out (-> (o/sin-osc (* (lfo 0.4 9000 15000)
+                               (o/sin-osc (* 7000 (o/sin-osc
+                                                   (* 800 (o/pulse freq)))))))
+                 (o/pan2 pan)
+                 (o/comb-l 0.01 (o/line 0.05 0.02 0.05) 0.4)
+                 (o/rhpf hpf-freq 0.4)
+                 (o/moog-ff lpf-freq 2.3)
+                 (* (o/env-gen (o/env-perc atk dcy :curve perc-curve) :action o/FREE))
+                 (* amp (o/amp-comp-a freq)))))
+
+(comment
+  (hh2 {:freq 100
+        :atk 0
+        :hpf-freq 6000
+        :dcy (rand-nth [0.5])
+        :mod-freq 100}))
