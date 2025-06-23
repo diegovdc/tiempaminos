@@ -1,5 +1,7 @@
 (ns tieminos.midi.core
   (:require
+   [overtone.core :as o]
+   [overtone.libs.event :as overtone.event]
    [overtone.midi :as midi]
    [overtone.sc.node :refer [ctl node?]]
    [taoensso.timbre :as timbre]))
@@ -172,6 +174,8 @@
           [false :note-off :round-robin] (note-off ev))))
     (catch Exception e (timbre/error "MIDIError" e {:ev ev :params params}))))
 
+(declare clear-synths-on-overtone-stop!)
+
 (defn midi-in-event
   "`note` events receive a map with the following keys
    `'(:data2 :command :channel :msg :note :status :data1 :device :timestamp :velocity)`"
@@ -180,6 +184,7 @@
              auto-ctl?  true
              note-off   (fn [_] nil)
              cc (fn [_] nil)}}]
+  (clear-synths-on-overtone-stop!) ;; handle o/stop event
   (midi/midi-handle-events
    midi-input
    (fn [ev] (handle-midi-event ev
@@ -188,11 +193,31 @@
                                 :cc        cc
                                 :auto-ctl? auto-ctl?}))))
 
-#_(defn all-notes-off [sink] (midi/midi-control sink 123 0))
+(defn clear-all-synths!
+  []
+  (doseq [synth (vals @synths)]
+    (try (o/ctl synth :gate 0)
+           ;; in case the synth has already been destroyed
+         (catch Exception _ nil)))
+  (reset! synths {}))
+
+(defn clear-synths-on-overtone-stop!
+  []
+  (overtone.event/on-event
+   :reset
+   (fn [& _args]
+     (when (seq @synths)
+       (timbre/info "Clearing all synths that might have been triggered via a midi input.")
+       (clear-all-synths!)))
+   ::clear-all-synths))
+
 (defn all-notes-off [sink]
   (doseq [n (range 128) chan (range 16)]
     (midi/midi-note-off sink n chan)))
+
 (comment
+
+  (o/stop)
   (note-on (fn [_] (println (:note _))))
   (all-notes-off (get-oxygen!))
   (midi-in-event :note-on (fn [_] (println "on" ((juxt :channel :note) _)))
