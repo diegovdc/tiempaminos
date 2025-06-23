@@ -164,6 +164,7 @@
        :note-on (fn [ev]
                   (let [{:keys [ratio freq absolute-ratio]} (get-note-data ev)]
                     (when lattice? (add-played-ratio lattice-atom {:ratio ratio
+                                                                   :group-id ::note
                                                                    :stroke-weight stroke-width
                                                                    :color note-color}))
 
@@ -177,7 +178,7 @@
                                 :a 5))))
        :note-off (fn [ev]
                    (let [{:keys [ratio absolute-ratio]} (get-note-data ev)]
-                     (when lattice? (remove-played-ratio lattice-atom {:ratio ratio}))
+                     (when lattice? (remove-played-ratio lattice-atom {:ratio ratio, :group-id ::note}))
                      (remove-played-absolute-ratio absolute-ratio)))))))
 
 (comment
