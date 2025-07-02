@@ -1,37 +1,37 @@
 (ns tieminos.habitat.extended-sections.tunel-cuantico-bardo.main
-  "The code from the recorded versions of `2.2.9"
+  "The code from the recorded versions of `2.2.9.x"
   (:require
-   [clojure.data.generators :refer [weighted]]
    [overtone.core :as o]
    [tieminos.attractors.lorentz :as lorentz]
-   [tieminos.habitat.extended-sections.hacia-un-nuevo-universo.main-4ch
-    :as hunu.4ch]
-   [tieminos.habitat.extended-sections.harmonies.chords
-    :refer [fib-chord-seq meta-slendro1 rate-chord-seq transpose-chord]]
-   [tieminos.habitat.extended-sections.tunel-cuantico-bardo.live-state :as bardo.live-state]
+   [tieminos.habitat.extended-sections.tunel-cuantico-bardo.init :as bardo.init]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.osc :as bardo.osc]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.save-synths
     :as tc.synth-persistance]
+   [tieminos.habitat.extended-sections.tunel-cuantico-bardo.scratch.main]
    [tieminos.habitat.groups :as groups]
-   [tieminos.habitat.init :as habitat]
-   [tieminos.habitat.main :as main]
-   [tieminos.habitat.main-sequencer :as hseq]
-   [tieminos.habitat.recording :as rec :refer [norm-amp silence?]]
-   [tieminos.habitat.routing :as habitat.route :refer [main-returns]]
-   [tieminos.habitat.scratch.sample-rec2
-    :refer [periodize-durs quad-router-2o rand-latest-buf rev-filter
-            start-rec-loop3!]]
+   [tieminos.habitat.recording :as rec :refer [norm-amp]]
+   [tieminos.habitat.routing :as habitat.route]
    [tieminos.habitat.synths.granular
-    :refer [amanecer*guitar-clouds clouds2-4ch]]
-   [tieminos.math.bezier-samples :as bzs]
-   [tieminos.network-utils :refer [get-local-host]]
+    :refer [clouds2-4ch]]
    [tieminos.sc-utils.ndef.v1 :as ndef]
    [tieminos.sc-utils.synths.v1 :refer [lfo-kr]]
    [tieminos.utils :refer [rrange wrap-at]]
    [time-time.dynacan.players.gen-poly :as gp :refer [on-event ref-rain]]
-   [time-time.standard :refer [rrand]]
-   [tieminos.habitat.extended-sections.tunel-cuantico-bardo.scratch.main]))
+   [time-time.standard :refer [rrand]]))
 
+(comment
+  ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  ;; NOTE main initialization section
+  ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  ;; init OSC communication
+  (bardo.osc/init! [["127.0.0.1" 16181]
+                    ["192.168.0.101" 16180]
+                    ["192.168.0.102" 16180]])
+  ;; init everything (habitat and input synths) except SC, REAPER and OSC communications
+  (bardo.init/all!))
+
+;; TODO: figure out if this is still useful
 (defonce saved-synth-params (atom []))
 
 (comment
@@ -179,63 +179,3 @@
                 (o/env-gen (o/env-perc a r)
                            :action o/FREE))
              (#(o/pan-az 4 % (lfo-kr 0.1 -1 1))))))
-
-(comment
-  (when @habitat/habitat-initialized?
-    (reset! rec/recording? {})
-    (main/stop-sequencer! hseq/context)
-    (reset! rec/bufs {}))
-  (o/stop)
-  (o/kill qbr)
-  (o/kill rev-filter*)
-
-  (habitat/init! {:volume-db -24})
-
-  (bardo.osc/init! [["127.0.0.1" 16181]
-                    ["192.168.0.101" 16180]
-                    ["192.168.0.102" 16180]])
-
-  ;; also part of the initialization of hacia un nuevo universo
-  (def in1 (o/audio-bus 4 "algo-2.2.9-out"))
-  (def out1 (o/audio-bus 4 "reverb-out"))
-  (def qbr (quad-router-2o {:group (groups/mid :tail)
-                            :in-bus in1
-                            :out-bus1 out1
-                            :out-bus2 (habitat.route/main-returns :mixed)}))
-
-  (def rev-filter* (rev-filter
-                    {:group (groups/panners)
-                     :inbus out1}))
-
-  #_(open-inputs-with-rand-pan
-     {:inputs habitat.route/inputs
-      :preouts habitat.route/preouts})
-  (o/demo (o/in (-> @habitat.route/inputs
-                    :mic-2
-                    :bus)))
-
-  (hunu.4ch/open-inputs-with-rand-pan*
-   {:inputs habitat.route/inputs
-    :preouts habitat.route/preouts}
-   {:mic-1 {:width 3}
-    :mic-2 {:width 3}
-    :guitar {:width 3}}
-   #_{:mic-1 {:amp 1}
-      :mic-2 {:amp 1}})
-
-  (add-watch bardo.live-state/live-state ::post-live-state
-             (fn [_key _ref _old-value new-value]
-               (println new-value)
-               (bardo.osc/throttled-post (dissoc new-value :lorentz)))))
-
-(comment
-  (require '[tieminos.overtone-extensions :as oe])
-
-  (oe/defsynth sini
-    [freq 200
-     amp 0.5
-     out 0]
-    (o/out out (* amp (o/pan2 (o/sin-osc 200)))))
-
-  (def test-sini (sini :out 20))
-  (o/kill test-sini))

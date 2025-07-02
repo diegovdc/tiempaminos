@@ -6,6 +6,7 @@
    [org.httpkit.client :as http]
    [overtone.osc :as osc]
    [taoensso.timbre :as timbre]
+   [tieminos.habitat.extended-sections.tunel-cuantico-bardo.init :as bardo.init]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.live-controls :as bardo.live-ctl]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.live-state :as bardo.live-state :refer [live-state]]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.presets :as bardo.presets]
@@ -537,9 +538,10 @@
            "/FX/notch-radio" (set-notch-freq (first args))
            "/FX/bell-radio" (set-bell-freq (first args))
            "/FX/flat-eq" (set-flat-eq)
-           ;; reaper controls
-           "/Reaper/rec-start" (when press? (reaper-rec!))
-           "/Reaper/rec-stop" (when press? (reaper-stop!))
+           ;; main controls
+           "/System/rec-start" (when press? (reaper-rec!))
+           "/System/rec-stop" (when press? (reaper-stop!))
+           "/System/init" (when press? (bardo.init/all!))
            (timbre/warn "Unknown path for message: " msg args-map))
 
           ;; Save last update to touch-osc-state

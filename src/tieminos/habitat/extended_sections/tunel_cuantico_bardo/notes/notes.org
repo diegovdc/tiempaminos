@@ -103,9 +103,11 @@ CLOSED: [2025-02-27 Thu 14:19] SCHEDULED: <2025-02-25 Tue>
 CLOSED: [2025-02-24 Mon 22:59] SCHEDULED: <2025-02-23 Sun>
 ** DONE [#A] Bajarle más a la salida de collider, aún clippea
 CLOSED: [2025-04-14 Mon 16:26] SCHEDULED: <2025-03-03 Mon>
-** TODO [#A] Reparar EQ
-SCHEDULED: <2025-06-27 Fri>
-*** TODO Reorganizar grabación y ruteo de audio para que eq se grabe y esté después de la grabación de audio
-*** TODO Automatizar la grabación de audio en REAPER, que arme y desarme el canal de EQ
+** DONE [#A] Reparar EQ
+CLOSED: [2025-07-02 Wed 16:04] SCHEDULED: <2025-06-27 Fri>
+*** DONE Reorganizar grabación y ruteo de audio para que eq se grabe y esté después de la grabación de audio
+CLOSED: [2025-07-02 Wed 16:03]
+*** DONE Automatizar la grabación de audio en REAPER, que arme y desarme el canal de EQ
+CLOSED: [2025-07-02 Wed 16:03]
 
 
