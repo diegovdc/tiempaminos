@@ -5,8 +5,8 @@
    [tieminos.attractors.lorentz :as lorentz]
    [tieminos.habitat.extended-sections.harmonies.chords
     :refer [meta-slendro1 rate-chord-seq transpose-chord]]
-   [tieminos.habitat.extended-sections.tunel-cuantico-bardo.main :refer [algo-2-2-9]]
    [tieminos.habitat.routing :as habitat.route]
+   [tieminos.habitat.scratch.sample-rec2 :refer [start-rec-loop3!]]
    [tieminos.habitat.synths.granular :refer [amanecer*guitar-clouds]]
    [tieminos.sc-utils.ndef.v1 :as ndef]
    [tieminos.sc-utils.synths.v1 :refer [lfo-kr]]
@@ -14,6 +14,46 @@
    [time-time.dynacan.players.gen-poly :as gp]))
 
 (comment
+  (defn algo-2-2-9
+    [{:keys [chord
+             transpositions
+             out-bus
+             on-play
+             clouds-config
+             rec-input-config]
+      :or {chord [0 6 12 18]
+           transpositions [0]
+           rec-input-config {:section "gusano-cuantico-2.2.9.x"
+                             :subsection "algo-2-2-9"}}}]
+
+    (start-rec-loop3!
+     {:input-bus-fn (fn [_] (-> @habitat.route/inputs (select-keys [:guitar :mic-1 :mic-2]) vals (->> (map :bus))))
+      :durs (mapv (fn [_] 5) (range 1))
+      :rec-input-config rec-input-config})
+    (clouds-refrain
+     (merge
+      {:out-bus out-bus
+       :buf-fn (fn [_] (->> @rec/bufs vals (sort-by :rec/time) reverse (filter :analysis)
+                            (remove #(silence? 0.05  %))
+                            (take 3) (#(when (seq %) (rand-nth %)))))
+       :silence-thresh 0.05
+       :rates (fib-chord-seq (transpose-chord chord transpositions))
+       :amp 0.6
+       :period 30
+       :durs [2 3 5 3 8 13 5 8 2 3 5]
+         ;; :period 40
+         ;; :durs [1 1 1 1 1 1 1]
+       :d-weights {5 1
+                   3 0.3}
+       :d-level-weights {0.3 5
+                         0.1 2
+                         0.2 3
+                         0.4 8}
+       :a-weights {(rrange 5 8) 3
+                   (rrange 3 5) 2}
+       :on-play on-play}
+      clouds-config)))
+
   (algo-2-2-9 {:out-bus in1
                :chord [0 5 8 9]
                :transpositions (shuffle (range 0 60 4))

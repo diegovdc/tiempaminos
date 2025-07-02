@@ -25,6 +25,13 @@
    [time-time.dynacan.players.gen-poly :as gp :refer [on-event ref-rain]]
    [time-time.standard :refer [rrand]]))
 
+(comment
+  (fib-chord-seq (transpose-chord [0 6 12 18] (range 21))) ;; acorde bonito, muy liso
+  (fib-chord-seq (transpose-chord [0 4 8 12 16 20 24 28] [0 1])) ;; calido con un poco de disonancia
+  (fib-chord-seq (transpose-chord [11 15 19] (range 21))) ;; estable claro (segmento de arriba: 4-4)
+  (fib-chord-seq (transpose-chord [10 15 20] (range 21))) ;; nocturno (5-5)
+  )
+;; TODO add the rates above
 (def ^:private rates
   [(:rates g-2.2.6/s1)
    (:rates g-2.2.6/s2)
