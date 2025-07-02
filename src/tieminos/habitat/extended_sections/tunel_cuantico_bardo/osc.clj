@@ -13,6 +13,7 @@
    [tieminos.habitat.osc :as habitat-osc]
    [tieminos.math.utils :refer [linlin]]
    [tieminos.osc.reaper :refer [reaeq-freq->lin]]
+   [tieminos.osc.reaper :as reaper]
    [tieminos.utils :refer [cb-interpolate stop-all-interpolators! throttle]]))
 
 (def default-rec-config
@@ -448,6 +449,18 @@
       :gain 0.5
       :dur-ms dur-ms})))
 
+(defn reaper-rec!
+  []
+  ;; set OSC EQ envelope to write
+  (reaper/set-autowrite 23)
+  (reaper/rec))
+
+(defn reaper-stop!
+  []
+  ;; set OSC EQ envelope to write
+  (reaper/set-autotrim 23)
+  (reaper/stop))
+
 (defn init!
   "`clients` is a vector of [host port]"
   [clients]
@@ -524,6 +537,9 @@
            "/FX/notch-radio" (set-notch-freq (first args))
            "/FX/bell-radio" (set-bell-freq (first args))
            "/FX/flat-eq" (set-flat-eq)
+           ;; reaper controls
+           "/Reaper/rec-start" (when press? (reaper-rec!))
+           "/Reaper/rec-stop" (when press? (reaper-stop!))
            (timbre/warn "Unknown path for message: " msg args-map))
 
           ;; Save last update to touch-osc-state
