@@ -88,7 +88,7 @@
                :amp-norm-mult (normalize-amp (:max-amp analysis))))))
 #_(analyze* test-data)
 
-;; TODO left here, figure out how to plug it in to the recorder.
+;; TODO: left here, figure out how to plug it in to the recorder.
 (defn analyze
   [freq-history start-time end-time]
   (let [data (->> freq-history

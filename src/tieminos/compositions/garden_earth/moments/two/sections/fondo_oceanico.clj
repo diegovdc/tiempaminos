@@ -77,7 +77,7 @@
    :id id
    :durs durs-fn
    :on-event (on-event
-               ;; TODO replace by weighted-queried-buf
+               ;; TODO: replace by weighted-queried-buf
               (when-let [buf (habitat.rec/rand-queried-buf rec-query)]
                 (buf-mvts-subterraneos
                  {:group (groups/early)
@@ -121,7 +121,7 @@
   {:section "fondo-oceanico"
    :subsection "ecosistema-submarino"})
 
-;; TODO remove
+;; TODO: remove
 #_(defn rain-simple-playbuf
     [{:keys [id rates-fn durs-fn amp-fn rec-query out]
       :or {amp-fn (fn [_i] 4)
@@ -131,7 +131,7 @@
      :id id
      :durs durs-fn
      :on-event (on-event
-                  ;; TODO replace by weighted-queried-buf
+                  ;; TODO: replace by weighted-queried-buf
                 (when-let [buf (habitat.rec/rand-queried-buf rec-query)]
                   (simple-playbuf
                    {:group (groups/early)
@@ -180,14 +180,14 @@
                  (merge fondo-oceanico-query
                         {:dur 10 :input-bus (fl-i1 :bus)}))
 
-                ;; TODO add controls for `amp` and `dur`?
+                ;; TODO: add controls for `amp` and `dur`?
                 ;; Or somehow start later
                 (rain-mvts-submarinos
                  {:id :fondo-oceanico/fondo-oceanico
                   :rec-query fondo-oceanico-query
                   :durs-fn (fn [_] (+ 0.1 (rand 6)))
-                  :amp-fn (fn [_i] (rrange 2 20)) ;; TODO improve amps variation
-                   ;; TODO changes rates?
+                  :amp-fn (fn [_i] (rrange 2 20)) ;; TODO: improve amps variation
+                   ;; TODO: changes rates?
                   :rates-fn (fn [_] (rand-nth [1 11/9 1/2 2/3 4/11 9/22]))})
 
                 ;; ndef
@@ -218,7 +218,7 @@
                 :durs-fn (fn [_] (+ 1 (rand 7)))
                 :old-weight 8
                 :amp-fn (fn [_i] (rrange 2 16)) ; TODO improve amps variation
-                 ;; TODO changes rates?
+                 ;; TODO: changes rates?
                 :rates-fn (fn [_] (rand-nth [1 11/9 1/2 2/3 4/11 9/22]))}))}
 ;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Fuente Hidrotermal
@@ -238,8 +238,8 @@
                 (rain-mvts-submarinos {:id :fondo-oceanico/fuente-hidrotermal
                                        :rec-query fuente-hidrotermal-query
                                        :durs-fn (fn [_] (+ 0.1 (rand 6)))
-                                       :amp-fn (fn [_i] (rrange 1 2)) ;; TODO improve amps variation
-                                       ;; TODO changes rates?
+                                       :amp-fn (fn [_i] (rrange 1 2)) ;; TODO: improve amps variation
+                                       ;; TODO: changes rates?
                                        :rates-fn (fn [_] (rand-nth [1 11/9 1/2 2/3 4/11 9/22]))})
 
                 (rain-simple-playbuf
@@ -271,10 +271,10 @@
                 :rec-query fuente-hidrotermal-query
                 :durs-fn (fn [_] (+ 1 (rand 7)))
                 :amp-fn (fn [_i] (rand-nth [2 1]))
-                 ;; TODO changes rates?
+                 ;; TODO: changes rates?
                 :rates-fn (fn [_] (rand-nth [1 11/9 1/2 2/3 4/11 9/22]))}))}
 
-   ;; TODO left here
+   ;; TODO: left here
    {:name :erupciones-submarinas
     :dur/minutes 1
     :on-start (fn []

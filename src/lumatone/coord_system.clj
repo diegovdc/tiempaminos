@@ -3,12 +3,12 @@
   (:require
    [clojure.string :as str]))
 
-;; TODO Map keys per board into a coordinate system
+;; TODO: Map keys per board into a coordinate system
 ;;;; DONE All starting keys (in the x axis should be mapped)
 ;;;;;; DONE Use ranges to fill in the whole mapping
 ;;;;;;;; DONE Convert all boards into a single coord-map->board-key...
-;;;;;;;;;; TODO Generate board from there
-;; TODO use coordinate system to create lumatone mapping files (distribute notes, midi data and colors)
+;;;;;;;;;; TODO: Generate board from there
+;; TODO: use coordinate system to create lumatone mapping files (distribute notes, midi data and colors)
 
 (def board-base-coords
   "Basic coordinates (based on the first board) and x-axis length, using right most keys in the `x` axis, for every distinct `y`"
@@ -190,7 +190,7 @@
                  {:keys [a b e f] :as diophantine-data}  (diophantine-fractions gen period)]
              (if (and a b e f)
                (recur (conj fractions
-                            ;; NOTE not sure about this
+                            ;; NOTE: not sure about this
                             [(if (> b f)
                                [a b]
                                [e f])

@@ -12,7 +12,7 @@
     @osc-client))
 
 (defn set-tuning
-  ;; NOTE avoid extension
+  ;; NOTE: avoid extension
   [path-to-scl]
   (osc/osc-send @osc-client
                 "/tuning/scl"

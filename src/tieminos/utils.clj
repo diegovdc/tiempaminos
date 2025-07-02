@@ -336,7 +336,7 @@
     (sequence-call 100 #(println x))))
 
 (defn throttle
-  ;; NOTE Seems to be like `sequence-call` but better
+  ;; NOTE: Seems to be like `sequence-call` but better
   "Will imediately call a function and then wait for `time-ms` to call it again, if it was called in the interim.
   The second call will use the latest value with which the function was called.
   So it calls the function at the start and the end of the period."

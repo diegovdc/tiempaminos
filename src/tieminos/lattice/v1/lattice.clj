@@ -39,7 +39,7 @@
     (q/stroke-weight 3.5)
     (doseq [{:keys [coords ratio]} data]
       (when-let [notes (seq (played-notes ratio))]
-        ;; TODO using reverse may not be too performant
+        ;; TODO: using reverse may not be too performant
         (doseq [{:keys [index color stroke-weight]
                  :or {color [170 0 80]
                       stroke-weight 3.5}} (reverse notes)]

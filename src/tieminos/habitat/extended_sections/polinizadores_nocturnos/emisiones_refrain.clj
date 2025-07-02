@@ -71,7 +71,7 @@
          wave-refrain-ids (->> emision-refrain-configs
                                (map :refrain-id)
                                (remove nil?))]
-    ;; NOTE An equivalent function should be called somewhere else
+    ;; NOTE: An equivalent function should be called somewhere else
     #_(doseq [[k {:keys [bus]}] @inputs]
         (panner {:type :rand
                  :in bus

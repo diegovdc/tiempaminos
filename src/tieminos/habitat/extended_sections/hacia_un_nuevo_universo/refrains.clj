@@ -14,7 +14,7 @@
    [tieminos.utils :refer [rrange]]
    [time-time.dynacan.players.gen-poly :as gp :refer [on-event ref-rain]]))
 
-;; TODO WIP
+;; TODO: WIP
 (defn chords1
   [{:keys [id cps chords periods root-freq]
     :or {id ::cps-chords1

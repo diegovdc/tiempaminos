@@ -30,7 +30,7 @@
                                             0)
                                (o/pan4 (lfo-kr 2 -1 1) (lfo-kr 2 -1 1))
                                (* (lfo-kr 10 0 1) 20)
-                             ;; NOTE optional
+                             ;; NOTE: optional
                                #_(o/free-verb (lfo-kr 1 0 1)
                                               (lfo-kr 1 0.5 1)
                                               0)))

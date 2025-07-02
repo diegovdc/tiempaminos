@@ -126,7 +126,7 @@
                   {:id         (keyword "hydra-control" (str "cc" cc-num "-" (name k)))
                    :dur-ms     dur-ms
                    :tick-ms    tick-ms
-                   :init-val   0 ;; TODO add default init val
+                   :init-val   0 ;; TODO: add default init val
                    :target-val target-val
                    :cb         (fn [{:keys [val]}]
                                  (let [new-val (int val)]

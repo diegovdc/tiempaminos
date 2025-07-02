@@ -6,7 +6,7 @@
   (let [sum (apply + ns)]
     (map #(/ % sum) ns)))
 
-;; TODO implement for non lists
+;; TODO: implement for non lists
 ;; mapping functions
 ;; https://github.com/supercollider/supercollider/blob/18c4aad363c49f29e866f884f5ac5bd35969d828/lang/LangSource/MiscInlineMath.h
 
@@ -93,7 +93,7 @@
                    xs))
          (apply + (map (fn [i] (Math/pow alpha (- n i))) (range 1 (inc n))))))))
 
-;; TODO add tests
+;; TODO: add tests
 (linearly-weighted-avg [1 1 1 1])
 (linearly-weighted-avg [1 9/10 8/10 7/10 6/10 5/10])
 (linearly-weighted-avg (reverse [1 9/10 8/10 7/10 6/10 5/10]))
@@ -107,7 +107,7 @@
       (+ (Math/pow Math/E (* scale x)) 1))))
 
 (defn hyperbolic-decay
-  ;; NOTE initially intended as a feedback mechanism for controlling amplitudes
+  ;; NOTE: initially intended as a feedback mechanism for controlling amplitudes
   "Works with values between 0 and 1.
   `max-threshold` is the value after which the hyperbolic function is applied
   `scale` is the steepness of the curve.

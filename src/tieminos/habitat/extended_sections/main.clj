@@ -99,7 +99,7 @@
                  (gp/stop :rising-upwards-loop))]])))
 
 (def polinizadores-nocturnos
-  ;; TODO revisar refrains de emision hay cosas raras (aumentos de volumen y saturación del servidor)
+  ;; TODO: revisar refrains de emision hay cosas raras (aumentos de volumen y saturación del servidor)
   {:context (merge main/context {})
    :sections [[[52 22] #'polinizadores-nocturnos*]
               [[62 10] (fn [_] (println "end"))]]
@@ -114,7 +114,7 @@
    :sequencer/hacia-un-nuevo-universo
    context
 
-    ;; TODO coso percusivo con samples ganulados, breves y reson-eco-reverb, tal vez convlucieon
+    ;; TODO: coso percusivo con samples ganulados, breves y reson-eco-reverb, tal vez convlucieon
     ;; Siempre usar últimos sonidos tocados
     ;; Transponer siempre espectral
 
@@ -196,7 +196,7 @@
 
   (declare in1)
 
-  ;; TODO renombrar
+  ;; TODO: renombrar
   (defn hacia-un-nuevo-universo-live
     [context]
     (subsequencer
@@ -877,7 +877,7 @@
   (main/start-sequencer! hacia-un-nuevo-universo-impro))
 
 (comment
-  ;; TODO generar función para abrir y cerrar los micros para probar
+  ;; TODO: generar función para abrir y cerrar los micros para probar
   (reset! recording? {})
   (reset! rec/bufs {})
   (main/start-sequencer! hacia-un-nuevo-universo-impro)

@@ -31,7 +31,7 @@
     nil)
   (short-plate2 :out (bh 0))
 
-  ;; NOTE this is nice, use as a basis for a climaxy thing
+  ;; NOTE: this is nice, use as a basis for a climaxy thing
   (let [m [5/4 3/2 9/8 4/3 1]
         m2 [15/8 2 10/3 1]
         m3 [3/2 6/2 3/2 9/2]

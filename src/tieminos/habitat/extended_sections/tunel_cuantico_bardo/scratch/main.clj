@@ -57,7 +57,7 @@
   (algo-2-2-9 {:out-bus in1
                :chord [0 5 8 9]
                :transpositions (shuffle (range 0 60 4))
-               :clouds-config {:amp (o/db->amp -24) ;; NOTE interesante cambiar la amplitud
+               :clouds-config {:amp (o/db->amp -24) ;; NOTE: interesante cambiar la amplitud
                                }})
   (gp/stop ::clouds-refrain)
   (gp/stop :cuerpo-envolvente)

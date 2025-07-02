@@ -95,7 +95,7 @@
                      (map (fn [[k f]]
                             (let [[_ _ f*] f]
                               [k (eval (list 'fn ['data]
-                                             ;; TODO rainseq should use `data` as well
+                                             ;; TODO: rainseq should use `data` as well
                                              (list 'let '[i (:index data)] f*)))])))
                      (into {}))
                 (into [] (post-process-parsed-seq (parser pattern))))

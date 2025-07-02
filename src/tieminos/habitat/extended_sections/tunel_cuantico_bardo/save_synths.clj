@@ -104,5 +104,5 @@
                                      (if-let [group* (groups group)]
                                        group*
                                        default-group)))
-                    ;; TODO out has not be serialized at the moment
+                    ;; TODO: out has not be serialized at the moment
                     (update :out (constantly default-out))))))))

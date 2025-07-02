@@ -110,7 +110,7 @@
                      (let [[play? pattern-dur] (nth probability-pattern i [false])]
                        (when play?
                          (fuego-conv-synth {:in1 bus
-                                               ;; FIXME the require for this
+                                               ;; FIXME: the require for this
                                             :in2 @texto-sonoro-rand-mixer-bus
                                             :dur (* 2 dur-ratio pattern-dur)
                                             :out (rand-nth panner-buses)})))))

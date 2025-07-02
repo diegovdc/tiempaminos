@@ -32,7 +32,7 @@
                    :amp (rrange 0.45 0.7)
                    :out (bh 0)))
 
-                  ;; TODO agregar silencions con when-not
+                  ;; TODO: agregar silencions con when-not
                 #_(when (> (rand) 0.6)
                     (my-malgo {:deg (diat->polydori-degree 1 (+ (at-i [0 -4 0 -4 -3]) deg)) :dur (weighted {1 9 1.5 8}) :vel 100}))
                 #_(if (> (rand) 0.5)

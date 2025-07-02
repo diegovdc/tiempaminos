@@ -38,7 +38,7 @@
       :full)
   ;; WIP
   (do
-    ;; NOTE not used
+    ;; NOTE: not used
     (defn make-polydori-deg-graph
       [scale-number]
       (let [hex (-> dorian-hexanies-in-polydori-2
@@ -64,7 +64,7 @@
 
     (make-polydori-deg-graph 12))
   (do
-    ;; NOTE the good one
+    ;; NOTE: the good one
     (defn make-diat-polydori-deg-graph
       [scale-number]
       (let [hex (-> dorian-hexanies-in-polydori-2

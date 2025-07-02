@@ -37,7 +37,7 @@
    "3)4 of 3)6 1.3.5.9" ;; muy chida, recuerda a algo folcórico
    "3)4 of 3)6 1.3.7.11"
    "3)4 of 3)6 1.3.7.9"
-   "3)4 of 3)6 1.3.9.11" ;; TODO describe effect
+   "3)4 of 3)6 1.3.9.11" ;; TODO: describe effect
    "3)4 of 3)6 1.5.7.11"
    "3)4 of 3)6 1.5.7.9"
    "3)4 of 3)6 1.5.9.11"
@@ -50,7 +50,7 @@
 
 (def known-pitches
   #{"A+53"
-    "A+92" ;; TODO comprar con el otro A
+    "A+92" ;; TODO: comprar con el otro A
     "A#+55"
     "B+56"
     "C+20"
@@ -63,7 +63,7 @@
     "E+6"
     "E+55"
     "F+56"
-    "F#+6" ;; TODO comparar con el otro F
+    "F#+6" ;; TODO: comparar con el otro F
     "F#+38"
     "G+22"
     "G+88"

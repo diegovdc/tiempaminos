@@ -37,4 +37,4 @@
    [-2 -1 0 1 2 12 24]))
 
 ;; impl 2.
-;; TODO left here
+;; TODO: left here

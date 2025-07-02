@@ -114,7 +114,7 @@
                     :recording/end-time now}]
       (when pitch-class
         (play-fn arp-data)
-        ;; TODO rename key to include analyzed "dominant" pitch
+        ;; TODO: rename key to include analyzed "dominant" pitch
         (swap! bufs-atom set/rename-keys {buf-key new-buf-key})
         (swap! arp-seq conj arp-data)))))
 
@@ -255,7 +255,7 @@
   (stop)
   (pan-verb :in 5 :mix 1 :room 1 :amp 2 :damp-min 0.6 :damp 0.7
             :pan-min -0.5 :pan 0.5)
-  ;; NOTE `ge-live-sig/start-signal-analyzer' should be running
+  ;; NOTE: `ge-live-sig/start-signal-analyzer' should be running
   (arp {:bufs-atom sc.rec.v1/bufs
         :dur 0.5
         :index 1

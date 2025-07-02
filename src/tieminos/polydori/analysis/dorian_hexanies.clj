@@ -186,7 +186,7 @@
 (->> dorico-1v2-interdeks
      (sort-by first)
      (map (juxt first (comp count second))))
-;; NOTE moments from intedeks: '([0 14] [1 16] [2 15] [3 13] [4 2] [5 3])
+;; NOTE: moments from intedeks: '([0 14] [1 16] [2 15] [3 13] [4 2] [5 3])
 
 (->> dorian-hexanies)
 '([6.782329983125268 (1 3 9 19) (0 201 404 498 903 996)]

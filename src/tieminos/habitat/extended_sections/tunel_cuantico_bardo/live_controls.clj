@@ -189,7 +189,7 @@
                      out (main-returns (case player-k
                                          :milo :percussion-processes
                                          :diego :guitar-processes))
-                     ;; TODO update live state with event duration
+                     ;; TODO: update live state with event duration
                      synth (case (-> @live-state :algo-2.2.9-clouds player-k :active-synth)
                              :crystal (cristal-liquidizado (assoc config :out out))
                              :granular (amanecer*guitar-clouds

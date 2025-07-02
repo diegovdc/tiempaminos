@@ -12,7 +12,7 @@
 ;; HOWEVER is MUCH BETTER to use `sudo modprobe snd-virmidi` to
 ;; enable virmidi
 
-;; NOTE on virmidi, if overtone starts to crash on load, maybe virmidi was corrupted (has already happend to me once)
+;; NOTE: on virmidi, if overtone starts to crash on load, maybe virmidi was corrupted (has already happend to me once)
 
 (defonce oxygen* (atom nil))
 (defn get-oxygen!
@@ -167,7 +167,7 @@
                                           (when (= 1 (get @round-robin-state [:held-keys note]))
                                             ((gate-ctl :remove) ev))
                                           (swap! round-robin-state update-in [:held-keys note] dec))
-          ;; TODO add tests
+          ;; TODO: add tests
           [false :note-on :multi] (note-on ev)
           [false :note-on :round-robin] (note-on ev)
           [false :note-off :multi] (note-off ev)

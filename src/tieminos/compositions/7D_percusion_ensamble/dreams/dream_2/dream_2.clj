@@ -31,8 +31,8 @@
 (def sc-m2 (midi/midi-out "Bus 8"))
 (def sc-bass (midi/midi-out "Bus 9"))
 
-;; TODO first two sections (tentatively)
-;; TODO define different stereo outputs for the different instruments
+;; TODO: first two sections (tentatively)
+;; TODO: define different stereo outputs for the different instruments
 ;;
 
 (o/defsynth short-plate

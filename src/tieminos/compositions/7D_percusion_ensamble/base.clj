@@ -21,7 +21,7 @@
   (midi/midi-devices)
   (midi/midi-out "VirMIDI")
   (midi/midi-out "Bus 3"))
-;; TODO create midi function to load this abstracting the error handling
+;; TODO: create midi function to load this abstracting the error handling
 (def surge-suave (try (midi/midi-out "VirMIDI")
                       (catch Exception e (timbre/error e))))
 (def ssuave surge-suave)
@@ -92,7 +92,7 @@ If using `mdeg->freq` this may show up only once because it is memoized, even if
                    base-freq
                    (diat->polydori-degree scale degree type)))
 
-;; TODO test
+;; TODO: test
 (defn deg->data
   "Converts a polydori `scale` degree to a map including frequency.
   NOTE: scale is an index to `scales-list`. `type` is the key of `scales-list-map`."
@@ -127,7 +127,7 @@ If using `mdeg->freq` this may show up only once because it is memoized, even if
                       2092 (bh 6)})
 
 (defn ^:deprecated freq->out
-  ;; NOTE this doesn't really work
+  ;; NOTE: this doesn't really work
   "The key of the `freq->chan-map` is the top freq limit.
   All frequencies at or below this will go to the specified channel.
   For the highest limit, all frequencies above it will also go to the same channel."

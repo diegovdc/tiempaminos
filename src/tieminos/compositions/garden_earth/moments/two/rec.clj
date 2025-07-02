@@ -4,7 +4,7 @@
    [tieminos.sc-utils.groups.v1 :as groups]
    [time-time.dynacan.players.gen-poly :refer [on-event ref-rain]]))
 
-;; TODO update habitat.tunel-cuantic.rec with this and remove
+;; TODO: update habitat.tunel-cuantic.rec with this and remove
 (defn start-rec-loop!
   [{:keys [id
            input-bus

@@ -191,7 +191,7 @@
   (mancha* config m))
 (def mancha-state (atom {}))
 
-;; TODO add tests
+;; TODO: add tests
 (defn- get-next-mancha-node!
   [mancha]
   (let [{:keys [mancha/id
@@ -383,7 +383,7 @@
 
 (comment
   ;; IDEA
-  ;; TODO  seqcat
+  ;; TODO:  seqcat
   (defn seqcat
     "Append a sequence to another sequence"
     [coll]

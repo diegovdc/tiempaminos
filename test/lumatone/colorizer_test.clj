@@ -66,7 +66,7 @@
       (is (= "ff0000"
              (color-fn 12 deg-colors-p12-g7
                        0
-                        ;; NOTE full data structure
+                        ;; NOTE: full data structure
                        {:chan-val 1,
                         :chan "Chan_0",
                         :key-val 0,

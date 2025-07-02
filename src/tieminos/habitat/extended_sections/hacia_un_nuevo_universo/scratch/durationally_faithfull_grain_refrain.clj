@@ -35,7 +35,7 @@
 (do
 
   (oe/defsynth true-perc
-    ;; TODO pass in manual envelope
+    ;; TODO: pass in manual envelope
     [buf 0
      trig-rate 80
      grain-dur 1/40

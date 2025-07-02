@@ -110,7 +110,7 @@
                                      (rrange 0.4 0.7)])
                      :out (bh 0)))
 
-                    ;; NOTE very cool new idea
+                    ;; NOTE: very cool new idea
                   (when (> (rand) 0.95)
                     (sub-rain {:durs [1 1 1] #_[3 2 2]
                                :ratio (at-i [1/9 2/9 3/9])

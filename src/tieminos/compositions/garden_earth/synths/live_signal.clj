@@ -109,7 +109,7 @@
           sample-start (- now (* 1000 dur-s)
                         ;; ensure samples window corresponds to dur-s
                           (hz->ms analyzer-freq))
-        ;; TODO allow multiple inputs: (get @freq-history (keyword (:name input-bus)))
+        ;; TODO: allow multiple inputs: (get @freq-history (keyword (:name input-bus)))
           analysis (->> @freq-history
                         (drop-while #(> (:timestamp %) now))
                         (take-while #(>= (:timestamp %) sample-start))

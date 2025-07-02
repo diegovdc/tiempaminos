@@ -123,12 +123,12 @@
 
 (defonce analysis-history (atom {}))
 (comment
-  ;; TODO is freq being added to the analysis?
+  ;; TODO: is freq being added to the analysis?
   (->> @analysis-history vals flatten (filter :freq?))
   (->> @analysis-history :guitar-bus (map :freq))
   (->> @analysis-history :mic-1-bus (map :freq)))
 
-(def analyzer-freq 60) ;; TODO lower and test
+(def analyzer-freq 60) ;; TODO: lower and test
 
 (defn run-get-signal-analysis
   [& {:keys [freq input-bus analysis-path]
@@ -137,7 +137,7 @@
   ((o/synth
     (let [input (o/in input-bus)]
       (o/send-reply (o/impulse freq) analysis-path
-                    ;; TODO Probably use PeakFollower instead of amplitude
+                    ;; TODO: Probably use PeakFollower instead of amplitude
                     [(o/amplitude:kr input) (o/pitch:kr input)]
                     1)))))
 

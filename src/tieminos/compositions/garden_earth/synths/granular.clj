@@ -32,7 +32,7 @@
                        (oc/* ~end (oc/- (o/buf-samples:kr ~buf) 1)))
           (o/buf-samples:kr ~buf))))
 (o/defsynth grain
-  ;; NOTE  OPTIMAL duration according to Eli Fieldsteel {:trigger 40 :dur 1/20}
+  ;; NOTE:  OPTIMAL duration according to Eli Fieldsteel {:trigger 40 :dur 1/20}
   [buf 0
    dur 1
    trig-rate 40
@@ -67,7 +67,7 @@
                 (o/env-gen (o/envelope [0 1 1 0] [a (- dur a r) r])
                            :action o/FREE)))))
 (o/defsynth lines
-  ;; NOTE  OPTIMAL duration according to Eli Fieldsteel {:trigger 40 :dur 1/20}
+  ;; NOTE:  OPTIMAL duration according to Eli Fieldsteel {:trigger 40 :dur 1/20}
   [buf 0
    dur 1
    trig-rate 40
@@ -169,7 +169,7 @@
   (o/demo 5 (o/play-buf 1 (@bufs ["D#+75" :a]))))
 
 (o/defsynth grain-lfo
-  ;; NOTE  OPTIMAL duration according to Eli Fieldsteel {:trigger 40 :dur 1/20}
+  ;; NOTE:  OPTIMAL duration according to Eli Fieldsteel {:trigger 40 :dur 1/20}
   [buf 0
    dur 1
    trig-rate 40
@@ -206,7 +206,7 @@
                 (o/env-gen (o/envelope [0 1 1 0] [a (- dur a r) r])
                            :action o/FREE)))))
 (o/defsynth grain-perc
-  ;; NOTE  OPTIMAL duration according to Eli Fieldsteel {:trigger 40 :dur 1/20}
+  ;; NOTE:  OPTIMAL duration according to Eli Fieldsteel {:trigger 40 :dur 1/20}
   [buf 0
    dur 1
    trig-rate 40

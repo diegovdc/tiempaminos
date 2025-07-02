@@ -250,7 +250,7 @@
     - multiplication of space-resonance (filtered) + individuality (small sounds, less wide, vibrating differently)
   "
   [context]
-  ;; NOTE milo transiciona al dueto
+  ;; NOTE: milo transiciona al dueto
   (timbre/info "dueto-con-polinizadores=pt1-emisión-de-señal-intercambio-de-energía")
   (let [{:keys [dur-s inputs special-inputs reaper-returns]} @context
         wave-dur (/ dur-s 3)
@@ -261,7 +261,7 @@
                                           concat refrain-ids))
         main-refrain-id :dia/dueto-con-polinizadores=pt1-emisión-de-señal-intercambio-de-energía]
     (assoc-refrain-to-context context [main-refrain-id
-                                       ;; TODO maybe figure out a better way to stop these refrains
+                                       ;; TODO: maybe figure out a better way to stop these refrains
                                        :dia/alejamientos-señal-1
                                        :dia/alejamientos-señal-2
                                        :dia/alejamientos-señal-3])
@@ -364,7 +364,7 @@
         avg-dur (/ dur-s polens)
         min-dur (* 0.7 avg-dur)
         max-dur (* 1.3 avg-dur)
-        ;; TODO improve durs with bezier curves
+        ;; TODO: improve durs with bezier curves
         durs* (->> polens
                    (range)
                    (map (fn [_] (max min-dur (rand max-dur)))))]
@@ -373,7 +373,7 @@
      :durs durs*
      :loop? false
      :on-event (on-event
-                  ;; TODO perhaps substitute with a grain synth (using `dust`) and some cps melodicish movement
+                  ;; TODO: perhaps substitute with a grain synth (using `dust`) and some cps melodicish movement
                 (make-convolver-1
                  input-buses
                  (:bus (rand-nth panner-configs))
@@ -497,7 +497,7 @@
 
 (defn dueto-con-polinizadores=pt4-multiplicación-atracción-orbitales
   [context]
-  ;; TODO improve with other panning patterns, like a simple pan-az
+  ;; TODO: improve with other panning patterns, like a simple pan-az
   (timbre/info "dueto-con-polinizadores=pt4-multiplicación-atracción-orbitales")
   (let [{:keys [dur-s inputs main-fx reaper-returns current-panners]} @context
         rand-pan-config {:bus (o/audio-bus 1 "dueto-polinizadores-pt4-rand-pan")
@@ -539,7 +539,7 @@
                                              :out3 (:bus circle-r-pan-2-config)
                                              :out4 (:bus circle-r-pan-config)}))
                                          inputs)
-        ;; NOTE this `mapv` will initialize the panners
+        ;; NOTE: this `mapv` will initialize the panners
         panner-buses-and-async-ctl-fns (mapv (fn [{:keys [bus type out rate]}]
                                                (let [width 1.2]
                                                  (panner

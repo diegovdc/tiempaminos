@@ -14,7 +14,7 @@
     {:start start :end end}))
 
 (oe/defsynth amanecer*guitar-clouds
-    ;; TODO pass in manual envelope
+    ;; TODO: pass in manual envelope
   [buf 0
    trig-rate 40
    grain-dur 1/20
@@ -141,7 +141,7 @@
 
   (do
 
-;; TODO left here WIP
+;; TODO: left here WIP
     ;; Sounds good on long sounds
     ;; And also with short sounds where `d` is short and `d-level` goes significantly down
     ;; Can be computationally expensive
@@ -174,7 +174,7 @@
           :out 0})))))
 
 (oe/defsynth amanecer*snare-mist
-  ;; TODO pass in manual envelope
+  ;; TODO: pass in manual envelope
   [buf 0
    trig-rate 100
    grain-dur 1/10
@@ -237,13 +237,13 @@
                                      :rate r
                                      :amp (* (rrange 0.9 1) (norm-amp buf))
                                      :pan (rrange -1 1)))))
-  ;; todo generate bufs go to `tieminos.sc-utils.recording.v1`
+  ;; TODO: generate bufs go to `tieminos.sc-utils.recording.v1`
   ;; and play some stuff in the `comment` at the bottom
   (->> @rec/bufs keys)
 
   (play-buf* (:amanecer-pt4-mic-3-4 @rec/bufs))
   (oe/defsynth amanecer*snare-mist
-    ;; TODO pass in manual envelope
+    ;; TODO: pass in manual envelope
     [buf 0
      trig-rate 100
      grain-dur 1/10

@@ -30,7 +30,7 @@
   (->> ins
        ;; For some reason amp via o/sound-in is coming 8db lower than it should be
        ;; so allowing here for compensation.
-       ;; FIXME find the cause for the above.
+       ;; FIXME: find the cause for the above.
        (map (fn [[input-key {:keys [in]}]]
 
               (let [bus (o/audio-bus 1 (str (name input-key) "-input"))
@@ -174,7 +174,7 @@
      amp-ctl 0
      amp-ctl-max 6
      out 0]
-    ;; NOTE the use of `ctl-range` to prevent high amps if no
+    ;; NOTE: the use of `ctl-range` to prevent high amps if no
     ;; ctl is passed in.
     (o/out out (* amp (ctl-range amp-ctl 0 amp-ctl-max)
                   (o/pan2 (o/sin-osc 200)))))

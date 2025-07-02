@@ -20,7 +20,7 @@
                               :refain/sucesiones
                               :ndef/estratos
                               :synth/amp-reactivity
-                              ;; TODO finish list
+                              ;; TODO: finish list
                               ]}
    {:expression [:expression/pedal
                  :expression/buttons

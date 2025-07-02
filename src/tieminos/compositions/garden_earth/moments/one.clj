@@ -169,7 +169,7 @@
 ;;; SAMPLE & Hold
 ;;;;;;;;;;;;;;;;;
 
-;; NOTE `ge-live-sig/start-signal-analyzer' should be running
+;; NOTE: `ge-live-sig/start-signal-analyzer' should be running
 
 (defn stop-sample-arp! []
   (timbre/info :stopping-arp)

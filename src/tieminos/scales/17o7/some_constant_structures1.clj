@@ -5,7 +5,7 @@
    [tieminos.pitch-wheel.v1.pitch-wheel :as pitch-wheel.v1]
    [tieminos.scales.17o7.original :refer [original-tritavic-scale-ratios]]))
 
-;; NOTE see below for construction details of these scales
+;; NOTE: see below for construction details of these scales
 
 (def scales
   {:11t-cs-v1 {:meta {:scl/name "11t-cs-of-17o7_v1.scl"
@@ -109,7 +109,7 @@
                                     (* 3/2 8/7 17/16 17/14)])}))))
 (comment
   ;; 11+4 = 15 tone
-  ;; NOTE ensure the code above has been compiled
+  ;; NOTE: ensure the code above has been compiled
   (def *15t
     (:scale+added-notes
      (pitch-wheel.v1/update! pw-atom

@@ -38,7 +38,7 @@
                           (set (map :set (:scale data)))
                           sets))))))
 (comment
-  ;; TODO convert into tests
+  ;; TODO: convert into tests
   (sort (keys (find-supersets #{#{3 11 9}
                                 #{7 3 9}
                                 #{5 3 9}})))
@@ -83,7 +83,7 @@
          reverse)))
 
 (comment
-    ;; TODO convert into test
+    ;; TODO: convert into test
   (find-subcps-intersections
    "1)4 of 3)6 1.3-5.7.9.11" #{"2)4"})
   (find-subcps-intersections

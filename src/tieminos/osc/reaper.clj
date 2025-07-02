@@ -102,7 +102,7 @@
 
 (defn reaeq-freq->lin
   "Convert reaeq freqs to their linear approximate representation"
-  ;; NOTE only certain frequencies are represented
+  ;; NOTE: only certain frequencies are represented
   [freq]
   (if-let [lin-val (reaeq-freq->lin-map freq)]
     lin-val

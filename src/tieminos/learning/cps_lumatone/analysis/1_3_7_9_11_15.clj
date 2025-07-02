@@ -255,7 +255,7 @@
    (nth scale (mod (- 39 16 eik-22-offset) 22))])
 (/  7/6 14/9)
 (def archi-sets
-  ;; FIXME uncomment when function is available in future commit
+  ;; FIXME: uncomment when function is available in future commit
   #_(cps/archi-subcps-sets 3 6))
 (-> scale)
 
@@ -292,7 +292,7 @@
       (assoc key-data (:color ks) (color-fn ks)))))
 
 (def parsed-ltn
-  ;; FIXME uncomment when file is available
+  ;; FIXME: uncomment when file is available
   #_(ltn->edn (slurp "/Users/diego/Music/diego/lumatone/default-22-et.ltn")))
 
 (defn maybe-join-vals

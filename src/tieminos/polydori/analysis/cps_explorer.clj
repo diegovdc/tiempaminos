@@ -8,7 +8,7 @@
    [tieminos.polydori.scale :refer [polydori-set->deg polydori-v2]]
    [tieminos.utils :refer [map-subscale-degs]]))
 
-;; TODO move this a polydori
+;; TODO: move this a polydori
 
 (comment
   (def sink (midi/midi-out "VirMIDI"))
@@ -34,7 +34,7 @@
      {}
      (:scale polydori-v2)))
 
-  (swap! current-key-index inc) ;; TODO left at 14
+  (swap! current-key-index inc) ;; TODO: left at 14
 
   (let [dekany-key (nth dekany-keys @current-key-index)
         scale (-> polydori-v2 :subcps

@@ -45,7 +45,7 @@
   (mapcat #(repeat (first %) (second %)) nxs))
 
 (defn seq->graph
-  ;; TODO improve to handle other pattern types
+  ;; TODO: improve to handle other pattern types
   [xs]
   (->> xs
        (partition 2 1 (take 1 xs))

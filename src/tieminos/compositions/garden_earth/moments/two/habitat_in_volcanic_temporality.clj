@@ -72,7 +72,7 @@
          {:inputs-config {:in-1 {:amp (o/db->amp 8)}}
           :outputs-config {:rain-1 {:bh-out 2}
                            :ndef-1 {:bh-out 4}
-                            ;; TODO maybe use another `:bh-out`
+                            ;; TODO: maybe use another `:bh-out`
                            :magma-rain {:bh-out 2}
                            :magma-ndef {:bh-out 4}
                            :estratos-rain {:bh-out 2}
@@ -146,10 +146,10 @@
   (init!*)
   (-> init-data)
 
-;; TODO make this an init function
+;; TODO: make this an init function
   ;; For some reason amp via o/sound-in is coming 8db lower than it should be
   ;; so allowing here for compensation.
-  ;; FIXME find the cause for the above.
+  ;; FIXME: find the cause for the above.
   (ge.init/init!
    {:inputs-config {:in-1 {:amp (o/db->amp 8)}}}))
 
@@ -183,7 +183,7 @@
    :id ::movimientos-subterraneos
    :durs (fn [_] (+ 0.1 (rand 5)))
    :on-event (on-event
-                ;; TODO remove use of rand-buf
+                ;; TODO: remove use of rand-buf
               (when-let [buf (rand-buf)]
                 (println (into {} buf))
                 (buf-mvts-subterraneos {:buf buf
@@ -206,7 +206,7 @@
   (ndef/ndef
    ::movimientos-subterraneos
    (-> (o/in (fl-i1 :bus))
-       (o/lpf 6000) ;; FIXME high pitched noise due to guitar amp line out
+       (o/lpf 6000) ;; FIXME: high pitched noise due to guitar amp line out
        (o/pitch-shift 0.2 [1/2 1/2])
        (o/mix)
        (o/pan2 (lfo-kr 0.3 -1 1))
@@ -221,7 +221,7 @@
   (ndef/ndef
    ::movimientos-submarinos
    (-> (o/in (fl-i1 :bus))
-       (o/lpf 8000) ;; FIXME high pitched noise due to guitar amp line out
+       (o/lpf 8000) ;; FIXME: high pitched noise due to guitar amp line out
        ((fn [sig]
           (o/mix (map (fn [ratio]
                         (-> sig
@@ -267,16 +267,16 @@
                         (o/buf-samples:kr buf))
                 :interp 2
                 :pan pan)
-               (o/lpf 800) ;; FIXME high pitched noise due to guitar amp line out
+               (o/lpf 800) ;; FIXME: high pitched noise due to guitar amp line out
                (* 4 (o/env-gen
                      (o/envelope
-                        ;; TODO ADSR
+                        ;; TODO: ADSR
                       [0 a-level d-level 0]
                       [(* 0.01 dur)
                        (* 0.79 dur)
                        (* 0.2 dur)])
                      :action o/FREE))
-               ;; NOTE rangos (asumiendo a-level 3):
+               ;; NOTE: rangos (asumiendo a-level 3):
                ;; 0.05 - burbujeos
                ;; 0.3 - magma viva
                ;; 0.5 - ya bastante suave, y brilloso
@@ -290,7 +290,7 @@
    :id ::magma
    :durs #_(fn [_] 1) [1/5]
    :on-event (on-event
-                ;; TODO remove use of rand-buf
+                ;; TODO: remove use of rand-buf
                 ;; Por ahora usando samples de atractores/drone guitarra
               (when-let [buf (-> @habitat.rec/bufs vals rand-nth)]
                 (println "Dur" (* 1 (:duration buf)))
@@ -319,17 +319,17 @@
 
   (ref-rain
    :id ::sucesion-especies
-    ;; TODO control durs so that this could go faster or slower
+    ;; TODO: control durs so that this could go faster or slower
    :durs (fn [_] (+ 0.1 (rand 2)))
    :on-event (on-event
               (let [buf (-> @habitat.rec/bufs vals rand-nth)
                     scale (at-i [#_"1)3 of 3)6 1.5-7.9.11"
                                  #_"2)4 of 3)6 11-1.3.7.9"
                                  "2)4 of 3)6 1-3.5.7.9"])
-                    arp-config {;; TODO improve control of scale
+                    arp-config {;; TODO: improve control of scale
                                 :scale (subcps scale)
                                 :out (bh 4)
-                                  ;; TODO use custom interval-seq-fn
+                                  ;; TODO: use custom interval-seq-fn
                                 :interval-seq-fn (comp (partial map #(+ (rand-int -10) %))
                                                        default-interval-seq-fn)
                                   ;; envs can grow from [1, 3] to [8, 17] - maybe weight in different ways
@@ -338,9 +338,9 @@
                                 :amp-min 0.3
                                 :amp-max 1}
                     arp-data {:pitch-class "A+92"
-                                ;; TODO use bufs from another section
-                                ;; TODO allow custom synth
-                                ;; TODO allow general control of amp - uses bezier amp curve so general-amp*bezier-curve
+                                ;; TODO: use bufs from another section
+                                ;; TODO: allow custom synth
+                                ;; TODO: allow general control of amp - uses bezier amp curve so general-amp*bezier-curve
                               :buf buf}]
                 (when (> 0.5 (rand))
                     ;; Bass
@@ -348,7 +348,7 @@
                                         :interval-seq-fn (comp (partial map #(+ (rand-int -40) %))
                                                                default-interval-seq-fn))
                                  arp-data)
-                    ;; TODO make a good synth for this section that will play the
+                    ;; TODO: make a good synth for this section that will play the
                     ;; current buf in a nice way... depends on what is going to be played
                     ;; but perhaps some transparentish granulation or a longish play-buf
                     ;; could be nice...
@@ -401,7 +401,7 @@
     (let [sig (o/in in)]
       (o/out out
              (+
-               ;; TODO remove pure sig, just for testing
+               ;; TODO: remove pure sig, just for testing
               (* 0.05 sig)
               (-> sig
                   (o/pitch-shift:ar 0.05 rate)
@@ -415,7 +415,7 @@
                                     :action o/FREE))
                   (o/pan2 pan))))))
 
-  ;; NOTE this seems useful for strata and mountain texture
+  ;; NOTE: this seems useful for strata and mountain texture
   (let [in test-bus]
     (ref-rain
      :id :ps/simple

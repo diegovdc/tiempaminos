@@ -81,7 +81,7 @@
     (groups/init-groups! init-config)
     (init-buses-and-input-vars!)
     (init-preouts! @inputs return-n-chans)
-    (init-main-fx!) ;; TODO make octophonic versions
+    (init-main-fx!) ;; TODO: make octophonic versions
     (init-inputs! @inputs)
     (init-texto-sonoro-rand-mixer-synth! @special-inputs)
     (init-recordable-inputs! main-returns)
@@ -95,7 +95,7 @@
 
 (comment
   (o/stop)
-  ;; TODO refactor initialization
+  ;; TODO: refactor initialization
   (init!)
   (-> @preouts :guitar :bus)
   (-> @inputs-registry :guitar :out-bus)

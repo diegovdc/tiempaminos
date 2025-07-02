@@ -262,7 +262,7 @@
                        :freq f1
                        :mod-freq (rrand 6000 10000)
                        :amp (rrand 0.1 0.1 #_0.3)
-                          ;; NOTE use attack to make padd
+                          ;; NOTE: use attack to make padd
                        :atk (rrand 0.01 2)
                        :dcy 3
                        :out (out f1))))
@@ -276,18 +276,18 @@
                      :out f2))
 
                   #_(if (> (rand) 0.7)
-                        ;; NOTE keep vel 10 at first
+                        ;; NOTE: keep vel 10 at first
 
                       (my-malgo {:deg (diat->polydori-degree scale-2 (+ 6 (at-i [2 2 3 2 3]) (weighted {0 5 4 4 -4 4}) deg)) :dur (weighted {0.1 9 1 5}) :vel (at-i [10 30 60])})
-                        ;; FIXME has a -2 midi note
+                        ;; FIXME: has a -2 midi note
                       #_(my-malgo {:deg (diat->polydori-degree 1 (+ 7
-                                                                    (at-i [-6 -12 6 0 0 0]) ;; NOTE add later
+                                                                    (at-i [-6 -12 6 0 0 0]) ;; NOTE: add later
                                                                     (weighted {0 5 4 4 -4 4}) deg)) :dur (weighted {0.1 9 1 5 2 5}) :vel (at-i [10 30])}))
                   #_(my-malgo {:base-midi-chan (case deg -7 1 0) :deg deg :dur 0.1 :vel 100}))))
     (ref-rain
      :id ::3-bass
      :ref ::3
-      ;; TODO send this to it's own sink, a suave-like bass with a bit more distortion or something like that
+      ;; TODO: send this to it's own sink, a suave-like bass with a bit more distortion or something like that
      :on-event (on-event
                 (let [deg (at-i [(at-i [0 5])
                                  (at-i [2])

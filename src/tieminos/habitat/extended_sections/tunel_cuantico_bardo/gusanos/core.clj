@@ -31,7 +31,7 @@
   (fib-chord-seq (transpose-chord [11 15 19] (range 21))) ;; estable claro (segmento de arriba: 4-4)
   (fib-chord-seq (transpose-chord [10 15 20] (range 21))) ;; nocturno (5-5)
   )
-;; TODO add the rates above
+;; TODO: add the rates above
 (def ^:private rates
   [(:rates g-2.2.6/s1)
    (:rates g-2.2.6/s2)
@@ -180,7 +180,7 @@
               (println dur-s)))
   (gp/stop :x))
 
-;; TODO left here
+;; TODO: left here
 (defn gusano
   "Based on `tieminos.habitat.scratch.sample-rec2/hacia-un-nuevo-universo-perc-refrain-v1p2`
   Can handle rate chords (as a vector of rates)"

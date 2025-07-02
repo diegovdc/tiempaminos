@@ -113,7 +113,7 @@
   [player amp]
   (swap! live-state
          assoc-in [:algo-2.2.9-clouds player :amp]
-         ;; TODO lower extra vol
+         ;; TODO: lower extra vol
          (first (linlin 0 1 -36 36 [amp]))))
 
 (comment
@@ -252,7 +252,7 @@
 
   (toggle-gusano-active-sources :milo true))
 
-;; TODO set the resulting values of gusano in the live-state just as with the other values
+;; TODO: set the resulting values of gusano in the live-state just as with the other values
 (defn set-gusano-rates
   [i]
   (swap! live-state assoc-in [:gusano :rates] i))
@@ -315,7 +315,7 @@
    :eq/notch.gain {:init-val 0.5 :path "/track/23/fxeq/band/1/gain"}})
 
 (defn interpolate-premaster-eq-band-vals
-  ;; NOTE for the ids to reference see the `eq-param-defaults` var.
+  ;; NOTE: for the ids to reference see the `eq-param-defaults` var.
   [{:keys [band freq gain dur-ms tick-ms]
     :or {tick-ms 100}}]
   (let [freq-id (keyword "eq" (str (name band) ".freq"))
@@ -470,7 +470,7 @@
   (let [internal-client (habitat-osc/make-internal-osc-client)]
     (habitat-osc/responder
      (fn [{:keys [path args] :as msg}]
-       (let [HACKED-path (HACK-parse-path path) ;; FIXME there should be a more elegant way to handle this (see fn definition).
+       (let [HACKED-path (HACK-parse-path path) ;; FIXME: there should be a more elegant way to handle this (see fn definition).
              args-map (habitat-osc/args->map args)
              press? (= 1.0 (first args))]
          (case HACKED-path

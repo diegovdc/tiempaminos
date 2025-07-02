@@ -103,7 +103,7 @@
               (ctl-synth @last-synth :gate 0))
             (reset! last-synth
                     (trayectory-pan-4ch {:in bus
-                                         ;; FIXME out should depend if this is being called from the guitar or percusion
+                                         ;; FIXME: out should depend if this is being called from the guitar or percusion
                                          :out (rand-nth [clean-return reverb-return])
                                          :amp (rrange 1 2)
                                          :a (* (rrange 0.05 0.15) dur-s)
@@ -351,14 +351,14 @@
                        #(rrange 2 3) 2
                        #(rrange 3 4) 1})]
       ;; guitar
-      ;; TODO add ref-rain with tiny delays and other earcandy
+      ;; TODO: add ref-rain with tiny delays and other earcandy
       (panner {:in (:bus guitar)
                :type :trayectory
                :out (:bus (:heavy-reverb @main-fx))
                :trayectory trayectory
                :amp 3})
 
-      ;; TODO review and improve perc
+      ;; TODO: review and improve perc
       (doseq [input perc-inputs]
         (let [[k {:keys [bus]}] input]
           (panner {:in bus
@@ -381,7 +381,7 @@
                                  #(rrange 1 3) 2
                                  #(rrange 3 4) 1.5
                                  #(rrange 5 10) 1}))]
-    ;; TODO improve, it just a quick thing
+    ;; TODO: improve, it just a quick thing
     (panner {:in (:bus guitar)
              :type :trayectory
              :out (:bus (:guitar @preouts))

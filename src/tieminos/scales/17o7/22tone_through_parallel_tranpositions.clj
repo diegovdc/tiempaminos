@@ -61,7 +61,7 @@
                      :scale-order 6)))))
 
 (comment
-  (count *22tone17o7-development-version) ;; NOTE this scale has 64 notes , needs to be deduplicated
+  (count *22tone17o7-development-version) ;; NOTE: this scale has 64 notes , needs to be deduplicated
   (def pw-atom
     (pitch-wheel.v1/init! {:scale *22tone17o7-development-version
                            :period 3}))

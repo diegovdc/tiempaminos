@@ -279,7 +279,7 @@
                                 :end end
                                 :pan (rrange -1 1)
                                 :out (main-returns :non-recordable)}]
-                    ;; TODO perhaps add :interp to the `grain-buf` in this synth
+                    ;; TODO: perhaps add :interp to the `grain-buf` in this synth
                     (amanecer*guitar-clouds (assoc config
                                                    :rate rate
                                                    :interp (rand-nth [1 2 4])
@@ -378,7 +378,7 @@
          dur%-fn (fn [_buf-dur _i] {:dur% 1 :offset 0})}}]
   (let [rates* (map (fn [r] (if (sequential? r) r [r])) rates)]
     (ref-rain
-      ;; TODO rename id
+      ;; TODO: rename id
      :id :hacia-un-nuevo-universo-perc2
      :durs (periodize-durs period durs)
      :on-event (on-event
@@ -493,7 +493,7 @@
                                                          :amp (* amp* (rrange 0 0.7) (norm-amp buf)))))))))))))
 
 (oe/defsynth amanecer*guitar-clouds-2
-  ;; TODO pass in manual envelope
+  ;; TODO: pass in manual envelope
   [buf 0
    trig-rate 40
    grain-dur 1/20

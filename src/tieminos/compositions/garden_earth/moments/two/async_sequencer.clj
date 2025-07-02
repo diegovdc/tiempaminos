@@ -62,7 +62,7 @@
       (concat [countdown-section]
               sections))))
 
-;; TODO add :on-section-start and :on-section-end para agregar callbacks que se ejecuten en secciones futuras
+;; TODO: add :on-section-start and :on-section-end para agregar callbacks que se ejecuten en secciones futuras
 
 (defn run-sections
   [& {:keys [sections
@@ -133,7 +133,7 @@
                   (do (on-end*)
                       (println "Going back to previous section!")
                       (recur (dec section-index)))
-                  (do ;; TODO this could be improved, but need to prevent `on-start` from running again
+                  (do ;; TODO: this could be improved, but need to prevent `on-start` from running again
                     (on-end*)
                     (println "Already at the first section!")
                     (recur section-index)))

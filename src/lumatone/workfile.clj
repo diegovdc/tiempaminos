@@ -21,7 +21,7 @@
   ;; generate keyboard data
   (def kbd-data
     ;; config
-    (let [offset (+ 10  (* 19 2)) ;; NOTE explore different offsets for the lowest midi note
+    (let [offset (+ 10  (* 19 2)) ;; NOTE: explore different offsets for the lowest midi note
           ]
       (->> (gral-kb/make-ltn-data
             {:offset offset

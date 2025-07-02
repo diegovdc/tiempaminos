@@ -90,7 +90,7 @@
            loop?]
     :or {id :erupcion/magma
          amp 1/2
-         durs-fn (fn [_] 1/5) ;; TODO might be too fast? but that was in the original
+         durs-fn (fn [_] 1/5) ;; TODO: might be too fast? but that was in the original
          a-level-fn (fn [i]
                       ;;  Incluso llegando a 10 suena muy chingon y la secuencia funciona bien
                       (wrap-at i  [3 ;; 2 3 4 5 ;; 6 7 8 9 10
@@ -198,7 +198,7 @@
                     "amp 0.5w, pastilla 3"]
       :dur/minutes dur
       :on-start (fn []
-                  ;; NOTE important setup for this section
+                  ;; NOTE: important setup for this section
                   (init-section-buses&outs!)
                   (rec-loop!
                    (merge al-interior-de-la-tierra-query
@@ -310,7 +310,7 @@
                       :dur 10
                       :input-bus (fl-i1 :bus)})
 
-                  ;; TODO IMPORTANT free all these things
+                  ;; TODO: IMPORTANT free all these things
 
                   ;; main fx
                   (ndef-interior-del-la-tierra
@@ -424,7 +424,7 @@
                     :amp-boost-max 0.7
                     :amp-boost-lag 4}))
 
-      ;; TODO implement
+      ;; TODO: implement
       ;; :exp/pedal-1 {:description "[TODO] Vol de todo excepto rev-con-magma y exp/btn-3"}
       ;; :exp/btn-3 {:description "[TODO] humo-delay-ps ~1/1 (low-prob gliss ascedente), envs lfo-kr amp+pan"}
       :handlers (-> (lava-handlers {:ndef-magma-lava-params (fn [] {:amp (rrange 0.3 1)})})
@@ -441,7 +441,7 @@
 ;;; Lava
 ;;;;;;;;;;;;;;;;
    (let [name* :lava
-         dur 2.5 ;; TODO shorten when rest of the sections are added
+         dur 2.5 ;; TODO: shorten when rest of the sections are added
          subsection (name name*)
          rain-config {:id (keyword "erupcion" subsection)
                       :rec-query {:section "erupcion"
@@ -518,7 +518,7 @@
                                     :amp 1/4
                                     :a-level-fn (fn [i] (wrap-at i a-levels))
                                     :rates-fn (fn [i] (wrap-at i rates))})))}))
-      ;; TODO handlers, controlar parámetros de la lava
+      ;; TODO: handlers, controlar parámetros de la lava
       :handlers (lava-handlers
                  {:ndef-magma-lava-params (fn [] {:amp (rrange 0.7 1.5)})})
       :on-end (fn []
@@ -529,7 +529,7 @@
                 (ndef/stop :erupcion/btn-2.mantel-plume.magma-lava)
                 (ndef/stop :erupcion/erupcion.fade-rev)
                 (o/ctl @bi-out-synth-1 :gate 0)
-                ;; TODO cómo decrecer al final?
+                ;; TODO: cómo decrecer al final?
                 (let [a-levels [3 2 1 (rand 0.5) (rand 0.3) (rand 0.2) (rand 0.1) (rand 0.05) (rand 0.01)]
                       rates [1  2/3 1/2 8/7 1/3 32/11 1/2 1/4]]
                   (rain-magma-lava

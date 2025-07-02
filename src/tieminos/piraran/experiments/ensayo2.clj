@@ -113,7 +113,7 @@
             :on-event (on-event (set-scale index))))
 
 (comment
-  ;; TODO mover a ns init?
+  ;; TODO: mover a ns init?
   (do (gp/stop) (reset! base/elapsed-time 0) (o/recording-stop))
   (do
     #_(o/recording-start (format "/home/diego/Desktop/piraran-ensayo-%s.wav" (java.util.Date.)))

@@ -64,7 +64,7 @@
           :amp-boost-max 4
           :amp-boost-lag (rrange 5 18)
           :out out}
-         ;; NOTE functions and unwelcome data structures like maps should be disassociated
+         ;; NOTE: functions and unwelcome data structures like maps should be disassociated
          (dissoc config :delay-weights)))
 
 (comment
@@ -141,7 +141,7 @@
 
   (gp/stop)
 
-  ;; TODO ecosistema es muy corto cambiar duraciones
+  ;; TODO: ecosistema es muy corto cambiar duraciones
   )
 
 ;;;;;;;;;;;;;;;;;;
