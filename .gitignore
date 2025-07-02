@@ -29,3 +29,4 @@ resources/*.wav
 # use (overtone.linter/emit!) to regenerate the configuration
 .clj-kondo/overtone/
 docs/
+.clj-kondo/instaparse/
