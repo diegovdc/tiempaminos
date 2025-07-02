@@ -29,7 +29,8 @@
    [tieminos.sc-utils.synths.v1 :refer [lfo-kr]]
    [tieminos.utils :refer [rrange wrap-at]]
    [time-time.dynacan.players.gen-poly :as gp :refer [on-event ref-rain]]
-   [time-time.standard :refer [rrand]]))
+   [time-time.standard :refer [rrand]]
+   [tieminos.habitat.extended-sections.tunel-cuantico-bardo.scratch.main]))
 
 (comment
   (fib-chord-seq (transpose-chord [0 6 12 18] (range 21))) ;; acorde bonito, muy liso
@@ -311,7 +312,7 @@
 
   (bardo.osc/init! [["127.0.0.1" 16181]
                     ["192.168.0.101" 16180]
-                    ["192.168.0.103" 16180]])
+                    ["192.168.0.102" 16180]])
 
   ;; also part of the initialization of hacia un nuevo universo
   (def in1 (o/audio-bus 4 "algo-2.2.9-out"))
@@ -344,142 +345,16 @@
   (add-watch bardo.live-state/live-state ::post-live-state
              (fn [_key _ref _old-value new-value]
                (println new-value)
-               (bardo.osc/throttled-post (dissoc new-value :lorentz))))
+               (bardo.osc/throttled-post (dissoc new-value :lorentz)))))
 
-  (algo-2-2-9 {:out-bus in1
-               :chord [0 5 8 9]
-               :transpositions (shuffle (range 0 60 4))
-               :clouds-config {:amp (o/db->amp -24) ;; NOTE interesante cambiar la amplitud
-                               }})
-  (gp/stop ::clouds-refrain)
-  (gp/stop :cuerpo-envolvente)
+(comment
+  (require '[tieminos.overtone-extensions :as oe])
 
-  (algo-2-2-9 {:out-bus in1
-               :chord [10 15 20]
-               :transpositions [0 5 0 5]})
+  (oe/defsynth sini
+    [freq 200
+     amp 0.5
+     out 0]
+    (o/out out (* amp (o/pan2 (o/sin-osc 200)))))
 
-  (def lor (lorentz/init-system :x 0.3 :y 0.02 :z 0.012))
-  (def chord-seq
-    (let [min* -12
-          max* 12
-          lor-speed 70
-          total 1000]
-      (map (fn [a b c] [a b c])
-           (map
-            #(int (lorentz/bound (lor (* lor-speed %)) :x min* max*))
-            (range total))
-           (map
-            #(int (lorentz/bound (lor (* lor-speed %)) :y min* max*))
-            (range total))
-           (map
-            #(int (lorentz/bound (lor (* lor-speed %)) :z min* max*))
-            (range total)))))
-  (-> chord-seq)
-  ;; largos
-  (algo-2-2-9 {:out-bus in1
-               :clouds-config {:amp (o/db->amp -12)
-                               :period nil
-                               :durs (fn [{:keys [index] :as config}]
-                                       (let [dur (lorentz/bound (lor (* 50 index)) :x 0.1 2)]
-                                         (println "durs call=========" dur)
-                                         dur)
-                                       #_(rand 10))
-                               :rates (rate-chord-seq meta-slendro1
-                                                      chord-seq)}
-               :on-play (fn [{:as config
-                              :keys [index]}]
-                          (println "adr" (select-keys config [:a :d :r]))
-                          (let [min* 1 max* 4]
-                            (amanecer*guitar-clouds (assoc config
-                                                           :a (lorentz/bound (lor (* 50 index))
-                                                                             :x min* max*)
-                                                           :d (lorentz/bound (lor (* 50 index))
-                                                                             :y min* max*)
-                                                           :r (lorentz/bound (lor (* 50 index))
-                                                                             :z min* max*)
-                                                           :interp (rand-nth [1 2 4])
-                                                           :amp (o/db->amp  (rrange -6 0))))))})
-  ;; breves
-  (algo-2-2-9 {:out-bus in1
-               :clouds-config {:amp (o/db->amp -12)
-                               :period nil
-                               :durs (fn [{:keys [index] :as config}]
-                                       (let [dur (lorentz/bound (lor (* 50 index)) :x 0.1 2)]
-                                         (println "durs call=========" dur)
-                                         dur)
-                                       #_(rand 10))
-                               :rates (rate-chord-seq meta-slendro1
-                                                      chord-seq)}
-               :on-play (fn [{:as config
-                              :keys [index]}]
-                          (println "adr" (select-keys config [:a :d :r]))
-                          (let [min* 0.1 max* 2]
-                            (amanecer*guitar-clouds (assoc config
-                                                           :a (lorentz/bound (lor (* 50 index))
-                                                                             :x min* max*)
-                                                           :d (lorentz/bound (lor (* 50 index))
-                                                                             :y min* max*)
-                                                           :r (lorentz/bound (lor (* 50 index))
-                                                                             :z min* max*)
-                                                           :interp (rand-nth [1 2 4])
-                                                           :amp (o/db->amp  (rrange -6 0))))))})
-  ;; ataques
-  (algo-2-2-9 {:out-bus in1
-               :clouds-config {:amp (o/db->amp -12)
-                               :period nil
-                               :durs (fn [{:keys [index] :as config}]
-
-                                       (rand 10))
-                               :rates (rate-chord-seq meta-slendro1
-                                                      (reverse chord-seq))}
-               :on-play (fn [{:as config
-                              :keys [index]}]
-                          (println "adr" (select-keys config [:a :d :r]))
-                          (amanecer*guitar-clouds (assoc config
-                                                         :a (rrange 0.1 0.4)
-                                                         #_(rrange 3 5)
-                                                         :d 2
-                                                         :r 3
-                                                         :interp (rand-nth [1 2 4])
-                                                         :amp (o/db->amp  (rrange -6  6)))))})
-
-  ;; cluster lento
-  (algo-2-2-9 {:on-play (fn [config]
-                          (println "==================")
-                          (smooth-clouds 200 config))
-               :out-bus in1
-               :clouds-config {:id :cuerpo-envolvente
-                               :amp (o/db->amp -24)
-                               :rates (rate-chord-seq meta-slendro1
-                                                      (transpose-chord
-                                                       [0 7]
-                                                       [-24 6]))
-                               :period 90
-                               :durs [1 3 5]
-                               :a-weights {10 1
-                                           15 0.3}
-                               :d-weights {40 1
-                                           30 0.3}
-                               :d-level-weights {0.8 5
-                                                 0.6 8}}})
-
-  ;; Usar sobretodo en el micro, para dar color a las partes piano/vacias
-  (ndef/ndef ::cuerpo
-             (* 2 (o/mix [(* 2 (o/pan4 (-> :mic-1
-                                           habitat.route/get-input-bus
-                                           (o/in 1)
-                                           (o/pitch-shift  0.2
-                                                           (first (rate-chord-seq meta-slendro1
-                                                                                  [[-12 -7 -4 7 8 9 13 14]])))
-                                           (o/mix))
-                                       (lfo-kr 0.1 -1 1)
-                                       (lfo-kr 0.1 -1 1)))
-                          (o/pan4 (-> :guitar
-                                      habitat.route/get-input-bus
-                                      (o/in 1)
-                                      (o/pitch-shift  0.2 (first (rate-chord-seq meta-slendro1
-                                                                                 [[-12 -7 -4 7 8 9 13 14]])))
-                                      (o/mix))
-                                  (lfo-kr 0.1 -1 1)
-                                  (lfo-kr 0.1 -1 1))]))
-             {:out habitat.route/mixed-main-out}))
+  (def test-sini (sini :out 20))
+  (o/kill test-sini))

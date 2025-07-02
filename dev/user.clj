@@ -52,8 +52,7 @@
   :disconnected)
 
 (defn rec
-  "
-  Options:
+  "Options:
 
   :n-chans     - Number of channels for the buffer
                  Default 2
