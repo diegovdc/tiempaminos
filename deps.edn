@@ -4,6 +4,7 @@
         org.clojure/tools.namespace {:mvn/version "1.2.0"}
         http-kit/http-kit {:mvn/version "2.7.0"}
         potemkin/potemkin {:mvn/version "0.4.5"}
+        instaparse/instaparse {:mvn/version "1.5.0"}
         org.clojure/data.generators {:mvn/version "1.0.0"}
         io.github.diegovdc/overtone {:git/url "https://github.com/diegovdc/overtone.git"
                                      :sha "9436febbb819887bfdc8316034a6e1f5b7f51fcf"} #_{:local/root "../overtone" :deps/manifest :deps}
