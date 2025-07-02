@@ -32,6 +32,7 @@
   (hexp.trainer/trainer {:scale scale
                          :root (midi->cps 60)
                          :degrees [0 3 6  10]})
+
   (hexp.trainer/stop)
   (def sa (drone root))
   (o/ctl sa :gate 0)

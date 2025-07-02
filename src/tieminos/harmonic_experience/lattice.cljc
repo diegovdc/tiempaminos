@@ -139,19 +139,33 @@
   [ratio]
   (swap! played-ratios set/difference #{ratio}))
 
+(defn- replace-notes
+  [replacement-ratios-map
+   scale]
+  (->> scale
+       (map
+        (fn [{:keys [bounded-ratio] :as note}]
+          (if-let [replacement (get replacement-ratios-map bounded-ratio)]
+            (assoc note
+                   :bounded-ratio replacement
+                   :ratio replacement)
+            note)))))
+
 (defn setup-kb
   [{:keys [midi-kb ref-note root scale lattice? lattice-size
-           stroke-width note-color sound? on-note-on]
+           stroke-width note-color sound? on-note-on
+           replacements]
     :or {lattice? true
          lattice-size 120
          stroke-width 10
          note-color [200 200 120]
          sound? true}}]
-  (let [get-note-data (fn [ev] (midi->ratio&freq {:ref-note ref-note
+  (let [scale* (replace-notes replacements scale)
+        get-note-data (fn [ev] (midi->ratio&freq {:ref-note ref-note
                                                   :root root
-                                                  :scale scale
+                                                  :scale scale*
                                                   :midi-note (:note ev)}))
-        lattice-atom (when lattice? @(draw-lattice2 (map :bounded-ratio scale) lattice-size))]
+        lattice-atom (when lattice? @(draw-lattice2 (map :bounded-ratio scale*) lattice-size))]
 
     (add-watch played-ratios ::print-intervals
                (fn [_ _ _ new-val]
