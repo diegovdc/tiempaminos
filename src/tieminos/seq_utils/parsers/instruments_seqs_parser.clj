@@ -2,135 +2,108 @@
   (:require
    [clojure.edn :as edn]
    [instaparse.core :as insta]
-   [tieminos.seq-utils.core :refer [lin rainseq]]
-   [tieminos.utils :refer [wrap-at]]))
+   [tieminos.utils :refer [wrap-at]]
+   [time-time.dynacan.players.refrain.v2 :as rain.v2]))
 
-(do
-
-  (def grammar (slurp "src/tieminos/seq_utils/parsers/instruments_seqs_parsers.grammar"))
-  (def parser
-    (insta/parser
-     grammar))
-
+(def grammar (slurp "src/tieminos/seq_utils/parsers/instruments_seqs_parsers.grammar"))
+(def parser (insta/parser grammar))
+(comment
   (parser "a*2!2")
-  (parser "ab [ab]!2 [qqq]*2"))
+  (parser "ab [ab]!2 [qqq]*2")
+  (parser "ab*3 [cd] ddd  e/2 e/4 e/5"))
 
-(do
-  (defn post-process-parsed-seq
-    [parsed-seq]
-    (mapcat (fn [x]
-              (if (= :repeat (and (sequential? x) (first x)))
-                (let [[_ sub-event _ [_ n]] x
-                      n* (edn/read-string n)]
-                  (repeat n* sub-event))
-                [x]))
+(defn post-process-parsed-seq
+  [parsed-seq]
+  (mapcat (fn [x]
+            (if (= :repeat (and (sequential? x) (first x)))
+              (let [[_ sub-event _ [_ n]] x
+                    n* (edn/read-string n)]
+                (repeat n* sub-event))
+              [x]))
 
-            parsed-seq))
-  (post-process-parsed-seq ["a"
+          parsed-seq))
+#_(post-process-parsed-seq ["a"
                             "b"
                             [:repeat [:chord "a" "b"] "!" [:posint "2"]]
-                            [:ratchet [:chord "q" "q" "q"] [:op-ratchet "*"] [:posint "2"]]]))
-(do
-  (defn make-fn-map
-    [key-fns]
-    (when (not (even? (count key-fns)))
-      (throw (ex-info "`key-fns` must be pairs of char and function" {:key-fns key-fns})))
-    (->> key-fns
-         (partition 2 2)
-         (map (fn [[k f]]
-                [(str k) f]))
-         (into {})))
-  ((get (make-fn-map ["a" #(println "hola")])
-        "a")))
+                            [:ratchet [:chord "q" "q" "q"] [:op-ratchet "*"] [:posint "2"]]])
 
 (declare build-play-fn)
-(defn build-ratchet-play-fn
-  [[_ sub-event [_ op] [_ times]] fns-map]
+(defn- build-ratchet-play-fn
+  [rain-data [_ sub-event [_ op] [_ times]] player-fn]
+  (let [times* (edn/read-string times)
+        op* (if (= op "/") * /)]
+    (fn [] (rain.v2/ref-rain
+            :id (random-uuid)
+            :durs (repeat times*
+                          (op* (:dur-s rain-data) times*))
+            :loop? false
+            :on-event (fn [data]
+                        ((build-play-fn data sub-event player-fn)))))))
 
-  (println "will play ratched" op times)
-  (build-play-fn sub-event fns-map))
+(defn- build-chord-play-fn
+  [rain-data event player-fn]
+  (fn [] (doseq [sub-event (rest event)]
+           ((build-play-fn rain-data sub-event player-fn)))))
 
-(defn build-chord-play-fn
-  [event fns-map]
-  (fn [i] (doseq [sub-event (rest event)]
-            ((build-play-fn sub-event fns-map) i))))
+(defn- noop [_])
+(defn- build-element-play-fn
+  [_rain-data event player]
+  (fn [] (player event)))
 
-(defn noop [_])
-(defn build-element-play-fn
-  [event fns-map]
-  (get fns-map event noop))
+(defn- build-play-fn
+  [rain-data event player-fn]
 
-(do
-  (defn build-play-fn
-    [event fns-map]
-    (cond
-      (= :ratchet (first event)) (build-ratchet-play-fn event fns-map)
-      (= :chord (first event))   (build-chord-play-fn event fns-map)
-      (char? (first event))      (build-element-play-fn event fns-map)
-      :else                      noop))
+  (cond
+    (= :ratchet (first event)) (build-ratchet-play-fn rain-data event player-fn)
+    (= :chord (first event))   (build-chord-play-fn rain-data event player-fn)
+    (char? (first event))      (build-element-play-fn rain-data event player-fn)
+    :else                      noop))
 
-  #_((build-play-fn
-      [:ratchet [:chord "q" "q" "q"] [:op-ratchet "*"] [:posint "2"]]))
-  #_((build-play-fn
-      [:chord "q" "q" "q"])))
+(defn- parse
+  [str]
+  (let [result (parser str)]
+    (when (insta/failure? result)
+      (println (insta/get-failure result))
+      (throw (ex-info "evseq pattern parser error"
+                      {:string str
+                       :error (insta/get-failure result)})))
+    result))
 
-#_((build-play-fn  [:chord "c"] {"c" #(println "cccc")}))
+(defmacro evseq [pattern & body]
+  (let [body*      (into body nil)
+        parsed-pattern (parse pattern)
+        events-seq (into [] (post-process-parsed-seq parsed-pattern))]
 
-(defn play-event
-  [fns-map events-seq {:keys [index] :as data}]
-  (let [ev (wrap-at index events-seq)
-        f (build-play-fn ev fns-map)]
-    (when f (f data))))
-
-(defonce ev-players (atom {}))
-(defonce ev-player-ids (atom {}))
-(-> ev-players)
-#_(reset! ev-players {})
-
-(defmacro evseq
-  [pattern & key-fns]
-  (let [player (partial
-                play-event
-                (->> (make-fn-map key-fns)
-                     (map (fn [[k f]]
-                            (let [[_ _ f*] f]
-                              [k (eval (list 'fn ['data]
-                                             ;; TODO: rainseq should use `data` as well
-                                             (list 'let '[i (:index data)] f*)))])))
-                     (into {}))
-                (into [] (post-process-parsed-seq (parser pattern))))
-        ev-player-id [pattern key-fns]
-        id (get @ev-player-ids ev-player-id (random-uuid))]
-    (swap! ev-player-ids assoc ev-player-id id)
-    (swap! ev-players assoc id player)
-    `((get @ev-players ~id) ~'data)))
-
-(-> @ev-players)
-(macroexpand-1
- '(evseq "ab[cd]"
-         "a" #(println "a" (rainseq [1 2 3]))
-         "b" #(println "adios")
-         "c" #(println "chachacha")))
+    `(let [event# (wrap-at (:index ~'data) ~events-seq)
+           player# (fn [case*] (case case*  ~@body*))]
+       ((build-play-fn ~'data event# player#)))))
+(comment
+  (macroexpand-1 '(evseq "a"
+                         "a" (println "hola" (rainseq (lin 1 2 3))))))
 
 (comment
-  (require '[time-time.dynacan.players.refrain.v2 :as rain.v2])
-  ((eval 'map) inc [1 2 3])
-  (doseq [i (range 6)]
-    (let [data {:index i}]
-      (evseq "ab[cd]"
-             "a" #(println "a" (rainseq (lin 1 2 3)))
-             "b" #(println "adios")
-             "c" #(println "chachacha")
-             "d" #(println "dhachacha"))))
+  (require '[tieminos.seq-utils.core :refer [** choose lin rainseq] :rename {rainseq rseq}]
+           '[tieminos.seq-utils.qwerty-velocity :as qwerty]
+           '[tieminos.synths :as s])
 
   (rain.v2/stop)
+
   (rain.v2/ref-rain
    :id :hola
-   :durs [1]
+   :durs [1/4]
    :on-event (rain.v2/on-event
-              (evseq "ab[cd] e!3"
-                     "a" #(println "a" (rainseq (lin 1 2 3)))
-                     "b" #(println "b")
-                     "c" #(println "c")
-                     "d" #(println "d")
-                     "e" #(println "e")))))
+              (evseq "ab*3 [cd] a/3b e/2 e/4 e/5"
+                     "a" (s/low :freq (* 100 (rseq (lin 1 2))))
+                     "b" (s/sharp-plate :freq (* 100 (rseq (lin 1 2 5 1))))
+                     "c" (s/noise-tone :freq (* 800 (rseq (choose 1 7/4 2)))
+                                       :amp 0.7
+                                       :dcy (rseq (** 0.5 (lin 1 2 3))))
+                     "d" (s/sharp-plate :freq (* 100 (rseq (lin 4 3 2 7 7/4)))
+                                        :amp (rseq (qwerty/db 0.5 2 "cirkgdamnbcx"))
+                                        :atk 0 :dcy 4)
+                     "e" (do (s/low :freq 80)
+                             (s/low :freq (* 80
+                                             (rseq (lin 1 2 4))
+                                             (rseq (lin 2 5 2 7)))
+                                    :dcy (* 1/4 (rseq [2 5 2 7 1]))
+                                    :amp (rseq (qwerty/amp "afjvlvkpv"))))))))

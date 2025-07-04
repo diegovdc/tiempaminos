@@ -1,7 +1,7 @@
 <sequence> = event*
 op-ratchet = "*" | "/"
 ratchet = token op-ratchet posint <ws>?
-<token> = (k* | chord)
+<token> = (k | chord)
 repeat = (token | ratchet) "!" posint <ws>?
 <event> = (token | ratchet | repeat) 
 posint = #"[0-9]+"
