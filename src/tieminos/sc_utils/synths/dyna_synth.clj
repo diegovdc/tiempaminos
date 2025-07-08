@@ -33,6 +33,26 @@
       o/mix
       identity)))
 
+(defn partition-chans
+  "Useful when passing things that may or may not do mutlichan expansion"
+  ;; I think there may be an issue with the overtone impl of `mix`
+  ;; as something like ((o/synth (o/out 0 (-> (o/sin-osc [400 500]) (o/pan2 0)))))
+  ;; will kind of blow up if mix is not used
+  [& params]
+  (let [mix-set (->> params
+                     (map (fn [param] (try (if (> (count param) 1)
+                                             :mix
+                                             1)
+                                           (catch Exception _ 1))))
+                     set)]
+    (println mix-set)
+    (if (mix-set :mix)
+      o/mix
+      identity)))
+
+(partition-chans [1 2 3]
+                 [1 3 4])
+
 (comment
   (synthdef sini
             {freq (rand-nth [100 200 [300 500]])
@@ -72,19 +92,26 @@
                 #_(sini 100 200)))))
 
 (comment
+  (defn analyze-arg
+    [arg]
+    (cond
+      (number? arg) [:number]
+      (sequential? arg) [:seq (count arg)]))
+
+  (defn analyze-ds-args [m]
+    (->> m
+         (mapv (fn [[k arg]]
+                 [k (analyze-arg arg)]))))
   ;; WIP
   (defonce dyna-synths (atom {}))
   (defmacro synthdef
     [name params body]
-    (let [args [{:keys (into [] (keys params))
-                 :or params}]
-          default-args (into {} (map (fn [[k v]] [(keyword k) v]) params))
+    (let [default-args (into {} (map (fn [[k v]] [(keyword k) v]) params))
           call-args (gensym)
           merged-args (gensym)
           analyzed-args (gensym)
           synth (gensym)
-          cached-synth (gensym)
-          qbody body]
+          cached-synth (gensym)]
       `(defn ~name
          ([] (~name {}))
          ([{:keys ~(into [] (keys params))
@@ -96,18 +123,32 @@
                 ;; ~(gensym) (println #_~qbody "======" #_ ~merged-args "CCCCCCCC" ~call-args ~merged-args)
                 ~synth (if ~cached-synth
                          ~cached-synth
-                         (eval `(make-synth ~~merged-args '~~qbody)))]
+                         (eval `(make-synth ~~merged-args '~~body)))]
             #_(println (boolean ~cached-synth) ~analyzed-args #_(eval ~synth))
             (swap! dyna-synths assoc ~analyzed-args ~synth)
             (~synth (modify-params2 ~merged-args)))))))
-  #_(reset! dyna-synths {})
-  (synthdef sini {freq [200 300] amp 1}
-            '(o/out 0 (-> (o/sin-osc freq)
-                          (o/mix)
-                          (o/pan2 0)
-                          (* (o/env-gen (o/env-perc) :action o/FREE)))))
 
-  (sini {:freq [390 800 1500]})
+  (-> @dyna-synths)
+  (macroexpand-1
+   '(synthdef sini
+              {freq [200 300]
+               amp 1}
+              '(o/out 0 (-> (o/sin-osc freq)
+                            (o/mix)
+                            (o/pan2 0)
+                            (* (o/env-gen (o/env-perc) :action o/FREE))))))
+
+  (do
+    (reset! dyna-synths {})
+    (synthdef sini
+              {freq [200 300]
+               pan 0
+               amp 1}
+              '(o/out 0 (-> (o/sin-osc freq)
+                            (o/mix)
+                            (o/pan2 pan)
+                            (* (o/env-gen (o/env-perc) :action o/FREE)))))
+    (sini {:freq [390 100 2000]}))
 
   (defn modify-body [body]
     (println "yyyyyyyyyyyyyy" (first body))
@@ -134,12 +175,12 @@
              (into [])))
       (defn modify-params2 [params]
         (->> params
-             (map (fn [[k v]]
-                    (cond
-                      (number? v) {k v}
-                      (vector? v) (map-indexed (fn [i v*]
-                                                 {(keyword (str (name k) i)) v*})
-                                               v))))
+             (mapv (fn [[k v]]
+                     (cond
+                       (number? v) {k v}
+                       (vector? v) (map-indexed (fn [i v*]
+                                                  {(keyword (str (name k) i)) v*})
+                                                v))))
              flatten
              (apply merge)))
       (modify-params2 {:freq [200 500]
@@ -164,16 +205,36 @@
                    '(o/out 0 (-> (o/sin-osc freq)
                                  (* (o/env-gen (o/env-perc) :action o/FREE))))))
 
-  (defmacro make-synth [params-map synth-body]
-    #_(println [params-map synth-body])
-    (let [[s-name params ugen-form]
-          (o/synth-form 's-name [(modify-params params-map) (eval (modify-body params-map synth-body))])]
-      `(o/synth ~s-name ~params ~ugen-form)))
-  ((make-synth {:freq [200 300]} '(o/out 0 (-> (o/sin-osc freq)
-                                               #_(o/mix)
-                                               (* (o/env-gen (o/env-perc) :action o/FREE)))))
-   :freq0 500
-   :freq1 800)
+  (defn partition-chans
+    [sig n-chans]
+    (println sig)
+    (if (sequential? sig)
+      (partition n-chans n-chans nil sig)
+      sig))
 
+  (defmacro make-synth [params-map synth-body]
+
+    (let [[s-name# params ugen-form]
+          (o/synth-form 's-name [(modify-params params-map) (eval (modify-body params-map synth-body))])]
+      `(o/synth ~s-name# ~params ~ugen-form)))
+
+  ((make-synth {:freq [200 200]} '(o/out 0 (-> (o/sin-osc freq)
+                                               #_(partition-chans 2)
+
+                                               #_(o/mix)
+                                               (* (o/env-gen (o/env-perc) :action o/FREE))
+                                               (o/pan2)
+                                               (o/mix))))
+   :freq0 100
+   :freq1 400
+   :freq2 150)
+  (macroexpand-1 '(make-synth {:freq [200 300 600]} '(o/out 0 (-> (o/sin-osc freq)
+                                                                  (partition-chans 2)
+
+                                                                  (o/mix)
+                                                                  (o/pan2 0)
+                                                                  (* (o/env-gen (o/env-perc) :action o/FREE))))))
+
+  (o/synth hola [] (o/sin-osc 1 2 3))
   (defn make-synthf [params-map synth-body]
     (make-synth params-map synth-body)))
