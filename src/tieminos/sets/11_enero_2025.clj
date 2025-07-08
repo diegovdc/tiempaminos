@@ -1,4 +1,4 @@
-(ns tieminos.sets.11-enero-2025
+(ns tieminos.sets.viejo-vag-brujo
   "Set para Viejo Vago Brujo"
   (:require
    [clojure.data.generators :refer [weighted]]
