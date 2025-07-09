@@ -109,5 +109,7 @@ CLOSED: [2025-07-02 Wed 16:04] SCHEDULED: <2025-06-27 Fri>
 CLOSED: [2025-07-02 Wed 16:03]
 *** DONE Automatizar la grabación de audio en REAPER, que arme y desarme el canal de EQ
 CLOSED: [2025-07-02 Wed 16:03]
+** TODO [#A] Revisar volumen de envío de collider, porque con el ambisonics se está sobresaturando
+SCHEDULED: <2025-07-05 Sat>
 
 

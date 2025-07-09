@@ -27,9 +27,10 @@
   ;; init OSC communication
   (bardo.osc/init! [["127.0.0.1" 16181]
                     ["192.168.0.101" 16180]
-                    ["192.168.0.102" 16180]])
+                    ["192.168.0.103" 16180]])
   ;; init everything (habitat and input synths) except SC, REAPER and OSC communications
-  (bardo.init/all!))
+  (bardo.init/all!)
+  (bardo.osc/post-live-state-to-ui!))
 
 ;; TODO: figure out if this is still useful
 (defonce saved-synth-params (atom []))

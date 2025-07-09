@@ -578,6 +578,13 @@
 (def throttled-post
   (throttle (fn [state] (post "/gusano-cuantico-bardo" state))
             50))
+
+(defn post-live-state-to-ui!
+  []
+  (add-watch bardo.live-state/live-state ::post-live-state
+             (fn [_key _ref _old-value new-value]
+               #_(println new-value)
+               (throttled-post (dissoc new-value :lorentz)))))
 (comment
   (->> @live-state)
   (reset! live-state {})
