@@ -1,5 +1,7 @@
 (ns tieminos.sets.viejo-vago-brujo
-  "Set para Viejo Vago Brujo"
+  "Set para Viejo Vago Brujo
+
+  - La versión en `01f6ae4570114375fd63c138a3d3c9f3e1339840` está bastante bien."
   (:require
    [clojure.data.generators :refer [weighted]]
    [clojure.math :refer [pow]]
