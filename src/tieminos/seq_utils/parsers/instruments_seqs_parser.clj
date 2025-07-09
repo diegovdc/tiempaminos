@@ -50,7 +50,7 @@
   [_rain-data event player]
   (fn [] (player event)))
 
-(defn- build-play-fn
+(defn build-play-fn
   [rain-data event player-fn]
 
   (cond
@@ -71,14 +71,14 @@
 
 (defmacro evseq [pattern & body]
   (let [body*      (into body nil)
-        parsed-pattern (parse pattern)
+        parsed-pattern (parse (eval pattern))
         events-seq (into [] (post-process-parsed-seq parsed-pattern))]
 
     `(let [event# (wrap-at (:index ~'data) ~events-seq)
-           player# (fn [case*] (case case*  ~@body*))]
+           player# (fn [case*] (case case*  ~@body* nil))]
        ((build-play-fn ~'data event# player#)))))
 (comment
-  (macroexpand-1 '(evseq "a"
+  (macroexpand-1 '(evseq (str "ab" "c")
                          "a" (println "hola" (rainseq (lin 1 2 3))))))
 
 (comment
