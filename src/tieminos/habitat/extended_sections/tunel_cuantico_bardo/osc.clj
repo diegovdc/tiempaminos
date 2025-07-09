@@ -304,16 +304,16 @@
 ;; main eq controls
 
 (def ^:private eq-param-defaults
-  {:eq/loshelf.freq {:init-val 0 :path "/track/23/fxeq/loshelf/freq"}
-   :eq/loshelf.gain {:init-val 0 :path "/track/23/fxeq/loshelf/gain"}
-   :eq/hishelf.freq {:init-val 24000 :path "/track/23/fxeq/hishelf/freq"}
-   :eq/hishelf.gain {:init-val 0 :path "/track/23/fxeq/hishelf/gain"}
+  {:eq/loshelf.freq {:init-val 0 :path "/track/24/fxeq/loshelf/freq"}
+   :eq/loshelf.gain {:init-val 0 :path "/track/24/fxeq/loshelf/gain"}
+   :eq/hishelf.freq {:init-val 24000 :path "/track/24/fxeq/hishelf/freq"}
+   :eq/hishelf.gain {:init-val 0 :path "/track/24/fxeq/hishelf/gain"}
    ;; a simple band pass assumed to have a gain > 0.5
-   :eq/bell.freq {:init-val 1000 :path "/track/23/fxeq/band/0/freq"}
-   :eq/bell.gain {:init-val 0.5 :path "/track/23/fxeq/band/0/gain"}
+   :eq/bell.freq {:init-val 1000 :path "/track/24/fxeq/band/0/freq"}
+   :eq/bell.gain {:init-val 0.5 :path "/track/24/fxeq/band/0/gain"}
    ;; a simple band pass assumed to have a gain < 0.5
-   :eq/notch.freq {:init-val 2000 :path "/track/23/fxeq/band/1/freq"}
-   :eq/notch.gain {:init-val 0.5 :path "/track/23/fxeq/band/1/gain"}})
+   :eq/notch.freq {:init-val 2000 :path "/track/24/fxeq/band/1/freq"}
+   :eq/notch.gain {:init-val 0.5 :path "/track/24/fxeq/band/1/gain"}})
 
 (defn interpolate-premaster-eq-band-vals
   ;; NOTE: for the ids to reference see the `eq-param-defaults` var.
@@ -356,6 +356,18 @@
     :dur-ms 5000})
 
   (interpolate-premaster-eq-band-vals
+   {:band :hishelf
+    :freq 24000
+    :gain 0.02
+    :dur-ms 5000})
+
+  (interpolate-premaster-eq-band-vals
+   {:band :notch
+    :freq 3000
+    :gain 0.02
+    :dur-ms 2000})
+
+  (interpolate-premaster-eq-band-vals
    {:band :bell
     :freq 1000
     :gain 1
@@ -375,7 +387,7 @@
 (defn set-loshelf-freq
   [opt-num]
   (if-let [freq (nth [0 300 600 1000 2000] opt-num nil)]
-    (let [gain 0]
+    (let [gain 0.02]
       (swap! live-state assoc-in [:main-eq :loshelf :freq] freq)
       (swap! live-state assoc-in [:main-eq :loshelf :gain] gain)
       (interpolate-premaster-eq-band-vals
@@ -388,7 +400,7 @@
 (defn set-hishelf-freq
   [opt-num]
   (if-let [freq (nth [2000 3000 5000 10000 24000] opt-num nil)]
-    (let [gain 0]
+    (let [gain 0.02]
       (swap! live-state assoc-in [:main-eq :hishelf :freq] freq)
       (swap! live-state assoc-in [:main-eq :hishelf :gain] gain)
       (interpolate-premaster-eq-band-vals
@@ -402,7 +414,7 @@
   [opt-num]
   (if-let [freq* (nth [:off 600 1000 2000 3000 5000 10000 15000] opt-num nil)]
     (let [freq (if (= :off freq*) 1000 freq*)
-          gain (if (= :off freq*) 0.5 0.8)]
+          gain (if (= :off freq*) 0.5 0.75)]
       (swap! live-state assoc-in [:main-eq :bell :freq] freq)
       (swap! live-state assoc-in [:main-eq :bell :gain] gain)
       (interpolate-premaster-eq-band-vals
@@ -416,7 +428,7 @@
   [opt-num]
   (if-let [freq* (nth [:off 600 1000 2000 3000 5000 10000 15000] opt-num nil)]
     (let [freq (if (= :off freq*) 2000 freq*)
-          gain (if (= :off freq*) 0.5 0)]
+          gain (if (= :off freq*) 0.5 0.02)]
       (swap! live-state assoc-in [:main-eq :bell :freq] freq)
       (swap! live-state assoc-in [:main-eq :bell :gain] gain)
       (interpolate-premaster-eq-band-vals
