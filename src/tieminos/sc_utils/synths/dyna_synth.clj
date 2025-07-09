@@ -2,7 +2,7 @@
   (:require
    [clojure.walk :as walk]
    [overtone.core :as o]
-   [overtone.libs.counters :refer [next-id]]
+   [taoensso.timbre :as timbre]
    [time-time.dynacan.players.gen-poly :as gp :refer [on-event ref-rain]]))
 
 ;; Create synths dynamically that can have different arities for envelopes and other parameters inputed as vectors etc.
@@ -91,132 +91,95 @@
                 #_(println (:synth (xs freqs levels env-durs (dec (* 2 (rand))))))
                 #_(sini 100 200)))))
 
-(comment
-  (defn analyze-arg
-    [arg]
-    (cond
-      (number? arg) [:number]
-      (sequential? arg) [:seq (count arg)]))
+(defn analyze-arg
+  [k arg]
+  (cond
+    (number? arg) [:number]
+    (sequential? arg) [:seq (count arg)]
+    (fx-kw? k) [:fx/fn arg]
+    :else (throw (ex-info "Don't know how to analyze arg:" {:key k
+                                                            :arg arg}))))
 
-  (defn analyze-ds-args [m]
-    (->> m
-         (mapv (fn [[k arg]]
-                 [k (analyze-arg arg)]))))
+(defn analyze-ds-args [m]
+  (->> m
+       (mapv (fn [[k arg]]
+               [k (analyze-arg k arg)]))))
   ;; WIP
-  (defonce dyna-synths (atom {}))
-  (defmacro synthdef
-    [name params body]
-    (let [default-args (into {} (map (fn [[k v]] [(keyword k) v]) params))
-          call-args (gensym)
-          merged-args (gensym)
-          analyzed-args (gensym)
-          synth (gensym)
-          cached-synth (gensym)]
-      `(defn ~name
-         ([] (~name {}))
-         ([{:keys ~(into [] (keys params))
-            :or ~params
-            :as ~call-args}]
-          (let [~merged-args (merge ~default-args ~call-args)
-                ~analyzed-args (analyze-ds-args ~merged-args)
-                ~cached-synth (get @dyna-synths ~analyzed-args)
-                ;; ~(gensym) (println #_~qbody "======" #_ ~merged-args "CCCCCCCC" ~call-args ~merged-args)
-                ~synth (if ~cached-synth
-                         ~cached-synth
-                         (eval `(make-synth ~~merged-args '~~body)))]
-            #_(println (boolean ~cached-synth) ~analyzed-args #_(eval ~synth))
-            (swap! dyna-synths assoc ~analyzed-args ~synth)
-            (~synth (modify-params2 ~merged-args)))))))
 
-  (-> @dyna-synths)
-  (macroexpand-1
-   '(synthdef sini
-              {freq [200 300]
-               amp 1}
-              '(o/out 0 (-> (o/sin-osc freq)
-                            (o/mix)
-                            (o/pan2 0)
-                            (* (o/env-gen (o/env-perc) :action o/FREE))))))
+(defonce dyna-synths (atom {}))
 
-  (do
-    (reset! dyna-synths {})
-    (synthdef sini
-              {freq [200 300]
-               pan 0
-               amp 1}
-              '(o/out 0 (-> (o/sin-osc freq)
-                            (o/mix)
-                            (o/pan2 pan)
-                            (* (o/env-gen (o/env-perc) :action o/FREE)))))
-    (sini {:freq [390 100 2000]}))
+(defn modify-params [params]
+  (println "MP" params)
+  (->> params
+       (keep (fn [[k v]]
+               (cond
+                 (number? v) [(symbol (name k)) v]
+                 (vector? v) (map-indexed (fn [i v*]
+                                            [(symbol (str (name k) i)) v*])
+                                          v))))
+       flatten
+       (into [])))
+(modify-params {:freq [390 100 2000], :pan 0, :amp 1, :fx/pan identity})
+(defn modify-params2 [params]
+  (println "MP2" params)
+  (->> params
+       (mapv (fn [[k v]]
+               (cond
+                 (number? v) {k v}
+                 (vector? v) (map-indexed (fn [i v*]
+                                            {(keyword (str (name k) i)) v*})
+                                          v))))
+       flatten
+       (apply merge)))
+(modify-params2 {:freq [200 500]
+                 :pan 0})
 
-  (defn modify-body [body]
-    (println "yyyyyyyyyyyyyy" (first body))
-    (def body body)
-    (let [res (eval (walk/postwalk (fn [x]
-                                     (cond
-                                       (= :env-durs x) [1 1]
-                                       (= :freq x) 'freq
-                                       (= :levels x) [0 1 0]
-                                       :else  x))
-                                   body))]
-      (println res)
-      res))
+(defn- fx-kw?
+  [kw]
+  (and (keyword? kw) (= "fx" (namespace kw))))
 
-  (do (defn modify-params [params]
-        (->> params
-             (map (fn [[k v]]
-                    (cond
-                      (number? v) [(symbol (name k)) v]
-                      (vector? v) (map-indexed (fn [i v*]
-                                                 [(symbol (str (name k) i)) v*])
-                                               v))))
-             flatten
-             (into [])))
-      (defn modify-params2 [params]
-        (->> params
-             (mapv (fn [[k v]]
-                     (cond
-                       (number? v) {k v}
-                       (vector? v) (map-indexed (fn [i v*]
-                                                  {(keyword (str (name k) i)) v*})
-                                                v))))
-             flatten
-             (apply merge)))
-      (modify-params2 {:freq [200 500]
-                       :pan 0}))
-  (do (defn modify-body [params synth-body]
-        (let [params-map (->> params
-                              (map (fn [[k v]]
-                                     (cond
-                                       (number? v) [(symbol k) (symbol k)]
-                                       (vector? v) [(symbol k) (into [] (map-indexed (fn [i v*]
-                                                                                       (symbol (str (name k) i)))
-                                                                                     v))])))
-                              (into {}))]
+(do (defn modify-body [params synth-body]
+      (println "MB" params synth-body)
+      (let [params-map (->> params
+                            (map (fn [[k v]]
+                                   (cond
+                                     (number? v) [(symbol k) (symbol k)]
+                                     (vector? v) [(symbol k) (into [] (map-indexed (fn [i v*]
+                                                                                     (symbol (str (name k) i)))
+                                                                                   v))])))
+                            (into {}))]
 
-          (walk/postwalk (fn [x]
-                           (if-let [mapping (params-map x)]
-                             mapping x))
-                         synth-body)))
+        (timbre/spy :info (walk/postwalk (fn [x]
+                                           (if-let [mapping (params-map x)]
+                                             mapping
+                                             (cond
+                                               (fx-kw? x) (params x identity)
+                                               :else x)))
+                                         synth-body))))
 
-      (modify-body {:freq [200 500]
-                    :pan 0}
-                   '(o/out 0 (-> (o/sin-osc freq)
-                                 (* (o/env-gen (o/env-perc) :action o/FREE))))))
+    (modify-body {:freq [200 500]
+                  :pan 0
+                  :fx/pan (fn [sig] (o/pan-az 4 sig (o/line 0 0)))}
+                 '(o/out 0 (-> (o/sin-osc freq)
+                               :fx/pan
+                               (* (o/env-gen (o/env-perc) :action o/FREE))))))
 
-  (defn partition-chans
-    [sig n-chans]
-    (println sig)
-    (if (sequential? sig)
-      (partition n-chans n-chans nil sig)
-      sig))
+(defn partition-chans
+  [sig n-chans]
+  (println sig)
+  (if (sequential? sig)
+    (partition n-chans n-chans nil sig)
+    sig))
 
-  (defmacro make-synth [params-map synth-body]
+(defmacro make-synth [params-map synth-body]
 
-    (let [[s-name# params ugen-form]
-          (o/synth-form 's-name [(modify-params params-map) (eval (modify-body params-map synth-body))])]
-      `(o/synth ~s-name# ~params ~ugen-form)))
+  (let [[s-name# params ugen-form]
+        (let [body (eval (modify-body params-map synth-body))]
+          (println "==============" body)
+          (o/synth-form 's-name [(modify-params params-map) body]))]
+    `(o/synth ~s-name# ~params ~ugen-form)))
+
+(comment
 
   ((make-synth {:freq [200 200]} '(o/out 0 (-> (o/sin-osc freq)
                                                #_(partition-chans 2)
@@ -228,13 +191,104 @@
    :freq0 100
    :freq1 400
    :freq2 150)
-  (macroexpand-1 '(make-synth {:freq [200 300 600]} '(o/out 0 (-> (o/sin-osc freq)
-                                                                  (partition-chans 2)
+  (macroexpand-1 '(make-synth {:freq [200 300 600]
+                               :fx/pan may-pan}
+                              '(o/out 0 (-> (o/sin-osc freq)
+                                            (partition-chans 2)
+                                            :fx/pan
+                                            (o/mix)
+                                            (o/pan2 0)
+                                            (* (o/env-gen (o/env-perc) :action o/FREE)))))))
+(name :fx/hola)
+(defn parse-params
+  [m]
+  (->> m
+       (map (fn [[k v]]
+              (cond
+                (fx-kw? k) [(symbol (str "fx__" (name k))) v]
+                :else [k v])))
+       (into {})))
+(do
+  (defmacro synthdef
+    [name params body]
+    (let [default-args (into {} (map (fn [[k v]] [(keyword k) v]) params))
+          call-args (gensym)
+          merged-args (gensym)
+          analyzed-args (gensym)
+          synth (gensym)
+          cached-synth (gensym)
+          parsed-params (parse-params params)]
+      (println params)
+      (println parsed-params)
+      `(defn ~name
+         ([] (~name {}))
+         ([{:keys ~(into [] (keys parsed-params))
+            :or ~parsed-params
+            :as ~call-args}]
+          (let [~merged-args (merge ~default-args ~call-args)
+                ~analyzed-args (analyze-ds-args ~merged-args)
+                ~cached-synth (get-in @dyna-synths [~analyzed-args :synth])
+                ;; ~(gensym) (println #_~qbody "======" #_ ~merged-args "CCCCCCCC" ~call-args ~merged-args)
+                ~(gensym)  (println "--------" ~merged-args)
+                ~synth (if ~cached-synth
+                         ~cached-synth
+                         (eval `(make-synth ~~merged-args '~~body)))]
+            #_(println (boolean ~cached-synth) ~analyzed-args #_(eval ~synth))
+            (swap! dyna-synths assoc ~analyzed-args {:synth ~synth
+                                                     :form ~body})
+            (~synth (modify-params2 ~merged-args))))))))
 
-                                                                  (o/mix)
-                                                                  (o/pan2 0)
-                                                                  (* (o/env-gen (o/env-perc) :action o/FREE))))))
+(comment
 
-  (o/synth hola [] (o/sin-osc 1 2 3))
-  (defn make-synthf [params-map synth-body]
-    (make-synth params-map synth-body)))
+  (do
+    (reset! dyna-synths {})
+    (synthdef sini
+              {freq [200 300]
+               pan 0
+               amp 1
+         ;; TODO: (WIP) add support for args like {:fx/pan my-pan}: `modify-body` already supports this, but the `params` of the `synthdef` doesn't, they need to be replaced somehow.
+         ;; Still missing is being able to pass in parameters to the `:fx` functions.
+               :fx/pan my-pan}
+
+              '(o/out 0 (-> (o/sin-osc)
+                            :fx/pan
+                            (* (o/env-gen (o/env-perc) :action o/FREE)))))
+    (let [x {:freq [390 100 2000]}]
+      (sini x)))
+
+  (-> @dyna-synths
+      (get [[:freq [:seq 3]]
+            [:pan [:number]]
+            [:amp [:number]]
+            [:fx/pan [:fx/fn my-pan]]])
+      :form)
+  (macroexpand-1
+   '(synthdef sini
+              {freq [200 300]
+               amp 1
+               :fx/pan #(o/pan2 % 0)}
+              '(o/out 0 (-> (o/sin-osc freq)
+                            (o/mix)
+                            :fx/pan
+                            (* (o/env-gen (o/env-perc) :action o/FREE)))))))
+(comment
+
+  (defn my-pan [sig] (o/pan-az 4 sig (o/line 0 2)))
+  (do
+    (reset! dyna-synths {})
+    (synthdef sini
+              {freq [200 300]
+               pan 0
+               amp 1
+               :fx/pan my-pan  ;; #(o/pan2 % 0)
+               ;; TODO: add support for args like {:fx/pan my-pan}: `modify-body` already supports this, but the `params` of the `synthdef` doesn't, they need to be replaced somehow.
+               }
+              '(o/out 0 (-> (o/sin-osc)
+                            :fx/pan
+                            (* (o/env-gen (o/env-perc) :action o/FREE)))))
+    (let [x {:freq [390 100 2000]}]
+      (sini x)))
+
+  ((o/synth (o/out 0 (-> (o/sin-osc)
+                         my-pan
+                         (* (o/env-gen (o/env-perc) :action o/FREE)))))))
