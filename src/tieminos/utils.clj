@@ -335,6 +335,21 @@
   (doseq [x (range 5)]
     (sequence-call 100 #(println x))))
 
+(defn sequence-calls2
+  "Like sequence-call but does not need to init any loop. In contains a loop in itself."
+  [f time-ms]
+  (let [c (a/chan)]
+    (a/go-loop []
+      (apply f (a/<! c))
+      (a/<! (a/timeout time-ms))
+      (recur))
+    (fn [& args]
+      (a/put! c (or args [])))))
+
+(comment
+  (def tprint (sequence-calls2 #(println "hola" %) 1000))
+  (doseq [x (range 6)] (tprint x)))
+
 (defn throttle
   ;; NOTE: Seems to be like `sequence-call` but better
   "Will imediately call a function and then wait for `time-ms` to call it again, if it was called in the interim.

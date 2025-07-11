@@ -1,12 +1,13 @@
 (ns tieminos.lc.eexxpele3
   (:require
+   [clojure.core.async :as async]
    [clojure.data.generators :refer [weighted]]
    [clojure.math :as math]
-   [clojure.string :as str]
    [overtone.midi :as midi]
    [tieminos.compositions.7D-percusion-ensamble.dreams.dream-2.utils :refer [subrain]]
    [tieminos.midi.plain-algo-note :refer [algo-note]]
-   [tieminos.osc.reaper :as reaper]
+   [tieminos.osc.reaper :as reaper :refer [make-toogle-tracks-fx
+                                           unselect-all-tracks]]
    [tieminos.osc.surge :as surge]
    [tieminos.seq-utils.core :refer [** ++ choose lin rainseq xo]]
    [tieminos.seq-utils.parsers.instruments-seqs-parser :refer [evseq]]
@@ -15,14 +16,6 @@
    [time-time.dynacan.players.gen-poly :as gp]
    [time-time.dynacan.players.refrain.v2 :as rain.v2]
    [time-time.standard :refer [rrand]]))
-
-(defn smap [f x]
-  (if (sequential? x)
-    (map f x)
-    (f x)))
-
-(defn s+ [n xs]
-  (smap #(+ n %) xs))
 
 (defonce at-atoms (atom {}))
 
@@ -36,17 +29,26 @@
 (def never-arm-envelope?
   (atom false))
 
+(def toggle-fx (make-toogle-tracks-fx))
+
 (defn toggle-track-arm
-  [arm? & tracks]
-  (reaper/init)
-  (doseq [track tracks]
-    (reaper/set-track-rec track arm?)
-    (if (and arm? (not @never-arm-envelope?))
-      (reaper/set-autowrite track)
-      (reaper/set-autotrim track))))
+  [arm? tracks]
+  (async/go
+    (reaper/init)
+    (toggle-fx arm? tracks)
+    (async/<! (async/timeout 500))
+    (doseq [track tracks]
+      (reaper/set-track-rec track arm?)
+      (if (and arm? (not @never-arm-envelope?))
+        (reaper/set-autowrite track)
+        (reaper/set-autotrim track)))
+    (unselect-all-tracks)))
+
+(comment (toggle-track-arm true scene-1-tracks)
+         (init-main-scene-track-volumes!))
 
 (defn fade-track
-  [{:keys [track dur-ms db]}]
+  [{:keys [track dur-ms db on-end]}]
   (reaper/init)
   (cb-interpolate {:id (keyword "track" (str track))
                    :dur-ms dur-ms
@@ -54,36 +56,76 @@
                    :init-val (reaper/from-db 0)
                    :target-val (reaper/from-db db)
                    :cb (fn [{:keys [val]}]
-                         (reaper/set-vol track val))}))
+                         (reaper/set-vol track val))
+                   :on-end (fn [_] (when (fn? on-end) (on-end)))}))
 
-(defn instpat* [str]
-  (-> str
-      (str/replace #" " "")
-      (str/split #"")))
+(def scene-1-tracks (range 1 5))
 
-(def instpat (memoize instpat*))
+(def scene-2-tracks (range 5 12))
+(def scene-3b-tracks (range 12 22))
+(def scene-4-tracks (range 22 33))
+(def interlude-1-tracks [34])
+(def interlude-2-tracks [35])
+(def all-tracks (concat scene-1-tracks
+                        scene-2-tracks
+                        scene-3b-tracks
+                        scene-4-tracks
+                        interlude-1-tracks
+                        interlude-2-tracks))
+
+(defn init-main-scene-track-volumes!
+  []
+  (let [scenes (reverse [scene-1-tracks
+                         scene-2-tracks
+                         scene-3b-tracks
+                         scene-4-tracks
+                         interlude-1-tracks
+                         interlude-2-tracks])]
+    (async/go
+      ;; NOTE using a go block so that fade-tracks only affects a single track (so that no selected track lingers somewhere)
+      (unselect-all-tracks)
+      (doseq [tracks scenes]
+        (async/<! (toggle-track-arm false tracks))
+        (async/<! (async/timeout 100))
+        (fade-track {:track (first tracks) :dur-ms 100 :db :-inf})
+        (async/<! (async/timeout 300))))))
+
+(defn init!
+  []
+  ;; TODO: initialize stuff from viejo vago brujo
+  (midi/midi-sinks)
+  (def sink (midi/midi-out "VirMIDI"))
+  (def sink2 (midi/midi-out "VirMIDI Bus 2"))
+  (def sink3 (midi/midi-out "VirMIDI Bus 3"))
+  (surge/init)
+  (init-main-scene-track-volumes!))
 
 (comment
-  ;; init
-  (do
-    (midi/midi-sinks)
-    (def sink (midi/midi-out "VirMIDI"))
-    (def sink2 (midi/midi-out "VirMIDI Bus 2"))
-    (def sink3 (midi/midi-out "VirMIDI Bus 3"))
-    (surge/init))
+  ;; init ;; will create the midi-sinks as well
+  (init!)
+  (reaper/rec)
 
   ;; development
-  (reset! never-arm-envelope?
-          true)
+  (reset! never-arm-envelope? true)
+  (doseq [t all-tracks] (reaper/select-track t true))
+  (reaper/remove-all-envelopes)
+  (doseq [t all-tracks] (reaper/select-track t false))
 
-  (gp/stop))
+  (toggle-fx all-tracks true)
+  (toggle-fx all-tracks false)
+
+  (gp/stop)
+  (rain.v2/stop))
 
 (comment
-
   (reaper/rec)
+  (reaper/stop)
   ;; Scene 1
-  (fade-track {:track 1 :dur-ms 5000 :db 0})
-  (toggle-track-arm true 1 2 3 4)
+  (toggle-track-arm true scene-1-tracks)
+  (toggle-fx true scene-1-tracks)
+  (toggle-fx false scene-1-tracks)
+  (fade-track {:track (first scene-1-tracks) :dur-ms 5000 :db 0})
+
   (gp/ref-rain
    :id :s1/bd
    :tempo 40
@@ -142,14 +184,15 @@
   (gp/stop :s1/bd)
   (gp/stop :s1/glitch-pluck)
   (gp/stop :s1/glitch-pluck2-random-ascent)
-  (fade-track {:track 1 :dur-ms 60000 :db :-inf})
-  (toggle-track-arm false 1 2 3 4)
+  (fade-track {:track (first scene-1-tracks) :dur-ms 60000 :db :-inf
+               :on-end (fn [] (toggle-track-arm false scene-1-tracks))})
   (gp/stop))
 
 (comment
   ;; Scene 2
-  (fade-track {:track 5 :dur-ms 1000 :db 0})
-  (toggle-track-arm true 5 6 7 8 9 10 11)
+  (toggle-fx scene-2-tracks true)
+  (toggle-track-arm true scene-2-tracks)
+  (fade-track {:track (first scene-2-tracks) :dur-ms 1000 :db 0})
 
   (rain.v2/ref-rain
    :id :s2/bd
@@ -252,10 +295,10 @@
    :on-event (rain.v2/on-event
               (subrain {:ref :s2/cianningies
                         :durs (repeat (rainseq {1 0 2 4 3 2 4 1
-                                               ;; 10 1/2
+                                                  ;; 10 1/2
                                                 })
                                       (rainseq {1/4 3 1/3 1 2/3 1
-                                               ;; 1/5 1/5
+                                                  ;; 1/5 1/5
                                                 }))
                         :delay (rainseq {0 15 1/3 1 1/4 2})
                         :on-event (rain.v2/on-event
@@ -271,33 +314,49 @@
                                                                   (lin (choose 0 3 -1)
                                                                        (choose 5 8 13))))}))})))
 
-  (fade-track {:track 5 :dur-ms 5000 :db :-inf})
   (rain.v2/stop :s2/bd)
   (rain.v2/stop :s2/bd-child)
   (rain.v2/stop :s2/bass)
   (rain.v2/stop :s2/cianningies)
+  (fade-track {:track (first scene-2-tracks) :dur-ms 5000 :db :-inf
+               :on-end (fn [] (toggle-track-arm false scene-2-tracks))}))
 
-  (toggle-track-arm false 5 6 7 8 9 10))
+;;;;;;;;;;;;;;;;;;
+;; interludio 1
+;;;;;;;;;;;;;;;;;;
 
 (comment
-  ;; interludios
-  (toggle-track-arm true 31)
-  (toggle-track-arm false 31)
-  (toggle-track-arm true 32)
-  (toggle-track-arm false 32))
+  (toggle-track-arm true interlude-1-tracks)
+  (fade-track {:track (first interlude-1-tracks) :dur-ms 2000 :db 0})
+
+  (fade-track {:track (first interlude-1-tracks) :dur-ms 5000 :db :-inf
+               :on-end (fn [] (toggle-track-arm false interlude-1-tracks))}))
 
 (comment
   (gp/stop)
   ;; s4 viejo vago brujo
-  (toggle-track-arm true 22 23 24 25 26 27 28 29 30 31 32)
-  (toggle-track-arm false 22 23 24 25 26 27 28 29 30 31 32)
-  (fade-track {:track 20 :dur-ms 5000 :db 0})
-  (fade-track {:track 20 :dur-ms 5000 :db :-inf}))
+
+  (toggle-track-arm true scene-4-tracks)
+  (fade-track {:track (first scene-4-tracks) :dur-ms 5000 :db 0})
+  (fade-track {:track (first scene-4-tracks) :dur-ms 5000 :db :-inf
+               :on-end (fn [] (toggle-track-arm false scene-4-tracks))}))
+
+;;;;;;;;;;;;;;;;;;;
+;; interludio 2
+;;;;;;;;;;;;;;;;;;
 
 (comment
-  #_(fade-track {:track 11 :dur-ms 500 :db :-inf})
-  (fade-track {:track 12 :dur-ms 5000 :db 0})
-  (apply toggle-track-arm true (range 12 22))
+  (toggle-track-arm true interlude-2-tracks)
+  (fade-track {:track (first interlude-2-tracks) :dur-ms 2000 :db 0})
+
+  (fade-track {:track (first interlude-2-tracks) :dur-ms 5000 :db :-inf
+               :on-end (fn [] (toggle-track-arm false interlude-2-tracks))}))
+
+(comment
+
+  (fade-track {:track (first scene-3b-tracks) :dur-ms 5000 :db 0})
+  (toggle-track-arm true scene-3b-tracks)
+  (toggle-track-arm false scene-3b-tracks)
   ;; Scene 3b
   (gp/ref-rain
    :id :s3/main
@@ -374,68 +433,7 @@
                                                :vel (min 127 (int (* 8 (at-i [10 4]))))
                                                :note (seq-cycle :s3/q [0 7 3 4 9 10 -3])))))))
 
-  (fade-track {:track 12 :dur-ms 5000 :db :-inf})
-  (gp/stop :s3/main)
-  (apply toggle-track-arm false (range 12 22)))
-
-#_(comment
-    ;;  NOT too good
-    ;; Scene 3
-    (gp/ref-rain
-     :id :s3/bd
-     :tempo 90
-     :durs [1/3]
-     :on-event (gp/on-event
-                (if (#{0 1 2 3 4 6 7 8 9 11} (mod i 12))
-                  (algo-note {:sink sink3
-                              :dur (at-i [1 1/3 1/3])
-                              :vel (min 127 (int (* 12 (at-i [10 4 4]))))
-                              :chan 0
-                              :offset (+ 5 (at-i [50]))
-                              :tempo 120
-                              :note (at-i [0 0 0 0 0 1 2 0 0 0 4 5])})
-
-                  (algo-note {:sink sink3
-                              :dur (at-i [1 1/3 1/3 2 2])
-                              :vel (min 127 (int (* 12 (at-i [10 4 4]))))
-                              :chan 0
-                              :offset (+ 10 (at-i [50 51 50 50]))
-                              :tempo 120
-                              :note (at-i [1 1 2 1 1])}))))
-
-    (gp/ref-rain
-     :id :hh
-     :ref :bd
-     :durs [1/3]
-     :on-event (gp/on-event
-                (when (> (rand) 0.3)
-                  (algo-note {:sink sink3
-                              :dur (* 2 dur-s)
-                              :vel (min 127 (int (*  1
-                                                     (at-i [5 5 10 6 2 3])
-                                                     (seq-cycle :hh/vel [1 2 3 4 5 6 7 8 9 10 11 12]))))
-                              :chan 3
-                              :offset (at-i [55])
-                              :tempo 60
-                              :note (at-i [0 [2 3] 4 5 4])}))))
-    (gp/stop :leady)
-    (gp/ref-rain
-     :id :leady
-     :ref :bd
-     :durs [2/3]
-     :on-event (gp/on-event
-                (algo-note {:sink sink
-                            :dur (* (at-i [1 1 1 2]) dur-s)
-                            :vel (min 127 (int (* 10 (seq-cycle :pad/vel [10 10 5]))))
-                            :chan 4                           :offset 60
-                            :tempo 60
-                            :note (at-i [0
-                                         (seq-cycle :bass/n2 [0 1 2 0 0 -6])
-                                         0
-                                         (seq-cycle :bass/n4 [6 6 5 3 6])
-                                         (seq-cycle :bass/n1 [0 0 0 2])
-                                         (seq-cycle :bass/n2 [0 1 2 0 0 -6])
-                                         0
-                                         (seq-cycle :bass/n4b [6 12 12 5 3 6])])})))
-
-    (gp/stop))
+  (fade-track {:track (first scene-3b-tracks) :dur-ms 5000 :db :-inf
+               :on-end (fn []
+                         (toggle-track-arm false (range 12 22))
+                         (gp/stop :s3/main))}))

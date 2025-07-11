@@ -1,6 +1,10 @@
 (ns tieminos.osc.reaper
   (:refer-clojure :exclude [time])
-  (:require [overtone.osc :as osc]))
+  (:require
+   [clojure.core.async :as async]
+   [overtone.osc :as osc]
+   [taoensso.timbre :as timbre]
+   [tieminos.utils :refer [sequence-calls2]]))
 
 (defonce osc-client (atom nil))
 
@@ -56,8 +60,7 @@
   ;; n/track/@/fx/@/fxparam/@/value
   (osc/osc-send @osc-client (format "/track/%s/fx/%s/fxparam/%s/value" track fx param) (float val)))
 
-(comment
-  (set-fx 2 1 8 (rand)))
+#_(set-fx 2 1 8 (rand))
 
 (defn basic-insert-marker
   "This is a very simple way to insert markers. It may produce duplicate markers"
@@ -109,3 +112,74 @@
     (throw (ex-info "Unknown frequency"
                     {:freq freq
                      :freq-map reaeq-freq->lin-map}))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; FX toggling and track selection
+;; NOTE it is advisable that for all
+;; these operations, that go blocks to
+;; control timing is several OSC
+;; operations are performed.
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defn select-track
+  [track select?]
+  (osc/osc-send @osc-client (format "/track/%s/select" track) (float (if select? 1 0))))
+
+(comment (select-track 1 true)
+         (select-track 2 true))
+
+(defn unselect-all-tracks
+  "Calls `SWS: Unselect all items/tracks/env points`.
+  The endpoint is a custom path added to the action."
+  []
+  (osc/osc-send @osc-client "/sws-unselect-all-tracks"))
+
+(comment (unselect-all-tracks))
+
+(defn toggle-selected-tracks-fx
+  "NOTE: it is a good idea to `unselect-all-tracks` before calling this."
+  [on?]
+  (if on?
+    (osc/osc-send @osc-client "/action"  "_SWS_UNBYPASSFX")
+    (osc/osc-send @osc-client "/action"  "_SWS_BYPASSFX")))
+
+(comment (toggle-selected-tracks-fx false)
+         (toggle-selected-tracks-fx true))
+
+(defn toogle-tracks-fx*
+  "Will first unselect all tracks, then select the given tracks then turn them on or off, then unselect them.
+  NOTE if this is called several times in a very short span of time, the behavior may be unpredictable as the calls may interfere with each other.
+
+  See `make-toogle-tracks-fx`."
+  [on? tracks]
+  (async/go
+    (try
+      (unselect-all-tracks)
+      (doseq [track tracks]
+        (select-track track true))
+
+      ;; Account for the time it takes REAPER to process the above.
+      (async/<! (async/timeout 100))
+      (toggle-selected-tracks-fx on?)
+      (unselect-all-tracks)
+      (catch Exception e (timbre/error "Error in toggle-tracks-fx*" e)))))
+
+(defn make-toogle-tracks-fx
+  "Make a toggler that can safely sequence multiple calls to `toggle-tracks-fn*`. It's kept in a function to aviod unnecessarily creating async chan and go-loops."
+  []
+  (sequence-calls2 toogle-tracks-fx* 200))
+
+(comment
+  (def toggle-fx (make-toogle-tracks-fx))
+  (do (toggle-fx true (range 1 5))
+      (toggle-fx false (range 5 12)))
+  (do (toggle-fx false (range 1 5))
+      (toggle-fx true (range 5 12))))
+
+(defn remove-all-envelopes
+  "Calls `SWS/S&M: Remove all envelopes for all tracks`
+  The endpoint is a custom path added to the action."
+  []
+  (osc/osc-send @osc-client "/sws-remove-all-envelopes"))
+
+(comment (remove-all-envelopes))
