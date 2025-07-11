@@ -118,15 +118,15 @@
                    {:durs (rainseq [(ret 1)
                                     (ret 1)
                                     (ret 1)
-                                    {(ret 1) 10
-                                     (ret 1/3 1/3) 2
-                                     (ret 1/32 1/3) 4}])}
+                                    #_{(ret 1) 10
+                                       (ret 1/3 1/3) 2
+                                       (ret 1/32 1/3) 4}])}
                    (fn [_]
                      (player bd*
                              :out bd-out
                              :rate (* #_(rrand 0.999 1.001)
                                     (rainseq (let [n (++ 1 [0 0.002 0.002 -0.001 -0.002 0])
-                                                   p {n 20 2/3 1 1/2 1}]
+                                                   p {n 20 #_#_#_#_2/3 1 1/2 1}]
                                                [p n p n p n p n n])))
                              :len (cond
                                     (>= dur 1/12) 0.2
@@ -149,7 +149,7 @@
    :ratio 1/4
    :durs [6 98/16 62/16 2 4]
    :on-event (on-event
-              #_(st-smpl rim :pan (rrand -1.0 1) :out rim-out)))
+              (st-smpl rim :pan (rrand -1.0 1) :out rim-out)))
 
   (rain.v2/stop)
   (rain.v2/stop :hh)

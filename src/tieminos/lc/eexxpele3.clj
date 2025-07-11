@@ -9,7 +9,7 @@
    [tieminos.osc.reaper :as reaper :refer [make-toogle-tracks-fx
                                            unselect-all-tracks]]
    [tieminos.osc.surge :as surge]
-   [tieminos.seq-utils.core :refer [** ++ choose lin rainseq xo]]
+   [tieminos.seq-utils.core :refer [** ++ choose lin mirror rainseq xo]]
    [tieminos.seq-utils.parsers.instruments-seqs-parser :refer [evseq]]
    [tieminos.seq-utils.qwerty-velocity :as qwerty]
    [tieminos.utils :refer [cb-interpolate rrange wrap-at]]
@@ -26,16 +26,18 @@
     (swap! at-atoms assoc id i*)
     (wrap-at i* coll)))
 
-(def never-arm-envelope?
+(defonce never-arm-envelope?
   (atom false))
 
-(def toggle-fx (make-toogle-tracks-fx))
+(def toggle-fx (do
+                 (reaper/init)
+                 (make-toogle-tracks-fx)))
 
 (defn toggle-track-arm
   [arm? tracks]
   (async/go
     (reaper/init)
-    (toggle-fx arm? tracks)
+    #_(toggle-fx arm? tracks)
     (async/<! (async/timeout 500))
     (doseq [track tracks]
       (reaper/set-track-rec track arm?)
@@ -122,8 +124,6 @@
   (reaper/stop)
   ;; Scene 1
   (toggle-track-arm true scene-1-tracks)
-  (toggle-fx true scene-1-tracks)
-  (toggle-fx false scene-1-tracks)
   (fade-track {:track (first scene-1-tracks) :dur-ms 5000 :db 0})
 
   (gp/ref-rain
@@ -190,7 +190,7 @@
 
 (comment
   ;; Scene 2
-  (toggle-fx scene-2-tracks true)
+
   (toggle-track-arm true scene-2-tracks)
   (fade-track {:track (first scene-2-tracks) :dur-ms 1000 :db 0})
 
