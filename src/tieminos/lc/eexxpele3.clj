@@ -1,4 +1,5 @@
 (ns tieminos.lc.eexxpele3
+  #_{:clj-kondo/ignore [:unused-referred-var]}
   (:require
    [clojure.core.async :as async]
    [clojure.data.generators :refer [weighted]]
@@ -68,7 +69,8 @@
 (def scene-4-tracks (range 22 33))
 (def interlude-1-tracks [34])
 (def interlude-2-tracks [35])
-(def all-tracks (concat scene-1-tracks
+(def REC-TRACK 36)
+(def all-tracks (concat scene-1-tracks  ;; NOTE should not include `REC-TRACK`
                         scene-2-tracks
                         scene-3b-tracks
                         scene-4-tracks
@@ -102,10 +104,22 @@
   (surge/init)
   (init-main-scene-track-volumes!))
 
+(defn close-fx-windows
+  []
+  (reaper/close-all-fx-chain-windows)
+  (reaper/close-all-fx-windows))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;
+;; INIT
+;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (comment
   ;; init ;; will create the midi-sinks as well
   (init!)
   (reaper/rec)
+  (reaper/set-track-rec REC-TRACK true)
+
+  (close-fx-windows)
 
   ;; development
   (reset! never-arm-envelope? true)
@@ -122,12 +136,17 @@
   (gp/stop)
   (rain.v2/stop))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;
+;; s1 glitchy
+;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (comment
   (reaper/rec)
   (reaper/stop)
   ;; Scene 1
   (toggle-track-arm true scene-1-tracks)
   (fade-track {:track (first scene-1-tracks) :dur-ms 15000 :db 0})
+  (reaper/just-select-track (first scene-1-tracks))
 
   (gp/ref-rain
    :id :s1/bd
@@ -191,11 +210,15 @@
                :on-end (fn [] (toggle-track-arm false scene-1-tracks))})
   (gp/stop))
 
-(comment
-  ;; Scene 2
+;;;;;;;;;;;;;;;;;;;;;;;;;
+;; s2
+;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(comment
   (toggle-track-arm true scene-2-tracks)
   (fade-track {:track (first scene-2-tracks) :dur-ms 20000 :db 0})
+  (reaper/just-select-track (first scene-2-tracks))
+  (close-fx-windows)
 
   (rain.v2/ref-rain
    :id :s2/bd
@@ -334,16 +357,25 @@
 ;;;;;;;;;;;;;;;;;;
 
 (comment
+  (reaper/just-select-track (first interlude-1-tracks))
   (toggle-track-arm true interlude-1-tracks)
   (fade-track {:track (first interlude-1-tracks) :dur-ms 2000 :db 0})
 
   (fade-track {:track (first interlude-1-tracks) :dur-ms 5000 :db :-inf
-               :on-end (fn [] (toggle-track-arm false interlude-1-tracks))}))
+               :on-end (fn [] (toggle-track-arm false interlude-1-tracks))})
+
+  (close-fx-windows))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;
+;; s4 viejo vago brujo
+;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (comment
   (gp/stop)
-  ;; s4 viejo vago brujo
 
+  (close-fx-windows)
+
+  (reaper/just-select-track (first scene-4-tracks))
   (toggle-track-arm true scene-4-tracks)
   (fade-track {:track (first scene-4-tracks) :dur-ms 5000 :db 0})
   (fade-track {:track (first scene-4-tracks) :dur-ms 5000 :db :-inf
@@ -354,17 +386,27 @@
 ;;;;;;;;;;;;;;;;;;
 
 (comment
+  (reaper/just-select-track (first interlude-2-tracks))
   (toggle-track-arm true interlude-2-tracks)
   (fade-track {:track (first interlude-2-tracks) :dur-ms 2000 :db 0})
 
   (fade-track {:track (first interlude-2-tracks) :dur-ms 5000 :db :-inf
-               :on-end (fn [] (toggle-track-arm false interlude-2-tracks))}))
+               :on-end (fn [] (toggle-track-arm false interlude-2-tracks))})
+
+  (close-fx-windows))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;
+;; s3b DnB
+;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (comment
 
+  (reaper/just-select-track (first scene-3b-tracks))
   (fade-track {:track (first scene-3b-tracks) :dur-ms 5000 :db 0})
   (toggle-track-arm true scene-3b-tracks)
   (toggle-track-arm false scene-3b-tracks)
+  (close-fx-windows)
+
   ;; Scene 3b
   (gp/ref-rain
    :id :s3/main
@@ -389,7 +431,7 @@
                                    "aca aca abe cbb"
                                    "aca aea aba eae"
                                    "bcb abb aca bb"
-                            ;; "bca aba acab ac"
+                                     ;; "bca aba acab ac"
                                    )
                        "a" (bd1)
                        "b" (bd2)

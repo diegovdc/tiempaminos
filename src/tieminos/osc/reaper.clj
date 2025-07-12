@@ -134,6 +134,12 @@
   []
   (osc/osc-send @osc-client "/sws-unselect-all-tracks"))
 
+(defn just-select-track
+  "Only selects the given track, and unselects the rest."
+  [track]
+  (unselect-all-tracks)
+  (select-track track true))
+
 (comment (unselect-all-tracks))
 
 (defn toggle-selected-tracks-fx
@@ -183,3 +189,30 @@
   (osc/osc-send @osc-client "/sws-remove-all-envelopes"))
 
 (comment (remove-all-envelopes))
+
+;;;;;;;;;;;;;;;
+;; FX windows
+;;;;;;;;;;;;;;
+
+(defn close-all-fx-chain-windows
+  "Calls `SWS/S&M: Close all fx chain windows`
+  The endpoint is a custom path added to the action."
+  []
+  (osc/osc-send @osc-client "/sws-close-all-fx-chain-windows"))
+
+(defn close-all-fx-windows
+  "Calls `SWS/S&M: Close all fx windows`
+  The endpoint is a custom path added to the action."
+  []
+  (osc/osc-send @osc-client "/sws-close-all-fx-windows"))
+
+(defn close-all-fx-windows-except-focused
+  "Calls `SWS/S&M: Close all fx windows, except focused-one`
+  The endpoint is a custom path added to the action."
+  []
+  (osc/osc-send @osc-client "/sws-close-all-fx-chain-windows-except-focused"))
+
+(comment
+  (close-all-fx-chain-windows)
+  (close-all-fx-windows)
+  (close-all-fx-windows-except-focused))

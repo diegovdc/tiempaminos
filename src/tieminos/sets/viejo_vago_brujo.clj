@@ -88,6 +88,7 @@
                 ref (assoc :ref ref)
                 ratio (assoc :ratio ratio)))))
 (comment
+  ;; init
   (do
     (def rim (o/sample (delacreme-stacks "Rim_multirim")))
     (def bd (o/sample (delacreme-single "bd29_01_Synthdrum Pack")))
@@ -97,12 +98,15 @@
     (def congao (o/sample (delacreme-single "conga open_World Sounds Vol3")))
     (def conga-low (o/sample (delacreme-single "conga low open_World Sounds Vol3")))
     (def conga-high (o/sample (delacreme-single "conga high hit_World Sounds Vol3")))
-    (def sd (o/sample (delacreme-single "SD_dnb_Raw Muffled Snares"))))
+    (def sd (o/sample (delacreme-single "SD_dnb_Raw Muffled Snares")))
+    (def sink (midi/midi-out "VirMIDI"))
+    (def sink2 (midi/midi-out "VirMIDI Bus 3"))
+    (def sink3 (midi/midi-out "VirMIDI Bus 4")))
 
   (st-smpl rim :out 20)
   (st-smpl bd)
   (-> sd :n-channels))
-(pow 3 5)
+
 (comment
   (ref-rain
    :id :bd
@@ -187,17 +191,19 @@
    :ratio 1/2
    :durs [2 2 2 2 2 2 2 2 1 2 1]
    :on-event (on-event
-              (when (or #_true (#{0  3 4} (mod i 5)))
+              (when (or #_true (#{0 #_3 4} (mod i 5)))
                 (let [ratchet* (rainseq [1 1 1 2 {1 8
                                                   2 2
                                                   3 3
-                                                  5 1/2}])
+                                                  ;; 5 1/2
+                                                  }])
                       ratchet (if (= dur 1/2) (min 2 ratchet*) ratchet*)
+                      ;; NOTE useful for improv
                       conga (rand-nth [conga-low
                                        conga-high congao])
                       amp (+ (at-i [0.5 0 1 0 0])
                              (rainseq {1 1
-                                         ;; 0 2
+                                       0 3, 0.5 3
                                        0.8 2
                                        0.7 3}))
                       amp-curve (rainseq (choose 0.94 0.92 0.85 0.7 1.2 1.3))
@@ -208,10 +214,12 @@
                                                           {1 8
                                                            12/11 2
                                                            13/11 8
-                                                           7/4 5
-                                                           2 8
-                                                           3 10
-                                                           3/2 2}]]))
+                                                           ;; NOTE for improv
+                                                           ;; 7/4 5
+                                                           ;; 2 8
+                                                           ;; 3 10
+                                                           ;; 3/2 2
+                                                           }]]))
                       curve (rainseq [1.2 1.1 1.3 0.9 0.8 0.7])
                       durs (map-indexed #(* %2 (pow curve %1))
                                         (repeat ratchet
@@ -248,15 +256,6 @@
    :ratio 1
    :durs [5/4 3/4]
    :on-event (on-event (when-not (= dur 5/4) (mono-smpl sd :out sd-out))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-  (def sink (midi/midi-out "VirMIDI"))
-  (def sink2 (midi/midi-out "VirMIDI Bus 3"))
-  (def sink3 (midi/midi-out "VirMIDI Bus 4"))
 
   (rain.v2/stop)
 
@@ -324,12 +323,11 @@
                             :offset (+ -10 (at-i [60 60 62 60 60 60 60 63 65]))
                             :note (+ (at-i [0 3 5 7 8 8 12 13 15]))}))))
 
-  (rain.v2/stop :hh)
-  (gp/stop)
-  (rain.v2/stop :bd)
-  (rain.v2/stop :pad)
-  (rain.v2/stop :bass)
   (rain.v2/stop :melody2)
   (rain.v2/stop :rim)
   (rain.v2/stop :congas)
-  (rain.v2/stop :sd))
+  (rain.v2/stop :bd)
+  (rain.v2/stop :hh)
+  (rain.v2/stop :sd)
+  (rain.v2/stop :bass)
+  (gp/stop))
