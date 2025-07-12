@@ -191,31 +191,34 @@
    :ratio 1/2
    :durs [2 2 2 2 2 2 2 2 1 2 1]
    :on-event (on-event
-              (when (or #_true (#{0 #_3 4} (mod i 5)))
-                (let [ratchet* (rainseq [1 1 1 2 {1 8
-                                                  2 2
-                                                  3 3
-                                                  ;; 5 1/2
-                                                  }])
+              (when (or #_true (#{0 3 4} (mod i 5)))
+                (let [ratchet* (rainseq [1 1 1 1 2 {1 1
+                                                    2 1
+                                                    3 2
+                                                    5 1/2}])
                       ratchet (if (= dur 1/2) (min 2 ratchet*) ratchet*)
                       ;; NOTE useful for improv
                       conga (rand-nth [conga-low
-                                       conga-high congao])
-                      amp (+ (at-i [0.5 0 1 0 0])
-                             (rainseq {1 1
-                                       0 3, 0.5 3
-                                       0.8 2
-                                       0.7 3}))
+                                       conga-high
+                                       congao])
+                      amp (* 0.9 (+ (at-i [0.5 0 1 0 0])
+                                    (rainseq {1 1
+                                              0 4,
+                                              ;; 0.5 3
+                                              0.8 2
+                                              0.7 3})))
                       amp-curve (rainseq (choose 0.94 0.92 0.85 0.7 1.2 1.3))
                       start-amp (if (and (> amp-curve 1)
                                          (> ratchet 1)) 1 0.7)
-                      rate (rainseq (** [2 2 2 {1 10 [2 1 1] 3}]
+                      rate (rainseq (** [{1 10 2 1} ;; comment this out on impro
+                                         #_#_#_2 2 2
+                                         #_{1 10 [2 1 1] 3}]
                                         [1 13/11 1 12/11 [12/11
                                                           {1 8
                                                            12/11 2
                                                            13/11 8
                                                            ;; NOTE for improv
-                                                           ;; 7/4 5
+                                                           7/4 5
                                                            ;; 2 8
                                                            ;; 3 10
                                                            ;; 3/2 2
@@ -270,7 +273,7 @@
    :ref :bd
    :tempo 180
    :ratio 1
-   :durs [4 2 4 2 #_2]                  ; TODO: check if thi this #_2 could still work?
+   :durs [4 2 4 2 #_2]                  ; TODO: check if this #_2 could still work?
    :on-event (on-event
               (let [amp 14]
                 (algo-note {:sink           sink
@@ -303,7 +306,7 @@
   (rain.v2/stop)
   (rain.v2/stop :melody2)
   ;;  Good alternative to the melody
-  #_(gp/ref-rain :id :s1/glitch-pluck :tempo 90 :durs [4/3 1 1/2] :on-event (gp/on-event (when (> 0.5 (rand)) (algo-note {:sink sink :dur (at-i [1/7 3/2 4]) :vel (min 127 (int (* 12 (rand-nth [3 8 10 4 5 3])))) :chan 1 :offset (weighted {80 4 71 10 75 3 50 6}) :tempo 120 :note (weighted {(seq-cycle :s1/gp [1]) 5 (- (rand-int 20) 20) 2})}))))
+  #_(gp/ref-rain :id :s1/glitch-pluck :tempo 90 :durs [4/3 1 1/2] :on-event (gp/on-event (when (> 0.5 (rand)) (algo-note {:sink sink :dur (at-i [1/7 3/2 4]) :vel (min 127 (int (* 12 (rand-nth [3 8 10 4 5 3])))) :chan 1 :offset (weighted {80 4 71 10 75 3 50 6}) :tempo 120 :note (weighted {(rainseq [1]) 5 (- (rand-int 20) 20) 2})}))))
   #_(gp/ref-rain :id :s1/glitch-pluck2-random-ascent :tempo 90 :durs (flatten [(concat (repeat 5 1/10) [(inc (rand-int 5))]) #_(concat (repeat 5 5/10) [(inc (rand-int 5))]) (concat (repeat 9 1/8) [(inc (rand-int 5))]) (concat (repeat 20 1/9) [(inc (rand-int 5))]) (concat (repeat 10 1/11) [(inc (rand-int 5))]) (concat (repeat 6 1/17) [(inc (rand-int 5))])]) :on-event (gp/on-event (algo-note {:sink sink :dur (weighted {1/8 18 1/2 1/5}) :vel (min 127 (int (* 16 (rand-nth [3 8 10 4 5 3])))) :chan 1 :offset (rand-nth [0 3 8 10 12 40]) :tempo 120 :note (rainseq (mapcat (fn [x] (map #(+ x %) (concat (range 50 (rrand 58 70)) (reverse (range 50 (rrand 58 70)))))) [0 10 -10 -4 8]))})))
   (ref-rain
    :id :melody2
@@ -323,11 +326,14 @@
                             :offset (+ -10 (at-i [60 60 62 60 60 60 60 63 65]))
                             :note (+ (at-i [0 3 5 7 8 8 12 13 15]))}))))
 
-  (rain.v2/stop :melody2)
+  (doseq [id [:melody2 :s1/glitch-pluck :s1/glitch-pluck2-random-ascent]]
+    (rain.v2/stop id)
+    (gp/stop id))
   (rain.v2/stop :rim)
   (rain.v2/stop :congas)
   (rain.v2/stop :bd)
   (rain.v2/stop :hh)
   (rain.v2/stop :sd)
-  (rain.v2/stop :bass)
-  (gp/stop))
+  (doseq [id [:bass :s1/bd]]
+    (rain.v2/stop id)
+    (gp/stop)))
