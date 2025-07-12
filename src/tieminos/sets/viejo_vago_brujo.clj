@@ -10,6 +10,7 @@
    [tieminos.midi.plain-algo-note :refer [algo-note]]
    [tieminos.seq-utils.core :refer [** ++ choose lin rainseq ret xo]]
    [tieminos.seq-utils.qwerty-velocity :as qwerty]
+   [time-time.dynacan.players.gen-poly :as gp]
    [time-time.dynacan.players.refrain.v2 :as rain.v2 :refer [on-event ref-rain]]
    [time-time.standard :refer [rrand]]))
 
@@ -259,12 +260,18 @@
 
   (rain.v2/stop)
 
+;;;;;;;;;;;
+  ;; Bass
+;;;;;;;;;;;
+
+  ;; A really good alternative to the bass, from glitchy-forest
+  #_(gp/ref-rain :id :s1/bd :tempo 40 :durs [1/8] :on-event (gp/on-event (when (#{0 2 6 1} (mod i 8)) (algo-note {:sink sink :dur (rainseq {1 3 2 1 1/4 1 4 4}) :vel (min 127 (int (* 12 (at-i [3 4 5 3])))) :chan 0 :offset 50 :tempo 120 :note (rainseq (++ [0 0 10 {0 3 12 1} (choose 0 3 2) 0 -5 0 2] (lin :id/bd [1 {3 5 6 1} 2 4 6 {9 5 7 1}])))}))))
   (ref-rain
    :id :bass
    :ref :bd
    :tempo 180
    :ratio 1
-   :durs [4 2 4 2 2]
+   :durs [4 2 4 2 #_2]                  ; TODO: check if thi this #_2 could still work?
    :on-event (on-event
               (let [amp 14]
                 (algo-note {:sink           sink
@@ -296,6 +303,9 @@
                                  :note           (rainseq (choose 19 18 17 21 20 22))})))))))
   (rain.v2/stop)
   (rain.v2/stop :melody2)
+  ;;  Good alternative to the melody
+  #_(gp/ref-rain :id :s1/glitch-pluck :tempo 90 :durs [4/3 1 1/2] :on-event (gp/on-event (when (> 0.5 (rand)) (algo-note {:sink sink :dur (at-i [1/7 3/2 4]) :vel (min 127 (int (* 12 (rand-nth [3 8 10 4 5 3])))) :chan 1 :offset (weighted {80 4 71 10 75 3 50 6}) :tempo 120 :note (weighted {(seq-cycle :s1/gp [1]) 5 (- (rand-int 20) 20) 2})}))))
+  #_(gp/ref-rain :id :s1/glitch-pluck2-random-ascent :tempo 90 :durs (flatten [(concat (repeat 5 1/10) [(inc (rand-int 5))]) #_(concat (repeat 5 5/10) [(inc (rand-int 5))]) (concat (repeat 9 1/8) [(inc (rand-int 5))]) (concat (repeat 20 1/9) [(inc (rand-int 5))]) (concat (repeat 10 1/11) [(inc (rand-int 5))]) (concat (repeat 6 1/17) [(inc (rand-int 5))])]) :on-event (gp/on-event (algo-note {:sink sink :dur (weighted {1/8 18 1/2 1/5}) :vel (min 127 (int (* 16 (rand-nth [3 8 10 4 5 3])))) :chan 1 :offset (rand-nth [0 3 8 10 12 40]) :tempo 120 :note (rainseq (mapcat (fn [x] (map #(+ x %) (concat (range 50 (rrand 58 70)) (reverse (range 50 (rrand 58 70)))))) [0 10 -10 -4 8]))})))
   (ref-rain
    :id :melody2
    :ref :bd
@@ -315,6 +325,7 @@
                             :note (+ (at-i [0 3 5 7 8 8 12 13 15]))}))))
 
   (rain.v2/stop :hh)
+  (gp/stop)
   (rain.v2/stop :bd)
   (rain.v2/stop :pad)
   (rain.v2/stop :bass)

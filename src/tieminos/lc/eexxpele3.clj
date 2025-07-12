@@ -109,12 +109,15 @@
 
   ;; development
   (reset! never-arm-envelope? true)
+  (reset! never-arm-envelope? false)
+
+;;;; remove all envelopes
   (doseq [t all-tracks] (reaper/select-track t true))
   (reaper/remove-all-envelopes)
   (doseq [t all-tracks] (reaper/select-track t false))
 
-  (toggle-fx all-tracks true)
-  (toggle-fx all-tracks false)
+  (toggle-fx true all-tracks)
+  (toggle-fx false all-tracks)
 
   (gp/stop)
   (rain.v2/stop))
@@ -124,15 +127,14 @@
   (reaper/stop)
   ;; Scene 1
   (toggle-track-arm true scene-1-tracks)
-  (fade-track {:track (first scene-1-tracks) :dur-ms 5000 :db 0})
+  (fade-track {:track (first scene-1-tracks) :dur-ms 15000 :db 0})
 
   (gp/ref-rain
    :id :s1/bd
    :tempo 40
    :durs [1/8]
    :on-event (gp/on-event
-              (when (#{0 2 6 #_1} (mod i 8)) ;; #{0 2 #_6}
-                  ;; bd
+              (when (#{0 2 #_6 #_1} (mod i 8)) ;; #{0 2 #_6}
                 (algo-note {:sink sink
                             :dur (rainseq {1 3 2 1 1/4 1 4 4})
                             :vel (min 127 (int (* 12 (at-i [3 4 5 3]))))
@@ -181,6 +183,7 @@
                                                                       (reverse (range 50 (rrand 58 70))))))
                                                  [0 10 -10 -4 8]))})))
 
+  ;; don't silence them as they will be used in VVB
   (gp/stop :s1/bd)
   (gp/stop :s1/glitch-pluck)
   (gp/stop :s1/glitch-pluck2-random-ascent)
@@ -192,7 +195,7 @@
   ;; Scene 2
 
   (toggle-track-arm true scene-2-tracks)
-  (fade-track {:track (first scene-2-tracks) :dur-ms 1000 :db 0})
+  (fade-track {:track (first scene-2-tracks) :dur-ms 20000 :db 0})
 
   (rain.v2/ref-rain
    :id :s2/bd
@@ -231,7 +234,7 @@
    :durs [1 1/4 1 1 1/2 2 1]
    :on-event (rain.v2/on-event
               (when (xo "xooxooxo" i)
-                (let [note (+  (rainseq (concat [[0 2 0 4 7]]
+                (let [note (rainseq (++ (concat [[0 2 0 4 7]]
                                                 [0 2 1 4 7]
                                                 [0 2 1 4 7]
                                                 [0 2 0 4 10])))]
@@ -318,8 +321,13 @@
   (rain.v2/stop :s2/bd-child)
   (rain.v2/stop :s2/bass)
   (rain.v2/stop :s2/cianningies)
-  (fade-track {:track (first scene-2-tracks) :dur-ms 5000 :db :-inf
-               :on-end (fn [] (toggle-track-arm false scene-2-tracks))}))
+  (fade-track {:track (first scene-2-tracks) :dur-ms 20000 :db :-inf
+               :on-end (fn []
+                         (rain.v2/stop :s2/bd)
+                         (rain.v2/stop :s2/bd-child)
+                         (rain.v2/stop :s2/bass)
+                         (rain.v2/stop :s2/cianningies)
+                         (toggle-track-arm false scene-2-tracks))}))
 
 ;;;;;;;;;;;;;;;;;;
 ;; interludio 1
