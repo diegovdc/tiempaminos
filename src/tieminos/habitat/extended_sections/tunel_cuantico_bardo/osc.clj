@@ -302,18 +302,19 @@
 (def ^:private excluded-paths #{"/presets/load"})
 
 ;; main eq controls
+(def ^:private eq-track 24)
 
 (def ^:private eq-param-defaults
-  {:eq/loshelf.freq {:init-val 0 :path "/track/24/fxeq/loshelf/freq"}
-   :eq/loshelf.gain {:init-val 0 :path "/track/24/fxeq/loshelf/gain"}
-   :eq/hishelf.freq {:init-val 24000 :path "/track/24/fxeq/hishelf/freq"}
-   :eq/hishelf.gain {:init-val 0 :path "/track/24/fxeq/hishelf/gain"}
+  {:eq/loshelf.freq {:init-val 0 :path (format "/track/%s/fxeq/loshelf/freq" eq-track)}
+   :eq/loshelf.gain {:init-val 0 :path (format "/track/%s/fxeq/loshelf/gain" eq-track)}
+   :eq/hishelf.freq {:init-val 24000 :path (format "/track/%s/fxeq/hishelf/freq" eq-track)}
+   :eq/hishelf.gain {:init-val 0 :path (format "/track/%s/fxeq/hishelf/gain" eq-track)}
    ;; a simple band pass assumed to have a gain > 0.5
-   :eq/bell.freq {:init-val 1000 :path "/track/24/fxeq/band/0/freq"}
-   :eq/bell.gain {:init-val 0.5 :path "/track/24/fxeq/band/0/gain"}
+   :eq/bell.freq {:init-val 1000 :path (format "/track/%s/fxeq/band/0/freq" eq-track)}
+   :eq/bell.gain {:init-val 0.5 :path (format "/track/%s/fxeq/band/0/gain" eq-track)}
    ;; a simple band pass assumed to have a gain < 0.5
-   :eq/notch.freq {:init-val 2000 :path "/track/24/fxeq/band/1/freq"}
-   :eq/notch.gain {:init-val 0.5 :path "/track/24/fxeq/band/1/gain"}})
+   :eq/notch.freq {:init-val 2000 :path (format "/track/%s/fxeq/band/1/freq" eq-track)}
+   :eq/notch.gain {:init-val 0.5 :path (format "/track/%s/fxeq/band/1/gain" eq-track)}})
 
 (defn interpolate-premaster-eq-band-vals
   ;; NOTE: for the ids to reference see the `eq-param-defaults` var.
@@ -374,9 +375,9 @@
     :dur-ms 5000})
 
   (stop-all-interpolators!)
-  (osc/osc-send @habitat-osc/reaper-client "/track/23/fxeq/band/0/freq" (float 0.2))
-  (osc/osc-send @habitat-osc/reaper-client "/track/23/fxeq/loshelf/gain" (float 0.2))
-  (osc/osc-send @habitat-osc/reaper-client "/track/23/fxeq/hishelf/freq/hz" (float (+ 2000 (rand-int 2000)))))
+  (osc/osc-send @habitat-osc/reaper-client (format "/track/%s/fxeq/band/0/freq" eq-track) (float 0.2))
+  (osc/osc-send @habitat-osc/reaper-client (format "/track/%s/fxeq/loshelf/gain" eq-track) (float 0.2))
+  (osc/osc-send @habitat-osc/reaper-client (format "/track/%s/fxeq/hishelf/freq/hz" eq-track) (float (+ 2000 (rand-int 2000)))))
 
 (defn set-eq-interpolation-dur
   [opt-num]
@@ -465,13 +466,13 @@
 (defn reaper-rec!
   []
   ;; set OSC EQ envelope to write
-  (reaper/set-autowrite 23)
+  (reaper/set-autowrite eq-track)
   (reaper/rec))
 
 (defn reaper-stop!
   []
   ;; set OSC EQ envelope to write
-  (reaper/set-autotrim 23)
+  (reaper/set-autotrim eq-track)
   (reaper/stop))
 
 (defn init!
