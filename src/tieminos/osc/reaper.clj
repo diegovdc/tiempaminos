@@ -60,7 +60,13 @@
   ;; n/track/@/fx/@/fxparam/@/value
   (osc/osc-send @osc-client (format "/track/%s/fx/%s/fxparam/%s/value" track fx param) (float val)))
 
-#_(set-fx 2 1 8 (rand))
+(comment
+  (set-fx 2 2 1 0.5)
+  (set-fx 2 2 1 0.52)
+  (set-fx 2 2 1 0.54)
+  (set-fx 2 2 1 0.56)
+  (set-fx 2 2 1 0.58)
+  (set-fx 2 2 1 0.60))
 
 (defn basic-insert-marker
   "This is a very simple way to insert markers. It may produce duplicate markers"

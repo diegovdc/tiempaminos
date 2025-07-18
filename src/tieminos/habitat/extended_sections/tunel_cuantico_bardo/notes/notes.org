@@ -111,14 +111,15 @@ CLOSED: [2025-07-02 Wed 16:03]
 CLOSED: [2025-07-02 Wed 16:03]
 ** DONE [#A] Revisar volumen de envío de collider, porque con el ambisonics se está sobresaturando
 CLOSED: [2025-07-09 Wed 18:52] SCHEDULED: <2025-07-05 Sat>
-** TODO Ajustar ganancia de canal de entrada de la guitarra... o el de salida
-SCHEDULED: <2025-07-16 Wed>
+** DONE Ajustar ganancia de canal de entrada de la guitarra... o el de salida
+CLOSED: [2025-07-17 Thu 19:51] SCHEDULED: <2025-07-16 Wed>
 ** TODO Compresión para el canal de MixBus, evitar picotes
+Más bien un limitador
 SCHEDULED: <2025-07-16 Wed>
-** TODO Reparar cambio de automatización del EQ, apunta a un canal diferente.
-SCHEDULED: <2025-07-16 Wed>
+** DONE Reparar cambio de automatización del EQ, apunta a un canal diferente.
+CLOSED: [2025-07-17 Thu 10:55] SCHEDULED: <2025-07-16 Wed>
 ** IDEA bancos con tipos de comportamiento/sintesis/espacialización
-** TODO rutear el eq para que solo afecte a los canales de procesos
-SCHEDULED: <2025-07-16 Wed>
+** DONE rutear el eq para que solo afecte a los canales de procesos
+CLOSED: [2025-07-17 Thu 11:06] SCHEDULED: <2025-07-16 Wed>
 
 

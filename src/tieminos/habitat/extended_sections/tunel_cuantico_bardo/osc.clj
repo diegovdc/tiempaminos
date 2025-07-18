@@ -319,7 +319,7 @@
 (defn interpolate-premaster-eq-band-vals
   ;; NOTE: for the ids to reference see the `eq-param-defaults` var.
   [{:keys [band freq gain dur-ms tick-ms]
-    :or {tick-ms 100}}]
+    :or {tick-ms 200}}]
   (let [freq-id (keyword "eq" (str (name band) ".freq"))
         gain-id (keyword "eq" (str (name band) ".gain"))]
     (doseq [id [freq-id gain-id]]
@@ -462,18 +462,62 @@
       :freq 2000
       :gain 0.5
       :dur-ms dur-ms})))
+;;;;;;;;;;;
+;;; Guitar
+;;;;;;;;;;;
+
+(def ^:private guitar-input-track 2)
+
+(let [initial-leve-index (atom 0)
+      amp-fx-position 2]
+  (defn guitar-input-amp
+    [level-index]
+    ;; 0.2 equals 6db
+    (let [levels (range 0.5 0.66 0.02)]
+      (if-let [level (nth levels level-index nil)]
+        (do (cb-interpolate
+             {:id ::guitar-boost
+              :dur-ms (* 1500
+                          ;; increase dur-ms based on difference of level-indexes
+                         (max 1 (abs (- level-index
+                                        @initial-leve-index))))
+              :tick-ms 100
+              :init-val 0.5
+              :target-val level
+              :cb (fn [{:keys [val]}] (reaper/set-fx guitar-input-track
+                                                     amp-fx-position
+                                                     1 val))})
+            (reset! initial-leve-index level-index))
+        (throw (ex-info "Unkown guitar input amp level-index" {:total-levels (count levels)
+                                                               :levels levels
+                                                               :level-index level-index}))))))
+(comment
+  (guitar-input-amp 0))
+
+;;;;;;;;;;;;;;;
+;;; Recording
+;;;;;;;;;;;;;;;
+(def ^:private guitar-clean-track 14)
+(def ^:private guitar-processes-track 15)
+
+(def ^:private automated-tracks
+  [eq-track
+   guitar-input-track
+   guitar-clean-track
+   guitar-processes-track])
 
 (defn reaper-rec!
   []
-  ;; set OSC EQ envelope to write
-  (reaper/set-autowrite eq-track)
+  (doseq [track automated-tracks]
+    (reaper/set-autowrite track))
   (reaper/rec))
 
 (defn reaper-stop!
   []
   ;; set OSC EQ envelope to write
-  (reaper/set-autotrim eq-track)
-  (reaper/stop))
+  (reaper/stop)
+  (doseq [track automated-tracks]
+    (reaper/set-autotrim track)))
 
 (defn init!
   "`clients` is a vector of [host port]"
@@ -529,6 +573,7 @@
            "/Diego/harmonic-highest-note" (set-harmonic-range {:player :diego :low?  false :value (first args)})
            "/Diego/rev-send-clean" (set-rev-send {:player :diego :clean? true :value (first args)})
            "/Diego/rev-send-process" (set-rev-send {:player :diego :clean? false :value (first args)})
+           "/Diego/input-amp-boost" (guitar-input-amp (first args))
            ;; gusano
            "/gusano/gusano-active-btn" (toggle-gusano press?)
            "/gusano/gusano-active-milo-src-btn" (toggle-gusano-active-sources :milo press?)
