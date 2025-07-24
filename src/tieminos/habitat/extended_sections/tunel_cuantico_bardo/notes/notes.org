@@ -111,6 +111,10 @@ CLOSED: [2025-07-02 Wed 16:03]
 CLOSED: [2025-07-02 Wed 16:03]
 ** DONE [#A] Revisar volumen de envío de collider, porque con el ambisonics se está sobresaturando
 CLOSED: [2025-07-09 Wed 18:52] SCHEDULED: <2025-07-05 Sat>
+** DONE Agregar botón para callar súbitamente los sintes
+CLOSED: [2025-07-24 Thu 17:25] SCHEDULED: <2025-07-28 Mon>
+Aprox 5 segundos
+Actualización: en lugar de agregar botón, fader y OSC a reaper.
 ** DONE Ajustar ganancia de canal de entrada de la guitarra... o el de salida
 CLOSED: [2025-07-17 Thu 19:51] SCHEDULED: <2025-07-16 Wed>
 ** TODO Compresión para el canal de MixBus, evitar picotes

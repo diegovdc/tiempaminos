@@ -468,31 +468,42 @@
 
 (def ^:private guitar-input-track 2)
 
-(let [initial-leve-index (atom 0)
+(let [initial-level-index (atom 0)
       amp-fx-position 2]
   (defn guitar-input-amp
     [level-index]
-    ;; 0.2 equals 6db
-    (let [levels (range 0.5 0.66 0.02)]
-      (if-let [level (nth levels level-index nil)]
-        (do (cb-interpolate
-             {:id ::guitar-boost
-              :dur-ms (* 1500
-                          ;; increase dur-ms based on difference of level-indexes
-                         (max 1 (abs (- level-index
-                                        @initial-leve-index))))
-              :tick-ms 100
-              :init-val 0.5
-              :target-val level
-              :cb (fn [{:keys [val]}] (reaper/set-fx guitar-input-track
-                                                     amp-fx-position
-                                                     1 val))})
-            (reset! initial-leve-index level-index))
-        (throw (ex-info "Unkown guitar input amp level-index" {:total-levels (count levels)
-                                                               :levels levels
-                                                               :level-index level-index}))))))
+    ;; 0.02 equals 6db
+    (let [level (+ 0.5 (* level-index 0.02))]
+      (cb-interpolate
+       {:id ::guitar-boost
+        :dur-ms (* 1500
+                    ;; increase dur-ms based on difference of level-indexes
+                   (max 1 (abs (- level-index
+                                  @initial-level-index))))
+        :tick-ms 100
+        :init-val 0.5
+        :target-val level
+        :cb (fn [{:keys [val]}] (reaper/set-fx guitar-input-track
+                                               amp-fx-position
+                                               1 val))})
+      (reset! initial-level-index level-index))))
+
 (comment
   (guitar-input-amp 0))
+;;;;;;;;;;
+;; Percussion
+;;;;;;;;;;
+
+(def ^:private percussion-processes-track 18)
+
+(defn set-track-volume
+  [track volume]
+  (osc/osc-send @habitat-osc/reaper-client
+                (format "/track/%s/volume" track)
+                (float volume)))
+
+(comment
+  (set-track-volume percussion-processes-track 0))
 
 ;;;;;;;;;;;;;;;
 ;;; Recording
@@ -554,6 +565,7 @@
            "/Milo/harmonic-highest-note" (set-harmonic-range {:player :milo :low?  false :value (first args)})
            "/Milo/rev-send-clean" (set-rev-send {:player :milo :clean? true :value (first args)})
            "/Milo/rev-send-process" (set-rev-send {:player :milo :clean? false :value (first args)})
+           "/Milo/processed-master" (set-track-volume percussion-processes-track (first args))
            "/Diego/rec-guitar-btn" (toogle-rec {:input :guitar :on? press? :dur (-> @live-state :rec :mic-1 :dur (or 0.5))})
            "/Diego/rec-durs-radio" (switch-rec-durs [:guitar] (first args))
            "/Diego/rec-pulse-radio" (switch-rec-pulse [:guitar] (first args))
