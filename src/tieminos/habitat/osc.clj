@@ -88,6 +88,12 @@
 (defn make-receiver-clients
   "`clients` is a vector of [host port]"
   [clients]
+  ;; Close existing clients
+  (doseq [client (vals @receiver-clients)]
+    (osc/osc-close client))
+
+  (reset! receiver-clients {})
+
   (doseq [client clients]
     (when-not (@receiver-clients client)
       (let [[host port] client]
@@ -99,6 +105,7 @@
 
 (comment
   (init)
+  (-> (vals @receiver-clients))
   (reset! osc-server nil)
   (osc/osc-debug true)
   (-> @reaper-client)
