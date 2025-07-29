@@ -1,8 +1,8 @@
 (ns tieminos.sc-utils.synths.template-synth
   (:require
+   [clojure.string :as str]
    [clojure.walk :as walk]
-   [overtone.core :as o]
-   [taoensso.timbre :as timbre]))
+   [overtone.core :as o]))
 
 (defn ns-kw?
   [kw-ns-str kw]
@@ -92,60 +92,124 @@
   (println " instance-symbol" synth-symbol)
   (symbol (str synth-symbol (inc (get-in @variations-data [synth-symbol :count] -1)))))
 
+(defn qualify-body
+  [synth-body]
+  (let [collides (ns-interns 'overtone.sc.ugen-collide-list)]
+    (walk/postwalk (fn [x]
+                     (if (symbol? x)
+                       (if-let [res (resolve x)]
+                         (cond
+                           (number? (var-get res)) (var-get res) ;; constants
+                           (collides x) (collides x)
+                           :else res)
+                         x)
+                       x))
+                   synth-body)))
+(comment
+  (qualify-body '(o/out out
+                        (* (o/env-gen (o/env-perc) :action o/FREE)
+                           (o/sin-osc freq)))))
+
+(declare call-synth define-synth)
+
+(defn get-synth-ns-string
+  [synth-symbol]
+  (str/replace (ns-resolve *ns* synth-symbol)
+               #"#'" ""))
+
+(defn add-variation-data!
+  [namespaced-synth-string
+   synth-body
+   params-map
+   analyzed-args]
+  (swap! variations-data
+         (fn [data]
+           (let [synth-data (get data namespaced-synth-string
+                                 {:default-params params-map
+                                  :synth-body (qualify-body synth-body)})]
+             (assoc data
+                    namespaced-synth-string
+                    (-> synth-data
+                        (update :count (fnil inc 0))
+                        (assoc-in [:variants analyzed-args] {:default-params params-map})))))))
+(-> @variations-data)
 (do
 
   #_(reset! variations-data {})
   #_(reset! synths-cache {})
-
   ;; NOTE IMPORTANT ths is promising, no macros!
   (defn make-synth-fn
     [synth-symbol params-map synth-body]
     ;; TODO should analyze args and memoize synths
 
-    (let [analyzed-args (analyze-ds-args synth-symbol params-map)
+    (when-not (ns-resolve *ns* synth-symbol)
+      ;; TODO add getter
+      (define-synth *ns* synth-symbol))
+
+    (let [namespaced-synth-string (get-synth-ns-string synth-symbol)
+          analyzed-args (analyze-ds-args namespaced-synth-string params-map)
           _ (println analyzed-args)
           cached-synth (get-in @synths-cache [analyzed-args])]
       (if cached-synth
-        (do
-          (println "CS" cached-synth)
-          cached-synth)
-        (let [[_s-name params ugen-form] (make-synth-form synth-symbol params-map synth-body)
-              _ (println "before" ugen-form)
+        cached-synth
+        (let [[_s-name params ugen-form] (make-synth-form
+                                          synth-symbol
+                                          params-map (qualify-body synth-body))
               synth (eval (list 'overtone.core/synth
                                 (instance-symbol synth-symbol)
-                                params ugen-form))
-              _ (println "after")]
+                                params ugen-form))]
           (swap! synths-cache assoc analyzed-args synth)
-          ;; TODO add getter
-          #_(eval (list 'defn synth-symbol [] (list println "getting the synth:" synth-symbol)))
           ;; TODO prevent overwritting a synth from another namespace (i.e. namespace the symbol)
-          (swap! variations-data (fn [data]
-                                   (let [synth-data (get data synth-symbol {:default-params params-map :synth-body synth-body})]
-                                     (assoc data synth-symbol
-                                            (update synth-data :count (fnil inc 0))))))
+          (add-variation-data!
+           namespaced-synth-string
+           synth-body
+           params-map
+           analyzed-args)
           synth))))
 
-  ((make-synth-fn
-    'sini
-    (merge {:freq [200 500] :out 0} {:amp 1})
-    '(o/out out (* (o/env-gen (o/env-perc) :action o/FREE) (o/sin-osc freq)))))
+  #_((make-synth-fn
+      'sini
+      (merge {:freq [200 500] :out 0} {:amp 1})
+      '(o/out out (* (o/env-gen (o/env-perc)
+                                :action o/FREE) (o/sin-osc freq)))))
   #_(println "res:")
   #_(println @variations-data)
   #_(println @synths-cache))
 
-(defn get-instance
+(defn get-instance-data
   [synth-symbol params-map]
-  (let [{:keys [default-params synth-body]} (get @variations-data synth-symbol)
+  (let [namespaced-synth-string (get-synth-ns-string synth-symbol)
+        {:keys [default-params synth-body]} (get @variations-data namespaced-synth-string)
         merged-params (merge default-params params-map)
-        analyzed-args (analyze-ds-args synth-symbol merged-params)
+        analyzed-args (analyze-ds-args namespaced-synth-string merged-params)
         synth (or (get-in @synths-cache [analyzed-args])
                   (make-synth-fn synth-symbol merged-params synth-body))]
-    synth))
+    {:synth synth :analyzed-args analyzed-args :merged-params merged-params}))
+
+#_(get-instance-data 'sini {})
 
 (defn call-synth
   [synth-symbol params-map]
-  (let [synth (get-instance synth-symbol params-map)]
-    (println synth)
-    (synth (modify-params2 params-map))))
+  (println "SS" synth-symbol params-map)
+  (let [{:keys [synth merged-params]} (get-instance-data (symbol synth-symbol) params-map)]
+    (synth (modify-params2 merged-params))))
+(comment
 
-(call-synth 'sini {:freq [200 600 700 900]})
+  (resolve 'sini)
+  (get @variations-data 'sini)
+  (call-synth 'sini {:freq [500]})
+  (sini {}))
+
+(defn define-synth
+  [ns synth-symbol]
+  (intern ns synth-symbol
+          (fn
+            ([] (call-synth synth-symbol {}))
+            ([params-map] (call-synth synth-symbol params-map)))))
+
+(comment
+  (ns-unmap  *ns* 'sini)
+
+  (intern *ns* 'hola 6)
+  (def hola "hola")
+  (-> hola))
