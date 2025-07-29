@@ -20,14 +20,32 @@
                         (into {}))]
 
     #_(timbre/spy :info)
-    (walk/postwalk (fn [x]
-                     (if-let [mapping (params-map x)]
-                       mapping
-                       (cond
-                         (ns-kw? "fx" x) (params x identity)
-                         (ns-kw? "dyn" x) (list 'as-> 'sig (params x identity))
-                         :else x)))
-                   synth-body)))
+    (walk/prewalk (fn [x]
+                    (if-let [mapping (params-map x)]
+                      mapping
+                      (cond
+                        (ns-kw? "fx" x) (params x identity)
+                        (ns-kw? "ugen" x) (params x identity)
+                        (ns-kw? "dyn" x) (list 'as-> 'sig (params x identity))
+                        :else x)))
+                  synth-body)))
+(comment
+  ;; TODO levels and env-durs should ideally only belong to this particular instance(?)
+  ;; TODO try parametrizing panning as will be needed, probably the most important thing to work on atm.
+  (modify-body
+   {:freq [1 2]
+    :levels [0 1 1 0]
+    :env-durs [3 3 3]
+    :ugen/env '(o/env-gen (o/envelope levels env-durs))
+    :shaper-limit 0.5
+    :ugen/shaper '(o/sine-shaper shaper-limit)
+    :ugen/fx1 '(o/dist)
+    :out 0}
+   '(o/out 0
+           (o/sin-osc freq)
+           :ugen/shaper
+           :ugen/fx1
+           (* :ugen/env))))
 
 (defn modify-params
   "Used when creating the synth's params vector"
@@ -71,6 +89,7 @@
     (sequential? arg) [:seq (count arg)]
     (ns-kw? "fx" k) [:fx/fn (str arg)]
     (ns-kw? "dyn" k) [:dyn/fn (str arg)]
+    (ns-kw? "ugen" k) [:ugen (str arg)]
     :else (throw (ex-info "Don't know how to analyze arg:" {:key k
                                                             :arg arg}))))
 
@@ -148,13 +167,13 @@
 
     (let [namespaced-synth-string (get-synth-ns-string synth-symbol)
           analyzed-args (analyze-ds-args namespaced-synth-string params-map)
-          _ (println analyzed-args)
           cached-synth (get-in @synths-cache [analyzed-args])]
       (if cached-synth
         cached-synth
         (let [[_s-name params ugen-form] (make-synth-form
                                           synth-symbol
-                                          params-map (qualify-body synth-body))
+                                          params-map
+                                          (qualify-body synth-body))
               synth (eval (list 'overtone.core/synth
                                 (instance-symbol synth-symbol)
                                 params ugen-form))]
@@ -198,7 +217,7 @@
   (resolve 'sini)
   (get @variations-data 'sini)
   (call-synth 'sini {:freq [500]})
-  (sini {}))
+  (sini))
 
 (defn define-synth
   [ns synth-symbol]
