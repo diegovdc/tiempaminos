@@ -77,7 +77,10 @@
   []
   (if @reaper-client
     @reaper-client
-    (reset! reaper-client (osc/osc-client (get-local-host) 65432))))
+    (reset! reaper-client (osc/osc-client
+                           #_(get-local-host) ;; for some reason this is not working
+                           "0.0.0.0"
+                           65432))))
 
 (defn make-internal-osc-client
   []
