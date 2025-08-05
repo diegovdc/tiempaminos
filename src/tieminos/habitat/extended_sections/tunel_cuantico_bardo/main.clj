@@ -28,7 +28,7 @@
   (bardo.osc/init!
     ;; NOTE if an client is missing there will be a "Host is Down" error.
    [["127.0.0.1" 16181]       ;; local
-    ["192.168.0.101" 16180]   ;; diego
+    #_["192.168.0.101" 16180]   ;; diego
     #_["192.168.0.104" 16180] ;; milo
     ])
   ;; init everything (habitat and input synths) except SC, REAPER and OSC communications
@@ -39,7 +39,6 @@
 (defonce saved-synth-params (atom []))
 
 (comment
-
   (->> @rec/bufs
        vals
        (map #(into {} %)))

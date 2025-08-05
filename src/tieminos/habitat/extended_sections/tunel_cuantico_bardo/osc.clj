@@ -301,20 +301,34 @@
 
 (def ^:private excluded-paths #{"/presets/load"})
 
-;; main eq controls
-(def ^:private eq-track 24)
+;;;;;;;;;;;;;;;;;;;
+;;  REAPER
+;;;;;;;;;;;;;;;;;;;
 
+(def ^:private reaper-tracks*
+  {:guitar-input-track 2
+   :guitar-clean-track 14
+   :guitar-processes-track 15
+   :percussion-processes-track 18
+   :eq-track 24})
+
+(defn- reaper-tracks [k]
+  (if-let [track-num (reaper-tracks* k)]
+    track-num
+    (throw (ex-info "Unknown track key" {:key k}))))
+
+;; main eq controls
 (def ^:private eq-param-defaults
-  {:eq/loshelf.freq {:init-val 0 :path (format "/track/%s/fxeq/loshelf/freq" eq-track)}
-   :eq/loshelf.gain {:init-val 0 :path (format "/track/%s/fxeq/loshelf/gain" eq-track)}
-   :eq/hishelf.freq {:init-val 24000 :path (format "/track/%s/fxeq/hishelf/freq" eq-track)}
-   :eq/hishelf.gain {:init-val 0 :path (format "/track/%s/fxeq/hishelf/gain" eq-track)}
+  {:eq/loshelf.freq {:init-val 0 :path (format "/track/%s/fxeq/loshelf/freq" (reaper-tracks :eq-track))}
+   :eq/loshelf.gain {:init-val 0 :path (format "/track/%s/fxeq/loshelf/gain" (reaper-tracks :eq-track))}
+   :eq/hishelf.freq {:init-val 24000 :path (format "/track/%s/fxeq/hishelf/freq" (reaper-tracks :eq-track))}
+   :eq/hishelf.gain {:init-val 0 :path (format "/track/%s/fxeq/hishelf/gain" (reaper-tracks :eq-track))}
    ;; a simple band pass assumed to have a gain > 0.5
-   :eq/bell.freq {:init-val 1000 :path (format "/track/%s/fxeq/band/0/freq" eq-track)}
-   :eq/bell.gain {:init-val 0.5 :path (format "/track/%s/fxeq/band/0/gain" eq-track)}
+   :eq/bell.freq {:init-val 1000 :path (format "/track/%s/fxeq/band/0/freq" (reaper-tracks :eq-track))}
+   :eq/bell.gain {:init-val 0.5 :path (format "/track/%s/fxeq/band/0/gain" (reaper-tracks :eq-track))}
    ;; a simple band pass assumed to have a gain < 0.5
-   :eq/notch.freq {:init-val 2000 :path (format "/track/%s/fxeq/band/1/freq" eq-track)}
-   :eq/notch.gain {:init-val 0.5 :path (format "/track/%s/fxeq/band/1/gain" eq-track)}})
+   :eq/notch.freq {:init-val 2000 :path (format "/track/%s/fxeq/band/1/freq" (reaper-tracks :eq-track))}
+   :eq/notch.gain {:init-val 0.5 :path (format "/track/%s/fxeq/band/1/gain" (reaper-tracks :eq-track))}})
 
 (defn interpolate-premaster-eq-band-vals
   ;; NOTE: for the ids to reference see the `eq-param-defaults` var.
@@ -375,9 +389,9 @@
     :dur-ms 5000})
 
   (stop-all-interpolators!)
-  (osc/osc-send @habitat-osc/reaper-client (format "/track/%s/fxeq/band/0/freq" eq-track) (float 0.2))
-  (osc/osc-send @habitat-osc/reaper-client (format "/track/%s/fxeq/loshelf/gain" eq-track) (float 0.2))
-  (osc/osc-send @habitat-osc/reaper-client (format "/track/%s/fxeq/hishelf/freq/hz" eq-track) (float (+ 2000 (rand-int 2000)))))
+  (osc/osc-send @habitat-osc/reaper-client (format "/track/%s/fxeq/band/0/freq" (reaper-tracks :eq-track)) (float 0.2))
+  (osc/osc-send @habitat-osc/reaper-client (format "/track/%s/fxeq/loshelf/gain" (reaper-tracks :eq-track)) (float 0.2))
+  (osc/osc-send @habitat-osc/reaper-client (format "/track/%s/fxeq/hishelf/freq/hz" (reaper-tracks :eq-track)) (float (+ 2000 (rand-int 2000)))))
 
 (defn set-eq-interpolation-dur
   [opt-num]
@@ -397,6 +411,13 @@
         :gain gain
         :dur-ms (get-in @live-state [:main-eq :interpolation-dur-ms] 10000)}))
     (throw (ex-info "Unkown loshelf-freq " {:opt-num opt-num}))))
+
+(defn manual-set-eq-param
+  [param-key val]
+  (osc/osc-send
+   @habitat-osc/reaper-client
+   (:path (eq-param-defaults param-key))
+   (float val)))
 
 (defn set-hishelf-freq
   [opt-num]
@@ -466,8 +487,6 @@
 ;;; Guitar
 ;;;;;;;;;;;
 
-(def ^:private guitar-input-track 2)
-
 (let [initial-level-index (atom 0)
       amp-fx-position 2]
   (defn guitar-input-amp
@@ -483,18 +502,21 @@
         :tick-ms 100
         :init-val 0.5
         :target-val level
-        :cb (fn [{:keys [val]}] (reaper/set-fx guitar-input-track
+        :cb (fn [{:keys [val]}] (reaper/set-fx (reaper-tracks :guitar-input-track)
                                                amp-fx-position
                                                1 val))})
       (reset! initial-level-index level-index))))
 
 (comment
+  (reaper/set-fx (reaper-tracks
+                  :guitar-input-track)
+                 2
+                 1
+                 0)
   (guitar-input-amp 0))
 ;;;;;;;;;;
 ;; Percussion
 ;;;;;;;;;;
-
-(def ^:private percussion-processes-track 18)
 
 (defn set-track-volume
   [track volume]
@@ -503,19 +525,18 @@
                 (float volume)))
 
 (comment
-  (set-track-volume percussion-processes-track 0))
+  (set-track-volume (reaper-tracks :percussion-processes-track) 1))
 
 ;;;;;;;;;;;;;;;
 ;;; Recording
 ;;;;;;;;;;;;;;;
-(def ^:private guitar-clean-track 14)
-(def ^:private guitar-processes-track 15)
-
 (def ^:private automated-tracks
-  [eq-track
-   guitar-input-track
-   guitar-clean-track
-   guitar-processes-track])
+  (mapv reaper-tracks
+        [:guitar-input-track
+         :guitar-clean-track
+         :guitar-processes-track
+         :percussion-processes-track
+         :eq-track]))
 
 (defn reaper-rec!
   []
@@ -534,6 +555,7 @@
   "`clients` is a vector of [host port]"
   [clients]
   (habitat-osc/init)
+  (reaper/init)
   (habitat-osc/make-reaper-osc-client)
   (habitat-osc/make-receiver-clients clients)
   (let [internal-client (habitat-osc/make-internal-osc-client)]
@@ -565,7 +587,7 @@
            "/Milo/harmonic-highest-note" (set-harmonic-range {:player :milo :low?  false :value (first args)})
            "/Milo/rev-send-clean" (set-rev-send {:player :milo :clean? true :value (first args)})
            "/Milo/rev-send-process" (set-rev-send {:player :milo :clean? false :value (first args)})
-           "/Milo/processed-master" (set-track-volume percussion-processes-track (first args))
+           "/Milo/processed-master" (set-track-volume (reaper-tracks :percussion-processes-track) (first args))
            "/Diego/rec-guitar-btn" (toogle-rec {:input :guitar :on? press? :dur (-> @live-state :rec :mic-1 :dur (or 0.5))})
            "/Diego/rec-durs-radio" (switch-rec-durs [:guitar] (first args))
            "/Diego/rec-pulse-radio" (switch-rec-pulse [:guitar] (first args))
@@ -586,7 +608,7 @@
            "/Diego/rev-send-clean" (set-rev-send {:player :diego :clean? true :value (first args)})
            "/Diego/rev-send-process" (set-rev-send {:player :diego :clean? false :value (first args)})
            "/Diego/input-amp-boost" (guitar-input-amp (first args))
-           ;; gusano
+            ;; gusano
            "/gusano/gusano-active-btn" (toggle-gusano press?)
            "/gusano/gusano-active-milo-src-btn" (toggle-gusano-active-sources :milo press?)
            "/gusano/gusano-active-diego-src-btn" (toggle-gusano-active-sources :diego press?)
@@ -598,17 +620,27 @@
            "/gusano/grain-trig" (set-gusano-grain-trig (first args))
            "/gusano/grain-durs" (set-gusano-grain-dur (first args))
            "/gusano/2nd-voice" (set-gusano-2nd-voice (first args))
-           ;; presets
+            ;; presets
            "/save-preset" (when press? (bardo.presets/save-preset!))
            "/presets/load" (bardo.presets/load-preset! internal-client @habitat-osc/receiver-clients (first args))
-           ;; eq
-           "/FX/durs-radio"  (set-eq-interpolation-dur (first args))
-           "/FX/loshelf-radio" (set-loshelf-freq (first args))
-           "/FX/hishelf-radio" (set-hishelf-freq (first args))
-           "/FX/notch-radio" (set-notch-freq (first args))
-           "/FX/bell-radio" (set-bell-freq (first args))
-           "/FX/flat-eq" (set-flat-eq)
-           ;; main controls
+            ;; eq
+           "/EQ/durs-radio"  (set-eq-interpolation-dur (first args))
+           "/EQ/loshelf-radio" (set-loshelf-freq (first args))
+           "/EQ/hishelf-radio" (set-hishelf-freq (first args))
+           "/EQ/notch-radio" (set-notch-freq (first args))
+           "/EQ/bell-radio" (set-bell-freq (first args))
+           "/EQ/flat-eq" (set-flat-eq)
+            ;; ;; eq manual
+           "/EQ/loshelf-freq-knob" (manual-set-eq-param :eq/loshelf.freq (first args))
+           "/EQ/loshelf-gain-knob" (manual-set-eq-param :eq/loshelf.gain (first args))
+           "/EQ/hishelf-freq-knob" (manual-set-eq-param :eq/hishelf.freq (first args))
+           "/EQ/hishelf-gain-knob" (manual-set-eq-param :eq/hishelf.gain (first args))
+           "/EQ/bell-freq-knob" (manual-set-eq-param :eq/bell.freq (first args))
+           "/EQ/bell-gain-knob" (manual-set-eq-param :eq/bell.gain (first args))
+           "/EQ/notch-freq-knob" (manual-set-eq-param :eq/notch.freq (first args))
+           "/EQ/notch-gain-knob" (manual-set-eq-param :eq/notch.gain (first args))
+
+            ;; main controls
            "/System/rec-start" (when press? (reaper-rec!))
            "/System/rec-stop" (when press? (reaper-stop!))
            "/System/init" (when press? (bardo.init/all!))
