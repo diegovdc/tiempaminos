@@ -2,7 +2,8 @@
   (:require
    [clojure.string :as str]
    [clojure.walk :as walk]
-   [overtone.core :as o]))
+   [overtone.core :as o]
+   [overtone.sc.ugen-collide-list]))
 
 (defn ns-kw?
   [kw-ns-str kw]
@@ -35,31 +36,44 @@
   (modify-body
    {:freq [1 2]
     :levels [0 1 1 0]
-    :env-durs [3 3 3]
+    :env-durs [1 1 1]
     :ugen/env '(o/env-gen (o/envelope levels env-durs))
     :shaper-limit 0.5
-    :ugen/shaper '(o/sine-shaper shaper-limit)
+    :ugen/rev '(o/sine-shaper shaper-limit)
     :ugen/fx1 '(o/dist)
     :out 0}
-   '(o/out 0
-           (o/sin-osc freq)
-           :ugen/shaper
-           :ugen/fx1
-           (* :ugen/env))))
+   (qualify-body '(o/out 0
+                         (o/sin-osc freq)
+                         :ugen/rev
+                         :ugen/fx1
+                         (* :ugen/env)))))
 
-(defn modify-params
-  "Used when creating the synth's params vector"
-  [params]
-  #_(println "MP" params)
-  (->> params
-       (keep (fn [[k v]]
-               (cond
-                 (number? v) [(symbol (name k)) v]
-                 (sequential? v) (map-indexed (fn [i v*]
-                                                [(symbol (str (name k) i)) v*])
-                                              v))))
-       flatten
-       (into [])))
+(do
+  (defn modify-params
+    "Used when creating the synth's params vector"
+    [params]
+    #_(println "MP" params)
+    (->> params
+         (keep (fn [[k v]]
+                 (cond
+                   (or (ns-kw? "fx" k)
+                       (ns-kw? "dyn" k)
+                       (ns-kw? "ugen" k)) nil
+                   (number? v) [(symbol (name k)) v]
+                   (sequential? v) (map-indexed (fn [i v*]
+                                                  [(symbol (str (name k) i)) v*])
+                                                v))))
+         flatten
+         (into [])))
+
+  (modify-params {:freq [1 2]
+                  :levels [0 1 1 0]
+                  :env-durs [1 1 1]
+                  :ugen/env '(o/env-gen (o/envelope levels env-durs))
+                  :shaper-limit 0.5
+                  :ugen/rev '(o/sine-shaper shaper-limit)
+                  :ugen/fx1 '(o/dist)
+                  :out 0}))
 
 (defn modify-params2
   "Used when calling the synth"
@@ -102,6 +116,7 @@
 (defn make-synth-form
   [synth-symbol params-map synth-body]
   (let [body (modify-body params-map synth-body)]
+    (println body)
     (o/synth-form synth-symbol [(modify-params params-map) body])))
 
 (defonce variations-data (atom {}))
@@ -150,12 +165,12 @@
                     namespaced-synth-string
                     (-> synth-data
                         (update :count (fnil inc 0))
-                        (assoc-in [:variants analyzed-args] {:default-params params-map})))))))
+                        (assoc-in [:variants analyzed-args] {:default-params params-map
+                                                             :synth-body synth-body})))))))
 (-> @variations-data)
 (do
-
-  #_(reset! variations-data {})
-  #_(reset! synths-cache {})
+  (reset! variations-data {})
+  (reset! synths-cache {})
   ;; NOTE IMPORTANT ths is promising, no macros!
   (defn make-synth-fn
     [synth-symbol params-map synth-body]
@@ -170,22 +185,66 @@
           cached-synth (get-in @synths-cache [analyzed-args])]
       (if cached-synth
         cached-synth
-        (let [[_s-name params ugen-form] (make-synth-form
+        (let [synth-body* (qualify-body synth-body)
+              [_s-name params ugen-form] (make-synth-form
                                           synth-symbol
                                           params-map
-                                          (qualify-body synth-body))
+                                          synth-body*)
+              _ (println "AS" params)
               synth (eval (list 'overtone.core/synth
                                 (instance-symbol synth-symbol)
-                                params ugen-form))]
+                                params
+                                ugen-form))
+              _ (println "AS1")]
           (swap! synths-cache assoc analyzed-args synth)
           ;; TODO prevent overwritting a synth from another namespace (i.e. namespace the symbol)
           (add-variation-data!
            namespaced-synth-string
-           synth-body
+           synth-body*
            params-map
            analyzed-args)
           synth))))
+  (o/stop)
+  (defn map-to-outs-seq
+    [outs-seq sig]
+    (map (fn [i sig] (o/out i sig))
+         outs-seq
+         sig))
+  (make-synth-fn
+    ;; synth name
+   'sinpan
+    ;; default args
+   {:freq [500 900]
+    :levels [0 1 0.1 1 0]
+    :env-durs [1 3 1 1]
+    :ugen/env '(o/env-gen (o/envelope levels env-durs) :action o/FREE)
+    :shaper-limit 0.1
+    :rev-mix 0
+    :rev-room 2
+    :ugen/rev '(o/free-verb rev-mix rev-room 0.3) ;; '(o/sine-shaper shaper-limit)
+    :ugen/pan '(#(o/pan-az 4 % (o/lf-saw 0.3)))
+    :ugen/fx1 '(o/distort)
+    :outs [0]}
+    ;; synth
+   '(map-to-outs-seq
+     outs
+     (-> (o/saw freq)
+         (o/mix)
+         :ugen/fx1
+         :ugen/pan
+         :ugen/rev
+         (* :ugen/env))))
 
+  ;; synth call
+  (let [outs [0 1]]
+    (sinpan {:freq [599 800 900]
+             :rev-mix 0.2
+             :rev-room 0.5
+             :outs outs
+             :ugen/pan '(#(o/pan-az (count (set outs)) % (o/lf-saw 0.3)
+                                    :width 1))
+             :levels [0 1 0.5 0]
+             :env-durs [1 1 10]}))
   #_((make-synth-fn
       'sini
       (merge {:freq [200 500] :out 0} {:amp 1})
@@ -232,3 +291,20 @@
   (intern *ns* 'hola 6)
   (def hola "hola")
   (-> hola))
+
+(comment
+  ((make-synth-fn
+    'sin2i
+    {:freq [1 2]
+     :levels [0 1 1 0]
+     :env-durs [1 1 1]
+     :ugen/env '(o/env-gen (o/envelope levels env-durs))
+     :shaper-limit 0.5
+     :ugen/rev '(o/sine-shaper shaper-limit)
+     :ugen/fx1 '(o/dist)
+     :out 0}
+    '(o/out 0
+            (o/sin-osc freq)
+            :ugen/rev
+            :ugen/fx1
+            (* :ugen/env)))))
