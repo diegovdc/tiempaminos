@@ -212,3 +212,56 @@
         :hpf-freq 6000
         :dcy (rand-nth [0.5])
         :mod-freq 100}))
+
+(oe/defsynth mooga
+      ;; A nice analog sounding synth by Alex Franco Briones.
+      ;; Good as a mono synth.
+  [freq 100
+   amp 0.5
+   gate 1
+   pan 0
+   detuning 0.05
+   filter-lfo-rate 0.2
+   filter-min-freq 1000
+   filter-max-freq 6000
+   q-lfo-rate 1
+   filter-mode 1
+   out 0]
+  (let [amount-hz (/ (* detuning 100) freq)
+        freq1 (- freq amount-hz)
+        freq2 (+ freq amount-hz)
+        env (o/env-gen (o/env-adsr 0.01 0.1 0.6 0.1)
+                       :gate gate
+                       :action o/FREE)
+        sig (-> (o/b-moog
+                 (o/lf-saw (o/lag [freq1 freq2] 0.075))
+                 (o/range-lin (o/sin-osc:kr filter-lfo-rate) filter-min-freq filter-max-freq)
+                 (+ 0.1 (* 0.8 (o/sin-osc:kr q-lfo-rate)))
+                 filter-mode))]
+    (o/out out
+           (-> (o/comb-n sig 0.15 [0.1 0.15] 2)
+               (* 0.4)
+               (+ (* 0.5 sig))
+               (* amp env)
+               (o/pan2 pan)
+               (o/mix)))))
+
+(comment
+  (require '[time-time.dynacan.players.gen-poly :as gp])
+  ;; wip
+  ;; 2 freqs detuning calc
+  (do
+    (o/stop)
+
+    (mooga)
+    (gp/stop)
+    (def mooga1 (mooga {:detuning 0.05
+                        :freq 400}))
+
+    (gp/ref-rain
+     :id :mooga
+     :durs [0.2]
+     :on-event (gp/on-event
+
+                (o/ctl mooga1
+                       :freq (* 300 (at-i [1 6/5 3/2])))))))
