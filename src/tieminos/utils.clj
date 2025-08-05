@@ -219,6 +219,12 @@
         delta (/ val-diff ticks)]
     {:ticks ticks :delta delta}))
 
+(defn- wrap-interpolator-callback
+  [cb]
+  (fn [val]
+    (try (cb val)
+         (catch Exception e (timbre/error e)))))
+
 (defn make-interpolator
   [{:keys [id _dur-ms tick-ms init-val _target-val cb on-end]
     :as interpolator-config
@@ -228,18 +234,21 @@
         stop-chan (a/chan)
         {:keys [ticks delta]} (get-interpolation-data interpolator-config)]
     (a/go-loop [delta delta
-                cb cb
-                on-end on-end
+                cb (wrap-interpolator-callback cb)
+                on-end (wrap-interpolator-callback on-end)
                 tick-ms tick-ms
                 ticks-left ticks
                 val init-val]
       (let [ticks-left? (>= ticks-left 1)]
         (a/alt!
-          in-chan ([{:keys [tick-ms] :as interpolator-config}]
+          in-chan ([{:keys [tick-ms]
+                     new-cb :cb
+                     new-on-end :on-end
+                     :as interpolator-config}]
                    (let [{:keys [ticks delta]} (get-interpolation-data (assoc interpolator-config
                                                                               :init-val val))
-                         cb* (:cb interpolator-config cb)
-                         on-end* (:on-end interpolator-config on-end)]
+                         cb* (if-not new-cb cb (wrap-interpolator-callback new-cb))
+                         on-end* (if-not new-on-end on-end (wrap-interpolator-callback new-on-end))]
                      (cb* {:ticks-left ticks :val val})
                      (recur delta cb* on-end* tick-ms ticks val)))
           (a/timeout (if ticks-left? tick-ms 2000)) (if ticks-left?
@@ -274,7 +283,10 @@
                    :tick-ms 500
                    :init-val 0
                    :target-val 10
-                   :cb (fn [data] (println "new cb" data))})
+                   :cb (fn [data]
+                         #_(when (= 10 (:val data))
+                             (throw (ex-info "ups" {})))
+                         (println "new cb" data))})
 
   (stop-all-interpolators!)
   (stop-interpolator! :hola)
