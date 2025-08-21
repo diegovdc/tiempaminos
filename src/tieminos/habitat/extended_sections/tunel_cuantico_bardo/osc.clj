@@ -42,9 +42,13 @@
                 :mic-2 5)]
     (osc/osc-send @habitat-osc/reaper-client
                   (format "/track/%s/mute" track)
-                  (int mute?))))
+                  (int mute?))
+    (swap! live-state assoc-in
+           [:rec input-k :muted?]
+           (= 1 (int mute?)))))
 
 (comment
+  (-> @live-state)
   (mute-input :mic-1 1))
 
 (defn switch-rec-durs [inputs dur]
@@ -57,6 +61,8 @@
                5 10
                6 15
                7 20
+               8 40
+               9 60
                (throw (ex-info "Unkown rec dur" {:dur dur})))]
     (swap! live-state (fn [state]
                         (reduce (fn [state* input] (assoc-in state* [:rec input :dur] dur*))

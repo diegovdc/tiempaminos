@@ -102,22 +102,21 @@
 
 (defn get-buf!
   [_]
-  (timbre/spy :info
-              (->> @rec/bufs vals (sort-by :rec/time)
-                   reverse
-                   (filter (fn [data]
-                             (let [has-analysis? (:analysis data)
-                                   active-sources (-> @bardo.live-state/live-state :gusano (:sources #{}))
-                                   ins (->> (concat
-                                             (when (active-sources :diego) habitat.route/diego-ins)
-                                             (when (active-sources :milo) habitat.route/milo-ins))
-                                            (into #{}))]
-                               (if-not (seq active-sources)
-                                 has-analysis?
-                                 (and has-analysis?
-                                      (ins (:input-name (:rec/meta data))))))))
-                   (take 3)
-                   (#(when (seq %) (rand-nth %))))))
+  (->> @rec/bufs vals (sort-by :rec/time)
+       reverse
+       (filter (fn [data]
+                 (let [has-analysis? (:analysis data)
+                       active-sources (-> @bardo.live-state/live-state :gusano (:sources #{}))
+                       ins (->> (concat
+                                 (when (active-sources :diego) habitat.route/diego-ins)
+                                 (when (active-sources :milo) habitat.route/milo-ins))
+                                (into #{}))]
+                   (when-not (seq ins)
+                     (timbre/warn "No active sources. Nothing will sound."))
+                   (and has-analysis?
+                        (ins (:input-name (:rec/meta data)))))))
+       (take 3)
+       (#(when (seq %) (rand-nth %)))))
 
 (def fib-ratios-indexes
   (->> fib-21
