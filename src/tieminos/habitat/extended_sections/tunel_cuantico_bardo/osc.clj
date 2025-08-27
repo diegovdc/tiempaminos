@@ -489,37 +489,46 @@
       :freq 2000
       :gain 0.5
       :dur-ms dur-ms})))
+
+(defn make-volume-booster
+  "Returns a function that takes a `level-index` and performs a fade on
+  a `Volume Adjustment` Reaper plugin at the specified `track` and `amp-fx-position`."
+  [{:keys [interpolator-id
+           interpolation-time-ms
+           track
+           amp-fx-position
+           level-offset]
+    :or {interpolation-time-ms 1500
+         level-offset 0}}]
+  (let [initial-level-index (atom 0)]
+    (fn [level-index]
+      (let [level (+ 0.5 level-offset (* level-index 0.02))]
+        (cb-interpolate
+         {:id interpolator-id
+          :dur-ms (* interpolation-time-ms
+                      ;; increase dur-ms based on difference of level-indexes
+                     (max 1 (abs (- level-index
+                                    @initial-level-index))))
+          :tick-ms 100
+          :init-val 0.5
+          :target-val level
+          :cb (fn [{:keys [val]}] (reaper/set-fx track
+                                                 amp-fx-position
+                                                 1 val))})
+        (reset! initial-level-index level-index)))))
+
 ;;;;;;;;;;;
 ;;; Guitar
 ;;;;;;;;;;;
 
-(let [initial-level-index (atom 0)
-      amp-fx-position 2]
-  (defn guitar-input-amp
-    [level-index]
-    ;; 0.02 equals 6db
-    (let [level (+ 0.5 (* level-index 0.02))]
-      (cb-interpolate
-       {:id ::guitar-boost
-        :dur-ms (* 1500
-                    ;; increase dur-ms based on difference of level-indexes
-                   (max 1 (abs (- level-index
-                                  @initial-level-index))))
-        :tick-ms 100
-        :init-val 0.5
-        :target-val level
-        :cb (fn [{:keys [val]}] (reaper/set-fx (reaper-tracks :guitar-input-track)
-                                               amp-fx-position
-                                               1 val))})
-      (reset! initial-level-index level-index))))
+(def guitar-input-amp-boost
+  (make-volume-booster {:interpolator-id ::guitar-boost
+                        :track (reaper-tracks :guitar-input-track)
+                        :amp-fx-position 2}))
 
 (comment
-  (reaper/set-fx (reaper-tracks
-                  :guitar-input-track)
-                 2
-                 1
-                 0)
-  (guitar-input-amp 0))
+  (reaper/set-fx (reaper-tracks :guitar-input-track) 2 1 1)
+  (guitar-input-amp-boost 0))
 ;;;;;;;;;;
 ;; Percussion
 ;;;;;;;;;;
@@ -529,6 +538,12 @@
   (osc/osc-send @habitat-osc/reaper-client
                 (format "/track/%s/volume" track)
                 (float volume)))
+
+(def perc-processes-amp-boost
+  (make-volume-booster {:interpolator-id ::percussion-processes-boost
+                        :level-offset (* -3 0.02) ;; index 3 = 0db boost
+                        :track (reaper-tracks :percussion-processes-track)
+                        :amp-fx-position 2}))
 
 (comment
   (set-track-volume (reaper-tracks :percussion-processes-track) 1))
@@ -594,6 +609,7 @@
            "/Milo/rev-send-clean" (set-rev-send {:player :milo :clean? true :value (first args)})
            "/Milo/rev-send-process" (set-rev-send {:player :milo :clean? false :value (first args)})
            "/Milo/processed-master" (set-track-volume (reaper-tracks :percussion-processes-track) (first args))
+           "/Milo/processes-amp-boost" (perc-processes-amp-boost (first args))
            "/Diego/rec-guitar-btn" (toogle-rec {:input :guitar :on? press? :dur (-> @live-state :rec :mic-1 :dur (or 0.5))})
            "/Diego/rec-durs-radio" (switch-rec-durs [:guitar] (first args))
            "/Diego/rec-pulse-radio" (switch-rec-pulse [:guitar] (first args))
@@ -613,8 +629,8 @@
            "/Diego/harmonic-highest-note" (set-harmonic-range {:player :diego :low?  false :value (first args)})
            "/Diego/rev-send-clean" (set-rev-send {:player :diego :clean? true :value (first args)})
            "/Diego/rev-send-process" (set-rev-send {:player :diego :clean? false :value (first args)})
-           "/Diego/input-amp-boost" (guitar-input-amp (first args))
-            ;; gusano
+           "/Diego/input-amp-boost" (guitar-input-amp-boost (first args))
+           ;; gusano
            "/gusano/gusano-active-btn" (toggle-gusano press?)
            "/gusano/gusano-active-milo-src-btn" (toggle-gusano-active-sources :milo press?)
            "/gusano/gusano-active-diego-src-btn" (toggle-gusano-active-sources :diego press?)
@@ -626,17 +642,17 @@
            "/gusano/grain-trig" (set-gusano-grain-trig (first args))
            "/gusano/grain-durs" (set-gusano-grain-dur (first args))
            "/gusano/2nd-voice" (set-gusano-2nd-voice (first args))
-            ;; presets
+           ;; presets
            "/save-preset" (when press? (bardo.presets/save-preset!))
            "/presets/load" (bardo.presets/load-preset! internal-client @habitat-osc/receiver-clients (first args))
-            ;; eq
+           ;; eq
            "/EQ/durs-radio"  (set-eq-interpolation-dur (first args))
            "/EQ/loshelf-radio" (set-loshelf-freq (first args))
            "/EQ/hishelf-radio" (set-hishelf-freq (first args))
            "/EQ/notch-radio" (set-notch-freq (first args))
            "/EQ/bell-radio" (set-bell-freq (first args))
            "/EQ/flat-eq" (set-flat-eq)
-            ;; ;; eq manual
+           ;; ;; eq manual
            "/EQ/loshelf-freq-knob" (manual-set-eq-param :eq/loshelf.freq (first args))
            "/EQ/loshelf-gain-knob" (manual-set-eq-param :eq/loshelf.gain (first args))
            "/EQ/hishelf-freq-knob" (manual-set-eq-param :eq/hishelf.freq (first args))
@@ -646,7 +662,7 @@
            "/EQ/notch-freq-knob" (manual-set-eq-param :eq/notch.freq (first args))
            "/EQ/notch-gain-knob" (manual-set-eq-param :eq/notch.gain (first args))
 
-            ;; main controls
+           ;; main controls
            "/System/rec-start" (when press? (reaper-rec!))
            "/System/rec-stop" (when press? (reaper-stop!))
            "/System/init" (when press? (bardo.init/all!))
