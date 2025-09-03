@@ -5,7 +5,7 @@
     :refer [color-fn colorize-ltn degs-rings-with-gradient
             mos-degs-rings-with-gradient]]
    [lumatone.coord-system :as gral-kb]
-   [lumatone.ltn :refer [make-ltn parse-ltn]]
+   [lumatone.ltn :as ltn]
    [thi.ng.color.gradients :as grad]))
 
 (comment
@@ -13,9 +13,9 @@
 
   (do
     (def gen 11)
-    (def period 19)
+    (def period 36)
     (def keyboards (gral-kb/generate-keyboard-types->xy-intervals gen period))
-    (def kbd-number 2)
+    (def kbd-number 4)
     (-> keyboards))
 
   ;; generate keyboard data
@@ -29,7 +29,10 @@
              :xy-intervals (-> keyboards
                                vals
                                (nth kbd-number))}))))
-  (-> kbd-data)
+  (->> kbd-data
+       (map (juxt :chan-value :key-value))
+       (sort-by second)
+       reverse)
   [;; lowest midi note
    (->> kbd-data (map :key-value) (apply min))
    ;; highest midi note
@@ -39,11 +42,12 @@
   (mos/make period gen)
 
   (do
-    (def use* :degs)
-    (def mos-rings [[4 7 4 7 7]
-                    [4 4 3 4 4 3 4 3]
-                    [1 3 1 3 3 1 3 1 3 3 1 3 3]
-                    [1 1 2 1 1 2 1 2 1 1 2 1 1 2 1 2 1 1 2 1 2]])
+    (def use* :mos)
+    (def mos-rings [[11 11 11 3]
+                    [8 3 8 3 8 3 3]
+                    [5 3 3 5 3 3 5 3 3 3]
+                    [2 3 3 3 2 3 3 3 2 3 3 3 3]
+                    [2 2 1 2 1 2 1 2 2 1 2 1 2 1 2 2 1 2 1 2 1 2 1]])
 
     (def deg-rings [[4 7 9 11 12 16 0 2]
                     [11 14 16 18 0 4 7 9]
@@ -60,7 +64,7 @@
   ;; make lumatone file
   (let [zeroth-degree-midi-note 60
         root "/Users/diego/Music/diego/lumatone"
-        filenote "for-17o7_19t-cs-from-27t_no84" ;; a description appened near the end of the filename
+        filenote "" ;; a description appened near the end of the filename
         filename (format "%st-gen%s_%s-%skb%s.ltn"
                          period
                          gen
@@ -71,8 +75,9 @@
 
     (->> kbd-data
          gral-kb/ltn-data->ltn
-         parse-ltn
+         ltn/parse-ltn
          (colorize-ltn (partial color-fn period (if (= use* :degs) deg-colors mos-colors) zeroth-degree-midi-note))
-         make-ltn
+         ltn/make-ltn
+         ltn/add-gral-config
          (spit path))
     filename))

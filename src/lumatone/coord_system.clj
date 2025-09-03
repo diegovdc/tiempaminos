@@ -116,18 +116,31 @@
     (+ (* x (:x xy-intervals))
        (* y (:y xy-intervals)))))
 
-(do
-  (defn midi-chan-tranpose
-    "Pianoteq style midi channel transposition"
-    [notes-per-period midi-note]
-    ;; If note-diff > 0 then we have exceeded the amount of notes ina midi-channel
-    (let [note-diff (- midi-note 128)]
-      (if (<= note-diff 0)
-        {:key midi-note
-         :chan 1}
-        {:key (+ note-diff (- 128 notes-per-period))
-         :chan (+ 2 (quot note-diff notes-per-period))})))
-  (midi-chan-tranpose 31 129))
+(defn midi-chan-tranpose
+  "Pianoteq style midi channel transposition"
+  [notes-per-period midi-note]
+  ;; If note-diff > 0 then we have exceeded the amount of notes ina midi-channel
+  (let [note-diff (- midi-note 127)]
+    (if (<= note-diff 0)
+      {:key midi-note :chan 1}
+      {:key (+ (mod note-diff notes-per-period)
+               (- 127 notes-per-period))
+       :chan (+ 2 (quot note-diff notes-per-period))})))
+#_(midi-chan-tranpose 36 232)
+
+(comment
+  ;; send a midi note to pianoteq
+  (require '[tieminos.midi.algo-note :refer [algo-note]]
+           '[overtone.midi :as o.midi]
+           '[clojure.core.async :as a])
+  (def outy (o.midi/midi-out "VirMIDI"))
+
+  (let [chan 1
+        note 127]
+    (a/go
+      (o.midi/midi-note-on outy note 60 chan)
+      (a/<! (a/eout 3000))
+      (o.midi/midi-note-off outy note chan))))
 
 (comment
   ;; test calculation for basic keyboard data

@@ -3,12 +3,8 @@
    [clojure.test :refer [deftest is testing]]
    [lumatone.coord-system
     :refer
-    [add-coords
-     board-keys
-     coord->board-key
-     coord->scale-degree
-     get-board-xy-intervals
-     wcoord->lcoord]]))
+    [add-coords board-keys coord->board-key coord->scale-degree
+     get-board-xy-intervals midi-chan-tranpose wcoord->lcoord]]))
 
 (deftest board-keys-test
   (testing "All 56 keys in the board are present"
@@ -48,3 +44,33 @@
       (testing "G"
         (is (= 7 (coord->scale-degree xy-intervals [3 -1])))))))
 
+(deftest midi-chan-tranpose-test
+  (is (= [{:key 125, :chan 1}
+          {:key 126, :chan 1}
+          {:key 127, :chan 1}
+          {:key 97, :chan 2}
+          {:key 98, :chan 2}]
+         (mapv #(midi-chan-tranpose 31 (+  % 125))
+               (range 5))))
+  (is (= [{:key 126, :chan 2}
+          {:key 96, :chan 3} ;; 96 + 31 = 127
+          {:key 97, :chan 3}
+          {:key 98, :chan 3}
+          {:key 99, :chan 3}]
+         (mapv #(midi-chan-tranpose 31 (+ 31 % 126))
+               (range 5))))
+  (testing "sanity check"
+    (let [period (+ 20 (rand-int 30))
+          res (->> (range 500)
+                   (mapv #(midi-chan-tranpose period %)) ;; create the key-chan list
+                   )
+          max-key (apply max (mapv :key res))]
+      (testing "max `key` should not exceed 127"
+        (is (= 127 max-key)))
+      (testing "should produce the resulting sequence should produce a continuous range"
+        (is (= (range 500)
+               (map (fn [{:keys [key chan]}]
+                      ;; convert back to a numeric sequence
+                      ;;  the sequence should be continuous with no gaps
+                      (+ key (* period (dec chan))))
+                    res)))))))
