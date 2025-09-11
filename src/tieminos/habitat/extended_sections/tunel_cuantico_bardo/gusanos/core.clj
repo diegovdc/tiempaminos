@@ -62,9 +62,11 @@
   []
   (-> @bardo.live-state/live-state :gusano (:rates-seq-speed 1)))
 
+(def ^:private amp-multiplier (o/db->amp 12))
+
 (defn- get-amp!
   []
-  (-> @bardo.live-state/live-state :gusano (:amp 0.6)))
+  (-> @bardo.live-state/live-state :gusano (:amp 0.6) (* amp-multiplier)))
 
 (def ^:private periods [15 20 25 30 35 40])
 
@@ -100,7 +102,7 @@
   []
   (-> @bardo.live-state/live-state :gusano (:grain-dur 0.5) map-grain-dur))
 
-(defn get-buf!
+(defn ^:deprecated get-buf! ;; legacy can be used in place of `get-buf!-2`
   [_]
   (->> @rec/bufs vals (sort-by :rec/time)
        reverse
@@ -115,15 +117,49 @@
                      (timbre/warn "No active sources. Nothing will sound."))
                    (and has-analysis?
                         (ins (:input-name (:rec/meta data)))))))
+       ;; TODO: use banks
        (take 3)
        (#(when (seq %) (rand-nth %)))))
+
+(defn get-buf!-2
+  "A more recent version, that will only choose buffers from the active banks of the players."
+  [_]
+  (let [active-sources (-> @bardo.live-state/live-state :gusano (:sources #{}))
+        input->banks (merge
+                      (when (active-sources :diego)
+                        (let [banks (bardo.live-state/get-active-banks :diego)]
+                          (->> habitat.route/diego-ins
+                               (map (fn [k] [k banks]))
+                               (into {}))))
+                      (when (active-sources :milo)
+                        (let [banks (bardo.live-state/get-active-banks :milo)]
+                          (->> habitat.route/milo-ins
+                               (map (fn [k] [k banks]))
+                               (into {})))))]
+
+    (if-not (seq input->banks)
+      (timbre/warn "No active sources. Nothing will sound.")
+      (->> @rec/bufs
+           vals
+           (filter (fn [data]
+                     (let [has-analysis? (:analysis data)
+                           {:keys [input-name subsection]} (:rec/meta data)
+                           banks (input->banks input-name #{})]
+                       (when has-analysis?
+                         (banks subsection)))))
+
+           (sort-by :rec/time)
+           reverse
+           ;; prioritze more recent buffers but also take from older ones
+           (take (rand-int 500))
+           (#(when (seq %) (rand-nth %)))))))
 
 (def fib-ratios-indexes
   (->> fib-21
        (map-indexed (fn [i {:keys [bounded-ratio]}] {bounded-ratio i}))
        (into {})))
 
-(deg->freq fib-21 1 0)
+#_(deg->freq fib-21 1 0)
 
 (let [degree-wave (concat (range 0 -37 -4)
                           (range -37 37 4)
@@ -179,7 +215,6 @@
               (println dur-s)))
   (gp/stop :x))
 
-;; TODO: left here
 (defn gusano
   "Based on `tieminos.habitat.scratch.sample-rec2/hacia-un-nuevo-universo-perc-refrain-v1p2`
   Can handle rate chords (as a vector of rates)"
@@ -261,7 +296,8 @@
    :id ::gusano
    :out-bus (main-returns :mixed)
    :silence-thresh 0.0
-   :buf-fn get-buf!
+   :buf-fn get-buf!-2
+   ;; TODO make this dynamic
    :rates (interleave (fib-chord-seq (transpose-chord [0 5 13 21] (range 0 (* 21 6) 5)))
                       (reverse (fib-chord-seq (transpose-chord [0 5 13 21] (range 0 (* 21 6) 5)))))
    :amp-fn (fn [_i] 1)

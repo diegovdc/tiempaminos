@@ -1,6 +1,7 @@
 (ns tieminos.habitat.extended-sections.tunel-cuantico-bardo.init
   (:require
    [tieminos.habitat.extended-sections.hacia-un-nuevo-universo.main-4ch :as hunu.4ch]
+   [tieminos.habitat.extended-sections.tunel-cuantico-bardo.synth-management :as bardo.synth-management]
    [tieminos.habitat.init :as habitat]
    [tieminos.habitat.main :as main]
    [tieminos.habitat.main-sequencer :as hseq]
@@ -27,4 +28,5 @@
 (defn all!
   []
   (habitat!)
-  (inputs-4ch-gtr&mics-1&2!))
+  (inputs-4ch-gtr&mics-1&2!)
+  (bardo.synth-management/periodically-clear-currently-playing-synths! (* 60 1000)))

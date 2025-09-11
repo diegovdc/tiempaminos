@@ -8,12 +8,16 @@
    [tieminos.attractors.lorentz :as lorentz]
    [tieminos.habitat.extended-sections.harmonies.chords :refer [fib-21
                                                                 meta-pelog
+                                                                meta-pelog-11
+                                                                meta-pelog-7
+                                                                meta-slendro-5
                                                                 meta-slendro1
                                                                 rate-chord-seq]]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.clouds :refer [clouds-refrain]]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.gusanos.core :as bardo.gusano]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.live-state :as bardo.live-state :refer [live-state]]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.rec :as bardo.rec]
+   [tieminos.habitat.extended-sections.tunel-cuantico-bardo.synth-management :as bardo.synth-management]
    [tieminos.habitat.recording :as rec]
    [tieminos.habitat.routing :refer [inputs main-returns]]
    [tieminos.habitat.synths.granular :refer [amanecer*guitar-clouds]]
@@ -128,20 +132,19 @@
    rate 1
    amp 0.5
    pan 0
+   dur 1
    out 0]
-  (let [dur (/ (o/buf-dur buf) rate)]
-    (o/out out
-
-           (-> (o/play-buf 1 buf rate)
-               (* amp
-                  (o/env-gen
-                   (o/envelope
-                    [0 1 1 0]
-                    [(* 0.1 dur)
-                     (* 0.7 dur)
-                     (* 0.2 dur)])
-                   :action o/FREE))
-               (#(o/pan-az:ar 4 % pan))))))
+  (o/out out
+         (-> (o/play-buf 1 buf rate)
+             (* amp
+                (o/env-gen
+                 (o/envelope
+                  [0 1 1 0]
+                  [(* 0.1 dur)
+                   (* 0.7 dur)
+                   (* 0.2 dur)])
+                 :action o/FREE))
+             (#(o/pan-az:ar 4 % pan)))))
 
 (defn get-harmonic-data!
   [player-k]
@@ -150,9 +153,12 @@
 (defn get-harmony
   [harmony-k]
   (case harmony-k
-    :meta-slendro meta-slendro1
+    :meta-slendro-5 meta-slendro-5
+    :meta-slendro-12 meta-slendro1
     :fib fib-21
-    :meta-pelog meta-pelog
+    :meta-pelog-5 meta-pelog
+    :meta-pelog-7 meta-pelog-7
+    :meta-pelog-11 meta-pelog-11
     meta-slendro1))
 
 (defn start-clouds
@@ -184,14 +190,18 @@
                        (#(rate-chord-seq (get-harmony harmony) [%]))
                        first)))
     :amp-fn (fn [_] (-> @live-state :algo-2.2.9-clouds player-k :amp (o/db->amp)))
-    :on-play (fn [{:as config :keys [index]}]
+    :on-play (fn [{:as config :keys [index buf rate]}]
                (let [state @live-state
                      out (main-returns (case player-k
                                          :milo :percussion-processes
                                          :diego :guitar-processes))
+                     synth-type (-> state :algo-2.2.9-clouds player-k :active-synth)
                      ;; TODO: update live state with event duration
-                     synth (case (-> @live-state :algo-2.2.9-clouds player-k :active-synth)
-                             :crystal (cristal-liquidizado (assoc config :out out))
+                     synth (case synth-type
+                             :crystal (let [dur (* rate (:duration buf))
+                                            synth* (cristal-liquidizado (assoc config :dur dur :out out))]
+                                        (bardo.synth-management/add-synth! synth* dur)
+                                        synth*)
                              :granular (amanecer*guitar-clouds
                                         (-> config
                                             (merge (get-envelope

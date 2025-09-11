@@ -11,6 +11,7 @@
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.live-state :as bardo.live-state :refer [live-state]]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.presets :as bardo.presets]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.rec :refer [delete-bank-bufs]]
+   [tieminos.habitat.extended-sections.tunel-cuantico-bardo.synth-management :refer [stop-long-running-synths!]]
    [tieminos.habitat.osc :as habitat-osc]
    [tieminos.math.utils :refer [linlin]]
    [tieminos.osc.reaper :refer [reaeq-freq->lin]]
@@ -177,12 +178,17 @@
 
 (defn set-harmony
   [player opt-num]
-  (let [env (case opt-num
-              0 :meta-slendro
-              1 :fib
-              2 :meta-pelog
-              (throw (ex-info "Unkown harmony:" {:player player :opt-num opt-num})))]
-    (swap! live-state assoc-in [:algo-2.2.9-clouds player :harmony] env)))
+  (let [harmony (nth [:fib
+                      :meta-slendro-5
+                      :meta-slendro-12
+                      :meta-pelog-5
+                      :meta-pelog-7
+                      :meta-pelog-11]
+                     opt-num
+                     nil)]
+    (if-not harmony
+      (throw (ex-info "Unkown harmony:" {:player player :opt-num opt-num}))
+      (swap! live-state assoc-in [:algo-2.2.9-clouds player :harmony] harmony))))
 
 (defn set-harmonic-speed
   [player harmonic-speed]
@@ -630,6 +636,8 @@
            "/Diego/rev-send-clean" (set-rev-send {:player :diego :clean? true :value (first args)})
            "/Diego/rev-send-process" (set-rev-send {:player :diego :clean? false :value (first args)})
            "/Diego/input-amp-boost" (guitar-input-amp-boost (first args))
+           ;; synth management
+           "/stop-long-running-synths" (when press? (stop-long-running-synths! (* 20 1000)))
            ;; gusano
            "/gusano/gusano-active-btn" (toggle-gusano press?)
            "/gusano/gusano-active-milo-src-btn" (toggle-gusano-active-sources :milo press?)

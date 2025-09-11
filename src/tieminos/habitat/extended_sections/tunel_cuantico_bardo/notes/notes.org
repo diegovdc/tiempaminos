@@ -130,13 +130,25 @@ CLOSED: [2025-08-04 Mon 19:19] SCHEDULED: <2025-08-04 Mon>
 ** DONE agregar 40 y 60 segundos de grabación
 CLOSED: [2025-08-20 Wed 15:19] SCHEDULED: <2025-08-07 Thu>
 ** TODO Agregar datos del gusano a la interfaz web
+** DONE meta-pelog7 y m-slendro5n
+CLOSED: [2025-09-10 Wed 14:38] SCHEDULED: <2025-08-29 Fri>
+** NOPE [#C] Automatización de la eq no está siento leída o algo?
+CLOSED: [2025-09-10 Wed 14:38]
+Parece que más bien es un error de REAPER, al reiniciar se arregla
+SCHEDULED: <2025-09-04 Thu>
+** TODO [#A] agregar input para micro en guitarra
+SCHEDULED: <2025-08-29 Fri>
+** DONE [#A] Aumentar ganancias del gusano
+CLOSED: [2025-09-10 Wed 14:38] SCHEDULED: <2025-09-05 Fri>
+** DONE Gusano, usar bancos
+CLOSED: [2025-09-10 Wed 14:38] SCHEDULED: <2025-08-29 Fri>
 ** TODO [#A] boton para hacer fade out de sonidos que sean muy largos (ca 15 de fade out)
 SCHEDULED: <2025-08-23 Sat>
 como los de pelog
-** TODO [#A] fader discreto para procesos de Milo
-SCHEDULED: <2025-08-23 Sat>
-** TODO Segundo botón en gusano (para separar fuentes de buffers)
-SCHEDULED: <2025-08-07 Thu>
+** DONE [#A] fader discreto para procesos de Milo
+CLOSED: [2025-08-27 Wed 14:15] SCHEDULED: <2025-08-23 Sat>
+** DONE Segundo botón en gusano (para separar fuentes de buffers)
+CLOSED: [2025-08-26 Tue 16:21] SCHEDULED: <2025-08-07 Thu>
 ** DONE rutear el eq para que solo afecte a los canales de procesos
 CLOSED: [2025-07-17 Thu 11:06] SCHEDULED: <2025-07-16 Wed>
 

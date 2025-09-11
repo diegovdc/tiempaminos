@@ -23,6 +23,16 @@
        (take 12)
        (ratios->scale)))
 
+(def meta-slendro-5
+  "5 tone meta-slendro"
+  (->> {:seed [1 1 1]
+        :formula :meta-slendro}
+       (meru/recurrent-series)
+       :series
+       (drop 10)
+       (take 5)
+       (ratios->scale)))
+
 (def meta-pelog
   "5 tone meta-pelog"
   (->> {:seed [1 1 1]
@@ -32,6 +42,36 @@
        (drop 5)
        (take 5)
        (ratios->scale)))
+
+(def meta-pelog-7
+  "7 tone meta-pelog"
+  (->> {:seed [1 1 1]
+        :formula :meta-pelog}
+       (meru/recurrent-series)
+       :series
+       (drop 5)
+       (take 7)
+       (ratios->scale)))
+
+(def meta-pelog-11
+  "11 tone meta-pelog"
+  (->> {:seed [1 1 1]
+        :formula :meta-pelog}
+       (meru/recurrent-series)
+       :series
+       (drop 5)
+       (take 11)
+       (ratios->scale)))
+
+(comment
+  (require '[erv.mos.v3.core :as mos])
+  (->> {:seed [1 1 1]
+        :formula :meta-pelog}
+       (meru/recurrent-series))
+  (->> (mos/gen->mos-ratios 81069068969/55315679788 2 100)
+
+       (map (juxt (comp :size :meta)
+                  (comp :mos/sL-ratio.float :meta)))))
 
 (defn rate-chord
   [scale degs]
