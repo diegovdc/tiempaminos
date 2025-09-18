@@ -14,11 +14,12 @@
          (take 36)
          (ratios->scale)))
 
-  (surge/set-scale
-   {:scale {:scale fib}
-    :scale-name (:scl/name (:meta (format "dev/fib[%s]" (count fib))))}))
+  #_(surge/set-scale
+     {:scale {:scale fib}
+      :scale-name (:scl/name (:meta (format "dev/fib[%s]" (count fib))))}))
 
 (comment
+  (require '[clojure.string :as str])
   (-> fib)
   (->> (mos/gen->mos-ratios (rationalize 1.618) 2 100)
 
@@ -27,4 +28,14 @@
   (surge/init)
   (surge/set-scale
    {:scale {:scale fib}
-    :scale-name (format "dev/fib[%s]" (count fib))}))
+    :scale-name (format "dev/fib[%s]" (count fib))})
+
+  (surge/set-kbm
+   (let [degrees (->> [0 6 12 16 22 26 31]
+                      (mapcat (fn [%] [(mod (+ 5 %) (count fib))
+                                       #_(mod (+ 9 %) (count fib))]))
+                      set
+                      sort)]
+     {:kbm-name (format "dev/fib[%s]_%s" (count fib) (str/join "-" degrees))
+      :scale-data {:scale fib}
+      :degrees degrees})))

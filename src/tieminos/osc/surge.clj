@@ -18,12 +18,28 @@
                 "/tuning/scl"
                 path-to-scl))
 
+(defn set-tuning-kbm
+  ;; NOTE: avoid extension
+  [path-to-kbm]
+  (println path-to-kbm)
+  (osc/osc-send @osc-client
+                "/tuning/kbm"
+                path-to-kbm))
+
 (defn set-scale
   [{:keys [scale scale-name path]
     :or {path "/Users/diego/Music/tunings/"}}]
   (let [file-path (format "%s/%s.scl" path scale-name)]
     (scl/spit-file file-path scale)
-    (set-tuning (str/replace file-path #".scl" ""))))
+    (set-tuning (str/replace file-path #"\.scl" ""))))
+
+(defn set-kbm
+  [{:keys [path kbm-name _scale-data _degrees]
+    :as kbm-template-config
+    :or {path "/Users/diego/Music/tunings/kbm"}}]
+  (let [filepath (format "%s/%s.kbm" path kbm-name)]
+    (scl/spit-kbm (assoc kbm-template-config :filepath filepath))
+    (set-tuning-kbm (str/replace filepath #"\.kbm" ""))))
 
 (comment
   (init)
