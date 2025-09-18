@@ -18,6 +18,8 @@
    [tieminos.osc.reaper :as reaper]
    [tieminos.utils :refer [cb-interpolate stop-all-interpolators! throttle]]))
 
+(declare reaper-tracks*)
+
 (def default-rec-config
   {:on? true
    :pulse :dur
@@ -38,15 +40,14 @@
 
 (defn mute-input
   [input-k mute?]
-  (let [track (case input-k
-                :mic-1 4
-                :mic-2 5)]
-    (osc/osc-send @habitat-osc/reaper-client
-                  (format "/track/%s/mute" track)
-                  (int mute?))
-    (swap! live-state assoc-in
-           [:rec input-k :muted?]
-           (= 1 (int mute?)))))
+  (if-let [track (reaper-tracks* input-k)]
+    (do (osc/osc-send @habitat-osc/reaper-client
+                      (format "/track/%s/mute" track)
+                      (int mute?))
+        (swap! live-state assoc-in
+               [:rec input-k :muted?]
+               (= 1 (int mute?))))
+    (throw (ex-info "Unkown track to mute" {:input-k input-k}))))
 
 (comment
   (-> @live-state)
@@ -318,11 +319,16 @@
 ;;;;;;;;;;;;;;;;;;;
 
 (def ^:private reaper-tracks*
-  {:guitar-input-track 2
-   :guitar-clean-track 14
-   :guitar-processes-track 15
-   :percussion-processes-track 18
-   :eq-track 24})
+  ;; TODO: `:guitar` and `:mic-1` and `:mic-2` keys are used for other stuff, so can't namespace them right now as with the above. Ideally they could all be namespaced.
+  {:guitar 3 ;; line-in
+   :guitar/mic 4
+   :mic-1 6
+   :mic-2 7
+   :guitar-input-track 3
+   :guitar-clean-track 16
+   :guitar-processes-track 17
+   :percussion-processes-track 20
+   :eq-track 26})
 
 (defn- reaper-tracks [k]
   (if-let [track-num (reaper-tracks* k)]
@@ -539,20 +545,35 @@
 ;; Percussion
 ;;;;;;;;;;
 
-(defn set-track-volume
+(defn- set-track-volume
   [track volume]
   (osc/osc-send @habitat-osc/reaper-client
                 (format "/track/%s/volume" track)
                 (float volume)))
 
-(def perc-processes-amp-boost
+(defn- interpolate-track-volume
+  [reaper-track-kw target-volume]
+  (cb-interpolate
+   {:id (keyword "volume" (name reaper-track-kw))
+    :dur-ms 5000
+    :tick-ms 100
+    :init-val 0
+    :target-val target-volume
+    :cb (fn [{:keys [val]}]
+          (set-track-volume (reaper-tracks reaper-track-kw) val))}))
+
+(def ^:private set-track-volume2
+  (throttle #'interpolate-track-volume 200))
+
+(def ^:private perc-processes-amp-boost
   (make-volume-booster {:interpolator-id ::percussion-processes-boost
                         :level-offset (* -3 0.02) ;; index 3 = 0db boost
                         :track (reaper-tracks :percussion-processes-track)
                         :amp-fx-position 2}))
 
 (comment
-  (set-track-volume (reaper-tracks :percussion-processes-track) 1))
+
+  (set-track-volume2 :percussion-processes-track 1))
 
 ;;;;;;;;;;;;;;;
 ;;; Recording
@@ -614,11 +635,13 @@
            "/Milo/harmonic-highest-note" (set-harmonic-range {:player :milo :low?  false :value (first args)})
            "/Milo/rev-send-clean" (set-rev-send {:player :milo :clean? true :value (first args)})
            "/Milo/rev-send-process" (set-rev-send {:player :milo :clean? false :value (first args)})
-           "/Milo/processed-master" (set-track-volume (reaper-tracks :percussion-processes-track) (first args))
+           "/Milo/processed-master" (set-track-volume2 :percussion-processes-track (first args))
            "/Milo/processes-amp-boost" (perc-processes-amp-boost (first args))
            "/Diego/rec-guitar-btn" (toogle-rec {:input :guitar :on? press? :dur (-> @live-state :rec :mic-1 :dur (or 0.5))})
            "/Diego/rec-durs-radio" (switch-rec-durs [:guitar] (first args))
            "/Diego/rec-pulse-radio" (switch-rec-pulse [:guitar] (first args))
+           "/Diego/mute-line-in"    (mute-input :guitar (first args))
+           "/Diego/mute-mic"    (mute-input :guitar/mic (first args))
            "/Diego/clouds-active-btn" (toggle-clouds :diego press?)
            "/Diego/clouds-amp" (set-clouds-amp :diego (first args))
            "/Diego/clouds-env-radio" (set-clouds-env :diego (first args))

@@ -39,21 +39,6 @@ Controles:
 
 * V 2.2.10+
 ** TODO Compressor/saturador que permita continuar subiendo la amplitud en ciertos momentos
-** STRT Control de reverb
-*** STRT e independencia del reverb
-**** TODO Control de profundidad **para sonidos cortos** (se sienten antinaturales, en 2D)
-** DONE Control de velocidad de las armonías
-CLOSED: [2024-11-20 Wed 16:21]
-** DONE Bancos de samples
-CLOSED: [2024-11-20 Wed 16:21]
-*** DONE Limpiar bancos
-CLOSED: [2024-11-20 Wed 16:21]
-** DONE Inicialización
-CLOSED: [2024-12-11 Wed 17:01]
-** DONE Lib size infinita
-CLOSED: [2024-11-20 Wed 16:20]
-** DONE Interfaz
-CLOSED: [2024-11-20 Wed 16:20]
 ** TODO Envolventes cristal
 ** TODO Interfaz monstruo
 *** DONE Amp
@@ -74,26 +59,63 @@ CLOSED: [2024-12-11 Wed 17:30]
 ** TODO Indagar efectos en ondas cerebrales y, más generalmente, lo que puede estar produciendo el gusano en el cerebro
 https://nhahealth.com/brainwave-frequencies-what-are-they/
 *** TODO Qué capas de materiales general el estado particular del gusano
+** TODO Encontrar configuraciones del slendro
+*** TODO Convertir en presets
+** TODO Trabajar material de control de feebdack en gusano
+feebdack -> platillo
+** TODO [#C] BUG - rec -> toggle de clouds genera error de OSC
+** TODO Compresión para el canal de MixBus, evitar picotes
+Más bien un limitador
+SCHEDULED: <2025-07-16 Wed>
+** TODO Revisar bug de cleaning buffers
+SCHEDULED: <2025-08-04 Mon>
+** TODO Agregar datos del gusano a la interfaz web
+** DONE [#A] agregar input para micro en guitarra
+CLOSED: [2025-09-17 Wed 15:54] SCHEDULED: <2025-08-29 Fri>
+** DONE [#B] Interpolación de volumen fader Milo
+CLOSED: [2025-09-17 Wed 17:19] SCHEDULED: <2025-09-16 Tue>
+** TODO [#A] Pensar cómo evitar que haya momentos donde suena algo y de pronto hay un silencio
+SCHEDULED: <2025-09-15 Mon>
+Cuando un sample se calla antes de que comience el otro
+** TODO [#A] Poner la zoom
+SCHEDULED: <2025-09-17 Wed>
+** STRT Control de reverb
+*** STRT e independencia del reverb
+**** TODO Control de profundidad **para sonidos cortos** (se sienten antinaturales, en 2D)
+** IDEA [#C] Agregar control de volumen en el return clean de la guitarra (?)
+** IDEA bancos con tipos de comportamiento/sintesis/espacialización
+** El ojo de visión del gusano cuántico
+
+** NOPE [#C] Automatización de la eq no está siento leída o algo?
+CLOSED: [2025-09-10 Wed 14:38]
+Parece que más bien es un error de REAPER, al reiniciar se arregla
+SCHEDULED: <2025-09-04 Thu>
+** DONE Control de velocidad de las armonías
+CLOSED: [2024-11-20 Wed 16:21]
+** DONE Bancos de samples
+CLOSED: [2024-11-20 Wed 16:21]
+*** DONE Limpiar bancos
+CLOSED: [2024-11-20 Wed 16:21]
+** DONE Inicialización
+CLOSED: [2024-12-11 Wed 17:01]
+** DONE Lib size infinita
+CLOSED: [2024-11-20 Wed 16:20]
+** DONE Interfaz
+CLOSED: [2024-11-20 Wed 16:20]
 ** DONE Monstruo
 CLOSED: [2024-12-11 Wed 17:01]
 ** DONE agregar más sintes y poder cambiar entre ellos
 CLOSED: [2024-11-07 Thu 14:51]
 ** DONE Botón de mute de los micros
 CLOSED: [2025-01-04 Sat 12:06]
-** TODO Encontrar configuraciones del slendro
-*** TODO Convertir en presets
-** TODO Trabajar material de control de feebdack en gusano
-feebdack -> platillo
 ** DONE Agregar grabaciones de 15 y 20
 CLOSED: [2025-01-18 Sat 12:10]
 ** DONE Cargar configuraciones salvadas
 CLOSED: [2025-01-19 Sun 17:53]
 ** DONE Prevenir que los buffers que están siendo utilizados actualmente sean borrados
 CLOSED: [2025-02-15 Sat 12:44] SCHEDULED: <2025-01-27 Mon>
-** TODO [#C] BUG - rec -> toggle de clouds genera error de OSC
 ** DONE [#A] Clipeos que parece van de reaper a collider
 CLOSED: [2025-02-19 Wed 09:54] SCHEDULED: <2025-02-17 Mon>
-** IDEA [#C] Agregar control de volumen en el return clean de la guitarra (?)
 ** DONE Recuperar afinación del principio de 2.2.9.22
 CLOSED: [2025-02-03 Mon 08:42] SCHEDULED: <2025-01-29 Wed>
 También usada en varias de las sesiones anteriores
@@ -117,33 +139,20 @@ Aprox 5 segundos
 Actualización: en lugar de agregar botón, fader y OSC a reaper.
 ** DONE Ajustar ganancia de canal de entrada de la guitarra... o el de salida
 CLOSED: [2025-07-17 Thu 19:51] SCHEDULED: <2025-07-16 Wed>
-** TODO Compresión para el canal de MixBus, evitar picotes
-Más bien un limitador
-SCHEDULED: <2025-07-16 Wed>
 ** DONE Reparar cambio de automatización del EQ, apunta a un canal diferente.
 CLOSED: [2025-07-17 Thu 10:55] SCHEDULED: <2025-07-16 Wed>
-** IDEA bancos con tipos de comportamiento/sintesis/espacialización
-** TODO Revisar bug de cleaning buffers
-SCHEDULED: <2025-08-04 Mon>
 ** DONE Trim/read para Fader Procesos de Milo
 CLOSED: [2025-08-04 Mon 19:19] SCHEDULED: <2025-08-04 Mon>
 ** DONE agregar 40 y 60 segundos de grabación
 CLOSED: [2025-08-20 Wed 15:19] SCHEDULED: <2025-08-07 Thu>
-** TODO Agregar datos del gusano a la interfaz web
 ** DONE meta-pelog7 y m-slendro5n
 CLOSED: [2025-09-10 Wed 14:38] SCHEDULED: <2025-08-29 Fri>
-** NOPE [#C] Automatización de la eq no está siento leída o algo?
-CLOSED: [2025-09-10 Wed 14:38]
-Parece que más bien es un error de REAPER, al reiniciar se arregla
-SCHEDULED: <2025-09-04 Thu>
-** TODO [#A] agregar input para micro en guitarra
-SCHEDULED: <2025-08-29 Fri>
 ** DONE [#A] Aumentar ganancias del gusano
 CLOSED: [2025-09-10 Wed 14:38] SCHEDULED: <2025-09-05 Fri>
 ** DONE Gusano, usar bancos
 CLOSED: [2025-09-10 Wed 14:38] SCHEDULED: <2025-08-29 Fri>
-** TODO [#A] boton para hacer fade out de sonidos que sean muy largos (ca 15 de fade out)
-SCHEDULED: <2025-08-23 Sat>
+** DONE [#A] boton para hacer fade out de sonidos que sean muy largos (ca 15 de fade out)
+CLOSED: [2025-09-15 Mon 19:17] SCHEDULED: <2025-08-23 Sat>
 como los de pelog
 ** DONE [#A] fader discreto para procesos de Milo
 CLOSED: [2025-08-27 Wed 14:15] SCHEDULED: <2025-08-23 Sat>
