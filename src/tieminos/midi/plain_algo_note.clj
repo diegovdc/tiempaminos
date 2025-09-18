@@ -49,15 +49,25 @@
                   (midi/midi-note-on sink note* vel chan)
                   (midi/midi-note-off sink note* chan))))))
 
-(defn algo-note
-  [{:keys [sink dur note vel chan tempo offset]
-    :or {chan 0
-         tempo 60
-         offset 0}}]
+(defn- play-sequential-note
+  [chan {:as event-data
+         :keys [sink dur note vel tempo offset]
+         :or {tempo 60
+              offset 0}}]
   (if (sequential? note)
     (doseq [n note]
       (algo-note-fn sink dur n vel chan tempo offset))
     (algo-note-fn sink dur note vel chan tempo offset)))
+
+;; TODO: playing vectors of notes or chans works well, but can this be done generically?
+(defn algo-note
+  [{:as event-data
+    :keys [_sink _dur _note _vel chan _tempo _offset]
+    :or {chan 0}}]
+  (if (sequential? chan)
+    (doseq [chan* chan]
+      (play-sequential-note chan* event-data))
+    (play-sequential-note chan event-data)))
 
 (quot (- 210 127) 29)
 (- 210 (* 3 29))
