@@ -30,3 +30,4 @@ resources/*.wav
 .clj-kondo/overtone/
 docs/
 .clj-kondo/instaparse/
+.clj-kondo/metosin/
