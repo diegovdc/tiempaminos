@@ -330,7 +330,7 @@
        (loop [sequence* melodic-sequence]
          (let [item (get-next-item prev-item index sequence*)]
            (cond
-             (::return? (meta item)) item
+             (::return? (meta item)) (apply ret (mapv #(mseq index [%]) item))
              (or (sequential? item) (map? item)) (recur item)
              :else (do
                      (swap! mseq-state assoc-in [id :prev-item] item)

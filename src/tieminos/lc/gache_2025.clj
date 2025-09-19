@@ -40,48 +40,49 @@
    :ratio 1/14
    :durs (fn [data]
            (let [i (:index data)]
-             (+  #_(* 0.001 (sin (/ i 10)))
-              (rainseq (** 1/14 (repcat [4 (concat [7 7 7 4 7]
-                                                   [7 7 7 4 7]
-                                                   (map #(/ % 2) [7 7 7]))]
-                                        [4 (map #(/ % 2) [7 7 7])]))))))
+             (rainseq (** 1/14 (repcat [4 (concat [7 7 7 4 7]
+                                                  [7 7 7 4 7]
+                                                  (map #(/ % 2) [7 7 7]))]
+                                       [4 (map #(/ % 2) [7 7 7])])))))
    :on-event
    (on-event
-    (when (#{0} (mod i 2))
-      (algo-note {:sink sink
-                  :dur (* 0.99 2 (rainseq [1 1.2 [1 2] {1.3 20 3 7}]) (min 2 dur-s))
-                  :vel (min 127 (int (rainseq (++ 30 (** [[12 10 9 12 7]
-                                                          [11 10]
-                                                          [8 8 13 8]
-                                                          [11 10]
-                                                          [8 8 13 8]]
-                                                         [3 4 5 3 3])))))
-                  :chan (rainseq [1 (lin 1 (ret 1 0) 2) 1 (lin 1 0) 1])
-                  :offset 70
-                  :tempo 120
-                  :note (rainseq (++  #_[0 5 0 2] #_(lin -5 #_#_#_-7 0 -7)
-                                  (repcat [20 0]
-                                          [5 2]
-                                          [20 0]
-                                          [5 1])
-                                      (lin 0 (lin 3 9  7) 4 [1 0  5] 0)))}))
     (algo-note {:sink sink
-                :dur (* 0.99  (rainseq [1 1.2 1.3]) (min 2 dur-s))
-                :vel (min 127 (int (+ 0 0 (* 12 (at-i [3 4 5 3 3])))))
-                :chan (rainseq [1 (lin 1 (ret 1 0) 2) 1 (lin 1 0) 1])
-                :offset (+ -7 70)
+                :dur  (* 0.99 #_2 (min 2 dur-s)
+                         #_(rainseq [1 1.2 [1 2] {1.3 20 3 7}]))
+                :vel (min 127 (int (rainseq (++ 0 (**
+                                                   (repcat [10 1] [1 0])
+                                                   [[12 10 9 12 7]
+                                                    [11 10]
+                                                    [8 8 13 8]
+                                                    [11 10]
+                                                    [8 8 13 8]]
+                                                   [3 4 5 3 3])))))
+                :chan (rainseq [1 (lin 1 (ret 1 #_0) 2) 1 (lin 1 #_0) 1])
                 :tempo 120
-                :note (rainseq #_(++ -7  #_(lin -5 7 0 -7)
+                :offset (rainseq (++ -7 70
                                      #_(repcat [20 0]
                                                [5 2]
                                                [20 0]
-                                               [20 7]
-                                               [5 1])
-                                     #_[0 [3 7 0] 1 (lin -7 6 2) 0])
-                       [(ret 0 3) 5 (ret 7) 3 (ret 5 (lin 9 2)) (lin 0 1 0)])})))
-
-  (comment
-    [0 3 5 7 6 3 5 (lin 9 4) (lin 0 1 0)])
+                                               [5 1])))
+                #_(comment (lin 0 (lin 3 9  7) 4 [1 0  5] 0))
+                :note (rainseq (concat (repcat [4 [0 (lin 2 0) (lin -5 -2 6 3 -3)]]
+                                               [1 [0 0 (lin -5 7 -3) 2]])))})
+    (when (#{1} (mod i 3))
+      (algo-note {:sink sink
+                  :tempo 120
+                  :dur (* 0.99 2 (min 2 dur-s)
+                          (rainseq [1 1.2 1.3 {1 15 #_#_5 1}]))
+                  :vel (min 127 (int (rainseq (++ 0 0 (** 12 [3 4 5 3 3])))))
+                  :chan (rainseq (lin 1 (lin 1 (ret 1 0) 2) 1 (lin 1 0) 1))
+                  :offset (rainseq (++ -7 70
+                                       #_(repcat [20 0]
+                                                 [5 2]
+                                                 [20 0]
+                                                 [20 7]
+                                                 [5 1])))
+                  #_(comment [0 3 5 7 6 3 5 (lin 9 4) (lin 0 1 0)])
+                  :note (rainseq #_(lin 0 3 5 7 6 3 5 (lin 9 4) (lin 0 1 0))
+                         [(ret 0 3) 5 (ret 7) 3 (ret 5 (lin 9 2)) (lin 0 1 0)])}))))
 
   (ref-rain
    :id :pulse2b
@@ -98,6 +99,7 @@
                                            [1 75]
                                            [10 90]
                                            [1 60])))]
+
       (algo-note {:sink   sink
                   :dur    (* (if (< offset 70) 20 3) (rainseq (mirror (range 1 5 0.1))) dur-s)
                   :vel   (min 127 (inc (int (rainseq (++ 20 [7 -7 0] (** 0.8 (concat (mirror (range 100))
