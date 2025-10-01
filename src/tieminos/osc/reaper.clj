@@ -4,13 +4,18 @@
    [clojure.core.async :as async]
    [overtone.osc :as osc]
    [taoensso.timbre :as timbre]
+   [tieminos.network-utils :refer [get-local-host]]
    [tieminos.utils :refer [sequence-calls2]]))
 
 (defonce osc-client (atom nil))
 
 (defn init []
   (when-not @osc-client
-    (reset! osc-client (osc/osc-client "0.0.0.0" 65432))
+    (reset! osc-client (osc/osc-client
+                        #_(get-local-host)
+                        "127.0.0.1" ;; this one seems to work for now
+                        #_"0.0.0.0"
+                        65432))
     @osc-client))
 
 (defn time "Set start time at `seconds`"

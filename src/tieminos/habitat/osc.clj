@@ -71,15 +71,18 @@
                            ;; ensure it doesn't go beyond stated max, if value is > 1
                            (min max*)))))
 
-(defonce reaper-client (atom nil))
-
+(defonce
+  reaper-client (atom nil))
+(comment
+  (reset! reaper-client nil))
 (defn make-reaper-osc-client
   []
   (if @reaper-client
     @reaper-client
     (reset! reaper-client (osc/osc-client
                            #_(get-local-host) ;; for some reason this is not working
-                           "0.0.0.0"
+                           #_"0.0.0.0" ;; and this doesn't work anymore (after OS update?)
+                           "127.0.0.1" ;; this one seems to work for now
                            65432))))
 
 (defn make-internal-osc-client
