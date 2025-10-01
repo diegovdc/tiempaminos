@@ -38,8 +38,12 @@ Controles:
 
 
 * V 2.2.10+
-** TODO Compressor/saturador que permita continuar subiendo la amplitud en ciertos momentos
-** TODO Envolventes cristal
+** DONE [#A] Control de cantidad de voces en samples
+CLOSED: [2025-10-01 Wed 15:28] SCHEDULED: <2025-09-24 Wed>
+** DONE Compressor/saturador que permita continuar subiendo la amplitud en ciertos momentos
+CLOSED: [2025-09-24 Wed 20:29]
+** TODO [#A] Envolventes cristal
+SCHEDULED: <2025-09-25 Thu>
 ** TODO Interfaz monstruo
 *** DONE Amp
 CLOSED: [2024-12-11 Wed 17:28]
@@ -63,13 +67,16 @@ https://nhahealth.com/brainwave-frequencies-what-are-they/
 *** TODO Convertir en presets
 ** TODO Trabajar material de control de feebdack en gusano
 feebdack -> platillo
-** TODO [#C] BUG - rec -> toggle de clouds genera error de OSC
-** TODO Compresión para el canal de MixBus, evitar picotes
+** NOPE [#C] BUG - rec -> toggle de clouds genera error de OSC
+CLOSED: [2025-09-24 Wed 21:09]
+** DONE Compresión para el canal de MixBus, evitar picotes
+CLOSED: [2025-09-24 Wed 20:30]
 Más bien un limitador
 SCHEDULED: <2025-07-16 Wed>
 ** TODO Revisar bug de cleaning buffers
 SCHEDULED: <2025-08-04 Mon>
-** TODO Agregar datos del gusano a la interfaz web
+** DONE Agregar datos del gusano a la interfaz web
+CLOSED: [2025-09-24 Wed 21:09]
 ** DONE [#A] agregar input para micro en guitarra
 CLOSED: [2025-09-17 Wed 15:54] SCHEDULED: <2025-08-29 Fri>
 ** DONE [#B] Interpolación de volumen fader Milo
@@ -83,6 +90,7 @@ SCHEDULED: <2025-09-17 Wed>
 *** STRT e independencia del reverb
 **** TODO Control de profundidad **para sonidos cortos** (se sienten antinaturales, en 2D)
 ** IDEA [#C] Agregar control de volumen en el return clean de la guitarra (?)
+SCHEDULED: <2025-09-25 Thu>
 ** IDEA bancos con tipos de comportamiento/sintesis/espacialización
 ** El ojo de visión del gusano cuántico
 

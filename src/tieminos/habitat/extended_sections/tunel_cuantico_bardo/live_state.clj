@@ -2,6 +2,7 @@
   (:require [tieminos.attractors.lorentz :as lorentz]))
 
 (defonce touch-osc-state (atom {}))
+
 (defonce live-state (atom {:lorentz (lorentz/init-system :x 0.3 :y 0.02 :z 0.012)}))
 
 (defn init-watch!

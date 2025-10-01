@@ -161,6 +161,13 @@
     :meta-pelog-11 meta-pelog-11
     meta-slendro1))
 
+(defn- get-rates-subset
+  [rate-indexes rates]
+  (keep
+   #(nth rates % nil)
+   rate-indexes))
+#_(get-rates-subset #{0 1 2} [0 1 2])
+
 (defn start-clouds
   [player-k]
   (clouds-refrain
@@ -181,14 +188,18 @@
                 #_(println "get buf" k  (into {} buf))
                 buf))
     :rates-fn (fn [{:keys [index]}]
-                (let [{:keys [harmony harmonic-speed harmonic-range]} (get-harmonic-data! player-k)]
+                (let [{:keys [harmony harmonic-speed harmonic-range
+                              rate-indexes ;; defines the number of voices to play, lorentz has 3 indexes so indexes can be a set of numbers 0 - 2
+                              ]
+                       :or {rate-indexes #{0 1 2}}} (get-harmonic-data! player-k)]
                   (->> (lorentz-chord index
                                       (:lorentz @live-state)
                                       harmonic-speed
                                       (:low harmonic-range)
                                       (:high harmonic-range))
                        (#(rate-chord-seq (get-harmony harmony) [%]))
-                       first)))
+                       first
+                       (get-rates-subset rate-indexes))))
     :amp-fn (fn [_] (-> @live-state :algo-2.2.9-clouds player-k :amp (o/db->amp)))
     :on-play (fn [{:as config :keys [index buf rate]}]
                (let [state @live-state
@@ -196,7 +207,7 @@
                                          :milo :percussion-processes
                                          :diego :guitar-processes))
                      synth-type (-> state :algo-2.2.9-clouds player-k :active-synth)
-                     ;; TODO: update live state with event duration
+                      ;; TODO: update live state with event duration
                      synth (case synth-type
                              :crystal (let [dur (* rate (:duration buf))
                                             synth* (cristal-liquidizado (assoc config :dur dur :out out))]
@@ -220,6 +231,7 @@
 
 (comment
   (-> @live-state :algo-2.2.9-clouds :milo)
+  (swap! live-state assoc-in [:algo-2.2.9-clouds :milo :rhythm] :lor-0.1_2)
   (o/amp->db 0.0015420217847956035)
   (stop-clouds :milo)
   (start-clouds :milo)
