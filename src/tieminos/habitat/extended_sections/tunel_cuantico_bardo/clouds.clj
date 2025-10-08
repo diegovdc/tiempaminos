@@ -35,10 +35,8 @@
               (when-let [buf (buf-fn {:index index})]
                 (when-not (silence? silence-thresh buf)
                   (let [rates (rates-fn {:index index})
-                        _ (println rates)
                         rates* (if (sequential? rates) rates [rates])
                         amp* (amp-fn [{:index index}])]
-                    (when on-play (println "ONPLAY"))
                     (doseq [r rates*]
                       (let [trig-rate (+ 90 (rand-int 20))
                             config {:group (groups/mid)

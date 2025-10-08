@@ -168,6 +168,27 @@
    rate-indexes))
 #_(get-rates-subset #{0 1 2} [0 1 2])
 
+(defn- get-active-synth-type
+  [player-k state]
+  (-> state :algo-2.2.9-clouds player-k :active-synth))
+
+(defn- adjust-amp [db-delta amp]
+  (* amp (o/db->amp db-delta)))
+#_(adjust-amp 6 2)
+
+(defn- granular-synth-amp-adjustment
+  [config]
+  (update config :amp (partial adjust-amp 9)))
+
+(defn- mic-1-bank-0-aka-bell-sound-amp-adjustment
+  [config]
+  (if-not (and (= (-> config :buf :rec/meta :input-name)
+                  "mic-1-bus")
+               (= (-> config :buf :rec/meta :subsection)
+                  0))
+    config
+    (update config :amp (partial adjust-amp -6))))
+
 (defn start-clouds
   [player-k]
   (clouds-refrain
@@ -200,21 +221,28 @@
                        (#(rate-chord-seq (get-harmony harmony) [%]))
                        first
                        (get-rates-subset rate-indexes))))
-    :amp-fn (fn [_] (-> @live-state :algo-2.2.9-clouds player-k :amp (o/db->amp)))
+    :amp-fn (fn [_]
+               ;; the amp is adjusted at the call site of the synthdefs for different reasons:
+               ;; 1. Milo's bank 1 is reserved for the bowed bell which is louder than other sounds
+               ;; 2. The `granular` has less loudeness than the crystal synth
+              (-> @live-state :algo-2.2.9-clouds player-k :amp (o/db->amp)))
     :on-play (fn [{:as config :keys [index buf rate]}]
                (let [state @live-state
                      out (main-returns (case player-k
                                          :milo :percussion-processes
                                          :diego :guitar-processes))
-                     synth-type (-> state :algo-2.2.9-clouds player-k :active-synth)
+                     synth-type (get-active-synth-type player-k state)
                       ;; TODO: update live state with event duration
                      synth (case synth-type
                              :crystal (let [dur (* rate (:duration buf))
-                                            synth* (cristal-liquidizado (assoc config :dur dur :out out))]
+                                            synth* (cristal-liquidizado (-> config
+                                                                            mic-1-bank-0-aka-bell-sound-amp-adjustment
+                                                                            (assoc :dur dur :out out)))]
                                         (bardo.synth-management/add-synth! synth* dur)
                                         synth*)
                              :granular (amanecer*guitar-clouds
                                         (-> config
+                                            granular-synth-amp-adjustment
                                             (merge (get-envelope
                                                     index
                                                     (-> state :algo-2.2.9-clouds player-k :env)

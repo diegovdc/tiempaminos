@@ -38,6 +38,9 @@ Controles:
 
 
 * V 2.2.10+
+** DONE [#A] Banco 1 especial glissando de campana
+CLOSED: [2025-10-08 Wed 12:18] SCHEDULED: <2025-10-01 Wed>
+Bajarlo 6db
 ** DONE [#A] Control de cantidad de voces en samples
 CLOSED: [2025-10-01 Wed 15:28] SCHEDULED: <2025-09-24 Wed>
 ** DONE Compressor/saturador que permita continuar subiendo la amplitud en ciertos momentos
@@ -92,6 +95,8 @@ SCHEDULED: <2025-09-17 Wed>
 ** IDEA [#C] Agregar control de volumen en el return clean de la guitarra (?)
 SCHEDULED: <2025-09-25 Thu>
 ** IDEA bancos con tipos de comportamiento/sintesis/espacialización
+** DONE balancear amps the granular y cristal
+CLOSED: [2025-10-08 Wed 12:19]
 ** El ojo de visión del gusano cuántico
 
 ** NOPE [#C] Automatización de la eq no está siento leída o algo?
