@@ -5,20 +5,23 @@
    [overtone.osc :as osc]))
 
 (defonce osc-client (atom nil))
-
+(comment
+  (reset! osc-client nil))
 (defn init []
   (when-not @osc-client
-    (reset! osc-client (osc/osc-client "0.0.0.0" 53280))
+    (reset! osc-client
+            (osc/osc-client "127.0.0.1"
+                            #_"0.0.0.0" 53280))
     @osc-client))
 
-(defn set-tuning
+(defn- set-tuning
   ;; NOTE: avoid extension
   [path-to-scl]
   (osc/osc-send @osc-client
                 "/tuning/scl"
                 path-to-scl))
 
-(defn set-tuning-kbm
+(defn- set-tuning-kbm
   ;; NOTE: avoid extension
   [path-to-kbm]
   (println path-to-kbm)
