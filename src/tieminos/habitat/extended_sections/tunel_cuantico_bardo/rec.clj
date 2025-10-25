@@ -86,7 +86,9 @@
       true
       (all-synths-inactive? (get @currently-playing-bufs buf)))))
 
-(defn- start-buffer-freeing-loop! []
+(defn- start-buffer-freeing-loop!
+  "Starts a loop that frees all buffers that are not being used."
+  []
   (if @buffer-freeing-loop-running?
     (timbre/warn "buffer-freeing-loop already running")
     (do
@@ -115,6 +117,8 @@
        (apply merge)))
 
 (defn start-currently-playing-bufs-cleaning-loop!
+  "To avoid memory leaks, creates a loop that minute removes buffers, which are
+  no longer being used by a synth, from the `currently-playing-bufs` atom."
   []
   (if @currently-playing-bufs-cleaning-loop-running?
     (timbre/warn "currently-playing-bufs-cleaning-loop already running")
@@ -122,7 +126,7 @@
       (timbre/info "Initializing currently-playing-bufs-cleaning-loop")
       (reset! currently-playing-bufs-cleaning-loop-running? true)
       (a/go-loop []
-        (timbre/info "Cleaning currently-playing-bufs")
+        #_(timbre/info "Cleaning currently-playing-bufs")
         (swap! currently-playing-bufs clean-currently-playing-bufs)
         (a/<! (a/timeout (* 60 1000)))
         (if @currently-playing-bufs-cleaning-loop-running?
