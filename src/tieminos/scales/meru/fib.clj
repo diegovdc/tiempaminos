@@ -39,3 +39,14 @@
      {:kbm-name (format "dev/fib[%s]_%s" (count fib) (str/join "-" degrees))
       :scale-data {:scale fib}
       :degrees degrees})))
+
+(comment
+  ;; might be interesting
+  (def fib2
+    (->> {:seed [1 1 2 10]
+          :formula :fibonacci}
+         (meru/recurrent-series)
+         :series
+         (drop 18)
+         (take 36)
+         (ratios->scale))))
