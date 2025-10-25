@@ -3,7 +3,9 @@
 
 (defonce touch-osc-state (atom {}))
 
-(defonce live-state (atom {:lorentz (lorentz/init-system :x 0.3 :y 0.02 :z 0.012)}))
+(defonce live-state (atom {:lorentz (lorentz/init-system :x (+ 0.3 (rand 0.01))
+                                                         :y (+ 0.02 (rand 0.01))
+                                                         :z (+ 0.012 (rand 0.01)))}))
 
 (defn init-watch!
   [id f]

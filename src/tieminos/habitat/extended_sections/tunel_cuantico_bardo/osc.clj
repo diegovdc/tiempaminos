@@ -3,6 +3,7 @@
    [clojure.math :refer [round]]
    [clojure.set :as set]
    [clojure.string :as str]
+   [erv.utils.core :refer [round2]]
    [org.httpkit.client :as http]
    [overtone.osc :as osc]
    [taoensso.timbre :as timbre]
@@ -18,7 +19,7 @@
    [tieminos.osc.reaper :as reaper]
    [tieminos.utils :refer [cb-interpolate stop-all-interpolators! throttle]]))
 
-(declare reaper-tracks*)
+(declare reaper-tracks* update-label)
 
 (def default-rec-config
   {:on? true
@@ -193,9 +194,13 @@
 
 (defn set-harmonic-speed
   [player harmonic-speed]
-  (swap! live-state
-         assoc-in [:algo-2.2.9-clouds player :harmonic-speed]
-         (round (first (linlin 0 1 5 70 [harmonic-speed])))))
+  (let [speed (if (>= 0.2 harmonic-speed)
+                (first (linlin 0 0.2 0 1 [harmonic-speed]))
+                (round (first (linlin 0.2 1 1 70 [harmonic-speed]))))]
+    (swap! live-state
+           assoc-in [:algo-2.2.9-clouds player :harmonic-speed]
+           speed)
+    (update-label player :harmonic-speed (round2 2 speed))))
 
 (defn- update-harmonic-range
   [hrange low? value]
@@ -208,11 +213,17 @@
 
 (defn set-harmonic-range
   [{:keys [player low? value]}]
-  (swap! live-state
-         update-in [:algo-2.2.9-clouds player :harmonic-range]
-         update-harmonic-range
-         low?
-         value))
+  (let [path [:algo-2.2.9-clouds player :harmonic-range]
+        state-data (swap! live-state
+                          update-in
+                          path
+                          update-harmonic-range
+                          low?
+                          value)]
+
+    (update-label player
+                  (if low? :harmonic-lowest-note :harmonic-highest-note)
+                  (get-in state-data (conj path (if low? :low :high))))))
 
 (defn set-active-harmonic-voice
   [{:keys [player voice-index on?]}]
@@ -617,6 +628,9 @@
     (when-not (excluded-paths path)
       (apply osc/osc-send client path args))))
 
+(comment
+  (update-clients @habitat-osc/receiver-clients "/Milo/harmonic-speed-label" [(str (round2 2 0.3455))]))
+
 (defn- osc-responder
   [{:keys [path args] :as msg}]
   (let [HACKED-path (HACK-parse-path path) ;; FIXME: there should be a more elegant way to handle this (see fn definition).
@@ -755,11 +769,12 @@
             50))
 
 (defn post-live-state-to-ui!
-  []
+  [& {:keys [print-instead?]}]
   (add-watch bardo.live-state/live-state ::post-live-state
              (fn [_key _ref _old-value new-value]
-               #_(println new-value)
-               (throttled-post (dissoc new-value :lorentz)))))
+               (if print-instead?
+                 (println new-value)
+                 (throttled-post (dissoc new-value :lorentz))))))
 
 (def default-touch-osc-state
   (->> '{"/Diego/bank-rec-radio" (0),
@@ -767,9 +782,9 @@
          "/Diego/clouds-env-radio" (0),
          "/Diego/clouds-rhythm-radio" (0),
          "/Diego/clouds-sample-lib-size-radio" (0),
-         "/Diego/harmonic-highest-note" (0.0),
-         "/Diego/harmonic-lowest-note" (0.0),
-         "/Diego/harmonic-speed" (0.0),
+         "/Diego/harmonic-highest-note" (0.5),
+         "/Diego/harmonic-lowest-note" (0.5),
+         "/Diego/harmonic-speed" (0.2),
          "/Diego/harmony-radio" (0),
          "/Diego/input-amp-boost" (0),
          "/Diego/rec-durs-radio" (0),
@@ -799,9 +814,9 @@
          "/Milo/clouds-env-radio" (0),
          "/Milo/clouds-rhythm-radio" (0),
          "/Milo/clouds-sample-lib-size-radio" (0),
-         "/Milo/harmonic-highest-note" (0.0),
-         "/Milo/harmonic-lowest-note" (0.0),
-         "/Milo/harmonic-speed" (0.0),
+         "/Milo/harmonic-highest-note" (0.5),
+         "/Milo/harmonic-lowest-note" (0.5),
+         "/Milo/harmonic-speed" (0.2),
          "/Milo/harmony-radio" (0),
          "/Milo/processed-master" (0.0),
          "/Milo/processes-amp-boost" (3),
@@ -818,6 +833,19 @@
                                        (float? %) (float %)
                                        :else (int %)) v)]))
        (into {})))
+
+(defn- get-label-path
+  [player label-key]
+  (case [player label-key]
+    ;; other cases to come
+    (format "/%s/%s"
+            (case player :milo "Milo" :diego "Diego")
+            (str (name label-key) "-label"))))
+
+(defn- update-label
+  [player label-key value]
+  (let [path (get-label-path player label-key)]
+    (update-clients @habitat-osc/receiver-clients path [(str value)])))
 
 (defn reset-default-state!
   []

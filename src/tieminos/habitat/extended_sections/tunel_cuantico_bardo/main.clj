@@ -34,7 +34,8 @@
   (bardo.osc/reset-default-state!)
   ;; init everything (habitat and input synths) except SC, REAPER and OSC communications
   (bardo.init/all!)
-  (bardo.osc/post-live-state-to-ui!))
+  (bardo.osc/post-live-state-to-ui!)
+  (bardo.osc/post-live-state-to-ui! :print-instead? true))
 
 ;; TODO: figure out if this is still useful
 (defonce saved-synth-params (atom []))
