@@ -8,7 +8,7 @@
    amp 1
    gate 1]
   (o/out 0
-         (o/saw freq)))
+         (* amp (o/pan2 (o/saw freq) 0))))
 
 (o/defsynth drone ;; sine
   [freq 130
