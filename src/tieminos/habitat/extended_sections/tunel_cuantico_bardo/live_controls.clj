@@ -210,7 +210,7 @@
                 buf))
     :rates-fn (fn [{:keys [index]}]
                 (let [{:keys [harmony harmonic-speed harmonic-range
-                              rate-indexes ;; defines the number of voices to play, lorentz has 3 indexes so indexes can be a set of numbers 0 - 2
+                              rate-indexes ;; defines the number of voices to play, lorentz has 3 indexes so indexes can be a `set` of numbers 0 - 2
                               ]
                        :or {rate-indexes #{0 1 2}}} (get-harmonic-data! player-k)]
                   (->> (lorentz-chord index

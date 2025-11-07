@@ -49,7 +49,7 @@ Bajarlo 6db
 CLOSED: [2025-10-01 Wed 15:28] SCHEDULED: <2025-09-24 Wed>
 ** DONE Compressor/saturador que permita continuar subiendo la amplitud en ciertos momentos
 CLOSED: [2025-09-24 Wed 20:29]
-** TODO [#A] Envolventes cristal
+** TODO [#C] Envolventes cristal
 SCHEDULED: <2025-09-25 Thu>
 ** TODO Interfaz monstruo
 *** DONE Amp
@@ -93,8 +93,8 @@ CLOSED: [2025-09-17 Wed 17:19] SCHEDULED: <2025-09-16 Tue>
 ** HOLD Pensar cómo evitar que haya momentos donde suena algo y de pronto hay un silencio
 Cuando un sample se calla antes de que comience el otro
 Parece que es una cuestión relativa que la grabación misma del sample tiene un silencio.
-** TODO [#A] Poner la zoom
-SCHEDULED: <2025-09-17 Wed>
+** NOPE [#A] Poner la zoom
+CLOSED: [2025-10-30 Thu 10:44] SCHEDULED: <2025-09-17 Wed>
 ** STRT Control de reverb
 *** STRT e independencia del reverb
 **** TODO Control de profundidad **para sonidos cortos** (se sienten antinaturales, en 2D)

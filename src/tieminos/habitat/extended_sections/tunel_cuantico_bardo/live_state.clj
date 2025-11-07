@@ -18,4 +18,7 @@
   (->> @live-state :algo-2.2.9-clouds player-k :active-banks))
 
 (comment
-  (->> @live-state))
+  (->> @live-state)
+  (def lorentz (->> @live-state :lorentz))
+  (lorentz 2)
+  (nth [1 2 3 4] 2))
