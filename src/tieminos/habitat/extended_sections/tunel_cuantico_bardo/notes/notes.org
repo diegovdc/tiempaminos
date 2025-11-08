@@ -40,8 +40,7 @@ Controles:
 * V 2.2.9.10+
 ** DONE [#A] Extender rango de lentitud de la velocidad armónica
 CLOSED: [2025-10-25 Sat 13:47] SCHEDULED: <2025-10-17 Fri>
-** TODO [#B] Pensar posibilidades de reverb
-SCHEDULED: <2025-10-17 Fri>
+** TODO [#B] Pensar posibilidades de reverb :wish:
 ** DONE [#A] Banco 1 especial glissando de campana
 CLOSED: [2025-10-08 Wed 12:18] SCHEDULED: <2025-10-01 Wed>
 Bajarlo 6db
@@ -49,8 +48,7 @@ Bajarlo 6db
 CLOSED: [2025-10-01 Wed 15:28] SCHEDULED: <2025-09-24 Wed>
 ** DONE Compressor/saturador que permita continuar subiendo la amplitud en ciertos momentos
 CLOSED: [2025-09-24 Wed 20:29]
-** TODO [#C] Envolventes cristal
-SCHEDULED: <2025-09-25 Thu>
+** TODO [#C] Envolventes cristal :wish:
 ** TODO Interfaz monstruo
 *** DONE Amp
 CLOSED: [2024-12-11 Wed 17:28]
@@ -98,8 +96,8 @@ CLOSED: [2025-10-30 Thu 10:44] SCHEDULED: <2025-09-17 Wed>
 ** STRT Control de reverb
 *** STRT e independencia del reverb
 **** TODO Control de profundidad **para sonidos cortos** (se sienten antinaturales, en 2D)
-** IDEA [#C] Agregar control de volumen en el return clean de la guitarra (?)
-SCHEDULED: <2025-09-25 Thu>
+** IDEA [#A] Agregar control de volumen en el return clean de la guitarra (?)
+DEADLINE: <2025-11-13 Thu> 
 ** IDEA bancos con tipos de comportamiento/sintesis/espacialización
 ** DONE balancear amps the granular y cristal
 CLOSED: [2025-10-08 Wed 12:19]
