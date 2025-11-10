@@ -96,8 +96,8 @@ CLOSED: [2025-10-30 Thu 10:44] SCHEDULED: <2025-09-17 Wed>
 ** STRT Control de reverb
 *** STRT e independencia del reverb
 **** TODO Control de profundidad **para sonidos cortos** (se sienten antinaturales, en 2D)
-** IDEA [#A] Agregar control de volumen en el return clean de la guitarra (?)
-DEADLINE: <2025-11-13 Thu> 
+** DONE [#A] Agregar control de volumen en el return clean de la guitarra (?)
+CLOSED: [2025-11-10 Mon 10:18] DEADLINE: <2025-11-13 Thu>
 ** IDEA bancos con tipos de comportamiento/sintesis/espacialización
 ** DONE balancear amps the granular y cristal
 CLOSED: [2025-10-08 Wed 12:19]
