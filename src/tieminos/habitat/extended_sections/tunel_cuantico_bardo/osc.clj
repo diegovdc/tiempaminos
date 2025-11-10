@@ -685,6 +685,8 @@
       "/Diego/rev-send-clean" (set-rev-send {:player :diego :clean? true :value (first args)})
       "/Diego/rev-send-process" (set-rev-send {:player :diego :clean? false :value (first args)})
       "/Diego/input-amp-boost" (guitar-input-amp-boost (first args))
+      "/Diego/clean-master" (set-track-volume2 :guitar-clean-track (first args))
+      "/Diego/processed-master" (set-track-volume2 :guitar-processes-track (first args))
       ;; synth management
       "/stop-long-running-synths" (when press? (stop-long-running-synths! (* 20 1000)))
       ;; gusano
@@ -787,6 +789,8 @@
          "/Diego/harmonic-speed" (0.2),
          "/Diego/harmony-radio" (0),
          "/Diego/input-amp-boost" (0),
+         "/Diego/clean-master" (0.0),
+         "/Diego/processed-master" (0.0),
          "/Diego/rec-durs-radio" (0),
          "/Diego/rec-pulse-radio" (0),
          "/Diego/rev-send-clean" (0.0),
