@@ -30,10 +30,12 @@
   [track vol]
   (osc/osc-send @osc-client (format "/track/%s/volume" track) (float vol)))
 
+(def zero-db 0.7158)
+
 (def reaper-db {:-inf 0
                 -6 0.59
                 -3 0.649
-                0 0.7158
+                0 zero-db
                 3 0.79
                 6 0.86})
 

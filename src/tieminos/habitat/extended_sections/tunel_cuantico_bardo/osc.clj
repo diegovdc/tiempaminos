@@ -348,6 +348,7 @@
    :guitar-clean-track 16
    :guitar-processes-track 17
    :percussion-processes-track 20
+   :mixes-processes-2-track 22
    :eq-track 26})
 
 (defn- reaper-tracks [k]
@@ -573,15 +574,16 @@
                 (float volume)))
 
 (defn- interpolate-track-volume
-  [reaper-track-kw target-volume]
-  (cb-interpolate
-   {:id (keyword "volume" (name reaper-track-kw))
-    :dur-ms 5000
-    :tick-ms 100
-    :init-val 0
-    :target-val target-volume
-    :cb (fn [{:keys [val]}]
-          (set-track-volume (reaper-tracks reaper-track-kw) val))}))
+  ([reaper-track-kw target-volume] (interpolate-track-volume reaper-track-kw target-volume 0))
+  ([reaper-track-kw target-volume init-val]
+   (cb-interpolate
+    {:id (keyword "volume" (name reaper-track-kw))
+     :dur-ms 5000
+     :tick-ms 100
+     :init-val init-val
+     :target-val target-volume
+     :cb (fn [{:keys [val]}]
+           (set-track-volume (reaper-tracks reaper-track-kw) val))})))
 
 (def ^:private set-track-volume2
   (throttle #'interpolate-track-volume 200))
@@ -605,6 +607,7 @@
          :guitar-clean-track
          :guitar-processes-track
          :percussion-processes-track
+         :mixes-processes-2-track
          :eq-track]))
 
 (defn reaper-rec!
@@ -725,6 +728,7 @@
       "/System/rec-start" (when press? (reaper-rec!))
       "/System/rec-stop" (when press? (reaper-stop!))
       "/System/init" (when press? (bardo.init/all!))
+      "/System/voces-master" (set-track-volume2 :mixes-processes-2-track (first args) reaper/zero-db)
       (timbre/warn "Unknown path for message: " HACKED-path msg args-map))
 
     ;; Save last update to touch-osc-state
@@ -780,6 +784,7 @@
 
 (def default-touch-osc-state
   (->> '{"/Diego/bank-rec-radio" (0),
+         "/Diego/clouds-active-btn" (0.0), ;; NOTE: will cause log "Could not find refrain with id: :bardo.clouds/diego"
          "/Diego/clouds-amp" (0.0),
          "/Diego/clouds-env-radio" (0),
          "/Diego/clouds-rhythm-radio" (0),
@@ -808,12 +813,12 @@
          "/EQ/notch-radio" (0),
          "/gusano/amp" (0.0),
          "/gusano/durs" (0),
-         "/gusano/grain-dur" (0.0),
+         "/gusano/grain-durs" (0.0),
          "/gusano/grain-trig" (0.0),
          "/gusano/period" (0),
          "/gusano/rates" (0),
          "/Milo/bank-rec-radio" (0),
-         "/Milo/clouds-active-btn" (0.0),
+         "/Milo/clouds-active-btn" (0.0), ;; NOTE: will cause log "Could not find refrain with id: :bardo.clouds/milo"
          "/Milo/clouds-amp" (0.0),
          "/Milo/clouds-env-radio" (0),
          "/Milo/clouds-rhythm-radio" (0),
@@ -832,12 +837,16 @@
          "/Milo/toggle-bank/1" ("on" 0.0 "index" 1)
          "/Milo/toggle-harmonic-voice/0" ("on" 1 "index" 0),
          "/Milo/toggle-harmonic-voice/1" ("on" 1 "index" 1),
-         "/Milo/toggle-harmonic-voice/2" ("on" 1 "index" 2)}
-       (map (fn [[k v]] [k (map #(cond (not (number? %)) %
-                                       (float? %) (float %)
-                                       :else (int %)) v)]))
+         "/Milo/toggle-harmonic-voice/2" ("on" 1 "index" 2)
+         "/System/voces-master" (reaper/zero-db)}
+       (map (fn [[k v]] [k (map #(cond
+                                   (symbol? %) (eval %) ;; NOTE this may cause trouble
+                                   (not (number? %)) %
+                                   (float? %) (float %)
+                                   :else (int %)) v)]))
        (into {})))
-
+(comment
+  (-> default-touch-osc-state))
 (defn- get-label-path
   [player label-key]
   (case [player label-key]
@@ -857,6 +866,7 @@
     (osc-responder {:path path :args args})))
 
 (comment
+
   (->> @live-state)
   (reset-default-state!)
   (reset! live-state {})
