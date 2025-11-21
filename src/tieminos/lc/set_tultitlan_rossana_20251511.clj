@@ -1,4 +1,5 @@
 (ns set-tultitlan-rossana-20251511
+  ;; NOTE: un buen título para la pieza: caminos hacia el agua
   (:require
    [overtone.core :as o]
    [tieminos.overtone-extensions :as oe]
@@ -130,7 +131,7 @@
                       :pan (* 0.8 (rrange -1 1))
                       :amp (* 0.0
                               (o/db->amp 48 #_(rrange 24 36)))})))
-
+  ;; caminos hacia el agua
   ;; NOTE: turn on
   (ref-rain ::id ::clock :durs [1] :ratio 1/4 :on-event (fn [_]))
 
