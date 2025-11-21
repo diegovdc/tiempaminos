@@ -12,10 +12,10 @@
         io.github.diegovdc/time-time {:git/url "https://github.com/diegovdc/time-time.git"
                                       :sha "035a1accd4b3ac955aec246d68334aec133ad230"}
         #_{:local/root "../time-tiem" :deps/manifest :deps}
-        io.github.diegovdc/erv {:git/url "https://github.com/diegovdc/erv.git"
-                                :sha "31655128b5421c82431f519f99fdc2a95ad4636f"
+        io.github.diegovdc/erv #_{:git/url "https://github.com/diegovdc/erv.git"
+                                  :sha "31655128b5421c82431f519f99fdc2a95ad4636f"
                                 ;; :tag "0.0.7"
-                                }#_{:local/root "../erv" :deps/manifest :deps}
+                                  }{:local/root "../erv" :deps/manifest :deps}
         com.taoensso/timbre {:mvn/version "4.10.0"}
         incanter/incanter {:mvn/version "1.9.3"}
         ;; The next two fix the erroneous call to a the bounccastle dep by incanter
