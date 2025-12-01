@@ -1,0 +1,253 @@
+#+TITLE: Paisaje Difractado No.1
+#+AUTHOR: vid.eco
+
+* Introducción
+
+* Dependencias
+#+begin_src clojure
+(ns tieminos.compositions.paisajes-difractados.uno
+  (:require
+   [erv.beating-analyzer.v1 :refer [get-beat-data]]
+   [overtone.core :as o]
+   [tieminos.overtone-extensions :as oe]
+   [tieminos.sc-utils.synths.v1 :refer [lfo-kr]]
+   [tieminos.seq-utils.core :refer [lin rainseq]]
+   [tieminos.utils :refer [rrange wrap-at]]
+   [time-time.dynacan.players.refrain.v2 :as rain.v2 :refer [on-event ref-rain]]))
+#+end_src
+
+* Afinación
+Meta-slendro (versión de Kraig Grady)
+#+begin_src clojure
+(def metaslendro
+  [49/48 25/24 7/6 19/16 4/3 65/48 3/2 37/24 151/96 7/4 43/24 2/1])
+#+end_src
+
+#+RESULTS:
+: #'tieminos.compositions.paisajes-difractados.uno/metaslendro
+
+** Análisis
+#+begin_src clojure 
+(defn +avg-freq
+  [{:keys [root-hz
+           ratio-1 ratio-1-partial
+           ratio-2 ratio-2-partial]
+    :as pair-data}]
+  (assoc pair-data
+         ::avg-freq
+         (/ (+ (* root-hz ratio-1 ratio-1-partial)
+               (* root-hz ratio-2 ratio-2-partial))
+            2)))
+
+(def beat-data
+  (->> metaslendro
+       (get-beat-data 2 1 [1 2 3 4 5 6 7 9 11 13])
+       (map-indexed #(+avg-freq (assoc %2 ::id %1)))
+       (filter #(> (::avg-freq %) 60))))
+#+end_src
+
+#+begin_src clojure
+(count beat-data)
+#+end_src
+
+: 799
+
+
+** Transformación del análisis para el performance
+#+begin_src clojure
+(def bf-map (group-by :beat-freq.ratio beat-data))
+#+end_src
+
+El =map= es muy extenso pero podemos imprimir una selección de sus llaves para dar una idea su estructura.
+#+begin_src clojure :exports both
+(with-out-str (clojure.pprint/pprint (select-keys bf-map [1 13/3])))
+#+end_src
+
+
+#+begin_example clojure
+{1N
+ [{:root-hz 32,
+   :tieminos.compositions.paisajes-difractados.uno/id 243,
+   :degree-1 3,
+   :ratio-2-partial 3,
+   :degree-2 8,
+   :tieminos.compositions.paisajes-difractados.uno/avg-freq 303/2,
+   :beat-freq.ratio 1N,
+   :beat-freq.factors {:numer [], :denom []},
+   :root "B0+62",
+   :ratio-1 19/16,
+   :ratio-1-partial 4,
+   :period 0,
+   :ratio-2 151/96,
+   :beat-freq.hz 1.0}
+  {:root-hz 32,
+   :tieminos.compositions.paisajes-difractados.uno/id 288,
+   :degree-1 4,
+   :ratio-2-partial 11,
+   :degree-2 8,
+   :tieminos.compositions.paisajes-difractados.uno/avg-freq 3325/6,
+   :beat-freq.ratio 1N,
+   :beat-freq.factors {:numer [], :denom []},
+   :root "B0+62",
+   :ratio-1 4/3,
+   :ratio-1-partial 13,
+   :period 0,
+   :ratio-2 151/96,
+   :beat-freq.hz 1.0}],
+ 13/3
+ [{:root-hz 32,
+   :tieminos.compositions.paisajes-difractados.uno/id 285,
+   :degree-1 4,
+   :ratio-2-partial 5,
+   :degree-2 8,
+   :tieminos.compositions.paisajes-difractados.uno/avg-freq 1523/6,
+   :beat-freq.ratio 13/3,
+   :beat-freq.factors {:numer [13], :denom [3]},
+   :root "B0+62",
+   :ratio-1 4/3,
+   :ratio-1-partial 6,
+   :period 0,
+   :ratio-2 151/96,
+   :beat-freq.hz 4.3333335}
+  {:root-hz 32,
+   :tieminos.compositions.paisajes-difractados.uno/id 437,
+   :degree-1 8,
+   :ratio-2-partial 4,
+   :degree-2 11,
+   :tieminos.compositions.paisajes-difractados.uno/avg-freq 1523/6,
+   :beat-freq.ratio 13/3,
+   :beat-freq.factors {:numer [13], :denom [3]},
+   :root "B0+62",
+   :ratio-1 151/96,
+   :ratio-1-partial 5,
+   :period 0,
+   :ratio-2 2,
+   :beat-freq.hz 4.3333335}]}
+#+end_example
+
+#+begin_src clojure
+(def bf-summary (map (juxt identity float) (sort (keys bf-map))))
+#+end_src
+
+#+begin_src clojure
+(with-out-str (clojure.pprint/pprint bf-summary))
+
+#+end_src
+
+#+RESULTS:
+#+begin_example clojure
+([0N 0.0]
+ [2/3 0.6666667]
+ [1N 1.0]
+ [4/3 1.3333334]
+ [5/3 1.6666666]
+ [2N 2.0]
+ [8/3 2.6666667]
+ [3N 3.0]
+ [10/3 3.3333333]
+ [4N 4.0]
+ [13/3 4.3333335]
+ [14/3 4.6666665]
+ [5N 5.0]
+ [16/3 5.3333335]
+ [6N 6.0]
+ [20/3 6.6666665]
+ [7N 7.0]
+ [22/3 7.3333335]
+ [8N 8.0]
+ [25/3 8.333333]
+ [26/3 8.666667]
+ [9N 9.0]
+ [28/3 9.333333]
+ [29/3 9.666667]
+ [10N 10.0]
+ [31/3 10.333333]
+ [32/3 10.666667]
+ [11N 11.0]
+ [34/3 11.333333]
+ [35/3 11.666667]
+ [12N 12.0]
+ [37/3 12.333333]
+ [38/3 12.666667]
+ [13N 13.0]
+ [40/3 13.333333]
+ [14N 14.0]
+ [43/3 14.333333]
+ [44/3 14.666667]
+ [46/3 15.333333]
+ [47/3 15.666667]
+ [16N 16.0]
+ [49/3 16.333334]
+ [50/3 16.666666]
+ [17N 17.0]
+ [52/3 17.333334]
+ [53/3 17.666666]
+ [18N 18.0]
+ [55/3 18.333334]
+ [56/3 18.666666]
+ [58/3 19.333334]
+ [59/3 19.666666])
+#+end_example
+
+
+* Síntesis
+#+begin_src clojure
+(oe/defsynth sini
+  [freq 200
+   freq-mul 1
+   amp 0.5
+   pan 0
+   pan-lfo-amp 0.5
+   a 1
+   s 1
+   s-level 1
+   r 1
+   out 0]
+  (o/out out
+         (-> (* freq freq-mul)
+             o/sin-osc
+             (* amp (o/amp-comp freq)
+                (lfo-kr 1 0 1)
+                (o/env-gen (o/envelope [0 1 s-level 0] [a s r])
+                           :action o/FREE))
+             (o/pan2 (+ pan
+                        (* pan-lfo-amp (lfo-kr 1 -1 1)))))))
+#+end_src
+
+#+begin_src clojure
+(defn play-pair
+  [params
+   {:keys [root-hz
+           ratio-1 ratio-1-partial
+           ratio-2 ratio-2-partial]}]
+
+  (sini (merge {:freq (* root-hz ratio-1 ratio-1-partial)
+                :pan -1
+                :out 6}
+               params))
+  (sini (merge {:freq (* root-hz ratio-2 ratio-2-partial)
+                :pan 1
+                :out 6}
+               params)))
+#+end_src
+
+* Performance
+#+begin_src clojure
+(rain.v2/stop) 
+(map (juxt identity float) (sort (keys bf-map)))
+
+(ref-rain
+  :id :pulse-rain
+  :durs [1 3 2 5]
+  :on-event
+  (on-event
+    (let [dur-amp (rainseq [3 3 3 5 3 5 3 5 5])]
+      (play-pair {:a (* dur-amp  (rrange 0.1 2))
+                  :s (* dur-amp (rrange 0.1 2))
+                  :s-level (rrange 0.5 1)
+                  :r (rrange 2 3)
+                  :freq-mul (rainseq {1 10 2 3})
+                  :amp 0.1}
+                 (->> (bf-map (rainseq [(lin 2/3 2/3 10) 58/3 (lin 40/3 17) {5/3 10 16 3}]))
+                      (wrap-at (rainseq [-1 1 -2 [3 -3] 8])))))))
+#+end_src

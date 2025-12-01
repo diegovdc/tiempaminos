@@ -1,0 +1,14 @@
+
+
+* MIDI controller template
+#+begin_src clojure
+(require '[tieminos.midi.core :refer [midi-in-event get-oxygen!]])
+(midi-in-event
+  :midi-input (get-oxygen!)
+  :note-on (fn [{:keys [note channel velocity] :as data}]
+             (println data)
+             (println (keys data)))
+  :note-off (fn [{:keys [note channel]}]
+              (println :note-off)))
+
+#+end_src
