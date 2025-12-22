@@ -621,7 +621,7 @@
   ;; set OSC EQ envelope to write
   (reaper/stop)
   (doseq [track automated-tracks]
-    (reaper/set-autotrim track)))
+    (reaper/set-autoread track)))
 
 (def ^:private excluded-paths #{"/presets/load"})
 

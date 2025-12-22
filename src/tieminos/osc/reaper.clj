@@ -52,6 +52,11 @@
   [track]
   (osc/osc-send @osc-client (format "/track/%s/autotrim" track)))
 
+(defn set-autoread
+  "Set automation mode to read"
+  [track]
+  (osc/osc-send @osc-client (format "/track/%s/autoread" track)))
+
 (defn set-autowrite
   "Set automation mode to write"
   [track]
