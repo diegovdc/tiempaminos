@@ -280,7 +280,7 @@
                           (on-play (assoc config
                                           :amp amp*
                                           :rate (float r))))
-                        (timbre/info "Playing-----" (:out config))
+                        #_(timbre/info "Playing-----" (:out config))
                         (amanecer*guitar-clouds (assoc config
                                                        :rate (float r)
                                                        :interp (rand-nth [1 2 4])
@@ -292,7 +292,7 @@
                                                          :amp (* amp* (rrange 0 0.7) (norm-amp buf)))))))))))))
 
 (def default-config
-  {:on-play (fn [& _] (println "playing"))
+  {:on-play (fn [& _] #_(println "playing"))
    :id ::gusano
    :out-bus (main-returns :mixed)
    :silence-thresh 0.0

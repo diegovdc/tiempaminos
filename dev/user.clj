@@ -138,6 +138,9 @@
               (o/out 0 (* (o/env-gen (o/envelope [0 1 1 0]
                                                  (map #(* % dur) [0.2 0.6 0.2]))
                                      :action o/FREE)
+                          #_(o/pan-az 4 :num-channels 4
+                                      :in (* amp in)
+                                      :pos (o/lf-saw 0.2))
                           (oe/circle-az :num-channels 4
                                         :in (* amp in)
                                         :pos (o/lf-saw 0.2)))))))

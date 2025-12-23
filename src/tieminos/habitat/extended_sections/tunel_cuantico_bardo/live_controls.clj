@@ -189,6 +189,9 @@
     config
     (update config :amp (partial adjust-amp -6))))
 
+(comment
+  (get-harmonic-data! :milo))
+
 (defn start-clouds
   [player-k]
   (clouds-refrain
@@ -226,6 +229,9 @@
                ;; 1. Milo's bank 1 is reserved for the bowed bell which is louder than other sounds
                ;; 2. The `granular` has less loudeness than the crystal synth
               (-> @live-state :algo-2.2.9-clouds player-k :amp (o/db->amp)))
+    :pan-fn (fn [{:keys [index bank]}]
+              (println bank)
+              (wrap-at index (range -1 1 0.3)))
     :on-play (fn [{:as config :keys [index buf rate]}]
                (let [state @live-state
                      out (main-returns (case player-k
@@ -238,6 +244,7 @@
                                             synth* (cristal-liquidizado (-> config
                                                                             mic-1-bank-0-aka-bell-sound-amp-adjustment
                                                                             (assoc :dur dur :out out)))]
+                                        (println (:pan config))
                                         (bardo.synth-management/add-synth! synth* dur)
                                         synth*)
                              :granular (amanecer*guitar-clouds
