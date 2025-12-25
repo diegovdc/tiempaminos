@@ -1,46 +1,68 @@
 Código tomado de las grabaciones de 2.2.9, por lo que en el directorio de reaper todas las sesiones se nombrarán como 2.2.9.x
-
-* Tunel cuántico / Bardó
-
-** DONE Rerenderizar todos los audios
-CLOSED: [2024-08-10 Sat 16:30]
-** DONE Compartirlos
-CLOSED: [2024-08-10 Sat 16:30]
-** TODO 2.2.9 1 y 3 - Acordes Meru
-*** TODO Recuperar algoritmos
-*** TODO Volvemos a tocarlas
-**** TODO Verificar si los acordes de estas tomas son realmente estables (toma #1) o inestables (#3) o si fuimos nosotros
-*** TODO Explorar maneras de controlar la randomización
-**** TODO Reducir rangos de randomización
-**** TODO O usar pesos
-*** TODO Explorar densidades y duraciones de los samples
-e.g. sonidos largos y sostenidos en su densidad
-*** TODO Explorar clusters espaciales
-donde cada uno exista en un lugar relativamente estático del espacio
-*** TODO Al tocar, intencionar estas entidades como conciencias o estados-energías interiores
-*** TODO ¿Qué zonas activa esto del cerebro?
-** TODO Recuperar 2.9.1
-** TODO Trabajar transción de tunel -> bloque/loop de samples -> 1 sample con reactividad percusiva
-** TODO Organizar cronológicamente (en tabla de excel)
-*** TODO Organización por estratos o fases temporales del código
-Agrupar por bloques secuenciales de sesiones donde opera más o menos el mismo código o el mismo resultado estético
-*** TODO Marcar partes específicas del cada track
-** TODO interfaz
-Controles:
-  - Botones de rec/stop
-  - Botones de activar/desactivar proceso
-  - Amplitud del proceso
-*** TODO cómo mapear los patches
-  Qué se necesita mappear
-*** TODO Controlar aspectos de la espacialización de los instrumentos
-** TODO Quitar normalización de la reproducción de samples
-** TODO Weights largos - investigar por qué se mantiene una fundamental
-
+* Imágenes
+** Retorno al origen: Regresar a la roca y de ahí al universo
+** El ojo de visión del gusano cuántico
 
 * V 2.2.9.10+
 ** DONE [#A] Extender rango de lentitud de la velocidad armónica
 CLOSED: [2025-10-25 Sat 13:47] SCHEDULED: <2025-10-17 Fri>
+** DONE [#A] Resetear fader de procesos de Milo
+CLOSED: [2025-12-22 Mon 17:17] SCHEDULED: <2025-12-17 Wed>
+** TODO [#A] Cambiar /trim/ por /read/
+SCHEDULED: <2025-12-29 Mon>
+En modo default para tracks con envolventes activas
+** IDEA [#A] Bancos de memoria interaccional
+*** IDEA seleccionar momentos o vestigios de materials
+Configuraciones de parámetros y transformaciones de los mismos durante un periodo determinado
+**** Salvar samples
+**** Salvar secuencias de estados del procesador
+*** IDEA Interacción con el público
+Generar un mapa del universo/bardó que pueda ser navegado interactivamente
+** PROJ [#B] Synths independientes :wish:
+La idea es que cada banco tenga su propio control de sintes
+*** IDEA Default + Sobreescritura
+Usar clojure para controlar el modo en el que funcionan los controles del sinte:
+**** Cuando un banco activa su modo específico:
+***** TODO el color del fondo del sinte cambia
+***** TODO el sinte si ya tiene una config propia se actualiza con ella, y clojure sabe que cualquier cambio que reciba será sólo para ese banco
+***** TODO si el sinte no tiene config defualt, comienza con ella
+***** TODO debe de haber alguna manera de volver a la config global     
+***** TODO se deben de poder ver qué sintes tienen cinfig activa y cuáles no
+*** IDEA Alternativa: Investigar componentes en touchOSC
+Considerar qué es más sencillo de implementar y mantener
 ** TODO [#B] Pensar posibilidades de reverb :wish:
+** TODO Synth Pan
+*** TODO Investigar duraciones de eventos
+Param importante: duración del evento (si es breve o si no se están superponiendo se percibe mejor el paneo)
+*** TODO [#A] Modo Manual
+UI: XY
+*** TODO Autopan
+Pan4
+Params:
+- velocidad
+  - lineal (lenta, media, rápida)
+  - (des)acceleraciones
+  - atractror
+    https://doc.sccode.org/Classes/LorenzL.html
+    NOTA: freq - Iteration frequency in Hertz
+- dis/continuidad del movimiento de la instancia
+  Tal vez dejar para después por la complejidad de la implementación
+- spread de las voces
+- radio
+**** TODO Clockwise
+Tal vez lissajous los hace innecesarios
+**** TODO Counter-Clockwise
+**** TODO [#A] Lissajous
+https://www.reddit.com/r/SacredGeometry/comments/10yf0rx/a_spectrum_of_lissajous_curves/
+*** TODO [#B]  direccionalidad breve
+- flechazos
+- propagaciones
+- rebotes
+- centro a perímetro
+  
+  
+
+
 ** DONE [#A] Banco 1 especial glissando de campana
 CLOSED: [2025-10-08 Wed 12:18] SCHEDULED: <2025-10-01 Wed>
 Bajarlo 6db
@@ -101,8 +123,6 @@ CLOSED: [2025-11-10 Mon 10:18] DEADLINE: <2025-11-13 Thu>
 ** IDEA bancos con tipos de comportamiento/sintesis/espacialización
 ** DONE balancear amps the granular y cristal
 CLOSED: [2025-10-08 Wed 12:19]
-** El ojo de visión del gusano cuántico
-
 ** NOPE [#C] Automatización de la eq no está siento leída o algo?
 CLOSED: [2025-09-10 Wed 14:38]
 Parece que más bien es un error de REAPER, al reiniciar se arregla
@@ -177,5 +197,42 @@ CLOSED: [2025-08-27 Wed 14:15] SCHEDULED: <2025-08-23 Sat>
 CLOSED: [2025-08-26 Tue 16:21] SCHEDULED: <2025-08-07 Thu>
 ** DONE rutear el eq para que solo afecte a los canales de procesos
 CLOSED: [2025-07-17 Thu 11:06] SCHEDULED: <2025-07-16 Wed>
+
+
+* Tunel cuántico / Bardó
+
+** DONE Rerenderizar todos los audios
+CLOSED: [2024-08-10 Sat 16:30]
+** DONE Compartirlos
+CLOSED: [2024-08-10 Sat 16:30]
+** TODO 2.2.9 1 y 3 - Acordes Meru
+*** TODO Recuperar algoritmos
+*** TODO Volvemos a tocarlas
+**** TODO Verificar si los acordes de estas tomas son realmente estables (toma #1) o inestables (#3) o si fuimos nosotros
+*** TODO Explorar maneras de controlar la randomización
+**** TODO Reducir rangos de randomización
+**** TODO O usar pesos
+*** TODO Explorar densidades y duraciones de los samples
+e.g. sonidos largos y sostenidos en su densidad
+*** TODO Explorar clusters espaciales
+donde cada uno exista en un lugar relativamente estático del espacio
+*** TODO Al tocar, intencionar estas entidades como conciencias o estados-energías interiores
+*** TODO ¿Qué zonas activa esto del cerebro?
+** TODO Recuperar 2.9.1
+** TODO Trabajar transción de tunel -> bloque/loop de samples -> 1 sample con reactividad percusiva
+** TODO Organizar cronológicamente (en tabla de excel)
+*** TODO Organización por estratos o fases temporales del código
+Agrupar por bloques secuenciales de sesiones donde opera más o menos el mismo código o el mismo resultado estético
+*** TODO Marcar partes específicas del cada track
+** TODO interfaz
+Controles:
+  - Botones de rec/stop
+  - Botones de activar/desactivar proceso
+  - Amplitud del proceso
+*** TODO cómo mapear los patches
+  Qué se necesita mappear
+*** TODO Controlar aspectos de la espacialización de los instrumentos
+** TODO Quitar normalización de la reproducción de samples
+** TODO Weights largos - investigar por qué se mantiene una fundamental
 
 

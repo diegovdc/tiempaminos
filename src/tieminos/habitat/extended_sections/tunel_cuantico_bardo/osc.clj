@@ -17,7 +17,8 @@
    [tieminos.math.utils :refer [linlin]]
    [tieminos.osc.reaper :refer [reaeq-freq->lin]]
    [tieminos.osc.reaper :as reaper]
-   [tieminos.utils :refer [cb-interpolate stop-all-interpolators! throttle]]))
+   [tieminos.utils :refer [cb-interpolate stop-all-interpolators! throttle
+                           wrap-at]]))
 
 (declare reaper-tracks* update-label)
 
@@ -51,6 +52,7 @@
     (throw (ex-info "Unkown track to mute" {:input-k input-k}))))
 
 (comment
+  (reset! live-state {})
   (-> @live-state)
   (mute-input :mic-1 1))
 
@@ -119,10 +121,108 @@
 
 (comment
   (toggle-clouds :milo true))
+(declare update-clients default-touch-osc-state)
+(comment
+  (update-clients @habitat-osc/receiver-clients
+                  "/Milo/selected-synth-label"
+                  ["#1" (rand-nth ["0000FF"
+                                   "FF00FF"
+                                   "FFF0FF"])])
+  (update-clients @habitat-osc/receiver-clients
+                  "/Milo/synth-section-box"
+                  ["FF00FF33"])
+
+  (update-clients @habitat-osc/receiver-clients
+                  "/Milo/selected-synth-label/color"
+                  (map float [1.0 0.0 0.0]))
+
+  (-> @live-state))
+
+(def ^:private synth-ui-params
+  "They should be prefaced with `/Milo` or `/Diego`"
+  ["/clouds-active-btn"
+   "/clouds-amp"
+   "/clouds-env-radio"
+   "/clouds-rhythm-radio"
+   "/clouds-sample-lib-size-radio"
+   "/synth-radio"
+   "/harmonic-highest-note"
+   "/harmonic-lowest-note"
+   "/harmonic-speed"
+   "/toggle-harmonic-voice/0"
+   "/toggle-harmonic-voice/1"
+   "/toggle-harmonic-voice/2"])
+
+(def ^:private bank-colors
+  ;; many more color pallettes to try: https://colorkit.co/palettes/8-colors/
+  (map #(str % "99") ["c7522a" "e5c185" "f0daa5" "fbf2c4" "b8cdab" "74a892" "008585" "004343"]))
+
+(defn set-touchosc-synth-ui
+  [player selected-synth-bank
+   {:keys [touch-osc-data]
+    :as _synth-data}]
+  (let [path-base (case player
+                    :milo "/Milo"
+                    :diego "/Diego")
+        bg-color (wrap-at selected-synth-bank bank-colors)]
+    (update-clients @habitat-osc/receiver-clients
+                    (str path-base "/selected-synth-label")
+                    [(str "#" (inc selected-synth-bank))
+                     bg-color])
+    (update-clients @habitat-osc/receiver-clients
+                    (str path-base "/synth-section-box")
+                    [bg-color])
+    (doseq [[path args] touch-osc-data]
+      (update-clients @habitat-osc/receiver-clients
+                      path args))))
+
+(defn- synth-bank-path
+  [player & keys]
+  (concat [:algo-2.2.9-clouds player] keys))
+
+(defn- get-selected-synth-bank
+  [player]
+  (get-in @live-state (synth-bank-path player :selected-bank) :default-bank))
+
+(defn- selected-synth-bank-path
+  [player & keys]
+  (apply synth-bank-path player (get-selected-synth-bank player) keys))
+
+(defn- save-touchosc-synth-param
+  [player osc-path value]
+  (swap! live-state
+         assoc-in
+         (selected-synth-bank-path player :touch-osc-data osc-path)
+         value))
+(comment
+  (get-in @live-state (synth-bank-path :milo 0)))
+
+(defn- init-synth-data
+  [player bank]
+  (let [path-base (case player
+                    :milo "/Milo"
+                    :diego "/Diego")
+        paths (map #(str path-base %) synth-ui-params)]
+    (swap! live-state
+           assoc-in
+           (synth-bank-path player bank :touch-osc-data)
+           (select-keys default-touch-osc-state paths))))
+
+(defn- set-selected-bank-synth
+  [player bank]
+  (let [path (synth-bank-path player :selected-bank)
+        state (swap! live-state assoc-in path bank)
+        synth-data (get-in state (synth-bank-path player bank))]
+    (when (nil? synth-data)
+      (init-synth-data player bank))
+    (set-touchosc-synth-ui player bank synth-data)))
+
 (defn set-clouds-amp
   [player amp]
+  ;; TODO: finish integrating
   (swap! live-state
-         assoc-in [:algo-2.2.9-clouds player :amp]
+         assoc-in
+         (selected-synth-bank-path player :amp)
          ;; TODO: lower extra vol
          (first (linlin 0 1 -36 36 [amp]))))
 
@@ -139,14 +239,20 @@
               4 5
               5 8
               (throw (ex-info "Unkown clouds sample-lib-size" {:player player :opt-num opt-num})))]
-    (swap! live-state assoc-in [:algo-2.2.9-clouds player :sample-lib-size] env)))
+    (swap! live-state
+           assoc-in
+           (selected-synth-bank-path player :sample-lib-size)
+           env)))
+
 (defn set-active-synth
   [player opt-num]
   (let [synth-key (case opt-num
                     0 :granular
                     1 :crystal
                     (throw (ex-info "Unkown synth" {:player player :opt-num opt-num})))]
-    (swap! live-state assoc-in [:algo-2.2.9-clouds player :active-synth] synth-key)))
+    (swap! live-state assoc-in
+           (selected-synth-bank-path player :active-synth)
+           synth-key)))
 
 (defn set-active-bank
   [{:keys [player bank on?]}]
@@ -162,7 +268,9 @@
               2 :a-0.1_0.4*d-2*r-3
               3 :weights-largos
               (throw (ex-info "Unkown clouds env" {:player player :opt-num opt-num})))]
-    (swap! live-state assoc-in [:algo-2.2.9-clouds player :env] env)))
+    (swap! live-state assoc-in
+           (selected-synth-bank-path player :env)
+           env)))
 
 (defn set-clouds-rhythm
   [player opt-num]
@@ -173,8 +281,9 @@
               3 :rit
               4 :accel
               (throw (ex-info "Unkown clouds rhythm" {:player player :opt-num opt-num})))]
-    (swap! live-state assoc-in [:algo-2.2.9-clouds player :rhythm] env)
-
+    (swap! live-state assoc-in
+           (selected-synth-bank-path player :rhythm)
+           env)
     (when (-> @live-state :algo-2.2.9-clouds player :on?)
       (timbre/info "Restarting player-clouds" :player))))
 
@@ -198,7 +307,8 @@
                 (first (linlin 0 0.2 0 1 [harmonic-speed]))
                 (round (first (linlin 0.2 1 1 70 [harmonic-speed]))))]
     (swap! live-state
-           assoc-in [:algo-2.2.9-clouds player :harmonic-speed]
+           assoc-in
+           (selected-synth-bank-path player :harmonic-speed)
            speed)
     (update-label player :harmonic-speed (round2 2 speed))))
 
@@ -213,7 +323,7 @@
 
 (defn set-harmonic-range
   [{:keys [player low? value]}]
-  (let [path [:algo-2.2.9-clouds player :harmonic-range]
+  (let [path (selected-synth-bank-path player :harmonic-range)
         state-data (swap! live-state
                           update-in
                           path
@@ -227,7 +337,8 @@
 
 (defn set-active-harmonic-voice
   [{:keys [player voice-index on?]}]
-  (swap! live-state update-in [:algo-2.2.9-clouds player :harmonic-active-voices]
+  (swap! live-state update-in
+         (selected-synth-bank-path player :harmonic-active-voices)
          (if on? set/union set/difference)
          #{voice-index}))
 
@@ -646,21 +757,34 @@
       "/Milo/mute-mic-2"    (mute-input :mic-2 (first args))
       "/Milo/rec-durs-radio" (switch-rec-durs [:mic-1 :mic-2] (first args))
       "/Milo/rec-pulse-radio" (switch-rec-pulse [:mic-1 :mic-2] (first args))
-      "/Milo/clouds-active-btn" (toggle-clouds :milo press?)
-      "/Milo/clouds-amp" (set-clouds-amp :milo (first args))
-      "/Milo/clouds-env-radio" (set-clouds-env :milo (first args))
-      "/Milo/clouds-rhythm-radio" (set-clouds-rhythm :milo (first args))
-      "/Milo/clouds-sample-lib-size-radio" (set-clouds-sample-lib-size :milo (first args))
+      ;; TODO: << eliminate following
+      "/Milo/clouds-active-btn" (do (toggle-clouds :milo press?)
+                                    (save-touchosc-synth-param :milo path args))
+      "/Milo/clouds-amp" (do (set-clouds-amp :milo (first args))
+                             (save-touchosc-synth-param :milo path args))
+      "/Milo/clouds-env-radio" (do (set-clouds-env :milo (first args))
+                                   (save-touchosc-synth-param :milo path args))
+      "/Milo/clouds-rhythm-radio" (do (set-clouds-rhythm :milo (first args))
+                                      (save-touchosc-synth-param :milo path args))
+      "/Milo/clouds-sample-lib-size-radio" (do (set-clouds-sample-lib-size :milo (first args))
+                                               (save-touchosc-synth-param :milo path args))
+      "/Milo/synth-radio" (do (set-active-synth :milo (first args))
+                              (save-touchosc-synth-param :milo path args))
+      ;; TODO: end eliminate >>
+      "/Milo/selected-synth-radio" (set-selected-bank-synth :milo (first args))
       "/Milo/bank-rec-radio" (set-active-recorded-bank [:mic-1 :mic-2] (first args))
       "/Milo/bank-delete-btn" (when press? (delete-bank [:mic-1 :mic-2]))
       "/Milo/bank-delete-all-btn" (when press? (delete-all-banks [:mic-1 :mic-2]))
       "/Milo/toggle-bank" (set-active-bank {:player :milo :bank (:index args-map) :on? (== 1 (:on args-map))})
-      "/Milo/synth-radio" (set-active-synth :milo (first args))
       "/Milo/harmony-radio" (set-harmony :milo (first args))
-      "/Milo/harmonic-speed" (set-harmonic-speed :milo (first args))
-      "/Milo/harmonic-lowest-note" (set-harmonic-range {:player :milo :low? true :value (first args)})
-      "/Milo/harmonic-highest-note" (set-harmonic-range {:player :milo :low?  false :value (first args)})
-      "/Milo/toggle-harmonic-voice" (set-active-harmonic-voice {:player :milo :voice-index (:index args-map) :on? (== 1 (:on args-map))})
+      "/Milo/harmonic-speed" (do (set-harmonic-speed :milo (first args))
+                                 (save-touchosc-synth-param :milo path args))
+      "/Milo/harmonic-lowest-note" (do (set-harmonic-range {:player :milo :low? true :value (first args)})
+                                       (save-touchosc-synth-param :milo path args))
+      "/Milo/harmonic-highest-note" (do (set-harmonic-range {:player :milo :low?  false :value (first args)})
+                                        (save-touchosc-synth-param :milo path args))
+      "/Milo/toggle-harmonic-voice" (do (set-active-harmonic-voice {:player :milo :voice-index (:index args-map) :on? (== 1 (:on args-map))})
+                                        (save-touchosc-synth-param :milo path args))
       "/Milo/rev-send-clean" (set-rev-send {:player :milo :clean? true :value (first args)})
       "/Milo/rev-send-process" (set-rev-send {:player :milo :clean? false :value (first args)})
       "/Milo/processed-master" (set-track-volume2 :percussion-processes-track (first args))
@@ -670,16 +794,18 @@
       "/Diego/rec-pulse-radio" (switch-rec-pulse [:guitar] (first args))
       "/Diego/mute-line-in"    (mute-input :guitar (first args))
       "/Diego/mute-mic"    (mute-input :guitar/mic (first args))
+      ;; TODO: << eliminate following
       "/Diego/clouds-active-btn" (toggle-clouds :diego press?)
       "/Diego/clouds-amp" (set-clouds-amp :diego (first args))
       "/Diego/clouds-env-radio" (set-clouds-env :diego (first args))
       "/Diego/clouds-rhythm-radio" (set-clouds-rhythm :diego (first args))
       "/Diego/clouds-sample-lib-size-radio" (set-clouds-sample-lib-size :diego (first args))
+      "/Diego/synth-radio" (set-active-synth :diego (first args))
+      ;; TODO: end eliminate >>
       "/Diego/bank-rec-radio" (set-active-recorded-bank [:guitar] (first args))
       "/Diego/toggle-bank" (set-active-bank {:player :diego :bank (:index args-map) :on? (== 1 (:on args-map))})
       "/Diego/bank-delete-btn" (when press? (delete-bank [:guitar]))
       "/Diego/bank-delete-all-btn" (when press? (delete-all-banks [:guitar]))
-      "/Diego/synth-radio" (set-active-synth :diego (first args))
       "/Diego/harmony-radio" (set-harmony :diego (first args))
       "/Diego/harmonic-speed" (set-harmonic-speed :diego (first args))
       "/Diego/harmonic-lowest-note" (set-harmonic-range {:player :diego :low? true :value (first args)})
@@ -854,7 +980,8 @@
     (format "/%s/%s"
             (case player :milo "Milo" :diego "Diego")
             (str (name label-key) "-label"))))
-
+(comment
+  (update-label :milo "harmonic-lowest-note" 100))
 (defn- update-label
   [player label-key value]
   (let [path (get-label-path player label-key)]
