@@ -1,10 +1,13 @@
 (ns tieminos.lc.toplap-palestine-stream
   (:require
+   [clojure.set :as set]
    [erv.beating-analyzer.v1 :refer [get-beat-data]]
+   [erv.utils.core :refer [period-reduce]]
    [overtone.core :as o]
    [tieminos.overtone-extensions :as oe]
    [tieminos.sc-utils.synths.v1 :refer [lfo-kr]]
-   [tieminos.seq-utils.core :refer [lin rainseq]]
+   [tieminos.seq-utils.core :refer [** ++ lin mirror rainseq]]
+   [tieminos.seq-utils.utils :refer [repcat]]
    [tieminos.utils :refer [rrange wrap-at]]
    [time-time.dynacan.players.refrain.v2 :as rain.v2 :refer [on-event ref-rain]]))
 
@@ -94,13 +97,14 @@
    r 1
    out 0]
   (o/out out
-         (-> (* freq freq-mul)
-             o/sin-osc
-             (* amp (o/amp-comp freq)
-                (lfo-kr 1 0 1)
-                (o/env-gen (o/envelope [0 1 s-level 0] [a s r])
-                           :action o/FREE))
-             (o/pan2 (* (lfo-kr 1 -0.5 0.5) pan)))))
+         (let [freq* (* freq freq-mul)]
+           (-> freq*
+               o/sin-osc
+               (* amp (o/amp-comp freq*)
+                  (lfo-kr 1 0 1)
+                  (o/env-gen (o/envelope [0 1 s-level 0] [a s r])
+                             :action o/FREE))
+               (o/pan2 (* (lfo-kr 1 -0.5 0.5) pan))))))
 
 (defn play-pair
   [params
@@ -111,13 +115,47 @@
 
   (sini (merge {:freq (* root-hz ratio-1 ratio-1-partial)
                 :pan -1
-                :out 6}
+                :out 22}
                params))
   (sini (merge {:freq (* root-hz ratio-2 ratio-2-partial)
                 :pan 1
-                :out 6}
+                :out 22}
                params)))
 
+;; original
+(comment
+  (rain.v2/stop)
+  (ref-rain
+   :id :pulse-rain
+   :durs [1 3 2 5]
+   :on-event
+   (on-event
+    (let [dur-amp (rainseq [3 3 3 5 3 5 3 5 5])]
+      (play-pair {:a (* dur-amp  (rrange 0.1 2))
+                  :s (* dur-amp (rrange 0.1 2))
+                  :s-level (rrange 0.5 1)
+                  :r (rrange 2 3)
+                  :freq-mul (rainseq {1 10 2 3})
+                  :amp 0.1}
+                 (->> (bf-map (rainseq [(lin 2/3 2/3 10) 58/3 (lin 40/3 17) {5/3 10 16 3}]))
+                      (wrap-at (rainseq [-1 1 -2 [3 -3] 8])))))))
+  (ref-rain
+   :id :pulse-rain2
+   :durs [1 3 2 5]
+   :ratio 1/8
+   :on-event
+   (on-event
+    (let [dur-amp (* 0.1 (rainseq [3 3 3 5 3 5 3 5 5]))]
+      (play-pair {:a (* dur-amp  (rrange 0.1 2))
+                  :s (* dur-amp (rrange 0.1 2))
+                  :s-level (rrange 0.5 1)
+                  :r (rrange 2 3)
+                  :freq-mul (rainseq {1 10 2 1})
+                  :amp 0.1}
+                 (->> (bf-map (rainseq [(lin 2/3 2/3 10) (lin 59/3 4/3) (lin 40/3 17) {5/3 10 16 3}]))
+                      (wrap-at (rainseq [-1 1 -2 [3 -3] 8]))))))))
+
+;; toplap livestream version
 (comment
   (rain.v2/stop)
   (map (juxt identity float) (sort (keys bf-map)))
@@ -201,33 +239,67 @@
                       (wrap-at (rainseq [(lin 0 -2) 1 2 3 4 5]))))))))
 
 (comment
-  (rain.v2/stop)
+  (->> bf-map
+       (map (juxt first
+                  (comp float first)
+                  (comp count second)
+                  (comp sort set #(mapcat (juxt :degree-1 :degree-2) %) second)))
+       (sort-by second))
+
+  (def bf-map2 (->> bf-map
+                    (map (fn [[k data]]  [k (sort-by ::avg-freq data)]))
+                    (into {})))
+
   (ref-rain
    :id :pulse-rain
-   :durs [1 3 2 5]
+   :durs [1 3 2 5 7]
    :on-event
    (on-event
-    (let [dur-amp (rainseq [3 3 3 5 3 5 3 5 5])]
-      (play-pair {:a (* dur-amp  (rrange 0.1 2))
-                  :s (* dur-amp (rrange 0.1 2))
-                  :s-level (rrange 0.5 1)
-                  :r (rrange 2 3)
-                  :freq-mul (rainseq {1 10 2 3})
-                  :amp 0.1}
-                 (->> (bf-map (rainseq [(lin 2/3 2/3 10) 58/3 (lin 40/3 17) {5/3 10 16 3}]))
-                      (wrap-at (rainseq [-1 1 -2 [3 -3] 8])))))))
+    (when (> 0.1 (rand))
+      (let [dur-amp (rainseq [3 3 3 5 3 5 3 5 5])]
+        (play-pair {:a (* dur-amp  (rrange 0.1 2))
+                    :s (* dur-amp (rrange 0.1 2))
+                    :s-level (rrange 0.5 3)
+                    :r (rrange 2 3)
+                    :freq-mul (rainseq {1 10 2 6})
+                    :amp (rainseq (** (range 0.05 0.1 0.01) [1  1 1 0.5 1]))}
+                   (->> (bf-map2 (rainseq [(lin 58/3)
+
+                                           (lin 2/3)]))
+                        (wrap-at (rainseq [(lin -1 0 0)
+                                           5
+                                           (lin 2 0)]))))))))
+
+  (def sorted-bd (sort-by ::avg-freq beat-data))
+
+  (defn select-degrees
+    [deg-set]
+    (->> sorted-bd
+         (filter (fn [{:keys [degree-1 degree-2]}]
+                   (set/subset? #{degree-1 degree-2}
+                                deg-set)))))
+
+  (rain.v2/stop)
   (ref-rain
-   :id :pulse-rain2
-   :durs [1 3 2 5]
-   :ratio 1/8
+   :id :pulse-rain3
+   :durs [1 3 2 5/2 1]
+   :ratio 2/3
    :on-event
    (on-event
-    (let [dur-amp (* 0.1 (rainseq [3 3 3 5 3 5 3 5 5]))]
-      (play-pair {:a (* dur-amp  (rrange 0.1 2))
-                  :s (* dur-amp (rrange 0.1 2))
-                  :s-level (rrange 0.5 1)
-                  :r (rrange 2 3)
-                  :freq-mul (rainseq {1 10 2 1})
-                  :amp 0.1}
-                 (->> (bf-map (rainseq [(lin 2/3 2/3 10) (lin 59/3 4/3) (lin 40/3 17) {5/3 10 16 3}]))
-                      (wrap-at (rainseq [-1 1 -2 [3 -3] 8]))))))))
+    (when (> 0.2 (rand))
+      (let [dur-amp (rainseq (** 1/4 [3 3 3 5 3 5 3 5 5]))]
+        (play-pair {:a (* dur-amp  (rrange 0.1 0.5))
+                    :s (* dur-amp (rrange 0.1 2))
+                    :s-level (rrange 0.5 2)
+                    :r (rrange 2 3)
+                    :freq-mul (rainseq {1 10 2 1 1/2 3 1/4 1})
+                    :amp (rainseq (** [0.01 0.04] [1 2 1 1 0.5 1]))}
+                   (->> (select-degrees (rainseq (repcat [10 #{0 3 5 7}]
+                                                         [10 #{1 3 5 7}]
+                                                         [10 #{1 3 5 8}]
+                                                         [10 #{1 3 11 8}]
+                                                         [10 #{1 4 11 8}])))
+                        (wrap-at (rainseq (++ (repcat [20 -10]
+                                                      [20 [-30]]
+                                                      [10 [-40]])
+                                              (reverse (range 40))))))))))))
