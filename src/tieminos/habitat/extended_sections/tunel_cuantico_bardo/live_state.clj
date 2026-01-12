@@ -6,6 +6,12 @@
 (defonce live-state (atom {:lorentz (lorentz/init-system :x (+ 0.3 (rand 0.01))
                                                          :y (+ 0.02 (rand 0.01))
                                                          :z (+ 0.012 (rand 0.01)))}))
+(defn init! [data]
+  (reset! live-state
+          (merge {:lorentz (lorentz/init-system :x (+ 0.3 (rand 0.01))
+                                                :y (+ 0.02 (rand 0.01))
+                                                :z (+ 0.012 (rand 0.01)))}
+                 data)))
 
 (defn init-watch!
   [id f]

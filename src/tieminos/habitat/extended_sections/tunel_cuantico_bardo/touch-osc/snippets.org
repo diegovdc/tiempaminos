@@ -1,0 +1,9 @@
+* Visibility
+#+begin_src lua
+function onReceiveOSC(message, connections)
+  local arg1 = message[2][1]
+  if type(arg1) == "boolean" then
+    self.visible = arg1
+  end
+end
+#+end_src

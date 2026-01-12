@@ -14,13 +14,12 @@
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.rec :refer [delete-bank-bufs]]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.synth-management :refer [stop-long-running-synths!]]
    [tieminos.habitat.osc :as habitat-osc]
-   [tieminos.math.utils :refer [linlin]]
-   [tieminos.osc.reaper :refer [reaeq-freq->lin]]
-   [tieminos.osc.reaper :as reaper]
+   [tieminos.math.utils :refer [linexp* linlin]]
+   [tieminos.osc.reaper :as reaper :refer [reaeq-freq->lin]]
    [tieminos.utils :refer [cb-interpolate stop-all-interpolators! throttle
                            wrap-at]]))
 
-(declare reaper-tracks* update-label)
+(declare reaper-tracks* update-label send-osc-msg)
 
 (def default-rec-config
   {:on? true
@@ -108,19 +107,9 @@
    :harmony :m-slendro
    :harmonic-range {:low -18 :high 18}})
 
-(defn toggle-clouds
-  [player on?]
-  (swap! live-state
-         assoc-in [:algo-2.2.9-clouds  player]
-         (-> default-cloud-config
-             (merge (-> @live-state :algo-2.2.9-clouds player))
-             (assoc :on? on?)))
-  (if on?
-    (bardo.live-ctl/start-clouds player)
-    (bardo.live-ctl/stop-clouds player)))
-
 (comment
   (toggle-clouds :milo true))
+
 (declare update-clients default-touch-osc-state)
 (comment
   (update-clients @habitat-osc/receiver-clients
@@ -136,8 +125,8 @@
                   "/Milo/selected-synth-label/color"
                   (map float [1.0 0.0 0.0]))
 
-  (-> @live-state))
-
+  (-> @live-state)
+  (reset! live-state {}))
 (def ^:private synth-ui-params
   "They should be prefaced with `/Milo` or `/Diego`"
   ["/clouds-active-btn"
@@ -157,7 +146,7 @@
   ;; many more color pallettes to try: https://colorkit.co/palettes/8-colors/
   (map #(str % "99") ["c7522a" "e5c185" "f0daa5" "fbf2c4" "b8cdab" "74a892" "008585" "004343"]))
 
-(defn set-touchosc-synth-ui
+(defn- set-touchosc-synth-ui
   [player selected-synth-bank
    {:keys [touch-osc-data]
     :as _synth-data}]
@@ -173,6 +162,7 @@
                     (str path-base "/synth-section-box")
                     [bg-color])
     (doseq [[path args] touch-osc-data]
+      (println path args)
       (update-clients @habitat-osc/receiver-clients
                       path args))))
 
@@ -184,16 +174,26 @@
   [player]
   (get-in @live-state (synth-bank-path player :selected-bank) :default-bank))
 
+(defn- get-selected-synth-data
+  [player]
+  (let [bank (get-in @live-state (synth-bank-path player :selected-bank) :default-bank)]
+    (get-in @live-state (synth-bank-path player bank))))
+
 (defn- selected-synth-bank-path
   [player & keys]
   (apply synth-bank-path player (get-selected-synth-bank player) keys))
 
 (defn- save-touchosc-synth-param
-  [player osc-path value]
-  (swap! live-state
-         assoc-in
-         (selected-synth-bank-path player :touch-osc-data osc-path)
-         value))
+  ([player {:keys [path value]}]
+   (save-touchosc-synth-param player path value))
+  ([player osc-path value]
+   (swap! live-state
+          assoc-in
+          (selected-synth-bank-path player :touch-osc-data osc-path)
+          value)))
+
+(defn- osc-bool [bool] (int (if bool 1 0)))
+
 (comment
   (get-in @live-state (synth-bank-path :milo 0)))
 
@@ -216,6 +216,28 @@
     (when (nil? synth-data)
       (init-synth-data player bank))
     (set-touchosc-synth-ui player bank synth-data)))
+
+(defn- show-active-bank-label [player show?]
+  (send-osc-msg (format
+                 "/%s/bank%s-active-label-visible"
+                 (-> player name str/capitalize)
+                 (inc (get-selected-synth-bank player)))
+                (str show?)))
+
+(defn toggle-clouds
+  [player on?]
+  (swap! live-state
+         assoc-in
+         (selected-synth-bank-path player)
+         (-> default-cloud-config
+             (merge (get-selected-synth-data player))
+             (assoc :on? on?)))
+
+  (if on?
+    (do #_(bardo.live-ctl/start-clouds player)
+     (show-active-bank-label player on?))
+    (do #_(bardo.live-ctl/stop-clouds player)
+     (show-active-bank-label player on?))))
 
 (defn set-clouds-amp
   [player amp]
@@ -243,17 +265,277 @@
            assoc-in
            (selected-synth-bank-path player :sample-lib-size)
            env)))
+(def ^:private synth-keys
+  [:granular :crystal])
 
-(defn set-active-synth
-  [player opt-num]
-  (let [synth-key (case opt-num
-                    0 :granular
-                    1 :crystal
-                    (throw (ex-info "Unkown synth" {:player player :opt-num opt-num})))]
+(defn- set-active-synth
+  "For a given bank, it selects the active synth based on the index of the `synth-keys`"
+  [player]
+  (let [synth-index (:synth-index (get-selected-synth-data player))
+        synth-key (wrap-at synth-index synth-keys)]
     (swap! live-state assoc-in
            (selected-synth-bank-path player :active-synth)
-           synth-key)))
+           synth-key)
+    synth-key))
+(defn- update&save-synth-label
+  "Updates the label of a synth param.
+  Expects `label-key` to be provided as `:my-label` when in touchosc is defined as `/player/my-label-label`, with the `-label` suffix."
+  [player label-key value]
+  (->> (update-label player label-key value)
+       (save-touchosc-synth-param player)))
 
+(defn- set-synth-index
+  [player direction]
+  (let [_ (swap! live-state update-in
+                 (selected-synth-bank-path player :synth-index)
+                 (fnil + 0)
+                 direction)
+        synth-key (name (set-active-synth player))]
+    (update&save-synth-label player :synth synth-key)
+    (update-label player
+                  (format "bank%s-active" (inc (get-selected-synth-bank player)))
+                  (str (first synth-key)))))
+
+(comment
+  (get-selected-synth-bank :milo)
+  (get-selected-synth-data :milo))
+
+(comment
+  (linexp* 0 1 40 20000 0))
+
+;;;;;;;;;;;;
+;; Filters
+;;;;;;;;;;;;
+
+(def ^:private filter-data
+  ;; TODO: find good defaults and proper param mappings, This is just a place holder.
+  ;; NOTE: for params to be proporly updated, they should be present in the the particular filter data map. Otherwise the `:path` will be missing and no update will happen.
+  {:lpf {:lpf {:path "/filter-lpf-fader"
+               :default-value (float 1)}
+         :hpf {:path "/filter-hpf-fader"
+               :visible? false
+               :default-value (float 1)}
+         :reso {:path "/filter-reso-fader"
+                :default-value (float 0.5)}
+         :q {:path "/filter-q-fader"
+             :default-value (float 0.5)}}
+   :hpf {:lpf {:path "/filter-lpf-fader"
+               :visible? false
+               :default-value (float 1)}
+         :hpf {:path "/filter-hpf-fader"
+               :default-value (float 1)}
+         :reso {:path "/filter-reso-fader"
+                :default-value (float 0.5)}
+         :q {:path "/filter-q-fader"
+             :default-value (float 0.5)}}
+   :moog-ladder {:lpf {:path "/filter-lpf-fader"
+                       :default-value (float 1)}
+                 :hpf {:path "/filter-hpf-fader"
+                       :default-value (float 1)}
+                 :reso {:path "/filter-reso-fader"
+                        :default-value (float 0.5)}
+                 :q {:path "/filter-q-fader"
+                     :default-value (float 0.5)}}})
+
+(def ^:private all-filter-params (->> filter-data vals (apply merge) keys))
+
+(def ^:private filter-keys (keys filter-data))
+
+(defn- set-filter-config
+  "Sets the appropriate filter configuration and updates UI"
+  [player]
+  (let [{:keys [active-filter filter-configs]} (get-selected-synth-data player)
+        filter-data (get filter-data active-filter)
+        current-config* (get filter-configs active-filter)
+        current-config (->> all-filter-params
+                            (map (fn [k]
+                                   [k (get current-config* k
+                                           (get-in filter-data [k :default-value]))]))
+                            (into {}))
+        base-path (case player :milo "/Milo" :diego "/diego")
+        osc-msgs (->> current-config
+                      (map (fn [[k v]]
+                             (let [path (str base-path (-> filter-data k :path))
+                                   visible? (get-in filter-data [k :visible?] true)]
+                               {path [v]
+                                (str path "-visible") [(osc-bool visible?)]})))
+                      (apply merge))]
+
+    (doseq [[path v] osc-msgs] (apply send-osc-msg path v))
+
+    (swap! live-state
+           (fn [state]
+             (-> state
+                 (assoc-in (selected-synth-bank-path player :filter-configs active-filter)
+                           current-config)
+                 (update-in (selected-synth-bank-path player :touch-osc-data)
+                            merge
+                            osc-msgs))))
+    nil))
+
+(defn- set-active-filter
+  "For a given bank, it selects the active filter based on the index of the `filter-keys`"
+  [player]
+  (let [filter-index (:filter-index (get-selected-synth-data player))
+        filter-key (wrap-at filter-index filter-keys)]
+    (swap! live-state assoc-in
+           (selected-synth-bank-path player :active-filter)
+           filter-key)
+    filter-key))
+
+(defn- set-filter-index
+  [player direction]
+  (let [_ (swap! live-state update-in
+                 (selected-synth-bank-path player :filter-index)
+                 (fnil + 0)
+                 direction)
+        filter-key (name (set-active-filter player))]
+    (set-filter-config player)
+    (update&save-synth-label player :filter filter-key)))
+
+(defn- set-filter-param
+  [player param-k value]
+  (let [active-filter (:active-filter (get-selected-synth-data player))]
+    (swap! live-state
+           #(-> %
+                (assoc-in (selected-synth-bank-path
+                           player
+                           :filter-configs
+                           active-filter
+                           param-k)
+                          value)))))
+
+(comment
+  (reset! live-state {})
+  (get-selected-synth-bank :milo)
+  (get-selected-synth-data :milo))
+
+;;;;;;;;;;;;
+;; Panners
+;;;;;;;;;;;;
+
+(def ^:private panner-data
+  ;; TODO: find good defaults. This is just a place holder.
+  ;; NOTE: for params to be proporly updated, they should be present in the the particular panner data map. Otherwise the `:path` will be missing and no update will happen.
+  {:random {:vel {:path "/panner-rand-vel-fader"
+                  :default-value (float 0.1)}}
+   :manual {:xy {:path "/panner-manual-xy"
+                 :default-value (map float [0.5 0.5])}}
+   :lissajous {:x {:path "/panner-lissajous-x-fader"
+                   :default-value (float 0.1)}
+               :y  {:path "/panner-lissajous-y-fader"
+                    :default-value (float 0.1)}
+               :radius {:path "/panner-lissajous-radius-fader"
+                        :default-value (float 0.1)}
+               :vel   {:path "/panner-lissajous-vel-fader"
+                       :default-value (float 0.1)}
+               :direction {:path "/panner-lissajous-direction-btn"
+                           :default-value (int 0)}}
+   :arrows {:pos {:path "/panner-arrows-pos-fader"
+                  :default-value (float 0.1)}
+            :range {:path "/panner-arrows-range-fader"
+                    :default-value (float 0.1)}
+            :vel {:path "/panner-arrows-vel-fader"
+                  :default-value (float 0.1)}}})
+
+(def ^:private panner-keys (keys panner-data))
+
+(defn- player-path
+  "Creates an OSC path of the form /player/some/path "
+  [player param-path]
+  (format "%s%s" (case player :milo "/Milo" :diego "/diego")
+          (if (str/starts-with? param-path "/")
+            param-path
+            (str "/" param-path))))
+
+(defn- set-panner-config
+  "Sets the appropriate panner configuration and updates UI"
+  [player]
+  (let [{:keys [active-panner panner-configs]} (get-selected-synth-data player)
+        panner-data (get panner-data active-panner)
+        ;; NOTE: keeping panner configs may not be necessary because they are kept in the UI due to groups (vs the case with filters which reuse the UI)
+        current-config* (get panner-configs active-panner)
+        current-config (merge (->> panner-data ;; the defaults
+                                   (map (juxt first (comp :default-value second)))
+                                   (into {}))
+                              current-config*)
+        base-path (case player :milo "/Milo" :diego "/diego")
+        groups-visibility-osc (->> panner-keys
+                                   (map (fn [k] [(format "%s/panner-%s-group" base-path (name k)) [(osc-bool (= k active-panner))]]))
+                                   (into {}))
+        osc-msgs (->> (keys panner-data)
+                      (map (fn [k]
+                             (let [path (str base-path (-> panner-data k :path))]
+                               [path (flatten ;; the `:manual` config's value :xy is a list
+                                      [(current-config k)])])))
+                      (into groups-visibility-osc))]
+
+    (doseq [[path v] osc-msgs] (apply send-osc-msg path v))
+
+    (swap! live-state
+           (fn [state]
+             (-> state
+                 (assoc-in (selected-synth-bank-path player :panner-configs active-panner)
+                           current-config)
+                 (update-in (selected-synth-bank-path player :touch-osc-data)
+                            merge
+                            osc-msgs))))
+    nil))
+
+(defn- set-active-panner
+  "For a given bank, it selects the active panner based on the index of the `panner-keys`"
+  [player]
+  (let [panner-index (:panner-index (get-selected-synth-data player))
+        panner-key (wrap-at panner-index panner-keys)]
+    (swap! live-state assoc-in
+           (selected-synth-bank-path player :active-panner)
+           panner-key)
+    panner-key))
+
+(defn- set-panner-index
+  [player direction]
+  (let [_ (swap! live-state update-in
+                 (selected-synth-bank-path player :panner-index)
+                 (fnil + 0)
+                 direction)
+        panner-key (name (set-active-panner player))]
+    (set-panner-config player)
+    (update&save-synth-label player :panner panner-key)))
+
+(defn- set-panner-param
+  [player param-k value]
+  (let [active-panner (:active-panner (get-selected-synth-data player))]
+    (swap! live-state
+           #(-> %
+                (assoc-in (selected-synth-bank-path
+                           player
+                           :panner-configs
+                           active-panner
+                           param-k)
+                          value)
+                (assoc-in (selected-synth-bank-path
+                           player
+                           :touch-osc-data
+                           (player-path player
+                                        (get-in panner-data
+                                                [active-panner param-k :path])))
+                          ;; the `:manual` config's value :xy is a list
+                          (flatten [value]))))))
+
+(comment
+  (reset! live-state {})
+  (add-watch live-state :debug
+             (fn [_ _ _ _]
+               #_(clojure.pprint/pprint (get-selected-synth-data :milo))))
+  (get-in panner-data [:random :vel :path])
+  (get-selected-synth-bank :milo)
+  (get-selected-synth-data :milo))
+
+;;;;;;;;;;;;;;;;;
+;; Envelopes
+;;;;;;;;;;;;;;;;
+
+;; TODO eliminate?
 (defn set-active-bank
   [{:keys [player bank on?]}]
   (swap! live-state update-in [:algo-2.2.9-clouds player :active-banks]
@@ -768,10 +1050,30 @@
                                       (save-touchosc-synth-param :milo path args))
       "/Milo/clouds-sample-lib-size-radio" (do (set-clouds-sample-lib-size :milo (first args))
                                                (save-touchosc-synth-param :milo path args))
-      "/Milo/synth-radio" (do (set-active-synth :milo (first args))
-                              (save-touchosc-synth-param :milo path args))
       ;; TODO: end eliminate >>
-      "/Milo/selected-synth-radio" (set-selected-bank-synth :milo (first args))
+      "/Milo/selected-synth-radio" (set-selected-bank-synth :milo (first args)) ;; TODO eliminate
+      "/Milo/synth-up-btn" (when press? (set-synth-index :milo 1))
+      "/Milo/synth-down-btn" (when press? (set-synth-index :milo -1))
+      "/Milo/max-dur-fader" (timbre/warn "TODO Implement")
+      "/Milo/filter-up-btn" (when press? (set-filter-index :milo 1))
+      "/Milo/filter-down-btn" (when press? (set-filter-index :milo -1))
+      "/Milo/filter-lpf-fader" (set-filter-param :milo :lpf (first args))
+      "/Milo/filter-hpf-fader" (set-filter-param :milo :hpf (first args))
+      "/Milo/filter-reso-fader" (set-filter-param :milo :reso (first args))
+      "/Milo/filter-q-fader" (set-filter-param :milo :q (first args))
+      "/Milo/panner-up-btn" (when press? (set-panner-index :milo 1))
+      "/Milo/panner-down-btn" (when press? (set-panner-index :milo -1))
+      "/Milo/panner-rand-vel-fader" (set-panner-param :milo :vel (first args))
+      "/Milo/panner-arrows-pos-fader" (set-panner-param :milo :pos (first args))
+      "/Milo/panner-arrows-range-fader" (set-panner-param :milo :range (first args))
+      "/Milo/panner-arrows-vel-fader" (set-panner-param :milo :vel (first args))
+      "/Milo/panner-lissajous-x-fader" (set-panner-param :milo :x (first args))
+      "/Milo/panner-lissajous-y-fader" (set-panner-param :milo :y (first args))
+      "/Milo/panner-lissajous-radius-fader" (set-panner-param :milo :radius (first args))
+      "/Milo/panner-lissajous-vel-fader" (set-panner-param :milo :vel (first args))
+      "/Milo/panner-lissajous-direction-btn" (set-panner-param :milo :direction (first args))
+      "/Milo/panner-manual-xy" (set-panner-param :milo :xy args)
+      ;; TODO implement other panners
       "/Milo/bank-rec-radio" (set-active-recorded-bank [:mic-1 :mic-2] (first args))
       "/Milo/bank-delete-btn" (when press? (delete-bank [:mic-1 :mic-2]))
       "/Milo/bank-delete-all-btn" (when press? (delete-all-banks [:mic-1 :mic-2]))
@@ -800,7 +1102,6 @@
       "/Diego/clouds-env-radio" (set-clouds-env :diego (first args))
       "/Diego/clouds-rhythm-radio" (set-clouds-rhythm :diego (first args))
       "/Diego/clouds-sample-lib-size-radio" (set-clouds-sample-lib-size :diego (first args))
-      "/Diego/synth-radio" (set-active-synth :diego (first args))
       ;; TODO: end eliminate >>
       "/Diego/bank-rec-radio" (set-active-recorded-bank [:guitar] (first args))
       "/Diego/toggle-bank" (set-active-bank {:player :diego :bank (:index args-map) :on? (== 1 (:on args-map))})
@@ -908,8 +1209,81 @@
                  (println new-value)
                  (throttled-post (dissoc new-value :lorentz))))))
 
+(defn- cast-osc-data [data]
+  (map (fn [[k v]] [k (map #(cond
+                              (symbol? %) (eval %) ;; NOTE this may cause trouble
+                              (not (number? %)) %
+                              (float? %) (float %)
+                              :else (int %)) v)])
+       data))
+
+(defn ^:private make-synth-defaults
+  [player]
+  {:active-filter :lpf,
+   :active-panner :random,
+   :filter-configs {:lpf {:lpf 1.0, :hpf 0.0, :reso 0.0, :q 0.0}},
+   :panner-configs {:random {:vel 0.1}},
+   :active-synth :crystal,
+   :amp -36.0,
+   :sample-lib-size ##Inf,
+   :env :lor-1_4,
+   :harmonic-speed 1,
+   :rhythm :lor-0.1_2,
+   :synth-index 1,
+   :touch-osc-data (->> {"/%s/filter-lpf-fader-visible" [1],
+                         "/%s/harmonic-speed" '(0.20449468),
+                         "/%s/panner-random-group" [1],
+                         "/%s/panner-manual-group" [0],
+                         "/%s/panner-lissajous-group" [0],
+                         "/%s/panner-arrows-group" [0],
+                         "/%s/filter-q-fader" [0.0],
+                         "/%s/panner-label" ["random"],
+                         "/%s/filter-lpf-fader" [1.0],
+                         "/%s/toggle-harmonic-voice/1" '("on" 1 "index" 1),
+                         "/%s/filter-hpf-fader-visible" [0],
+                         "/%s/toggle-harmonic-voice/0" '("on" 1 "index" 0),
+                         "/%s/clouds-rhythm-radio" '(0),
+                         "/%s/toggle-harmonic-voice/2" '("on" 1 "index" 2),
+                         "/%s/filter-hpf-fader" [1.0],
+                         "/%s/harmonic-highest-note" '(0.5190911),
+                         "/%s/clouds-sample-lib-size-radio" '(0),
+                         "/%s/clouds-active-btn" '(0.0),
+                         "/%s/synth-label" ["crystal"],
+                         "/%s/clouds-amp" '(0.0),
+                         "/%s/harmonic-lowest-note" '(0.48726025),
+                         "/%s/panner-rand-vel-fader" '(0.1),
+                         "/%s/filter-reso-fader-visible" [1],
+                         "/%s/filter-q-fader-visible" [1],
+                         "/%s/clouds-env-radio" '(0),
+                         "/%s/filter-label" ["lpf"],
+                         "/%s/filter-reso-fader" [0.0]}
+                        (map (fn [[k v]] [(format k player) v]))
+                        cast-osc-data
+                        (into {})),
+   :harmonic-active-voices #{0 1 2},
+   :panner-index -4,
+   :filter-index 3,
+   :harmonic-range {:low -1, :high -1}})
+
+#_(make-synth-defaults "Milo")
 (def default-touch-osc-state
-  (->> '{"/Diego/bank-rec-radio" (0),
+  (->> '{"/Milo/bank1-active-label-visible" (0),
+         "/Milo/bank2-active-label-visible" (0),
+         "/Milo/bank3-active-label-visible" (0),
+         "/Milo/bank4-active-label-visible" (0),
+         "/Milo/bank5-active-label-visible" (0),
+         "/Milo/bank6-active-label-visible" (0),
+         "/Milo/bank7-active-label-visible" (0),
+         "/Milo/bank8-active-label-visible" (0)
+         "/Diego/bank1-active-label-visible" (0),
+         "/Diego/bank2-active-label-visible" (0),
+         "/Diego/bank3-active-label-visible" (0),
+         "/Diego/bank4-active-label-visible" (0),
+         "/Diego/bank5-active-label-visible" (0),
+         "/Diego/bank6-active-label-visible" (0),
+         "/Diego/bank7-active-label-visible" (0),
+         "/Diego/bank8-active-label-visible" (0)
+         "/Diego/bank-rec-radio" (0),
          "/Diego/clouds-active-btn" (0.0), ;; NOTE: will cause log "Could not find refrain with id: :bardo.clouds/diego"
          "/Diego/clouds-amp" (0.0),
          "/Diego/clouds-env-radio" (0),
@@ -965,13 +1339,32 @@
          "/Milo/toggle-harmonic-voice/1" ("on" 1 "index" 1),
          "/Milo/toggle-harmonic-voice/2" ("on" 1 "index" 2)
          "/System/voces-master" (reaper/zero-db)}
-       (map (fn [[k v]] [k (map #(cond
-                                   (symbol? %) (eval %) ;; NOTE this may cause trouble
-                                   (not (number? %)) %
-                                   (float? %) (float %)
-                                   :else (int %)) v)]))
+       cast-osc-data
+       (#(merge %
+                (:touch-osc-data (make-synth-defaults "Milo"))
+                (:touch-osc-data (make-synth-defaults "Diego"))))
        (into {})))
+(-> @live-state)
+
+(defn init-state!
+  []
+  (bardo.live-state/init!
+   (let [init-player (fn [player]
+                       {player (apply merge
+                                      {:selected-bank 0}
+                                      (map (fn [i]
+                                             {i (make-synth-defaults
+                                                 (-> player
+                                                     name
+                                                     str/capitalize))})
+                                           (range 8)))})]
+     {:algo-2.2.9-clouds ;; TODO: is this key seems unnecessary? At least it is misnamed.
+      (merge
+       (init-player :milo)
+       (init-player :diego))})))
+
 (comment
+
   (-> default-touch-osc-state))
 (defn- get-label-path
   [player label-key]
@@ -982,19 +1375,33 @@
             (str (name label-key) "-label"))))
 (comment
   (update-label :milo "harmonic-lowest-note" 100))
+
 (defn- update-label
+  "Expects `label-key` to be provided as `:my-label` when in touchosc it is defined as `/player/my-label-label` (note the `-label` suffix)."
   [player label-key value]
   (let [path (get-label-path player label-key)]
-    (update-clients @habitat-osc/receiver-clients path [(str value)])))
+    (update-clients @habitat-osc/receiver-clients path [(str value)])
+    {:path path :value [(str value)]}))
+
+(defn- send-osc-msg
+  [path & values]
+  (update-clients @habitat-osc/receiver-clients path values)
+  {:path path :value values})
+
+(comment
+  (send-osc-msg "/Milo/bank2-active-label-visible" "true")
+  (send-osc-msg "/Milo/panner-manual-group" (osc-bool 1)))
 
 (defn reset-default-state!
   []
   (doseq [[path args] default-touch-osc-state]
-    (osc-responder {:path path :args args})))
+    (osc-responder {:path path :args args}))
+  (init-state!))
 
 (comment
 
   (->> @live-state)
+  (get-selected-synth-data :milo)
   (reset-default-state!)
   (reset! live-state {})
   (add-watch live-state ::post-live-state
