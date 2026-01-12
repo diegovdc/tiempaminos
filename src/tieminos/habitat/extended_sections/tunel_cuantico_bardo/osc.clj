@@ -7,17 +7,31 @@
    [org.httpkit.client :as http]
    [overtone.osc :as osc]
    [taoensso.timbre :as timbre]
-   [tieminos.habitat.extended-sections.tunel-cuantico-bardo.init :as bardo.init]
-   [tieminos.habitat.extended-sections.tunel-cuantico-bardo.live-controls :as bardo.live-ctl]
-   [tieminos.habitat.extended-sections.tunel-cuantico-bardo.live-state :as bardo.live-state :refer [live-state]]
-   [tieminos.habitat.extended-sections.tunel-cuantico-bardo.presets :as bardo.presets]
-   [tieminos.habitat.extended-sections.tunel-cuantico-bardo.rec :refer [delete-bank-bufs]]
-   [tieminos.habitat.extended-sections.tunel-cuantico-bardo.synth-management :refer [stop-long-running-synths!]]
+   [tieminos.habitat.extended-sections.tunel-cuantico-bardo.init
+    :as bardo.init]
+   [tieminos.habitat.extended-sections.tunel-cuantico-bardo.live-controls
+    :as bardo.live-ctl]
+   [tieminos.habitat.extended-sections.tunel-cuantico-bardo.live-state
+    :as bardo.live-state
+    :refer [get-player-data
+            get-selected-synth-bank
+            get-selected-synth-data
+            live-state
+            save-touchosc-synth-param
+            selected-synth-bank-path
+            synth-bank-path]]
+   [tieminos.habitat.extended-sections.tunel-cuantico-bardo.presets
+    :as bardo.presets]
+   [tieminos.habitat.extended-sections.tunel-cuantico-bardo.rec
+    :refer [delete-bank-bufs]]
+   [tieminos.habitat.extended-sections.tunel-cuantico-bardo.synth-management
+    :refer [stop-long-running-synths!]]
    [tieminos.habitat.osc :as habitat-osc]
    [tieminos.math.utils :refer [linexp* linlin]]
    [tieminos.osc.reaper :as reaper :refer [reaeq-freq->lin]]
-   [tieminos.utils :refer [cb-interpolate stop-all-interpolators! throttle
-                           wrap-at]]))
+   [tieminos.utils
+    :refer
+    [cb-interpolate stop-all-interpolators! throttle wrap-at]]))
 
 (declare reaper-tracks* update-label send-osc-msg)
 
@@ -166,32 +180,6 @@
       (update-clients @habitat-osc/receiver-clients
                       path args))))
 
-(defn- synth-bank-path
-  [player & keys]
-  (concat [:algo-2.2.9-clouds player] keys))
-
-(defn- get-selected-synth-bank
-  [player]
-  (get-in @live-state (synth-bank-path player :selected-bank) :default-bank))
-
-(defn- get-selected-synth-data
-  [player]
-  (let [bank (get-in @live-state (synth-bank-path player :selected-bank) :default-bank)]
-    (get-in @live-state (synth-bank-path player bank))))
-
-(defn- selected-synth-bank-path
-  [player & keys]
-  (apply synth-bank-path player (get-selected-synth-bank player) keys))
-
-(defn- save-touchosc-synth-param
-  ([player {:keys [path value]}]
-   (save-touchosc-synth-param player path value))
-  ([player osc-path value]
-   (swap! live-state
-          assoc-in
-          (selected-synth-bank-path player :touch-osc-data osc-path)
-          value)))
-
 (defn- osc-bool [bool] (int (if bool 1 0)))
 
 (comment
@@ -228,16 +216,25 @@
   [player on?]
   (swap! live-state
          assoc-in
-         (selected-synth-bank-path player)
-         (-> default-cloud-config
-             (merge (get-selected-synth-data player))
-             (assoc :on? on?)))
+         (synth-bank-path player
+                          :refrains
+                          (get-selected-synth-bank player)
+                          :on?)
+         on?)
 
-  (if on?
-    (do #_(bardo.live-ctl/start-clouds player)
-     (show-active-bank-label player on?))
-    (do #_(bardo.live-ctl/stop-clouds player)
-     (show-active-bank-label player on?))))
+  (show-active-bank-label player on?)
+  (bardo.live-ctl/dispatch {:type (if on? :start-clouds :stop-clouds)
+                            :data {:player player}}))
+
+(defn set-independent-refrain
+  [player on?]
+  (swap! live-state
+         assoc-in
+         (synth-bank-path player
+                          :refrains
+                          (get-selected-synth-bank player)
+                          :independent?)
+         on?))
 
 (defn set-clouds-amp
   [player amp]
@@ -249,6 +246,8 @@
          (first (linlin 0 1 -36 36 [amp]))))
 
 (comment
+  (reset-default-state!)
+  (-> (get-player-data :milo) (#(apply dissoc % (range 8))))
   (set-clouds-amp :diego 1))
 
 (defn set-clouds-sample-lib-size
@@ -672,6 +671,7 @@
          #{src}))
 
 (comment
+  (-> @live-state)
   (reset! live-state {})
 
   (toggle-gusano-active-sources :milo true))
@@ -1042,6 +1042,8 @@
       ;; TODO: << eliminate following
       "/Milo/clouds-active-btn" (do (toggle-clouds :milo press?)
                                     (save-touchosc-synth-param :milo path args))
+      "/Milo/independent-sequencer-btn" (do (set-independent-refrain :milo press?)
+                                            (save-touchosc-synth-param :milo path args))
       "/Milo/clouds-amp" (do (set-clouds-amp :milo (first args))
                              (save-touchosc-synth-param :milo path args))
       "/Milo/clouds-env-radio" (do (set-clouds-env :milo (first args))
@@ -1256,7 +1258,8 @@
                          "/%s/filter-q-fader-visible" [1],
                          "/%s/clouds-env-radio" '(0),
                          "/%s/filter-label" ["lpf"],
-                         "/%s/filter-reso-fader" [0.0]}
+                         "/%s/filter-reso-fader" [0.0]
+                         "/%s/independent-sequencer-btn" [0]}
                         (map (fn [[k v]] [(format k player) v]))
                         cast-osc-data
                         (into {})),
@@ -1275,6 +1278,8 @@
          "/Milo/bank6-active-label-visible" (0),
          "/Milo/bank7-active-label-visible" (0),
          "/Milo/bank8-active-label-visible" (0)
+         "/Milo/independent-sequencer-btn" (0)
+         "/Diego/independent-sequencer-btn" (0)
          "/Diego/bank1-active-label-visible" (0),
          "/Diego/bank2-active-label-visible" (0),
          "/Diego/bank3-active-label-visible" (0),
@@ -1282,7 +1287,7 @@
          "/Diego/bank5-active-label-visible" (0),
          "/Diego/bank6-active-label-visible" (0),
          "/Diego/bank7-active-label-visible" (0),
-         "/Diego/bank8-active-label-visible" (0)
+         "/Diego/bank8-active-label-visible" (0),
          "/Diego/bank-rec-radio" (0),
          "/Diego/clouds-active-btn" (0.0), ;; NOTE: will cause log "Could not find refrain with id: :bardo.clouds/diego"
          "/Diego/clouds-amp" (0.0),
@@ -1300,7 +1305,7 @@
          "/Diego/rec-pulse-radio" (0),
          "/Diego/rev-send-clean" (0.0),
          "/Diego/rev-send-process" (0.0),
-         "/Diego/synth-radio" (0),
+         "/Diego/selected-synth-radio" (0),
          "/Diego/toggle-bank/1" ("on" 0.0 "index" 1),
          "/Diego/toggle-harmonic-voice/0" ("on" 1 "index" 0),
          "/Diego/toggle-harmonic-voice/1" ("on" 1 "index" 1),
@@ -1333,7 +1338,7 @@
          "/Milo/rec-pulse-radio" (0),
          "/Milo/rev-send-clean" (0.0),
          "/Milo/rev-send-process" (0.0),
-         "/Milo/synth-radio" (0),
+         "/Milo/selected-synth-radio" (0),
          "/Milo/toggle-bank/1" ("on" 0.0 "index" 1)
          "/Milo/toggle-harmonic-voice/0" ("on" 1 "index" 0),
          "/Milo/toggle-harmonic-voice/1" ("on" 1 "index" 1),
@@ -1389,14 +1394,15 @@
   {:path path :value values})
 
 (comment
+  (send-osc-msg "/Milo/selected-synth-radio" (int 0))
   (send-osc-msg "/Milo/bank2-active-label-visible" "true")
   (send-osc-msg "/Milo/panner-manual-group" (osc-bool 1)))
 
 (defn reset-default-state!
   []
+  (init-state!)
   (doseq [[path args] default-touch-osc-state]
-    (osc-responder {:path path :args args}))
-  (init-state!))
+    (osc-responder {:path path :args args})))
 
 (comment
 

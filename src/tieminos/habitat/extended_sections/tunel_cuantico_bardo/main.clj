@@ -1,5 +1,5 @@
 (ns tieminos.habitat.extended-sections.tunel-cuantico-bardo.main
-  "The code from the recorded versions of `2.2.9.x"
+  "The code from the recorded versions of `2.3.x`, `2.2.9.x`"
   (:require
    [overtone.core :as o]
    [tieminos.attractors.lorentz :as lorentz]
@@ -26,7 +26,7 @@
 
   ;; init OSC communication
   (bardo.osc/init!
-    ;; NOTE if an client is missing there will be a "Host is Down" error.
+    ;; NOTE if a client is missing there will be a "Host is Down" error.
    [["127.0.0.1" 16181]      ;; local
     #_["192.168.0.101" 16180]  ;; diego
     #_["192.168.0.104" 16180] ;; milo

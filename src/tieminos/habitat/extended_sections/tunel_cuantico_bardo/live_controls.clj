@@ -1,5 +1,6 @@
 (ns tieminos.habitat.extended-sections.tunel-cuantico-bardo.live-controls
   (:require
+   [clojure.core.async :as a]
    [clojure.data.generators :refer [weighted]]
    [clojure.math :refer [round]]
    [clojure.string :as str]
@@ -13,7 +14,8 @@
                                                                 meta-slendro-5
                                                                 meta-slendro1
                                                                 rate-chord-seq]]
-   [tieminos.habitat.extended-sections.tunel-cuantico-bardo.clouds :refer [clouds-refrain]]
+   [tieminos.habitat.extended-sections.tunel-cuantico-bardo.clouds :refer [clouds-refrain
+                                                                           clouds-refrain2]]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.gusanos.core :as bardo.gusano]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.live-state :as bardo.live-state :refer [live-state]]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.rec :as bardo.rec]
@@ -25,6 +27,8 @@
    [tieminos.overtone-extensions :as oe]
    [tieminos.utils :refer [rrange wrap-at]]
    [time-time.dynacan.players.gen-poly :as gp]))
+
+(declare dispatch)
 
 ;;;;;;;;;;;;;;
 ;; Recording
@@ -115,7 +119,7 @@
                      :r (weighted {10 1
                                    20 0.3})}
     (do
-      (timbre/error (ex-info "Unknown envelop key, using default"
+      (timbre/error (ex-info "Unknown envelope key, using default"
                              {:env-k env-k}))
       {:a 3 :d 3 :r 2})))
 
@@ -147,8 +151,8 @@
              (#(o/pan-az:ar 4 % pan)))))
 
 (defn get-harmonic-data!
-  [player-k]
-  (-> @live-state :algo-2.2.9-clouds player-k))
+  [player-k bank]
+  (bardo.live-state/get-player-data player-k bank))
 
 (defn get-harmony
   [harmony-k]
@@ -190,7 +194,7 @@
     (update config :amp (partial adjust-amp -6))))
 
 (defn start-clouds
-  [player-k]
+  [{:keys [player-k]}]
   (clouds-refrain
    {:id (make-clouds-id player-k)
     :silence-thresh (o/db->amp -55)
@@ -212,7 +216,9 @@
                 (let [{:keys [harmony harmonic-speed harmonic-range
                               rate-indexes ;; defines the number of voices to play, lorentz has 3 indexes so indexes can be a `set` of numbers 0 - 2
                               ]
-                       :or {rate-indexes #{0 1 2}}} (get-harmonic-data! player-k)]
+                       :or {rate-indexes #{0 1 2}}}
+                      ;; the bank has been hardcoded
+                      (get-harmonic-data! player-k 0)]
                   (->> (lorentz-chord index
                                       (:lorentz @live-state)
                                       harmonic-speed
@@ -257,6 +263,81 @@
                                   (assoc :out out))))]
                  (swap! bardo.rec/currently-playing-bufs update (:buf config) conj synth)))}))
 
+(defn- clouds-buf
+  [player bank]
+  (let [lib-size (bardo.live-state/get-player-data player bank :sample-lib-size)
+        [_k buf] (bardo.rec/get-buf
+                  player
+                  lib-size
+                  #{bank})]
+    buf))
+
+(defn- clouds-rates
+  [player index bank]
+  (let [{:keys [harmony harmonic-speed harmonic-range
+                rate-indexes ;; defines the number of voices to play, lorentz has 3 indexes so indexes can be a `set` of numbers 0 - 2
+                ]
+         :or {rate-indexes #{0 1 2}}} (get-harmonic-data! player bank)
+        rates (->> (lorentz-chord index
+                                  (:lorentz @live-state)
+                                  harmonic-speed
+                                  (:low harmonic-range)
+                                  (:high harmonic-range))
+                   (#(rate-chord-seq (get-harmony harmony) [%]))
+                   first
+                   (get-rates-subset rate-indexes))]
+    rates))
+
+(clouds-rates :milo 0 0)
+
+(defn- clouds-amp
+  [player bank]
+  ;; the amp is adjusted at the call site of the synthdefs for different reasons:
+  ;; 1. Milo's bank 1 is reserved for the bowed bell which is louder than other sounds
+  ;; 2. The `granular` has less loudeness than the crystal synth
+
+  (bardo.live-state/get-player-data player bank :amp))
+
+(defn- clouds-pan [player bank]
+  {:pos 0 :width 2})
+
+(defn- clouds-out [player]
+  (main-returns (case player
+                  :milo :percussion-processes
+                  :diego :guitar-processes)))
+
+(defn- clouds-synth [player bank]
+  (bardo.live-state/get-player-data player bank :active-synth))
+
+(defn clouds-durs
+  [player {:keys [index]}]
+  (let [state @live-state
+        rhythm (bardo.live-state/get-player-data player 0 :rhythm)]
+    (get-dur index
+             rhythm
+             (:lorentz state))))
+
+(defn start-clouds
+  [{:keys [player]}]
+  (clouds-refrain2
+   {:id (make-clouds-id player)
+    :durs-fn (partial clouds-durs player)
+    :get-param-data (fn [{:keys [index]}]
+                      (let [active-banks (bardo.live-state/get-group-banks player)
+                            bank (rand-nth (into [] active-banks))]
+
+                        {:bank bank
+                         :synth (clouds-synth player bank)
+                         :buf (clouds-buf player bank)
+                         :rates (clouds-rates player index bank)
+                         :amp (clouds-amp player bank)
+                         :pan (clouds-pan player bank)
+                         :out (clouds-out player)}))
+    :on-play (fn [{:keys [synth]} params]
+               (dispatch {:type :play-synth
+                          :data {:synth synth
+                                 :params params}}))}))
+
 (comment
   (-> @live-state :algo-2.2.9-clouds :milo)
   (swap! live-state assoc-in [:algo-2.2.9-clouds :milo :rhythm] :lor-0.1_2)
@@ -286,8 +367,8 @@
                  (str/includes? (name k) "mic-")))))
 
 (defn stop-clouds
-  [player-k]
-  (gp/stop (make-clouds-id player-k)))
+  [{:keys [player]}]
+  (gp/stop (make-clouds-id player)))
 
 (defn start-gusano
   []
@@ -296,3 +377,105 @@
 (defn stop-gusano
   []
   (bardo.gusano/stop))
+
+;;;;;;;;;;;;;;;;;
+;; Event Handlers
+;;;;;;;;;;;;;;;;;
+
+(oe/defsynth test-synth
+  [freq 200
+   amp 0.5
+   out 0]
+  (o/out out (-> (o/sin-osc freq)
+                 (o/pan2)
+                 (* amp (o/env-gen (o/env-perc) :action o/FREE)))))
+
+(defn play-synth
+  "Plays a synth. The `:synth` key should be a keyword."
+  [{:as data
+    :keys [synth params]}]
+  (timbre/debug "[play-synth]\n" data)
+  (let [buf (:buf params)
+        synth* (case synth
+                 :test (test-synth params)
+                 :crystal (let [instance (cristal-liquidizado params)]
+                            (bardo.synth-management/add-synth! instance (:dur params))
+                            instance)
+                 :granular (amanecer*guitar-clouds params))]
+
+    (when buf
+      (swap! bardo.rec/currently-playing-bufs update buf conj synth*))))
+
+(comment
+  (event-handler {:type :play-synth
+                  :data {:synth :test
+                         :params {:freq (rrange 100 300)}}}))
+(declare coms-active?)
+
+(defn event-handler
+  [{:as _event
+    :keys [type data]}]
+  (case type
+    :echo (timbre/info "Echoing:" data)
+    :start-clouds (start-clouds data)
+    :stop-clouds (stop-clouds data)
+    :start-gusano (start-gusano)
+    :stop-gusano (stop-gusano)
+    :play-synth (play-synth data)
+    :halt! (reset! coms-active? false)
+    (timbre/error "[event-handler] No matching clause for `:type`:" type)))
+
+;;;;;;;;;;;;;
+;; Async
+;;;;;;;;;;;;;
+
+(defonce chans (atom {}))
+
+(defonce coms-active? (atom true))
+
+(defonce debug-events?
+  ;; "Prevent calls to event-handler, and instead print event data"
+  (atom false))
+
+(defn init-async-coms!
+  []
+  (if-not (seq @chans)
+    (do
+      (timbre/info "Starting async event handling!")
+      (reset! coms-active? true)
+      (let [main (a/chan)]
+        (a/go-loop
+         []
+          (let [event (a/<! main)]
+            (try (if-not @debug-events?
+                   (event-handler event)
+                   (timbre/info "Debugging:\n" event))
+                 (catch Exception e (timbre/error "Live Controls async error" e "\n" event))))
+          (if @coms-active?
+            (recur)
+            (do
+              (reset! chans {})
+              (timbre/info "Stopping async event handling..."))))
+        (reset! chans {:main main})))
+    (timbre/info "Async event handling already running.")))
+
+(defn dispatch*
+  "Dispatches an event."
+  [chan-k event]
+  (if-let [c (chan-k @chans)]
+    (a/put! c event)
+    (timbre/error (format "There is no channel \"%s\" to dispatch event. Main need to call `init-async-coms!` first."
+                          chan-k))))
+
+(defn dispatch
+  "Dispatches an event on the `:main` events channel."
+  [event]
+  (dispatch* :main event))
+
+(comment
+  (reset! debug-events? true)
+  (reset! debug-events? false)
+  (a/put! (:main @chans) {:hola "mundo"})
+  (dispatch {:type :echo :data {:hola "mundo"}})
+  (dispatch {:type :halt!})
+  (init-async-coms!))

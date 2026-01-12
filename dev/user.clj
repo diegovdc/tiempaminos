@@ -13,14 +13,18 @@
    [tieminos.scales.core :as scales]
    [time-time.dynacan.players.gen-poly :as gp]))
 
-(timbre/set-level! :info)
+(defn log-level!
+  [level]
+  (timbre/set-level! level))
+
+(log-level! :info)
 
 (comment
   (repl/clear)
   ;; FIXME: Ya casi funciona solo hay que arreglar el require en tieminos.compositions.garden-earth.synths.granular
   (refresh))
 
-(set-refresh-dirs "src" "dev" "test")
+(set-refresh-dirs "src" "test")
 
 (defn restart []
   (doseq [[port _] @osc-servers]
