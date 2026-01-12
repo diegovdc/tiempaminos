@@ -62,35 +62,37 @@
 ;; Banks
 ;;;;;;;;;;;;;;;;;;
 
-(defn get-active-banks
-  "Get all active banks, group and independent."
-  [player]
+(defn- get-banks
+  [pred player]
   (->> player
        get-player-data
        :refrains
-       (keep (fn [[k v]] (when (:on? v) k)))
+       (keep (fn [[k v]] (when (pred v) k)))
        set))
+
+(defn get-active-banks
+  "Get all active banks, group and independent."
+  [player]
+  (get-banks #(:on? %) player))
 
 (defn get-independent-banks
   "Get banks that are independent."
-  ([player] (get-independent-banks player true))
-  ([player active?]
-   (->> player
-        get-player-data
-        :refrains
-        (keep (fn [[k v]] (when (and (:independent? v)
-                                     (= active? (:on? v))) k)))
-        set)))
+  ([player]
+   (get-banks #(and (:on? %) (:independent? %))
+              player)))
 
 (defn get-group-banks
   "Get that are not indepedent."
-  ([player] (get-group-banks player true))
-  ([player active?]
-   (->> player
-        get-player-data
-        :refrains
-        (keep (fn [[k v]] (when (and (not (:independent? v))
-                                     (= active? (:on? v))) k)))
-        set)))
+  ([player]
+   (get-banks #(and (:on? %) (not (:independent? %)))
+              player)))
 
-(comment [(get-active-banks :milo) (get-independent-banks :milo true) (get-group-banks :milo true)])
+(defn get-gusano-banks
+  "Get that are not indepedent."
+  ([player]
+   (get-banks #(:gusano? %) player)))
+
+(comment [(get-active-banks :milo)
+          (get-independent-banks :milo)
+          (get-group-banks :milo)
+          (get-gusano-banks :milo)])

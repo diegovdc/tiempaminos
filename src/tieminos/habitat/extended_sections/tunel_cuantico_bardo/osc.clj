@@ -40,14 +40,18 @@
    :pulse :dur
    :dur 0.5})
 
-(defn toogle-rec [{:keys [input on?]}]
-  (swap! live-state assoc-in [:rec input] (-> default-rec-config
-                                              (merge (-> @live-state :rec input))
-                                              (assoc :on? on?
-                                                     :start-time (System/currentTimeMillis))))
-  (if on?
-    (bardo.live-ctl/start-recording {:input-k input})
-    (bardo.live-ctl/stop-recording {:input-k input})))
+(defn toogle-rec
+  [{:keys [input on?]}]
+  (swap! live-state
+         assoc-in
+         [:rec input]
+         (-> default-rec-config
+             (merge (-> @live-state :rec input))
+             (assoc :on? on?
+                    :start-time (System/currentTimeMillis))))
+
+  (bardo.live-ctl/dispatch {:type (if on? :start-recording :stop-recording)
+                            :data {:input-k input}}))
 
 (comment
   (toogle-rec {:input :guitar
@@ -534,13 +538,17 @@
 ;; Envelopes
 ;;;;;;;;;;;;;;;;
 
-;; TODO eliminate?
 (defn set-active-bank
   [{:keys [player bank on?]}]
-  (swap! live-state update-in [:algo-2.2.9-clouds player :active-banks]
-         (if on? set/union set/difference)
-         #{(dec bank)}))
-
+  (swap! live-state
+         assoc-in
+         (synth-bank-path player
+                          :refrains
+                          (dec bank)
+                          :gusano?)
+         on?))
+(comment
+  (-> @live-state  :algo-2.2.9-clouds :milo keys))
 (defn set-clouds-env
   [player opt-num]
   (let [env (case opt-num
@@ -656,25 +664,19 @@
 (defn toggle-gusano
   [on?]
   (swap! live-state
-         assoc :gusano
+         assoc
+         :gusano
          (-> default-gusano-config
              (merge (:gusano @live-state))
              (assoc :on? on?)))
-  (if on?
-    (bardo.live-ctl/start-gusano)
-    (bardo.live-ctl/stop-gusano)))
 
-(defn toggle-gusano-active-sources
-  [src on?]
-  (swap! live-state update-in [:gusano :sources]
-         (fnil (if on? set/union set/difference) #{})
-         #{src}))
+  (bardo.live-ctl/dispatch
+   {:type (if on? :start-gusano :stop-stop)
+    :data {}}))
 
 (comment
   (-> @live-state)
-  (reset! live-state {})
-
-  (toggle-gusano-active-sources :milo true))
+  (reset! live-state {}))
 
 ;; TODO: set the resulting values of gusano in the live-state just as with the other values
 (defn set-gusano-rates
@@ -716,7 +718,7 @@
 (do
   (def HACK-parse-path
     "Fixes a problem with the bank button which share the same address, so on feedback they all turn on or off."
-    (let [indexed-paths #{"toggle-bank" "toggle-harmonic-voice"}]
+    (let [indexed-paths #{"toggle-gusano-bank" "toggle-harmonic-voice"}]
       (memoize
        (fn [path]
          (let [spath  (str/split path #"/")]
@@ -1079,7 +1081,7 @@
       "/Milo/bank-rec-radio" (set-active-recorded-bank [:mic-1 :mic-2] (first args))
       "/Milo/bank-delete-btn" (when press? (delete-bank [:mic-1 :mic-2]))
       "/Milo/bank-delete-all-btn" (when press? (delete-all-banks [:mic-1 :mic-2]))
-      "/Milo/toggle-bank" (set-active-bank {:player :milo :bank (:index args-map) :on? (== 1 (:on args-map))})
+      "/Milo/toggle-gusano-bank" (set-active-bank {:player :milo, :bank (:index args-map), :on? (== 1 (:on args-map))})
       "/Milo/harmony-radio" (set-harmony :milo (first args))
       "/Milo/harmonic-speed" (do (set-harmonic-speed :milo (first args))
                                  (save-touchosc-synth-param :milo path args))
@@ -1106,7 +1108,7 @@
       "/Diego/clouds-sample-lib-size-radio" (set-clouds-sample-lib-size :diego (first args))
       ;; TODO: end eliminate >>
       "/Diego/bank-rec-radio" (set-active-recorded-bank [:guitar] (first args))
-      "/Diego/toggle-bank" (set-active-bank {:player :diego :bank (:index args-map) :on? (== 1 (:on args-map))})
+      "/Diego/toggle-gusano-bank" (set-active-bank {:player :diego,:bank (:index args-map), :on? (== 1 (:on args-map))})
       "/Diego/bank-delete-btn" (when press? (delete-bank [:guitar]))
       "/Diego/bank-delete-all-btn" (when press? (delete-all-banks [:guitar]))
       "/Diego/harmony-radio" (set-harmony :diego (first args))
@@ -1123,8 +1125,6 @@
       "/stop-long-running-synths" (when press? (stop-long-running-synths! (* 20 1000)))
       ;; gusano
       "/gusano/gusano-active-btn" (toggle-gusano press?)
-      "/gusano/gusano-active-milo-src-btn" (toggle-gusano-active-sources :milo press?)
-      "/gusano/gusano-active-diego-src-btn" (toggle-gusano-active-sources :diego press?)
       "/gusano/rates" (set-gusano-rates (first args))
       "/gusano/rates-seq-speed" (set-gusano-rates-seq-speed (first args))
       "/gusano/amp" (set-gusano-amp (first args))

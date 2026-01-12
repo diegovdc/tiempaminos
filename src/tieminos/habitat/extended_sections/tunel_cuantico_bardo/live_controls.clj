@@ -48,7 +48,8 @@
   (-> @live-state :rec :mic-1 :dur)
   (def input-k :mic-2))
 
-(defn start-recording [{:keys [input-k]}]
+(defn start-recording
+  [{:keys [input-k]}]
   (timbre/info "starting rec on" input-k)
   (if-let [input-bus (-> @inputs input-k :bus)]
     (bardo.rec/start-rec-loop!
@@ -58,7 +59,7 @@
       :rec-dur-fn (fn [_]
                     (-> @live-state :rec input-k :dur))
       :rec-pulse (fn [_] (-> @live-state :rec input-k get-rec-pulse))
-      ;; :print-info? true
+       ;; :print-info? true
       :on-rec-start (fn [_]
                       (swap! live-state
                              assoc-in
@@ -288,8 +289,6 @@
                    (get-rates-subset rate-indexes))]
     rates))
 
-(clouds-rates :milo 0 0)
-
 (defn- clouds-amp
   [player bank]
   ;; the amp is adjusted at the call site of the synthdefs for different reasons:
@@ -407,6 +406,8 @@
       (swap! bardo.rec/currently-playing-bufs update buf conj synth*))))
 
 (comment
+  (timbre/set-level! :debug)
+  (timbre/set-level! :info)
   (event-handler {:type :play-synth
                   :data {:synth :test
                          :params {:freq (rrange 100 300)}}}))
@@ -416,13 +417,15 @@
   [{:as _event
     :keys [type data]}]
   (case type
+    :halt! (reset! coms-active? false)
     :echo (timbre/info "Echoing:" data)
     :start-clouds (start-clouds data)
     :stop-clouds (stop-clouds data)
     :start-gusano (start-gusano)
     :stop-gusano (stop-gusano)
+    :start-recording (start-recording data)
+    :stop-recording (stop-recording data)
     :play-synth (play-synth data)
-    :halt! (reset! coms-active? false)
     (timbre/error "[event-handler] No matching clause for `:type`:" type)))
 
 ;;;;;;;;;;;;;

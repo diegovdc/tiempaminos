@@ -275,12 +275,13 @@
                                     :end end
                                     :out out-bus
                                     :pan (rrange -1 1)}]
+
+                        (timbre/debug "Playing Gusano" (:out config))
                         (when on-play
-                          #_(println "ONPLAY")
+                          (timbre/debug "Gusano on-play" (:out config))
                           (on-play (assoc config
                                           :amp amp*
                                           :rate (float r))))
-                        (timbre/info "Playing-----" (:out config))
                         (amanecer*guitar-clouds (assoc config
                                                        :rate (float r)
                                                        :interp (rand-nth [1 2 4])
