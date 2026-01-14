@@ -1,9 +1,10 @@
-(ns tieminos.sc-utils.synths.template-synth
+(ns tieminos.sc-utils.synths.template-synth.v0
   (:require
    [clojure.string :as str]
    [clojure.walk :as walk]
    [overtone.core :as o]
-   [overtone.sc.ugen-collide-list]))
+   [overtone.sc.ugen-collide-list]
+   [taoensso.timbre :as timbre]))
 
 (defn ns-kw?
   [kw-ns-str kw]
@@ -11,7 +12,7 @@
 
 (defn resolve-frag [x]
   (if (-> x meta :fragment)
-    (do (println "fragment" x) (var-get x))
+    (var-get x)
     x))
 
 (defn modify-body [params synth-body]
@@ -25,7 +26,6 @@
                                                                                    v))])))
                         (into {}))]
 
-    #_(timbre/spy :info)
     (walk/prewalk (fn [x]
                     (if-let [mapping (params-map x)]
                       mapping
@@ -39,24 +39,25 @@
 (comment
   ;; TODO levels and env-durs should ideally only belong to this particular instance(?)
   ;; TODO try parametrizing panning as will be needed, probably the most important thing to work on atm.
-  (modify-body
-   {:freq [1 2]
-    :levels [0 1 1 0]
-    :env-durs [1 1 1]
-    :ugen/env '(o/env-gen (o/envelope levels env-durs))
-    :shaper-limit 0.5
-    :ugen/pan #'panny
-    :ugen/rev '(o/sine-shaper shaper-limit)
-    :ugen/fx1 '(o/dist)
-    :out 0}
-   (qualify-body '(o/out 0
-                         (o/sin-osc freq)
-                         :ugen/pan
-                         :ugen/rev
-                         :ugen/fx1
-                         (* :ugen/env)))))
-(var-get #'panny)
+  (let [params {:freq [1 2]
+                :levels [0 1 1 0]
+                :env-durs [1 1 1]
+                :ugen/env '(o/env-gen (o/envelope levels env-durs))
+                :shaper-limit 0.5
+                :ugen/pan #'panny
+                :ugen/rev '(o/sine-shaper shaper-limit)
+                :ugen/fx1 '(o/dist)
+                :out 0}]
+    (modify-body
+     params
+     (qualify-body params '(o/out 0
+                                  (o/sin-osc freq)
+                                  :ugen/pan
+                                  :ugen/rev
+                                  :ugen/fx1
+                                  (* :ugen/env))))))
 
+(def freq 5432)
 (do
   (defn modify-params
     "Used when creating the synth's params vector"
@@ -84,17 +85,22 @@
                   :ugen/fx1 '(o/dist)
                   :out 0}))
 
+(defn coll-of-numbers? [coll]
+  (and (sequential? coll)
+       (every? number? coll)))
+
 (defn modify-params2
   "Used when calling the synth"
   [params]
-  (println "MP2" params)
+  #_(println "MP2" params)
   (->> params
        (mapv (fn [[k v]]
                (cond
                  (number? v) {k v}
-                 (vector? v) (map-indexed (fn [i v*]
-                                            {(keyword (str (name k) i)) v*})
-                                          v))))
+                 (or (vector? v)
+                     (coll-of-numbers? v)) (map-indexed (fn [i v*]
+                                                          {(keyword (str (name k) i)) v*})
+                                                        v))))
        flatten
        (apply merge)))
 
@@ -109,6 +115,7 @@
   [k arg]
   (cond
     (number? arg) [:number]
+    (= overtone.sc.sample.Sample (type arg)) [:number]
     (-> arg meta :fragment) [:ugen (resolve-frag arg)]
     (ns-kw? "ugen" k) [:ugen arg]
     (sequential? arg) [:seq (count arg)]
@@ -154,21 +161,25 @@
 (defn make-synth-form
   [synth-symbol params-map synth-body]
   (let [body (modify-body params-map synth-body)]
-    (println body)
+    (timbre/debug :make-synth-form/body body)
     (o/synth-form synth-symbol [(modify-params params-map) body])))
 
 (defonce variations-data (atom {}))
 (defonce synths-cache (atom {}))
 
-(defn instance-symbol [synth-symbol]
-  (println " instance-symbol" synth-symbol)
-  (symbol (str synth-symbol (inc (get-in @variations-data [synth-symbol :count] -1)))))
+(defn instance-symbol [namespaced-synth-string synth-symbol]
+  (let [sym (symbol (str synth-symbol (inc (get-in @variations-data [namespaced-synth-string :count] -1))))]
+    (timbre/info "Synth symbol created: "  sym "for" synth-symbol)
+    sym))
 
+(comment
+  (-> @variations-data))
 (defn qualify-body
-  [synth-body]
+  [params-map synth-body]
   (let [collides (ns-interns 'overtone.sc.ugen-collide-list)]
     (walk/postwalk (fn [x]
-                     (if (symbol? x)
+                     (if (and (symbol? x)
+                              (not (params-map (keyword x))))
                        (if-let [res (resolve x)]
                          (cond
                            (number? (var-get res)) (var-get res) ;; constants
@@ -178,9 +189,20 @@
                        x))
                    synth-body)))
 (comment
-  (qualify-body '(o/out out
-                        (* (o/env-gen (o/env-perc) :action o/FREE)
-                           (o/sin-osc freq)))))
+  ;; Here freq shouldn't overwrite the symbol in the qualified body
+  (def freq 23456)
+  (qualify-body
+   {:freq 222}
+   '(o/out out
+           (* (o/env-gen (o/env-perc) :action o/FREE)
+              (o/sin-osc freq))))
+  ;; Here out should be 0 in the qualified body
+  (def out-var 0)
+  (qualify-body
+   {:freq 222}
+   '(o/out out-var
+           (* (o/env-gen (o/env-perc) :action o/FREE)
+              (o/sin-osc freq)))))
 
 (declare call-synth define-synth)
 
@@ -198,7 +220,7 @@
          (fn [data]
            (let [synth-data (get data namespaced-synth-string
                                  {:default-params params-map
-                                  :synth-body (qualify-body synth-body)})]
+                                  :synth-body (qualify-body params-map synth-body)})]
              (assoc data
                     namespaced-synth-string
                     (-> synth-data
@@ -234,17 +256,16 @@
         cached-synth (get-in @synths-cache [analyzed-args])]
     (if cached-synth
       cached-synth
-      (let [synth-body* (qualify-body synth-body)
+      (let [synth-body* (qualify-body params-map synth-body)
             [_s-name params ugen-form] (make-synth-form
                                         synth-symbol
                                         params-map
                                         synth-body*)
-            _ (println "AS" params)
+            _ (timbre/debug "[make-synth] params" params)
             synth (eval (list 'overtone.core/synth
-                              (instance-symbol synth-symbol)
+                              (instance-symbol namespaced-synth-string synth-symbol)
                               params
-                              ugen-form))
-            _ (println "AS1")]
+                              ugen-form))]
         (swap! synths-cache assoc analyzed-args synth)
         ;; TODO prevent overwritting a synth from another namespace (i.e. namespace the symbol)
         (add-variation-data!
@@ -260,17 +281,28 @@
         {:keys [default-params synth-body]} (get @variations-data namespaced-synth-string)
         merged-params (merge default-params params-map)
         analyzed-args (analyze-ds-args namespaced-synth-string merged-params)
+        _ (timbre/debug :get-instance-data/analyzed-args analyzed-args)
+        _ (def analyzed-args analyzed-args)
         synth (or (get-in @synths-cache [analyzed-args])
                   (make-synth-fn synth-symbol merged-params synth-body))]
     {:synth synth :analyzed-args analyzed-args :merged-params merged-params}))
-
+(comment
+  (-> @variations-data)
+  (get @variations-data namespaced-synth-string)
+  (-> @synths-cache)
+  (get-in @synths-cache [analyzed-args]))
 #_(get-instance-data 'sini {})
 
 (defn call-synth
   [synth-symbol params-map]
   (println "call synth" synth-symbol params-map)
-  (let [{:keys [synth merged-params]} (get-instance-data (symbol synth-symbol) params-map)]
-    (synth (modify-params2 merged-params))))
+  (let [{:keys [synth merged-params]} (get-instance-data (symbol synth-symbol) params-map)
+        _ (def merged-params merged-params)
+        params (modify-params2 merged-params)]
+    (timbre/debug "[call-synth] synth" synth)
+    (timbre/debug "[call-synth] params" params)
+    (synth params)))
+
 #_(comment
 
     (resolve 'sini)
