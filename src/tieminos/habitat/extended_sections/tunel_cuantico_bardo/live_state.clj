@@ -14,12 +14,6 @@
                                                 :z (+ 0.012 (rand 0.01)))}
                  data)))
 
-(defn init-watch!
-  [id f]
-  (add-watch live-state ::post-live-state
-             (fn [_key _ref _old-value new-value]
-               (f new-value))))
-
 (comment
   (->> @live-state)
   (def lorentz (->> @live-state :lorentz))
@@ -62,7 +56,7 @@
 ;; Banks
 ;;;;;;;;;;;;;;;;;;
 
-(defn- get-banks
+(defn- get-banks!
   [pred player]
   (->> player
        get-player-data
@@ -73,24 +67,24 @@
 (defn get-active-banks
   "Get all active banks, group and independent."
   [player]
-  (get-banks #(:on? %) player))
+  (get-banks! #(:on? %) player))
 
 (defn get-independent-banks
   "Get banks that are independent."
   ([player]
-   (get-banks #(and (:on? %) (:independent? %))
-              player)))
+   (get-banks! #(and (:on? %) (:independent? %))
+               player)))
 
 (defn get-group-banks
   "Get that are not indepedent."
   ([player]
-   (get-banks #(and (:on? %) (not (:independent? %)))
-              player)))
+   (get-banks! #(and (:on? %) (not (:independent? %)))
+               player)))
 
 (defn get-gusano-banks
   "Get that are not indepedent."
   ([player]
-   (get-banks #(:gusano? %) player)))
+   (get-banks! #(:gusano? %) player)))
 
 (comment [(get-active-banks :milo)
           (get-independent-banks :milo)

@@ -7,19 +7,21 @@
    [overtone.core :as o]
    [taoensso.timbre :as timbre]
    [tieminos.attractors.lorentz :as lorentz]
-   [tieminos.habitat.extended-sections.harmonies.chords :refer [fib-21
-                                                                meta-pelog
-                                                                meta-pelog-11
-                                                                meta-pelog-7
-                                                                meta-slendro-5
-                                                                meta-slendro1
-                                                                rate-chord-seq]]
-   [tieminos.habitat.extended-sections.tunel-cuantico-bardo.clouds :refer [clouds-refrain
-                                                                           clouds-refrain2]]
-   [tieminos.habitat.extended-sections.tunel-cuantico-bardo.gusanos.core :as bardo.gusano]
-   [tieminos.habitat.extended-sections.tunel-cuantico-bardo.live-state :as bardo.live-state :refer [live-state]]
-   [tieminos.habitat.extended-sections.tunel-cuantico-bardo.rec :as bardo.rec]
-   [tieminos.habitat.extended-sections.tunel-cuantico-bardo.synth-management :as bardo.synth-management]
+   [tieminos.habitat.extended-sections.harmonies.chords
+    :refer [fib-21 meta-pelog meta-pelog-11 meta-pelog-7 meta-slendro-5
+            meta-slendro1 rate-chord-seq]]
+   [tieminos.habitat.extended-sections.tunel-cuantico-bardo.clouds
+    :refer [clouds-refrain clouds-refrain2]]
+   [tieminos.habitat.extended-sections.tunel-cuantico-bardo.gusanos.core
+    :as bardo.gusano]
+   [tieminos.habitat.extended-sections.tunel-cuantico-bardo.live-state
+    :as bardo.live-state
+    :refer [live-state]]
+   [tieminos.habitat.extended-sections.tunel-cuantico-bardo.rec
+    :as bardo.rec]
+   [tieminos.habitat.extended-sections.tunel-cuantico-bardo.synth-management
+    :as bardo.synth-management]
+   [tieminos.habitat.extended-sections.tunel-cuantico-bardo.synths :refer [cristal-liquidizado]]
    [tieminos.habitat.recording :as rec]
    [tieminos.habitat.routing :refer [inputs main-returns]]
    [tieminos.habitat.synths.granular :refer [amanecer*guitar-clouds]]
@@ -130,26 +132,6 @@
     [(round (lorentz/bound (lorentz index*) :x lowest-note highest-note))
      (round (lorentz/bound (lorentz index*) :y lowest-note highest-note))
      (round (lorentz/bound (lorentz index*) :z lowest-note highest-note))]))
-
-(oe/defsynth
-  cristal-liquidizado
-  [buf 0
-   rate 1
-   amp 0.5
-   pan 0
-   dur 1
-   out 0]
-  (o/out out
-         (-> (o/play-buf 1 buf rate)
-             (* amp
-                (o/env-gen
-                 (o/envelope
-                  [0 1 1 0]
-                  [(* 0.1 dur)
-                   (* 0.7 dur)
-                   (* 0.2 dur)])
-                 :action o/FREE))
-             (#(o/pan-az:ar 4 % pan)))))
 
 (defn get-harmonic-data!
   [player-k bank]
