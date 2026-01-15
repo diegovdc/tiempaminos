@@ -7,18 +7,13 @@
    [org.httpkit.client :as http]
    [overtone.osc :as osc]
    [taoensso.timbre :as timbre]
+   [tieminos.habitat.extended-sections.tunel-cuantico-bardo.async-events :as bardo.comms]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.init
     :as bardo.init]
-   [tieminos.habitat.extended-sections.tunel-cuantico-bardo.live-controls
-    :as bardo.live-ctl]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.live-state
     :as bardo.live-state
-    :refer [get-player-data
-            get-selected-synth-bank
-            get-selected-synth-data
-            live-state
-            save-touchosc-synth-param
-            selected-synth-bank-path
+    :refer [get-player-data get-selected-synth-bank get-selected-synth-data
+            live-state save-touchosc-synth-param selected-synth-bank-path
             synth-bank-path]]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.presets
     :as bardo.presets]
@@ -50,8 +45,8 @@
              (assoc :on? on?
                     :start-time (System/currentTimeMillis))))
 
-  (bardo.live-ctl/dispatch {:type (if on? :start-recording :stop-recording)
-                            :data {:input-k input}}))
+  (bardo.comms/dispatch {:type (if on? :start-recording :stop-recording)
+                         :data {:input-k input}}))
 
 (comment
   (toogle-rec {:input :guitar
@@ -227,8 +222,8 @@
          on?)
 
   (show-active-bank-label player on?)
-  (bardo.live-ctl/dispatch {:type (if on? :start-clouds :stop-clouds)
-                            :data {:player player}}))
+  (bardo.comms/dispatch {:type (if on? :start-clouds :stop-clouds)
+                         :data {:player player}}))
 
 (defn set-independent-refrain
   [player on?]
@@ -670,7 +665,7 @@
              (merge (:gusano @live-state))
              (assoc :on? on?)))
 
-  (bardo.live-ctl/dispatch
+  (bardo.comms/dispatch
    {:type (if on? :start-gusano :stop-stop)
     :data {}}))
 

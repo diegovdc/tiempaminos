@@ -5,9 +5,12 @@
    [tieminos.attractors.lorentz :as lorentz]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.init :as bardo.init]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.osc :as bardo.osc]
+   [tieminos.habitat.extended-sections.tunel-cuantico-bardo.live-controls
+    :as bardo.live-ctl]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.save-synths
     :as tc.synth-persistance]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.scratch.main]
+   [tieminos.habitat.extended-sections.tunel-cuantico-bardo.async-events :as bardo.comms]
    [tieminos.habitat.groups :as groups]
    [tieminos.habitat.recording :as rec :refer [norm-amp]]
    [tieminos.habitat.routing :as habitat.route]
@@ -28,10 +31,11 @@
   (bardo.osc/init!
     ;; NOTE if a client is missing there will be a "Host is Down" error.
    [["127.0.0.1" 16181]      ;; local
-    #_["192.168.0.101" 16180]  ;; diego
+    #_["192.168.0.101" 16180] ;; diego
     #_["192.168.0.104" 16180] ;; milo
     ])
   (bardo.osc/reset-default-state!)
+  (bardo.comms/init-async-coms! bardo.live-ctl/event-handler)
   ;; init everything (habitat and input synths) except SC, REAPER and OSC communications
   (bardo.init/all!)
   (bardo.osc/post-live-state-to-ui!)
