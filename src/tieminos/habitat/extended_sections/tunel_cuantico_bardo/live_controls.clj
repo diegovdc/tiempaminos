@@ -404,5 +404,6 @@
     :stop-gusano (stop-gusano)
     :start-recording (start-recording data)
     :stop-recording (stop-recording data)
+    :delete-bank-bufs (bardo.rec/delete-bank-bufs (:input-k data) (:active-bank data))
     :play-synth (play-synth data)
     (timbre/error "[event-handler] No matching clause for `:type`:" type)))

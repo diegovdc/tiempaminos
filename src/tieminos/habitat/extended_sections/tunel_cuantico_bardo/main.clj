@@ -5,12 +5,9 @@
    [tieminos.attractors.lorentz :as lorentz]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.init :as bardo.init]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.osc :as bardo.osc]
-   [tieminos.habitat.extended-sections.tunel-cuantico-bardo.live-controls
-    :as bardo.live-ctl]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.save-synths
     :as tc.synth-persistance]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.scratch.main]
-   [tieminos.habitat.extended-sections.tunel-cuantico-bardo.async-events :as bardo.comms]
    [tieminos.habitat.groups :as groups]
    [tieminos.habitat.recording :as rec :refer [norm-amp]]
    [tieminos.habitat.routing :as habitat.route]
@@ -35,8 +32,7 @@
     #_["192.168.0.104" 16180] ;; milo
     ])
   (bardo.osc/reset-default-state!)
-  (bardo.comms/init-async-coms! bardo.live-ctl/event-handler)
-  ;; init everything (habitat and input synths) except SC, REAPER and OSC communications
+  ;; init everything (habitat and input synths, bardo.comms) except SC, REAPER and OSC communications
   (bardo.init/all!)
   (bardo.osc/post-live-state-to-ui!)
   (bardo.osc/post-live-state-to-ui! :print-instead? true))
