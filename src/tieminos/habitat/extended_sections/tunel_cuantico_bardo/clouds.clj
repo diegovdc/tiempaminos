@@ -92,7 +92,7 @@
    :durs durs-fn
    :on-event (on-event
               (let [{:as param-data
-                     :keys [buf rates amp pan out]
+                     :keys [buf rates amp out]
                      :or {out (main-returns :non-recordable)}} (get-param-data data)]
                 (when buf
                   (doseq [r rates]
@@ -109,9 +109,7 @@
                                   :start 0
                                   :end 1
                                   :interp (rand-nth [1 2 4])
-                                  :out out
-                                  :pan (:pos pan 0)
-                                  :width (:width pan 1)}]
+                                  :out out}]
                       (on-play
                        param-data
                        (assoc params

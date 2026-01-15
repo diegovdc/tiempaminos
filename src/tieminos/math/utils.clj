@@ -25,8 +25,8 @@
     ([in-min in-max out-min out-max nums]
      (let [in-range (- in-max in-min)
            out-range (- out-max out-min)]
-       (map #(-> % (* out-range) (+ out-min))
-            (map #(/ (- % in-min) in-range) nums)))))
+       (mapv #(-> % (* out-range) (+ out-min))
+             (mapv #(/ (- % in-min) in-range) nums)))))
 
   (= (mapv float (linlin 1 5 1 3 [1 2 3 4 5]))
      [1.0, 1.5, 2.0, 2.5, 3.0]))

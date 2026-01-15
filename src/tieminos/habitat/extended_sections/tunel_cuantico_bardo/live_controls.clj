@@ -21,12 +21,12 @@
     :as bardo.rec]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.synth-management
     :as bardo.synth-management]
-   [tieminos.habitat.extended-sections.tunel-cuantico-bardo.synths :refer [cristal-liquidizado]]
+   [tieminos.habitat.extended-sections.tunel-cuantico-bardo.synths :refer [cristal-liquidizado
+                                                                           play-synth]]
    [tieminos.habitat.recording :as rec]
    [tieminos.habitat.routing :refer [inputs main-returns]]
    [tieminos.habitat.synths.granular :refer [amanecer*guitar-clouds]]
    [tieminos.math.bezier-samples :as bzs]
-   [tieminos.overtone-extensions :as oe]
    [tieminos.utils :refer [rrange wrap-at]]
    [time-time.dynacan.players.gen-poly :as gp]))
 
@@ -280,7 +280,14 @@
   (bardo.live-state/get-player-data player bank :amp))
 
 (defn- clouds-pan [player bank]
-  {:pos 0 :width 2})
+  (let [{:as data :keys [active-panner]} (bardo.live-state/get-player-data player bank)]
+    {:active-panner active-panner
+     :panner-config (-> data :panner-configs active-panner)}))
+
+(defn- clouds-filter [player bank]
+  (let [{:as data :keys [active-filter]} (bardo.live-state/get-player-data player bank)]
+    {:active-filter active-filter
+     :filter-config (-> data :filter-configs active-filter)}))
 
 (defn- clouds-out [player]
   (main-returns (case player
@@ -298,34 +305,44 @@
              rhythm
              (:lorentz state))))
 
+;; FIXME: simplify workflow, the generation of params inside clouds-refrain2 seems somewhat redundant (as related to :get-param-data, probably merge both into on-play and exctract taht function so that i can be called via dispatch - for debugging purposes-)
 (defn start-clouds
   [{:keys [player]}]
   (clouds-refrain2
    {:id (make-clouds-id player)
     :durs-fn (partial clouds-durs player)
     :get-param-data (fn [{:keys [index]}]
-                      (let [active-banks (bardo.live-state/get-group-banks player)
-                            bank (rand-nth (into [] active-banks))]
+                      (let [active-banks  (bardo.live-state/get-group-banks player)
+                            banks? (seq active-banks)
+                            bank (when banks? (rand-nth (into [] active-banks)))]
 
-                        {:bank bank
-                         :synth (clouds-synth player bank)
-                         :buf (clouds-buf player bank)
-                         :rates (clouds-rates player index bank)
-                         :amp (clouds-amp player bank)
-                         :pan (clouds-pan player bank)
-                         :out (clouds-out player)}))
-    :on-play (fn [{:keys [synth]} params]
+                        (if-not bank
+                          (timbre/error "No bank selected, can't play cloud")
+                          (merge {:bank bank
+                                  :synth (clouds-synth player bank)
+                                  :buf (clouds-buf player bank)
+                                  :rates (clouds-rates player index bank)
+                                  :amp (clouds-amp player bank)
+                                  :out (clouds-out player)}
+                                 (clouds-pan player bank)
+                                 (clouds-filter player bank)))))
+    :on-play (fn [param-data params]
                (dispatch {:type :play-synth
-                          :data {:synth synth
-                                 :params params}}))}))
+                          :data (merge
+                                 (select-keys param-data [:synth
+                                                          :active-panner
+                                                          :panner-config
+                                                          :active-filter
+                                                          :filter-config])
+                                 {:params params})}))}))
 
 (comment
   (-> @live-state :algo-2.2.9-clouds :milo)
   (swap! live-state assoc-in [:algo-2.2.9-clouds :milo :rhythm] :lor-0.1_2)
   (o/amp->db 0.0015420217847956035)
   (stop-clouds :milo)
-  (start-clouds :milo)
-  (stop-clouds :diego)
+  (start-clouds {:player :milo})
+  (stop-clouds {:player :milo})
 
   (let [player-k :diego
         lib-size
@@ -362,30 +379,6 @@
 ;;;;;;;;;;;;;;;;;
 ;; Event Handlers
 ;;;;;;;;;;;;;;;;;
-
-(oe/defsynth test-synth
-  [freq 200
-   amp 0.5
-   out 0]
-  (o/out out (-> (o/sin-osc freq)
-                 (o/pan2)
-                 (* amp (o/env-gen (o/env-perc) :action o/FREE)))))
-
-(defn play-synth
-  "Plays a synth. The `:synth` key should be a keyword."
-  [{:as data
-    :keys [synth params]}]
-  (timbre/debug "[play-synth]\n" data)
-  (let [buf (:buf params)
-        synth* (case synth
-                 :test (test-synth params)
-                 :crystal (let [instance (cristal-liquidizado params)]
-                            (bardo.synth-management/add-synth! instance (:dur params))
-                            instance)
-                 :granular (amanecer*guitar-clouds params))]
-
-    (when buf
-      (swap! bardo.rec/currently-playing-bufs update buf conj synth*))))
 
 (comment
   (timbre/set-level! :debug)
