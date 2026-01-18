@@ -7,13 +7,8 @@
    [taoensso.timbre :as timbre]
    [tieminos.attractors.lorentz :as lorentz]
    [tieminos.habitat.extended-sections.harmonies.chords
-    :refer [fib-21
-            meta-pelog
-            meta-pelog-11
-            meta-pelog-7
-            meta-slendro-5
-            meta-slendro1
-            rate-chord-seq]]
+    :refer [fib-21 meta-pelog meta-pelog-11 meta-pelog-7 meta-slendro-5
+            meta-slendro1 rate-chord-seq]]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.async-events
     :refer [dispatch]]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.clouds
@@ -29,12 +24,13 @@
     :as bardo.synth-management]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.synths
     :refer [cristal-liquidizado play-synth]]
+   [tieminos.habitat.groups :as groups]
    [tieminos.habitat.recording :as rec]
    [tieminos.habitat.routing :refer [inputs main-returns]]
    [tieminos.habitat.synths.granular :refer [amanecer*guitar-clouds]]
    [tieminos.math.bezier-samples :as bzs]
    [tieminos.utils :refer [rrange wrap-at]]
-   [time-time.dynacan.players.gen-poly :as gp]))
+   [time-time.dynacan.players.gen-poly :as gp :refer [on-event]]))
 
 ;;;;;;;;;;;;;;
 ;; Recording
@@ -283,6 +279,14 @@
 
   (bardo.live-state/get-player-data player bank :amp))
 
+(defn- clouds-out [player]
+  (main-returns (case player
+                  :milo :percussion-processes
+                  :diego :guitar-processes)))
+
+(defn- clouds-synth [player bank]
+  (bardo.live-state/get-player-data player bank :active-synth))
+
 (defn- clouds-pan [player bank]
   (let [{:as data :keys [active-panner]} (bardo.live-state/get-player-data player bank)]
     {:active-panner active-panner
@@ -293,14 +297,6 @@
     {:active-filter active-filter
      :filter-config (-> data :filter-configs active-filter)}))
 
-(defn- clouds-out [player]
-  (main-returns (case player
-                  :milo :percussion-processes
-                  :diego :guitar-processes)))
-
-(defn- clouds-synth [player bank]
-  (bardo.live-state/get-player-data player bank :active-synth))
-
 (defn clouds-durs
   [player {:keys [index]}]
   (let [state @live-state
@@ -309,36 +305,64 @@
              rhythm
              (:lorentz state))))
 
+(defn make-voice-params
+  [synth-config rates]
+  (->> rates
+       (mapv (fn [r]
+               (let [d-level-weights {0.3 1}
+                     room-weights {0.2 2, 2 1/2 4 1/2}
+                     trig-rate (+ 90 (rand-int 20))
+                     params* (assoc (:params synth-config)
+                                    :d-level (weighted d-level-weights)
+                                    :rev-room (weighted room-weights)
+                                    :trig-rate 100
+                                    :grain-dur (/ 1 (/ trig-rate 2))
+                                    :amp-lfo (rrange 0.1 0.4)
+                                    :amp-lfo-min 0.95
+                                    :lpf-max (rrange 2000 10000)
+                                    :rate r
+                                    :interp (rand-nth [1 2 4]))]
+                 (assoc synth-config :params params*))))))
+
+(defn get-synth-data-vectors
+  [player {:keys [index]}]
+  (let [active-banks  (bardo.live-state/get-group-banks player)
+        banks? (seq active-banks)
+        bank (when banks? (rand-nth (into [] active-banks)))
+        buf (when bank (clouds-buf player bank))]
+    (cond
+      (not bank) (timbre/error "No bank selected, can't play cloud")
+      (not buf) nil
+      :else (let [rates (clouds-rates player index bank)
+                  synth-config (merge
+                                (clouds-pan player bank)
+                                (clouds-filter player bank)
+                                {:synth (clouds-synth player bank)
+                                 :params {:group (groups/mid)
+                                          :buf buf
+                                          :start 0
+                                          :end 1
+                                          :amp (clouds-amp player bank)
+                                          :out (clouds-out player)}})]
+              (make-voice-params synth-config rates)))))
+
+(defn clouds-on-event
+  [player {refrain-event-data :data}]
+  (doseq [data* (get-synth-data-vectors player refrain-event-data)]
+    (play-synth data*)))
+
+(comment
+  (do ;; trigger clouds event on bank 0
+    (bardo.live-state/toggle-active-bank! :milo 0 true)
+    (clouds-on-event :milo {:index 0})))
+
 ;; FIXME: simplify workflow, the generation of params inside clouds-refrain2 seems somewhat redundant (as related to :get-param-data, probably merge both into on-play and exctract taht function so that i can be called via dispatch - for debugging purposes-)
 (defn start-clouds
   [{:keys [player]}]
   (clouds-refrain2
    {:id (make-clouds-id player)
     :durs-fn (partial clouds-durs player)
-    :get-param-data (fn [{:keys [index]}]
-                      (let [active-banks  (bardo.live-state/get-group-banks player)
-                            banks? (seq active-banks)
-                            bank (when banks? (rand-nth (into [] active-banks)))]
-
-                        (if-not bank
-                          (timbre/error "No bank selected, can't play cloud")
-                          (merge {:bank bank
-                                  :synth (clouds-synth player bank)
-                                  :buf (clouds-buf player bank)
-                                  :rates (clouds-rates player index bank)
-                                  :amp (clouds-amp player bank)
-                                  :out (clouds-out player)}
-                                 (clouds-pan player bank)
-                                 (clouds-filter player bank)))))
-    :on-play (fn [param-data params]
-               (dispatch {:type :play-synth
-                          :data (merge
-                                 (select-keys param-data [:synth
-                                                          :active-panner
-                                                          :panner-config
-                                                          :active-filter
-                                                          :filter-config])
-                                 {:params params})}))}))
+    :on-event (partial clouds-on-event player)}))
 
 (comment
   (-> @live-state :algo-2.2.9-clouds :milo)
@@ -390,13 +414,10 @@
   (event-handler {:type :play-synth
                   :data {:synth :test
                          :params {:freq (rrange 100 300)}}}))
-(declare coms-active?)
-
 (defn event-handler
   [{:as _event
     :keys [type data]}]
   (case type
-    :halt! (reset! coms-active? false)
     :echo (timbre/info "Echoing:" data)
     :start-clouds (start-clouds data)
     :stop-clouds (stop-clouds data)
@@ -405,5 +426,8 @@
     :start-recording (start-recording data)
     :stop-recording (stop-recording data)
     :delete-bank-bufs (bardo.rec/delete-bank-bufs (:input-k data) (:active-bank data))
-    :play-synth (play-synth data)
+    ;; event for dev purpuses
+    :dev/trigger-clouds-event (do ;; data {:bank int}
+                                (bardo.live-state/toggle-active-bank! :milo (:bank data) true)
+                                (clouds-on-event :milo {:data {:index 0}}))
     (timbre/error "[event-handler] No matching clause for `:type`:" type)))

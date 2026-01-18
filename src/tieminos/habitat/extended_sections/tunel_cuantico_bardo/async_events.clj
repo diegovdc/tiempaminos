@@ -25,9 +25,11 @@
         (a/go-loop
          []
           (let [event (a/<! main)]
-            (try (if-not @debug-events?
-                   (event-handler event)
-                   (timbre/info "Debugging:\n" event))
+            (try (cond
+                   (= :halt! (:type event)) (do (reset! coms-active? false)
+                                                (reset! debug-events? false))
+                   @debug-events? (timbre/info "Debugging:\n" event)
+                   :else (event-handler event))
                  (catch Exception e (timbre/error "Live Controls async error" e "\n" event))))
           (if @coms-active?
             (recur)
@@ -51,9 +53,10 @@
   (dispatch* :main event))
 
 (comment
+  (reset! coms-active? false)
   (reset! debug-events? true)
   (reset! debug-events? false)
   (a/put! (:main @chans) {:hola "mundo"})
   (dispatch {:type :echo :data {:hola "mundo"}})
   (dispatch {:type :halt!})
-  (init-async-coms! tieminos.habitat.extended-sections.tunel-cuantico-bardo.live-controls/event-handler))
+  (init-async-coms! (fn [event] (println event))))

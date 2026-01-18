@@ -344,7 +344,6 @@
       "/Milo/mute-mic-2"    (mute-input :mic-2 (first args))
       "/Milo/rec-durs-radio" (switch-rec-durs [:mic-1 :mic-2] (first args))
       "/Milo/rec-pulse-radio" (switch-rec-pulse [:mic-1 :mic-2] (first args))
-      ;; TODO: << eliminate following
       "/Milo/clouds-active-btn" (do (toggle-clouds :milo press?)
                                     (save-touchosc-synth-param :milo path args))
       "/Milo/independent-sequencer-btn" (do (set-independent-refrain :milo press?)
@@ -357,7 +356,6 @@
                                       (save-touchosc-synth-param :milo path args))
       "/Milo/clouds-sample-lib-size-radio" (do (set-clouds-sample-lib-size :milo (first args))
                                                (save-touchosc-synth-param :milo path args))
-      ;; TODO: end eliminate >>
       "/Milo/selected-synth-radio" (set-selected-bank-synth :milo (first args)) ;; TODO eliminate
       "/Milo/synth-up-btn" (when press? (set-synth-index :milo 1))
       "/Milo/synth-down-btn" (when press? (set-synth-index :milo -1))
@@ -511,8 +509,11 @@
   (add-watch bardo.live-state/live-state ::post-live-state
              (fn [_key _ref _old-value new-value]
                (if print-instead?
-                 (println new-value)
+                 (timbre/info new-value)
                  (throttled-post (dissoc new-value :lorentz))))))
+
+(comment
+  (remove-watch bardo.live-state/live-state ::post-live-state))
 
 (defn- cast-osc-data [data]
   (map (fn [[k v]] [k (map #(cond

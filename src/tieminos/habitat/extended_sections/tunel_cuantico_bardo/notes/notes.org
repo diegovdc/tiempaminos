@@ -3,6 +3,16 @@ Código tomado de las grabaciones de 2.2.9, por lo que en el directorio de reape
 ** Retorno al origen: Regresar a la roca y de ahí al universo
 ** El ojo de visión del gusano cuántico
 
+* V 2.3
+** DONE Simplificar =bardo.live-controls/start-clouds=
+CLOSED: [2026-01-17 Sat 18:29]
+** STRT Agregar =group= en =template-synth=
+*** TODO investigar si hay manera de mejorar la implementación actual
+** TODO documentar =template-synth=
+** TODO Mejorar debuggeo en =template-synth=
+Loggear los params de llamado de las funciones relevantes y registrarlos en un event-log o algo así
+** DONE =random-panaz= lfo width modulation
+CLOSED: [2026-01-17 Sat 18:30]
 * V 2.2.9.10+
 ** DONE [#A] Extender rango de lentitud de la velocidad armónica
 CLOSED: [2025-10-25 Sat 13:47] SCHEDULED: <2025-10-17 Fri>

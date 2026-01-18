@@ -1,5 +1,6 @@
 (ns tieminos.sc-utils.synths.template-synth.v0
   (:require
+   [clojure.set :as set]
    [clojure.string :as str]
    [clojure.walk :as walk]
    [overtone.core :as o]
@@ -58,6 +59,11 @@
                                   (* :ugen/env))))))
 
 (def freq 5432)
+(defn sc-idable?
+  [x]
+  (or (= (type x) overtone.sc.sample.Sample)
+      (= (type x) overtone.sc.buffer.Buffer)))
+
 (do
   (defn modify-params
     "Used when creating the synth's params vector"
@@ -70,6 +76,7 @@
                        (ns-kw? "dyn" k)
                        (ns-kw? "ugen" k)) nil
                    (number? v) [(symbol (name k)) v]
+                   (sc-idable? v) [(symbol (name k)) (:id v)]
                    (sequential? v) (map-indexed (fn [i v*]
                                                   [(symbol (str (name k) i)) v*])
                                                 v))))
@@ -89,6 +96,7 @@
   (and (sequential? coll)
        (every? number? coll)))
 
+;; TODO optimize to not use merge
 (defn modify-params2
   "Used when calling the synth"
   [params]
@@ -97,13 +105,15 @@
        (mapv (fn [[k v]]
                (cond
                  (number? v) {k v}
+                 (sc-idable? v) {k (:id v)}
                  (or (vector? v)
                      (coll-of-numbers? v)) (map-indexed (fn [i v*]
                                                           {(keyword (str (name k) i)) v*})
                                                         v))))
        flatten
        (apply merge)))
-
+(comment
+  (modify-params2 (select-keys merged-params [:buf])))
 #_(defmacro make-synth [params-map synth-body]
     (let [[s-name# params ugen-form]
           (let [body (eval (modify-body params-map synth-body))]
@@ -114,8 +124,7 @@
 (defn analyze-arg
   [k arg]
   (cond
-    (number? arg) [:number]
-    (= overtone.sc.sample.Sample (type arg)) [:number]
+    (or (number? arg) (sc-idable? arg)) [:number]
     (-> arg meta :fragment) [:ugen (resolve-frag arg)]
     (ns-kw? "ugen" k) [:ugen arg]
     (sequential? arg) [:seq (count arg)]
@@ -179,7 +188,7 @@
   (let [collides (ns-interns 'overtone.sc.ugen-collide-list)]
     (walk/postwalk (fn [x]
                      (if (and (symbol? x)
-                              (not (params-map (keyword x))))
+                              (not (contains? params-map (keyword x))))
                        (if-let [res (resolve x)]
                          (cond
                            (number? (var-get res)) (var-get res) ;; constants
@@ -188,6 +197,64 @@
                          x)
                        x))
                    synth-body)))
+(comment
+  (require '[tieminos.sc-utils.synths.v1 :refer [lfo-kr]])
+  lfo-kr
+  (qualify-body #{:out} '((fn [sig] (o/out (map-outs out) (o/sin-osc (lfo-kr 1 0 1)))))))
+(contains? #{:hola} :hola)
+(def PLUG_NS "ugen")
+
+(defn plug
+  [external-params-set body]
+  (qualify-body external-params-set body))
+
+(defn qualify-plug-map
+  [external-params-set plug-map]
+  (let [plug-keys (->> plug-map
+                       keys
+                       (filter #(= PLUG_NS (namespace %))))
+        param-keys (->> plug-map
+                        keys
+                        (remove #(= PLUG_NS (namespace %))))
+        params-set (set/join (set external-params-set)
+                             (set param-keys))]
+    (reduce
+     (fn [pm k]
+       (assoc pm k (qualify-body params-set (plug-map k))))
+     plug-map
+     plug-keys)))
+
+(comment
+  (def plug-map {:out 0
+                 :ugen/out '((fn [sig] (o/out (map-outs out) (o/sin-osc 1))))})
+  (plug #{:out} '((fn [sig] (o/out (map-outs out) (o/sin-osc 1)))))
+  (defn qualify-plug-map
+    [external-params-set plug-map]
+    (let [plug-keys (->> plug-map
+                         keys
+                         (filter #(= PLUG_NS (namespace %))))
+          param-keys (->> plug-map
+                          keys
+                          (remove #(= PLUG_NS (namespace %))))
+          params-set (set/join (set external-params-set)
+                               (set param-keys))]
+      (reduce
+       (fn [pm k]
+         (assoc pm k (qualify-body params-set (plug-map k))))
+       plug-map
+       plug-keys)))
+
+  (qualify-plug-map #{} plug-map)
+
+  (defmacro defplug
+    ([sym plug-map external-params]
+     `(defn ~'sym ~'[params]
+        (assoc ~'params ~@(apply concat (seq (qualify-plug-map #{} plug-map)))))))
+  (macroexpand-1 '(defplug +outs
+                    {:out 0
+                     :ugen/out '((fn [sig] (o/out (map-outs out) (o/sin-osc 1))))}
+                    {})))
+
 (comment
   ;; Here freq shouldn't overwrite the symbol in the qualified body
   (def freq 23456)
@@ -207,10 +274,14 @@
 (declare call-synth define-synth)
 
 (defn get-synth-ns-string
-  [synth-symbol]
-  (str/replace (ns-resolve *ns* synth-symbol)
-               #"#'" ""))
-
+  ([synth-symbol] (get-synth-ns-string *ns* synth-symbol))
+  ([ns synth-symbol]
+   (str/replace (ns-resolve ns synth-symbol)
+                #"#'" "")))
+(comment
+  (with-meta 'hola {:ns "my-ns"})
+  (namespace 'hola))
+#_(get-synth-ns-string synth-symbol)
 (defn add-variation-data!
   [namespaced-synth-string
    synth-body
@@ -243,20 +314,24 @@
 
 ;; NOTE IMPORTANT ths is promising, no macros!
 (defn make-synth-fn
-  [synth-symbol params-map synth-body & {:keys [reset?]}]
+  [synth-symbol params-map synth-body & {:keys [reset? ns]
+                                         :or {ns *ns*}}]
   ;; TODO should analyze args and memoize synths
 
-  (when-not (ns-resolve *ns* synth-symbol)
+  (when-not (ns-resolve ns synth-symbol)
     ;; TODO add getter
-    (define-synth *ns* synth-symbol))
+    (define-synth ns synth-symbol))
 
-  (let [namespaced-synth-string (get-synth-ns-string synth-symbol)
+  (let [namespaced-synth-string (get-synth-ns-string ns synth-symbol)
         _ (when reset? (remove-synth namespaced-synth-string))
         analyzed-args (analyze-ds-args namespaced-synth-string params-map)
         cached-synth (get-in @synths-cache [analyzed-args])]
     (if cached-synth
       cached-synth
-      (let [synth-body* (qualify-body params-map synth-body)
+      (let [params-map* (qualify-plug-map #{} params-map)
+            _ (timbre/debug :make-synth-fn/params-map* params-map*)
+            synth-body* (qualify-body params-map synth-body)
+            _ (timbre/debug :make-synth-fn/synth-body* synth-body*)
             [_s-name params ugen-form] (make-synth-form
                                         synth-symbol
                                         params-map
@@ -276,16 +351,30 @@
         synth))))
 
 (defn get-instance-data
-  [synth-symbol params-map]
-  (let [namespaced-synth-string (get-synth-ns-string synth-symbol)
+  [ns synth-symbol params-map]
+  (def synth-symbol synth-symbol)
+  (timbre/debug :get-instance-data/synth-symbol synth-symbol)
+  (let [namespaced-synth-string (get-synth-ns-string ns synth-symbol)
         {:keys [default-params synth-body]} (get @variations-data namespaced-synth-string)
         merged-params (merge default-params params-map)
         analyzed-args (analyze-ds-args namespaced-synth-string merged-params)
         _ (timbre/debug :get-instance-data/analyzed-args analyzed-args)
         _ (def analyzed-args analyzed-args)
         synth (or (get-in @synths-cache [analyzed-args])
-                  (make-synth-fn synth-symbol merged-params synth-body))]
-    {:synth synth :analyzed-args analyzed-args :merged-params merged-params}))
+                  (make-synth-fn synth-symbol merged-params synth-body {:ns ns}))]
+    {:synth synth
+     :analyzed-args analyzed-args
+     :merged-params merged-params
+     :synth-body synth-body}))
+
+(comment
+  (def buf (o/load-sample "samples/habitat_samples/take-1-gusano-cuantico-2.2.9.2-algo-2-2-9-mic-2-bus-43.wav"))
+  ((:synth (get-instance-data (:ns csp)
+                              (symbol (:synth-symbol csp))
+                              (dissoc (:params-map csp)
+                                      :group)))
+   :buf buf))
+
 (comment
   (-> @variations-data)
   (get @variations-data namespaced-synth-string)
@@ -294,28 +383,60 @@
 #_(get-instance-data 'sini {})
 
 (defn call-synth
-  [synth-symbol params-map]
-  (println "call synth" synth-symbol params-map)
-  (let [{:keys [synth merged-params]} (get-instance-data (symbol synth-symbol) params-map)
-        _ (def merged-params merged-params)
+  [ns synth-symbol params-map]
+  (def csp {:ns ns :synth-symbol synth-symbol :params-map params-map})
+  (timbre/debug "call synth" synth-symbol params-map)
+  (let [group (:group params-map)
+        params-map (dissoc params-map :group)
+        {:keys [synth merged-params]} (get-instance-data ns (symbol synth-symbol) params-map)
         params (modify-params2 merged-params)]
     (timbre/debug "[call-synth] synth" synth)
     (timbre/debug "[call-synth] params" params)
-    (synth params)))
+    (timbre/debug "[call-synth] group" group)
+    (def merged-params merged-params)
+    (def synth synth)
+    (def  group group)
+    (def  params params)
+    (if group
+      (apply synth group (flatten (seq params)))
+      (synth params))))
 
-#_(comment
-
-    (resolve 'sini)
-    (get @variations-data 'sini)
-    (call-synth 'sini {:freq [500]})
-    (sini))
+(comment
+  (-> @variations-data)
+  (-> csp)
+  (:ns csp)
+  (symbol (:synth-symbol csp))
+  (dissoc (:params-map csp) :group)
+  (:synth-body (get-instance-data (:ns csp)
+                                  (symbol (:synth-symbol csp))
+                                  (dissoc (:params-map csp)
+                                          :group)))
+  ((:synth (get-instance-data (:ns csp)
+                              (symbol (:synth-symbol csp))
+                              (dissoc (:params-map csp)
+                                      :group)))
+   :rate 2)
+  (-> merged-params)
+  (-> params)
+  (-> group)
+  (-> synth)
+  (synth params)
+  (apply synth group (flatten (seq (assoc params :rate 2))))
+  (apply synth2  (flatten {:freq 100}))
+  (o/stop)
+  (resolve 'sini)
+  (get @variations-data 'sini)
+  (call-synth 'sini {:freq [500]})
+  (sini))
 
 (defn define-synth
+  "Returns a synth calling funciton"
   [ns synth-symbol]
+  (timbre/debug "defining synth" ns synth-symbol)
   (intern ns synth-symbol
           (fn
-            ([] (call-synth synth-symbol {}))
-            ([params-map] (call-synth synth-symbol params-map)))))
+            ([] (#'call-synth ns synth-symbol {}))
+            ([params-map] (#'call-synth ns synth-symbol params-map)))))
 
 #_(comment
     (ns-unmap  *ns* 'sini)
@@ -345,8 +466,11 @@
   (reset! variations-data {})
   (reset! synths-cache {})
   (-> @variations-data)
+  (-> @variations-data
+      (get "tieminos.habitat.extended-sections.tunel-cuantico-bardo.synths/cristal-liquidizado-2")
+      :synth-body)
   (-> @synths-cache keys)
-  (get-variations "tieminos.sc-utils.synths.template-synth/sinpan")
+  (get-variations "tieminos.habitat.extended-sections.tunel-cuantico-bardo.synths/cristal-liquidizado-2")
   (o/stop)
   (defn map-to-outs-seq
     [outs-seq sig]

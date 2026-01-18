@@ -32,4 +32,4 @@
   (habitat!)
   (inputs-4ch-gtr&mics-1&2!)
   (bardo.synth-management/periodically-clear-currently-playing-synths! (* 60 1000))
-  (bardo.comms/init-async-coms! bardo.live-ctl/event-handler))
+  (bardo.comms/init-async-coms! #'bardo.live-ctl/event-handler))

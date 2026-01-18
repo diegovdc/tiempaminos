@@ -71,6 +71,13 @@
 ;; Banks
 ;;;;;;;;;;;;;;;;;;
 
+(defn toggle-active-bank!
+  [player bank on?]
+  (swap! live-state
+         assoc-in
+         (synth-bank-path player :refrains bank :on?)
+         on?))
+
 (defn- get-banks!
   [pred player]
   (->> player
@@ -292,13 +299,9 @@
 
 (defn toggle-clouds
   [player on?]
-  (swap! live-state
-         assoc-in
-         (synth-bank-path player
-                          :refrains
-                          (get-selected-synth-bank player)
-                          :on?)
-         on?)
+  (toggle-active-bank! player
+                       (get-selected-synth-bank player)
+                       on?)
   (show-active-bank-label player on?)
   (bardo.comms/dispatch {:type (if on? :start-clouds :stop-clouds)
                          :data {:player player}}))
