@@ -7,8 +7,7 @@
    [taoensso.timbre :as timbre]
    [tieminos.attractors.lorentz :as lorentz]
    [tieminos.habitat.extended-sections.harmonies.chords
-    :refer [fib-21 meta-pelog meta-pelog-11 meta-pelog-7 meta-slendro-5
-            meta-slendro1 rate-chord-seq]]
+    :refer [get-harmony rate-chord-seq]]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.clouds
     :refer [clouds-refrain2]]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.gusanos.core
@@ -129,26 +128,6 @@
      (round (lorentz/bound (lorentz index*) :y lowest-note highest-note))
      (round (lorentz/bound (lorentz index*) :z lowest-note highest-note))]))
 
-(defn get-harmonic-data!
-  [player-k bank]
-  (let [data (bardo.live-state/get-player-data player-k)
-        bank-data (get data bank)]
-    (assoc bank-data :harmony (:harmony data))))
-
-(comment
-  (get-harmonic-data! :milo 0))
-
-(defn get-harmony
-  [harmony-k]
-  (case harmony-k
-    :meta-slendro-5 meta-slendro-5
-    :meta-slendro-12 meta-slendro1
-    :fib fib-21
-    :meta-pelog-5 meta-pelog
-    :meta-pelog-7 meta-pelog-7
-    :meta-pelog-11 meta-pelog-11
-    meta-slendro1))
-
 (defn- get-rates-subset
   [rate-indexes rates]
   (keep
@@ -261,7 +240,7 @@
   (let [{:keys [harmony harmonic-speed harmonic-range
                 harmonic-active-voices ;; defines the number of voices to play, lorentz has 3 indexes so indexes can be a `set` of numbers 0 - 2
                 ]
-         :or {harmonic-active-voices #{0 1 2}}} (get-harmonic-data! player bank)
+         :or {harmonic-active-voices #{0 1 2}}} (bardo.live-state/get-harmonic-data! player bank)
         rates (->> (lorentz-chord index
                                   (:lorentz @live-state)
                                   harmonic-speed

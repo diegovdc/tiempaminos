@@ -7,13 +7,14 @@
    [overtone.osc :as osc]
    [taoensso.timbre :as timbre]
    [tieminos.attractors.lorentz :as lorentz]
-   [tieminos.habitat.extended-sections.tunel-cuantico-bardo.config
-    :as bardo.config]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.async-events
     :as bardo.comms]
+   [tieminos.habitat.extended-sections.tunel-cuantico-bardo.config
+    :as bardo.config]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.osc-helpers
     :as bardo.osc-helpers]
    [tieminos.habitat.osc :as habitat-osc]
+   [tieminos.habitat.routing :refer [inputs]]
    [tieminos.math.utils :refer [linexp* linlin]]
    [tieminos.utils :refer [wrap-at]]))
 
@@ -803,3 +804,12 @@
 (defn set-gusano-2nd-voice
   [x]
   (swap! live-state assoc-in [:gusano :second-voice-index] x))
+
+(defn get-harmonic-data!
+  [player-k bank]
+  (let [data (get-player-data player-k)
+        bank-data (get data bank)]
+    (assoc bank-data :harmony (:harmony data))))
+
+(comment
+  (get-harmonic-data! :milo 0))
