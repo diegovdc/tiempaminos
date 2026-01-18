@@ -359,7 +359,8 @@
       "/Milo/selected-synth-radio" (set-selected-bank-synth :milo (first args)) ;; TODO eliminate
       "/Milo/synth-up-btn" (when press? (set-synth-index :milo 1))
       "/Milo/synth-down-btn" (when press? (set-synth-index :milo -1))
-      "/Milo/max-dur-fader" (timbre/warn "TODO Implement")
+      "/Milo/max-dur-fader" (do (bardo.live-state/set-clouds-max-dur% :milo (first args))
+                                (save-touchosc-synth-param :milo path args))
       "/Milo/filter-up-btn" (when press? (set-filter-index :milo 1))
       "/Milo/filter-down-btn" (when press? (set-filter-index :milo -1))
       "/Milo/filter-lpf-fader" (set-filter-param :milo :lpf (first args))
@@ -527,6 +528,7 @@
   [player]
   {:active-filter :lpf,
    :active-panner :random,
+   :max-dur% 1.0,
    :filter-configs {:lpf {:lpf 1.0, :hpf 0.0, :reso 0.0, :q 0.0}},
    :panner-configs {:random {:vel 0.1}},
    :active-synth :crystal,
@@ -563,7 +565,8 @@
                          "/%s/clouds-env-radio" '(0),
                          "/%s/filter-label" ["lpf"],
                          "/%s/filter-reso-fader" [0.0]
-                         "/%s/independent-sequencer-btn" [0]}
+                         "/%s/independent-sequencer-btn" [0]
+                         "/%s/max-dur-fader" [1.0]}
                         (map (fn [[k v]] [(format k player) v]))
                         cast-osc-data
                         (into {})),

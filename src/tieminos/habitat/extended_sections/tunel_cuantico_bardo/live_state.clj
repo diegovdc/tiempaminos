@@ -43,7 +43,7 @@
   [player & keys]
   (get-in @live-state (apply synth-bank-path player keys)))
 
-(comment (get-player-data :milo 0 :sample-lib-size))
+(comment (get-player-data :milo 0))
 
 (defn get-selected-synth-bank
   [player]
@@ -318,12 +318,18 @@
 
 (defn set-clouds-amp
   [player amp]
-  ;; TODO: finish integrating
   (swap! live-state
          assoc-in
          (selected-synth-bank-path player :amp)
          ;; TODO: lower extra vol
          (first (linlin 0 1 -36 36 [amp]))))
+
+(defn set-clouds-max-dur%
+  [player max-dur]
+  (swap! live-state
+         assoc-in
+         (selected-synth-bank-path player :max-dur%)
+         max-dur))
 
 (comment
   (reset-default-state!)
@@ -708,6 +714,13 @@
          (selected-synth-bank-path player :harmonic-active-voices)
          (if on? set/union set/difference)
          #{voice-index}))
+
+(defn get-harmonic-voices
+  [player bank]
+  (get-player-data player bank :harmonic-active-voices))
+
+(comment
+  (get-player-data :milo 0))
 
 (defn set-rev-send
   [{:keys [player clean? value]}]

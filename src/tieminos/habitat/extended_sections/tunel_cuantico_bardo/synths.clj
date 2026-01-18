@@ -33,6 +33,7 @@
 
 (comment
   (def buf (o/load-sample "samples/habitat_samples/take-1-gusano-cuantico-2.2.9.2-algo-2-2-9-mic-2-bus-43.wav"))
+  (-> buf :duration)
   (cristal-liquidizado
    {:buf buf})
 
@@ -303,9 +304,8 @@ lfo-kr
           filter (get-filter data)
           params* (merge params panner #_filter)
           buf (:buf params)
-          _ (def params* (assoc params* :buf buf :dur 10))
           synth* (case synth
-                   :crystal (let [instance (cristal-liquidizado-2 (assoc params* :buf buf :dur 10))]
+                   :crystal (let [instance (cristal-liquidizado-2 params*)]
                               (bardo.synth-management/add-synth! instance (:dur params))
                               instance)
                    :granular (amanecer*guitar-clouds-2 params))]
@@ -327,6 +327,7 @@ lfo-kr
      out 0]
     (o/out out (* amp (o/pan2 (o/sin-osc 200)))))
   (println sini)
+  (def params* (assoc params* :buf buf :dur 10))
   (def test-sini (sini (:group params*) :freq 400))
   (o/kill test-sini)
   (:group params*)

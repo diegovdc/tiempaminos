@@ -9,10 +9,8 @@
    [tieminos.habitat.extended-sections.harmonies.chords
     :refer [fib-21 meta-pelog meta-pelog-11 meta-pelog-7 meta-slendro-5
             meta-slendro1 rate-chord-seq]]
-   [tieminos.habitat.extended-sections.tunel-cuantico-bardo.async-events
-    :refer [dispatch]]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.clouds
-    :refer [clouds-refrain clouds-refrain2]]
+    :refer [clouds-refrain2]]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.gusanos.core
     :as bardo.gusano]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.live-state
@@ -20,17 +18,15 @@
     :refer [live-state]]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.rec
     :as bardo.rec]
-   [tieminos.habitat.extended-sections.tunel-cuantico-bardo.synth-management
-    :as bardo.synth-management]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.synths
-    :refer [cristal-liquidizado play-synth]]
+    :refer [play-synth]]
    [tieminos.habitat.groups :as groups]
    [tieminos.habitat.recording :as rec]
    [tieminos.habitat.routing :refer [inputs main-returns]]
-   [tieminos.habitat.synths.granular :refer [amanecer*guitar-clouds]]
    [tieminos.math.bezier-samples :as bzs]
+   [tieminos.math.utils :refer [linlin]]
    [tieminos.utils :refer [rrange wrap-at]]
-   [time-time.dynacan.players.gen-poly :as gp :refer [on-event]]))
+   [time-time.dynacan.players.gen-poly :as gp]))
 
 ;;;;;;;;;;;;;;
 ;; Recording
@@ -135,7 +131,12 @@
 
 (defn get-harmonic-data!
   [player-k bank]
-  (bardo.live-state/get-player-data player-k bank))
+  (let [data (bardo.live-state/get-player-data player-k)
+        bank-data (get data bank)]
+    (assoc bank-data :harmony (:harmony data))))
+
+(comment
+  (get-harmonic-data! :milo 0))
 
 (defn get-harmony
   [harmony-k]
@@ -176,75 +177,75 @@
     config
     (update config :amp (partial adjust-amp -6))))
 
-(defn start-clouds
-  [{:keys [player-k]}]
-  (clouds-refrain
-   {:id (make-clouds-id player-k)
-    :silence-thresh (o/db->amp -55)
-    :durs-fn (fn [{:keys [index]}]
-               (let [state @live-state
-                     rhythm (-> state :algo-2.2.9-clouds player-k :rhythm)]
-                 (get-dur index
-                          rhythm
-                          (:lorentz state))))
-    :buf-fn (fn [_]
-              (let [lib-size (-> @live-state :algo-2.2.9-clouds player-k :sample-lib-size)
-                    [k buf] (bardo.rec/get-buf
-                             player-k
-                             lib-size
-                             (bardo.live-state/get-active-banks player-k))]
-                #_(println "get buf" k  (into {} buf))
-                buf))
-    :rates-fn (fn [{:keys [index]}]
-                (let [{:keys [harmony harmonic-speed harmonic-range
-                              rate-indexes ;; defines the number of voices to play, lorentz has 3 indexes so indexes can be a `set` of numbers 0 - 2
-                              ]
-                       :or {rate-indexes #{0 1 2}}}
+#_(defn start-clouds
+    [{:keys [player-k]}]
+    (clouds-refrain
+     {:id (make-clouds-id player-k)
+      :silence-thresh (o/db->amp -55)
+      :durs-fn (fn [{:keys [index]}]
+                 (let [state @live-state
+                       rhythm (-> state :algo-2.2.9-clouds player-k :rhythm)]
+                   (get-dur index
+                            rhythm
+                            (:lorentz state))))
+      :buf-fn (fn [_]
+                (let [lib-size (-> @live-state :algo-2.2.9-clouds player-k :sample-lib-size)
+                      [k buf] (bardo.rec/get-buf
+                               player-k
+                               lib-size
+                               (bardo.live-state/get-active-banks player-k))]
+                  #_(println "get buf" k  (into {} buf))
+                  buf))
+      :rates-fn (fn [{:keys [index]}]
+                  (let [{:keys [harmony harmonic-speed harmonic-range
+                                rate-indexes ;; defines the number of voices to play, lorentz has 3 indexes so indexes can be a `set` of numbers 0 - 2
+                                ]
+                         :or {rate-indexes #{0 1 2}}}
                       ;; the bank has been hardcoded
-                      (get-harmonic-data! player-k 0)]
-                  (->> (lorentz-chord index
-                                      (:lorentz @live-state)
-                                      harmonic-speed
-                                      (:low harmonic-range)
-                                      (:high harmonic-range))
-                       (#(rate-chord-seq (get-harmony harmony) [%]))
-                       first
-                       (get-rates-subset rate-indexes))))
-    :amp-fn (fn [_]
+                        (get-harmonic-data! player-k 0)]
+                    (->> (lorentz-chord index
+                                        (:lorentz @live-state)
+                                        harmonic-speed
+                                        (:low harmonic-range)
+                                        (:high harmonic-range))
+                         (#(rate-chord-seq (get-harmony harmony) [%]))
+                         first
+                         (get-rates-subset rate-indexes))))
+      :amp-fn (fn [_]
                ;; the amp is adjusted at the call site of the synthdefs for different reasons:
                ;; 1. Milo's bank 1 is reserved for the bowed bell which is louder than other sounds
                ;; 2. The `granular` has less loudeness than the crystal synth
-              (-> @live-state :algo-2.2.9-clouds player-k :amp (o/db->amp)))
-    :on-play (fn [{:as config :keys [index buf rate]}]
-               (let [state @live-state
-                     out (main-returns (case player-k
-                                         :milo :percussion-processes
-                                         :diego :guitar-processes))
-                     synth-type (get-active-synth-type player-k state)
+                (-> @live-state :algo-2.2.9-clouds player-k :amp (o/db->amp)))
+      :on-play (fn [{:as config :keys [index buf rate]}]
+                 (let [state @live-state
+                       out (main-returns (case player-k
+                                           :milo :percussion-processes
+                                           :diego :guitar-processes))
+                       synth-type (get-active-synth-type player-k state)
                       ;; TODO: update live state with event duration
-                     synth (case synth-type
-                             :crystal (let [dur (* rate (:duration buf))
-                                            synth* (cristal-liquidizado (-> config
-                                                                            mic-1-bank-0-aka-bell-sound-amp-adjustment
-                                                                            (assoc :dur dur :out out)))]
-                                        (bardo.synth-management/add-synth! synth* dur)
-                                        synth*)
-                             :granular (amanecer*guitar-clouds
-                                        (-> config
-                                            granular-synth-amp-adjustment
-                                            (merge (get-envelope
-                                                    index
-                                                    (-> state :algo-2.2.9-clouds player-k :env)
-                                                    (:lorentz state)))
-                                            (assoc :out out)))
-                             (amanecer*guitar-clouds
-                              (-> config
-                                  (merge (get-envelope
-                                          index
-                                          (-> state :algo-2.2.9-clouds player-k :env)
-                                          (:lorentz state)))
-                                  (assoc :out out))))]
-                 (swap! bardo.rec/currently-playing-bufs update (:buf config) conj synth)))}))
+                       synth (case synth-type
+                               :crystal (let [dur (* rate (:duration buf))
+                                              synth* (cristal-liquidizado (-> config
+                                                                              mic-1-bank-0-aka-bell-sound-amp-adjustment
+                                                                              (assoc :dur dur :out out)))]
+                                          (bardo.synth-management/add-synth! synth* dur)
+                                          synth*)
+                               :granular (amanecer*guitar-clouds
+                                          (-> config
+                                              granular-synth-amp-adjustment
+                                              (merge (get-envelope
+                                                      index
+                                                      (-> state :algo-2.2.9-clouds player-k :env)
+                                                      (:lorentz state)))
+                                              (assoc :out out)))
+                               (amanecer*guitar-clouds
+                                (-> config
+                                    (merge (get-envelope
+                                            index
+                                            (-> state :algo-2.2.9-clouds player-k :env)
+                                            (:lorentz state)))
+                                    (assoc :out out))))]
+                   (swap! bardo.rec/currently-playing-bufs update (:buf config) conj synth)))}))
 
 (defn- clouds-buf
   [player bank]
@@ -258,9 +259,9 @@
 (defn- clouds-rates
   [player index bank]
   (let [{:keys [harmony harmonic-speed harmonic-range
-                rate-indexes ;; defines the number of voices to play, lorentz has 3 indexes so indexes can be a `set` of numbers 0 - 2
+                harmonic-active-voices ;; defines the number of voices to play, lorentz has 3 indexes so indexes can be a `set` of numbers 0 - 2
                 ]
-         :or {rate-indexes #{0 1 2}}} (get-harmonic-data! player bank)
+         :or {harmonic-active-voices #{0 1 2}}} (get-harmonic-data! player bank)
         rates (->> (lorentz-chord index
                                   (:lorentz @live-state)
                                   harmonic-speed
@@ -268,13 +269,14 @@
                                   (:high harmonic-range))
                    (#(rate-chord-seq (get-harmony harmony) [%]))
                    first
-                   (get-rates-subset rate-indexes))]
+                   (get-rates-subset harmonic-active-voices))]
     rates))
 
 (defn- clouds-amp
   [player bank]
   ;; the amp is adjusted at the call site of the synthdefs for different reasons:
   ;; 1. Milo's bank 1 is reserved for the bowed bell which is louder than other sounds
+  ;; TODO: remove this adjustment... where is it?
   ;; 2. The `granular` has less loudeness than the crystal synth
 
   (bardo.live-state/get-player-data player bank :amp))
@@ -305,14 +307,27 @@
              rhythm
              (:lorentz state))))
 
+(defn clouds-synth-dur
+  [player bank synth buf rate]
+  (let [{:keys [max-dur%]} (bardo.live-state/get-player-data player bank)
+        dur (:duration buf)]
+    (case synth
+      :crystal (let [max-dur (/ (* dur  max-dur%)
+                                rate)
+                     min-dur (min 0.5 max-dur)]
+                 (first (linlin 0 1 min-dur max-dur [dur])))
+      :granular (* 2 max-dur%))))
+
 (defn make-voice-params
-  [synth-config rates]
+  [{:as synth-config :keys [synth player bank params]}
+   rates]
   (->> rates
-       (mapv (fn [r]
+       (mapv (fn [rate]
                (let [d-level-weights {0.3 1}
                      room-weights {0.2 2, 2 1/2 4 1/2}
                      trig-rate (+ 90 (rand-int 20))
                      params* (assoc (:params synth-config)
+                                    :dur (clouds-synth-dur player bank synth (:buf params) rate)
                                     :d-level (weighted d-level-weights)
                                     :rev-room (weighted room-weights)
                                     :trig-rate 100
@@ -320,7 +335,7 @@
                                     :amp-lfo (rrange 0.1 0.4)
                                     :amp-lfo-min 0.95
                                     :lpf-max (rrange 2000 10000)
-                                    :rate r
+                                    :rate rate
                                     :interp (rand-nth [1 2 4]))]
                  (assoc synth-config :params params*))))))
 
@@ -329,7 +344,8 @@
   (let [active-banks  (bardo.live-state/get-group-banks player)
         banks? (seq active-banks)
         bank (when banks? (rand-nth (into [] active-banks)))
-        buf (when bank (clouds-buf player bank))]
+        buf (when bank (clouds-buf player bank))
+        synth (clouds-synth player bank)]
     (cond
       (not bank) (timbre/error "No bank selected, can't play cloud")
       (not buf) nil
@@ -337,13 +353,15 @@
                   synth-config (merge
                                 (clouds-pan player bank)
                                 (clouds-filter player bank)
-                                {:synth (clouds-synth player bank)
+                                {:synth synth
+                                 :player player
+                                 :bank bank
                                  :params {:group (groups/mid)
                                           :buf buf
                                           :start 0
                                           :end 1
                                           :amp (clouds-amp player bank)
-                                          :out (clouds-out player)}})]
+                                          :out-offset (clouds-out player)}})]
               (make-voice-params synth-config rates)))))
 
 (defn clouds-on-event
