@@ -30,6 +30,7 @@
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.synth-management
     :refer [stop-long-running-synths!]]
    [tieminos.habitat.osc :as habitat-osc]
+   [tieminos.math.utils :refer [linexp*]]
    [tieminos.osc.reaper :as reaper :refer [reaeq-freq->lin]]
    [tieminos.utils
     :refer
@@ -363,9 +364,12 @@
                                 (save-touchosc-synth-param :milo path args))
       "/Milo/filter-up-btn" (when press? (set-filter-index :milo 1))
       "/Milo/filter-down-btn" (when press? (set-filter-index :milo -1))
-      "/Milo/filter-lpf-fader" (set-filter-param :milo :lpf (first args))
-      "/Milo/filter-hpf-fader" (set-filter-param :milo :hpf (first args))
-      "/Milo/filter-reso-fader" (set-filter-param :milo :reso (first args))
+      "/Milo/filter-lpf-fader" (do (set-filter-param :milo :lpf (first args) :val-fn #(linexp* 0 1 40 20000 %))
+                                   (save-touchosc-synth-param :milo path args))
+      "/Milo/filter-hpf-fader" (do (set-filter-param :milo :hpf (first args) :val-fn #(linexp* 0 1 40 20000 %))
+                                   (save-touchosc-synth-param :milo path args))
+      "/Milo/filter-reso-fader" (do (set-filter-param :milo :reso (first args))
+                                    (save-touchosc-synth-param :milo path args))
       "/Milo/filter-q-fader" (set-filter-param :milo :q (first args))
       "/Milo/panner-up-btn" (when press? (set-panner-index :milo 1))
       "/Milo/panner-down-btn" (when press? (set-panner-index :milo -1))

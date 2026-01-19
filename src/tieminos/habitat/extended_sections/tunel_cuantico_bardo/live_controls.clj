@@ -23,7 +23,7 @@
    [tieminos.habitat.recording :as rec]
    [tieminos.habitat.routing :refer [inputs main-returns]]
    [tieminos.math.bezier-samples :as bzs]
-   [tieminos.math.utils :refer [linlin]]
+   [tieminos.math.utils :refer [linexp* linlin]]
    [tieminos.utils :refer [rrange wrap-at]]
    [time-time.dynacan.players.gen-poly :as gp]))
 
@@ -286,17 +286,33 @@
              rhythm
              (:lorentz state))))
 
+(defn- ranged-dur
+  [buf-dur rate max-dur%]
+  (let [max-dur (/ buf-dur rate)
+        min-dur 0.01
+        dur-amp (first (linlin 0 1 0.001 1 [max-dur%]))]
+    (max min-dur (* max-dur dur-amp))))
+#_(ranged-dur 4 1/2 0.1)
+
 (defn clouds-synth-dur
   [player bank synth buf rate]
   (let [{:keys [max-dur%]} (bardo.live-state/get-player-data player bank)
         dur (:duration buf)]
-    (case synth
-      :crystal (let [max-dur (/ (* dur  max-dur%)
-                                rate)
-                     min-dur (min 0.5 max-dur)]
-                 (first (linlin 0 1 min-dur max-dur [dur])))
-      :granular (* 2 max-dur%))))
+    (timbre/spy :info "clouds-synth-dur"
+                (case synth
+                  :crystal (ranged-dur dur rate max-dur%)
+                  :granular (* 2 max-dur%)))))
 
+(defn clouds-start-pos
+  [dur {:as _buf
+        :keys [rate n-samples duration]}]
+  (if-not (< dur duration)
+    0
+    (let [dur-samples (* dur rate)]
+      (rand-int (- n-samples dur-samples)))))
+
+(comment
+  (linexp* 0 1 0.5 200 0.5))
 (defn make-voice-params
   [{:as synth-config :keys [synth player bank params]}
    rates]
@@ -305,8 +321,10 @@
                (let [d-level-weights {0.3 1}
                      room-weights {0.2 2, 2 1/2 4 1/2}
                      trig-rate (+ 90 (rand-int 20))
+                     dur (clouds-synth-dur player bank synth (:buf params) rate)
                      params* (assoc (:params synth-config)
-                                    :dur (clouds-synth-dur player bank synth (:buf params) rate)
+                                    :dur dur
+                                    :start-pos (clouds-start-pos dur rate)
                                     :d-level (weighted d-level-weights)
                                     :rev-room (weighted room-weights)
                                     :trig-rate 100
@@ -343,6 +361,10 @@
                                           :out-offset (clouds-out player)}})]
               (make-voice-params synth-config rates)))))
 
+(comment
+  (bardo.live-state/toggle-active-bank! :milo 0 true)
+  (bardo.live-state/get-player-data :milo)
+  (get-synth-data-vectors :milo {:index 0}))
 (defn clouds-on-event
   [player {refrain-event-data :data}]
   (doseq [data* (get-synth-data-vectors player refrain-event-data)]

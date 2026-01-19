@@ -397,32 +397,56 @@
 (def ^:private filter-data
   ;; TODO: find good defaults and proper param mappings, This is just a place holder.
   ;; NOTE: for params to be proporly updated, they should be present in the the particular filter data map. Otherwise the `:path` will be missing and no update will happen.
-  {:lpf {:lpf {:path "/filter-lpf-fader"
+  {:none {:lpf {:path "/filter-lpf-fader"
+                :visible? false
+                :default-value (float 1)}
+          :hpf {:path "/filter-hpf-fader"
+                :visible? false
+                :default-value (float 0)}
+          :reso {:path "/filter-reso-fader"
+                 :visible? false
+                 :default-value (float 0.5)}
+          :q {:path "/filter-q-fader"
+              :visible? false
+              :default-value (float 0.5)}}
+   :lpf {:lpf {:path "/filter-lpf-fader"
                :default-value (float 1)}
          :hpf {:path "/filter-hpf-fader"
                :visible? false
                :default-value (float 1)}
          :reso {:path "/filter-reso-fader"
-                :default-value (float 0.5)}
+                :default-value (float 0)}
          :q {:path "/filter-q-fader"
+             :visible? false
              :default-value (float 0.5)}}
    :hpf {:lpf {:path "/filter-lpf-fader"
                :visible? false
                :default-value (float 1)}
          :hpf {:path "/filter-hpf-fader"
-               :default-value (float 1)}
+               :default-value (float 0)}
          :reso {:path "/filter-reso-fader"
-                :default-value (float 0.5)}
+                :default-value (float 0)}
          :q {:path "/filter-q-fader"
+             :visible? false
              :default-value (float 0.5)}}
    :moog-ladder {:lpf {:path "/filter-lpf-fader"
                        :default-value (float 1)}
                  :hpf {:path "/filter-hpf-fader"
+                       :visible? false
                        :default-value (float 1)}
                  :reso {:path "/filter-reso-fader"
                         :default-value (float 0.5)}
                  :q {:path "/filter-q-fader"
-                     :default-value (float 0.5)}}})
+                     :visible? false
+                     :default-value (float 0.5)}}
+   :moog-ladhp {:lpf {:path "/filter-lpf-fader"
+                      :default-value (float 1)}
+                :hpf {:path "/filter-hpf-fader"
+                      :default-value (float 0)}
+                :reso {:path "/filter-reso-fader"
+                       :default-value (float 0.5)}
+                :q {:path "/filter-q-fader"
+                    :default-value (float 0.5)}}})
 
 (def ^:private all-filter-params (->> filter-data vals (apply merge) keys))
 
@@ -481,7 +505,9 @@
     (update&save-synth-label player :filter filter-key)))
 
 (defn set-filter-param
-  [player param-k value]
+  [player param-k value
+   & {:keys [val-fn]
+      :or {val-fn identity}}]
   (let [active-filter (:active-filter (get-selected-synth-data player))]
     (swap! live-state
            #(-> %
@@ -490,7 +516,7 @@
                            :filter-configs
                            active-filter
                            param-k)
-                          value)))))
+                          (val-fn value))))))
 
 (comment
   (reset! live-state {})

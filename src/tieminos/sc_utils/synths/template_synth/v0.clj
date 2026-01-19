@@ -204,9 +204,13 @@
 (contains? #{:hola} :hola)
 (def PLUG_NS "ugen")
 
-(defn plug
+(defn plug*
   [external-params-set body]
   (qualify-body external-params-set body))
+
+(defmacro plugm
+  [external-params-set body]
+  `(plug* ~external-params-set ~body))
 
 (defn qualify-plug-map
   [external-params-set plug-map]
@@ -227,33 +231,59 @@
 (comment
   (def plug-map {:out 0
                  :ugen/out '((fn [sig] (o/out (map-outs out) (o/sin-osc 1))))})
-  (plug #{:out} '((fn [sig] (o/out (map-outs out) (o/sin-osc 1)))))
-  (defn qualify-plug-map
-    [external-params-set plug-map]
-    (let [plug-keys (->> plug-map
-                         keys
-                         (filter #(= PLUG_NS (namespace %))))
-          param-keys (->> plug-map
-                          keys
-                          (remove #(= PLUG_NS (namespace %))))
-          params-set (set/join (set external-params-set)
-                               (set param-keys))]
-      (reduce
-       (fn [pm k]
-         (assoc pm k (qualify-body params-set (plug-map k))))
-       plug-map
-       plug-keys)))
+  (plugm #{:out} '((fn [sig] (o/out (map-outs out) (o/sin-osc 1))))))
+(defn qualify-plug-map
+  [external-params-set plug-map]
+  (let [plug-keys (->> plug-map
+                       keys
+                       (filter #(= PLUG_NS (namespace %))))
+        param-keys (->> plug-map
+                        keys
+                        (remove #(= PLUG_NS (namespace %))))
+        params-set (set/union (set external-params-set)
+                              (set param-keys))]
+    (reduce
+     (fn [pm k]
+       (assoc pm k (qualify-body params-set (plug-map k))))
+     plug-map
+     plug-keys)))
 
-  (qualify-plug-map #{} plug-map)
+#_(qualify-plug-map #{} plug-map)
+#_(qualify-plug-map #{:outs} plug-map)
 
-  (defmacro defplug
-    ([sym plug-map external-params]
-     `(defn ~'sym ~'[params]
-        (assoc ~'params ~@(apply concat (seq (qualify-plug-map #{} plug-map)))))))
-  (macroexpand-1 '(defplug +outs
-                    {:out 0
-                     :ugen/out '((fn [sig] (o/out (map-outs out) (o/sin-osc 1))))}
-                    {})))
+(defn- plug-map->arg-opts
+  [plug-map]
+  (let [args (remove #(= PLUG_NS (namespace (first %))) plug-map)]
+    {:keys (vec (map (comp symbol first) args))
+     :or (into {} (map (juxt (comp symbol first) second) args))}))
+#_(plug-map->arg-opts plug-map)
+
+(defn- plug-map->assoc-args
+  [external-params plug-map]
+  (let [qualified-plug-map (qualify-plug-map external-params plug-map)]
+    (mapcat (fn [[k v]]
+              [k (if (not= PLUG_NS (namespace k))
+                   (symbol k)
+                   v)])
+
+            qualified-plug-map)))
+#_(plug-map->assoc-args #{} plug-map)
+#_(qualify-plug-map  #{:outs} plug-map)
+(defmacro defplug
+  ([sym plug-map] `(defplug ~sym #{} ~plug-map))
+  ([sym external-params plug-map]
+   `(defn ~sym [~'params
+                & ~(plug-map->arg-opts plug-map)]
+      (assoc ~'params ~@(plug-map->assoc-args external-params plug-map)))))
+
+(comment
+
+  (macroexpand-1
+   (macroexpand-1
+    '(defplug +outs
+       {:out 0
+        :ugen/out '((fn [sig] (o/out (map-outs out) (o/sin-osc 1))))}
+       #{:outs}))))
 
 (comment
   ;; Here freq shouldn't overwrite the symbol in the qualified body
@@ -385,7 +415,7 @@
 (defn call-synth
   [ns synth-symbol params-map]
   (def csp {:ns ns :synth-symbol synth-symbol :params-map params-map})
-  (timbre/debug "call synth" synth-symbol params-map)
+  (timbre/info "call synth" synth-symbol)
   (let [group (:group params-map)
         params-map (dissoc params-map :group)
         {:keys [synth merged-params]} (get-instance-data ns (symbol synth-symbol) params-map)
@@ -432,7 +462,7 @@
 (defn define-synth
   "Returns a synth calling funciton"
   [ns synth-symbol]
-  (timbre/debug "defining synth" ns synth-symbol)
+  (timbre/info "defining synth" ns synth-symbol)
   (intern ns synth-symbol
           (fn
             ([] (#'call-synth ns synth-symbol {}))

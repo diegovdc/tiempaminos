@@ -1,12 +1,14 @@
 (ns tieminos.habitat.extended-sections.tunel-cuantico-bardo.synths
   (:require
+   [clojure.core.async :as a]
    [overtone.core :as o]
    [overtone.sc.ugen-collide-list :as oc]
    [taoensso.timbre :as timbre]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.rec :as bardo.rec]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.synth-management :as bardo.synth-management]
    [tieminos.overtone-extensions :as oe]
-   [tieminos.sc-utils.synths.template-synth.v0 :refer [make-synth-fn plug]]
+   [tieminos.sc-utils.synths.template-synth.v0 :refer [defplug make-synth-fn
+                                                       plug*]]
    [tieminos.sc-utils.synths.v1 :refer [lfo-kr]]
    [tieminos.utils :refer [rrange]]))
 
@@ -58,10 +60,10 @@
   (sini-o))
 
 (def random-panaz-plug
-  (plug #{:outs :pan-vel :pan-width}
-        '((fn [sig] (o/pan-az:ar (count outs) sig
-                                 (lfo-kr pan-vel -1 1) ;; LFNoise1
-                                 :width pan-width)))))
+  (plug* #{:outs :pan-vel :pan-width}
+         '((fn [sig] (o/pan-az:ar (count outs) sig
+                                  (lfo-kr pan-vel -1 1) ;; LFNoise1
+                                  :width pan-width)))))
 (defn random-panaz
   [& {:keys [vel width]
       :or {vel 0.5, width 1.4}}]
@@ -69,44 +71,110 @@
    :pan-width width ;; TODO: control lfo width
    :ugen/pan random-panaz-plug})
 
+(defplug random-panaz
+  #{:outs}
+  {:pan-vel 0.5
+   :pan-width 1.4 ;; TODO: control lfo width
+   :ugen/pan '((fn [sig] (o/pan-az:ar (count outs) sig
+                                      (lfo-kr pan-vel -1 1) ;; LFNoise1
+                                      :width pan-width)))})
+
+(macroexpand-1
+ '(defplug random-panaz
+    #{:outs}
+    {:pan-vel 0.5
+     :pan-width 1.4 ;; TODO: control lfo width
+     :ugen/pan '((fn [sig] (o/pan-az:ar (count outs) sig
+                                        (lfo-kr pan-vel -1 1) ;; LFNoise1
+                                        :width pan-width)))}))
+
 lfo-kr
-(defn lissajous-pan4
-  [& {:keys [vel radius ratio phase]
-      :or {vel 1
-           radius 1
-           ratio 1
-           phase Math/PI}}]
-  {:liss-freq vel
-   :liss-radius radius
-   :liss-ratio ratio
-   :liss-phase phase
+#_(defn lissajous-pan4
+    [& {:keys [vel radius ratio phase]
+        :or {vel 1
+             radius 1
+             ratio 1
+             phase Math/PI}}]
+    {:liss-freq vel
+     :liss-radius radius
+     :liss-ratio ratio
+     :liss-phase phase
+     :ugen/pan (plug* #{:liss-freq :liss-radius :liss-ratio :liss-phase}
+                      '((fn [sig]
+                          (o/pan4 sig
+                                  (* liss-radius (o/sin-osc:kr liss-freq 0))
+                                  (* liss-radius (o/sin-osc:kr (* liss-freq liss-ratio) liss-phase))))))})
+(defplug lissajous-pan4
+  {:liss-freq 1
+   :liss-radius 1
+   :liss-ratio 1
+   :liss-phase Math/PI
    :ugen/pan '((fn [sig]
                  (o/pan4 sig
                          (* liss-radius (o/sin-osc:kr liss-freq 0))
                          (* liss-radius (o/sin-osc:kr (* liss-freq liss-ratio) liss-phase)))))})
-(defn manual-pan4
-  [& {:keys [x y]
-      :or {x 0, y 0}}]
-  {:pan-x x
-   :pan-y y
+(defplug manual-pan4
+  {:pan-x 0
+   :pan-y 0
    :ugen/pan '((fn [sig] (o/pan4 sig pan-x pan-y)))})
 
-(defn directional-panaz
-  [& {:keys [levels width time-scale]
-      :or {levels [0 1]
-           width 1.3}}]
-  {:pan-env-levels levels
-   :pan-env-time-scale time-scale
-   :pan-width width
-   :ugen/pan '((fn [sig]
-                 (o/pan-az (count outs)
-                           sig
-                           (o/env-gen (o/envelope pan-env-levels
-                                                  (let [env-parts (dec (count pan-env-levels))]
-                                                    (repeat env-parts (/ 1 env-parts))))
-                                      :time-scale pan-env-time-scale)
-                           :width pan-width
-                           :orientation 0)))})
+#_(defn directional-panaz
+    [& {:keys [levels width time-scale]
+        :or {levels [0 1]
+             width 1.3}}]
+    {:pan-env-levels levels
+     :pan-env-time-scale time-scale
+     :pan-width width
+     :ugen/pan (plug* #{:pan-env-levels :pan-env-time-scale :pan-width}
+                      '((fn [sig]
+                          (o/pan-az (count outs)
+                                    sig
+                                    (o/env-gen (o/envelope pan-env-levels
+                                                           (let [env-parts (dec (count pan-env-levels))]
+                                                             (repeat env-parts (/ 1 env-parts))))
+                                               :time-scale pan-env-time-scale)
+                                    :width pan-width
+                                    :orientation 0))))})
+(defplug directional-panaz
+  #{:outs}
+  {:pan-env-levels [0 1]
+   :pan-env-time-scale 1
+   :pan-width 1.3
+   :ugen/pan
+   '((fn [sig]
+       (o/pan-az (count outs)
+                 sig
+                 (o/env-gen (o/envelope pan-env-levels
+                                        (let [env-parts (dec (count pan-env-levels))]
+                                          (repeat env-parts (/ 1 env-parts))))
+                            :time-scale pan-env-time-scale)
+                 :width pan-width
+                 :orientation 0)))})
+
+(defplug lpf
+  {:lpf 20000
+   :reso 0.1
+   :ugen/filter '((fn [sig] (o/rlpf sig (o/clip lpf 30 20000) reso)))})
+
+(defplug hpf
+  {:hpf 30
+   :reso 0.1
+   :ugen/filter '((fn [sig] (o/rhpf sig (o/clip hpf 30 20000) reso)))})
+
+(defplug moog-ladder
+  {:lpf 20000
+   :reso 0.1
+
+   :ugen/filter '((fn [sig] (* 4 (o/moog-ladder sig lpf reso))))})
+
+(defplug moog-ladhp
+  {:lpf 20000
+   :hpf 40
+   :reso 0.5
+   :q 0.5
+   :ugen/filter '((fn [sig] (-> sig
+                                (o/b-moog hpf q 1)
+                                (o/moog-ladder lpf reso))))})
 
 (defn map-outs
   "Given a sequence of outs, map a signal array to each out."
@@ -124,8 +192,8 @@ lfo-kr
   [params]
   (assoc params
          :out-offset 0
-         :ugen/outs (plug [:out-offset :outs]
-                          '((fn [sig] (map-outs out-offset outs sig))))
+         :ugen/outs (plug* [:out-offset :outs]
+                           '((fn [sig] (map-outs out-offset outs sig))))
          :outs [0 1 2 3]))
 #_(+outs {})
 (do
@@ -138,16 +206,17 @@ lfo-kr
         :amp 0.5
         :pan 0
         :dur 1
-        :ugen/env (plug #{:levels :env-durs :dur}
-                        '(o/env-gen (o/envelope levels env-durs)
-                                    :time-scale dur
-                                    :action o/FREE))
+        :ugen/env (plug* #{:levels :env-durs :dur}
+                         '(o/env-gen (o/envelope levels env-durs)
+                                     :time-scale dur
+                                     :action o/FREE))
         :levels [0 1 1 0]
         :env-durs [0.1 0.6 0.4]}
        +outs1
-       (merge (random-panaz)))
+       (random-panaz))
 
    '(-> (o/play-buf 1 buf rate :start-pos buf-pos)
+        :ugen/filter
         (* amp :ugen/env)
         :ugen/pan ;; FIXME investigate break
         :ugen/outs)
@@ -186,7 +255,7 @@ lfo-kr
       :interp 1
       :a-level 1}
      +outs1
-     (merge (random-panaz)))
+     (random-panaz))
  '(o/out out
          (-> (o/grain-buf
               :num-channels 1
@@ -277,49 +346,74 @@ lfo-kr
                  (o/pan2)
                  (* amp (o/env-gen (o/env-perc) :action o/FREE)))))
 
-(defn- get-panner
-  [{:keys [active-panner panner-config]}]
-  (let [{:keys [vel xy radius vel direction pos out]} panner-config]
+(defn- add-panner
+  [params {:keys [active-panner panner-config]}]
+  (let [{:keys [vel x y xy radius vel direction pos range]} panner-config]
+    (timbre/spy :info :panner-config panner-config)
     (case active-panner
-      :random (random-panaz {:vel vel :out-offset out})
-      :manual (manual-pan4 {:x (first xy) :y (second xy) :out-offset out})
-      (timbre/warn "No panner selected, will use default."))))
+      :random (random-panaz params {:pan-vel vel})
+      :manual (manual-pan4 params {:pan-x (-> (first xy) (* 2) (+ -1))
+                                   :pan-y (-> (second xy) (* 2) (+ -1))})
+      :lissajous (do
+                   (timbre/warn "TODO: lissajous-pan4 still needs work")
+                   (lissajous-pan4 params
+                                   {:liss-freq vel
+                                    :liss-radius radius
+                                    :liss-ratio (max 0.1 (/ (* 11 x)
+                                                            (* 11 y)))
+                                    :liss-phase Math/PI}))
+      :arrows (do
+                (timbre/warn "TODO: directional-panaz (arrows) panner still needs work")
+                (directional-panaz params (timbre/spy :info "ARROWS" {:panner-env-time-scale (* (- 1 vel) (:dur params))
+                                                                      :panner-width range})))
+      (do (timbre/warn (format "No panner %s selected, will use default."
+                               active-panner))
+          params))))
 
-(defn- get-filter
-  [{:keys [active-filter filter-config]}]
-  (let [{:keys [lpf hpf reso q]} filter-config]
-    (timbre/warn "TODO: implement filters")
+(defn- add-filter
+  [params {:keys [active-filter filter-config]}]
+  (let [{:keys [_lpf _hpf _reso _q]} filter-config]
     (case active-filter
-      :lpf :TODO/lpf
-      :moog-ladder :TODO/moog-ladder
-      (timbre/warn "No filter selected, will use default."))))
+      ;; :lpf :TODO/lpf
+      :lpf (lpf params (timbre/spy :info "lpf" filter-config))
+      :hpf (hpf params (timbre/spy :info "hpf" filter-config))
+      :moog-ladder (moog-ladder params (timbre/spy :info "moog-ladder" filter-config))
+      :moog-ladhp (moog-ladhp params (timbre/spy :info "moog-ladhp" filter-config))
+      (do (timbre/warn "No filter selecte")
+          params))))
 
 (defn play-synth
   "Plays a synth. The `:synth` key should be a keyword."
   [{:as data
     :keys [synth params]}]
+  #_(println "===============")
+  (a/go
+    (try
+      (let [;; filter (get-filter data)
+            params* (-> params
+                        (add-panner data)
+                        (add-filter data))
+            _ (def params* params*)
+            buf (:buf params)
+            synth* (case synth
+                     :crystal (let [instance #_(cristal-liquidizado (assoc params :out (:out-offset params)))
+                                    (cristal-liquidizado-2 params*)]
+                                (bardo.synth-management/add-synth! instance (:dur params))
+                                instance)
+                     :granular (amanecer*guitar-clouds-2 params))]
+        #_(timbre/info (assoc params* :buf buf :dur 10))
+        (timbre/debug "[play-synth]\n" data)
+        (timbre/debug "[play-synth]\n" (keys data))
+        #_(timbre/debug "[play-synth] panner" panner)
+        (timbre/debug "[play-synth] filter" filter)
 
-  (try
-    (let [panner (get-panner data)
-          filter (get-filter data)
-          params* (merge params panner #_filter)
-          buf (:buf params)
-          synth* (case synth
-                   :crystal (let [instance (cristal-liquidizado-2 params*)]
-                              (bardo.synth-management/add-synth! instance (:dur params))
-                              instance)
-                   :granular (amanecer*guitar-clouds-2 params))]
-      #_(timbre/info (assoc params* :buf buf :dur 10))
-      (timbre/debug "[play-synth]\n" data)
-      (timbre/debug "[play-synth]\n" (keys data))
-      (timbre/debug "[play-synth] panner" panner)
-      (timbre/debug "[play-synth] filter" filter)
-
-      (when buf
-        (swap! bardo.rec/currently-playing-bufs update buf conj synth*)))
-    (catch Exception e (timbre/error e))))
+        (when buf
+          (swap! bardo.rec/currently-playing-bufs update buf conj synth*)))
+      (catch Exception e (timbre/error e)))))
 
 (comment
+  (require '[tieminos.habitat.extended-sections.tunel-cuantico-bardo.live-state :as bardo.live-state])
+  (-> @bardo.live-state/live-state)
   (-> params*)
   (o/defsynth sini
     [freq 200
@@ -327,12 +421,21 @@ lfo-kr
      out 0]
     (o/out out (* amp (o/pan2 (o/sin-osc 200)))))
   (println sini)
-  (def params* (assoc params* :buf buf :dur 10))
+  #_(def params* (assoc params* :buf buf :dur 10))
+
+  (oe/defsynth sini
+    [buf 0
+     amp 0.5
+     out 0]
+    (o/out out (* amp (o/pan2 (o/play-buf 1 buf)))))
+
+  (def test-sini (sini :buf (:buf params*)))
+  (o/kill test-sini)
   (def test-sini (sini (:group params*) :freq 400))
   (o/kill test-sini)
   (:group params*)
   (keys params*)
-  (cristal-liquidizado-2 {:buf buf :dur 10 :rate 1/8})
+  (cristal-liquidizado-2 {:buf (:buf params*)})
   (cristal-liquidizado-2 (-> params*
 
                              (dissoc
