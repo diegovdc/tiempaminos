@@ -298,24 +298,61 @@
                                    (inc (get-selected-synth-bank player)))
                                   (str show?)))
 
+(defn independent-refrain?
+  [player bank]
+  (contains? (get-independent-banks player) bank))
+
 (defn toggle-clouds
   [player on?]
-  (toggle-active-bank! player
-                       (get-selected-synth-bank player)
-                       on?)
-  (show-active-bank-label player on?)
-  (bardo.comms/dispatch {:type (if on? :start-clouds :stop-clouds)
-                         :data {:player player}}))
+  (let [bank (get-selected-synth-bank player)]
+    (toggle-active-bank! player bank on?)
+    (show-active-bank-label player on?)
+    (bardo.comms/dispatch {:type (if on? :start-clouds :stop-clouds)
+                           :data {:player player
+                                  :independent? (independent-refrain? player bank)
+                                  :bank (get-selected-synth-bank player)}})))
+
+(defn get-refrain-data [player bank]
+  (get-player-data player :refrains bank))
+
+(defn refrain-on? [player bank]
+  (get-player-data player :refrains bank :on?))
+
+(defn other-refains-on? [player excluded-bank]
+  (seq (set/difference (get-group-banks player)
+                       #{excluded-bank})))
 
 (defn set-independent-refrain
-  [player on?]
-  (swap! live-state
-         assoc-in
-         (synth-bank-path player
-                          :refrains
-                          (get-selected-synth-bank player)
-                          :independent?)
-         on?))
+  [player independent?]
+  (let [bank (get-selected-synth-bank player)
+        refrain-on? (refrain-on? player 0)
+        other-refains-on?* (other-refains-on? player bank)]
+    (swap! live-state
+           assoc-in
+           (synth-bank-path player :refrains bank :independent?)
+           independent?)
+    (cond
+      ;; stop independent refrain if playing
+      (and (not independent?) refrain-on?)
+      (do (bardo.comms/dispatch {:type :stop-clouds
+                                 :data {:player player
+                                        :independent? true
+                                        :bank (get-selected-synth-bank player)}})
+          (when-not other-refains-on?*
+            (bardo.comms/dispatch {:type :start-clouds
+                                   :data {:player player
+                                          :independent? false}})))
+      (and independent? refrain-on?)
+      (do
+        (bardo.comms/dispatch {:type :start-clouds
+                               :data {:player player
+                                      :independent? true
+                                      :bank (get-selected-synth-bank player)}})
+        (when-not other-refains-on?*
+          (bardo.comms/dispatch {:type :stop-clouds
+                                 :data {:player player
+                                        :independent? false}})))
+      :else nil)))
 
 (defn set-clouds-amp
   [player amp]
@@ -446,7 +483,25 @@
                 :reso {:path "/filter-reso-fader"
                        :default-value (float 0.5)}
                 :q {:path "/filter-q-fader"
-                    :default-value (float 0.5)}}})
+                    :default-value (float 0.5)}}
+   :moog-hplad {:lpf {:path "/filter-lpf-fader"
+                      :default-value (float 1)}
+                :hpf {:path "/filter-hpf-fader"
+                      :default-value (float 0)}
+                :reso {:path "/filter-reso-fader"
+                       :default-value (float 0.5)}
+                :q {:path "/filter-q-fader"
+                    :default-value (float 0.5)}}
+   :moog-bp {:lpf {:path "/filter-lpf-fader"
+                   :default-value (float 0.4)}
+             :hpf {:path "/filter-hpf-fader"
+                   :visible? false
+                   :default-value (float 1)}
+             :reso {:path "/filter-reso-fader"
+                    :visible? false
+                    :default-value (float 0.5)}
+             :q {:path "/filter-q-fader"
+                 :default-value (float 0.2)}}})
 
 (def ^:private all-filter-params (->> filter-data vals (apply merge) keys))
 

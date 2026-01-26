@@ -18,4 +18,5 @@
 ;;;;;;;;;;;;;;;;;;
 
 (comment
-  (bardo.live-state/get-player-data :milo 0))
+  (bardo.live-state/get-player-data :milo 0)
+  (apply dissoc (bardo.live-state/get-player-data :milo) (range 8)))

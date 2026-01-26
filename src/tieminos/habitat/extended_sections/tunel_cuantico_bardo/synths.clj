@@ -6,6 +6,8 @@
    [taoensso.timbre :as timbre]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.rec :as bardo.rec]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.synth-management :as bardo.synth-management]
+   [tieminos.math.bezier :as bz]
+   [tieminos.math.utils :refer [linlin]]
    [tieminos.overtone-extensions :as oe]
    [tieminos.sc-utils.synths.template-synth.v0 :refer [defplug make-synth-fn
                                                        plug*]]
@@ -139,6 +141,7 @@ lfo-kr
   #{:outs}
   {:pan-env-levels [0 1]
    :pan-env-time-scale 1
+   :pan-orientation 0
    :pan-width 1.3
    :ugen/pan
    '((fn [sig]
@@ -149,7 +152,7 @@ lfo-kr
                                           (repeat env-parts (/ 1 env-parts))))
                             :time-scale pan-env-time-scale)
                  :width pan-width
-                 :orientation 0)))})
+                 :orientation pan-orientation)))})
 
 (defplug lpf
   {:lpf 20000
@@ -164,8 +167,7 @@ lfo-kr
 (defplug moog-ladder
   {:lpf 20000
    :reso 0.1
-
-   :ugen/filter '((fn [sig] (* 4 (o/moog-ladder sig lpf reso))))})
+   :ugen/filter '((fn [sig] (o/moog-ladder sig lpf reso)))})
 
 (defplug moog-ladhp
   {:lpf 20000
@@ -173,8 +175,20 @@ lfo-kr
    :reso 0.5
    :q 0.5
    :ugen/filter '((fn [sig] (-> sig
-                                (o/b-moog hpf q 1)
-                                (o/moog-ladder lpf reso))))})
+                                (o/moog-ladder lpf reso)
+                                (o/b-moog hpf q 1))))})
+(defplug moog-hplad
+  {:lpf 20000
+   :hpf 40
+   :reso 0.5
+   :q 0.5
+   :ugen/filter '((fn [sig] (-> sig
+                                (o/moog-ladder lpf reso)
+                                (o/b-moog hpf q 1))))})
+(defplug moog-bp
+  {:lpf 400
+   :q 0.5
+   :ugen/filter '((fn [sig] (o/b-moog sig lpf q 2)))})
 
 (defn map-outs
   "Given a sequence of outs, map a signal array to each out."
@@ -242,10 +256,8 @@ lfo-kr
       :amp-lfo 0.1
       :start 0.1
       :end 0.3
-      :a 0.1
-      :d 1
-      :d-level 0.3
-      :r 3
+      :amp-env-levels [0 1 0.3 0]
+      :amp-env-durations [0.1 1 3]
       :out 0
       :lpf-min 100
       :lpf-max 2000
@@ -263,18 +275,20 @@ lfo-kr
               :dur grain-dur
               :sndbuf buf
               :rate rate
-              :pos  (o/line start end (+ a d r))
+              :pos  (o/line start end (apply + amp-env-durations))
               :interp interp
               :pan 0)
-             (o/lpf (lfo-kr 0.1 lpf-min lpf-max))
+             :ugen/filter
              :ugen/pan
              (o/free-verb rev-mix rev-room)
              (* amp
                 #_(lfo amp-lfo amp-lfo-min 1)
-                (o/env-gen (o/envelope [0 a-level d-level 0] [a d r]
+                (o/env-gen (o/envelope amp-env-levels
+                                       amp-env-durations
                                        [-1 -5])
                            :action o/FREE))
-             :ugen/outs)))
+             :ugen/outs))
+ {:reset? true})
 
 (comment
   (require '[tieminos.math.bezier :refer [plot curve]]
@@ -349,7 +363,7 @@ lfo-kr
 (defn- add-panner
   [params {:keys [active-panner panner-config]}]
   (let [{:keys [vel x y xy radius vel direction pos range]} panner-config]
-    (timbre/spy :info :panner-config panner-config)
+    (timbre/spy :info :panner-config [panner-config params])
     (case active-panner
       :random (random-panaz params {:pan-vel vel})
       :manual (manual-pan4 params {:pan-x (-> (first xy) (* 2) (+ -1))
@@ -364,8 +378,22 @@ lfo-kr
                                     :liss-phase Math/PI}))
       :arrows (do
                 (timbre/warn "TODO: directional-panaz (arrows) panner still needs work")
-                (directional-panaz params (timbre/spy :info "ARROWS" {:panner-env-time-scale (* (- 1 vel) (:dur params))
-                                                                      :panner-width range})))
+                (directional-panaz params
+                                   (timbre/spy
+                                    :info "ARROWS"
+                                    {:panner-env-time-scale vel
+                                     :pan-env-levels (let [curve* (bz/curve 8 [0 (rrange -3 3)
+                                                                               (rrange -3 3)
+                                                                               (rrange -3 3)
+                                                                               2 4 2 4])]
+                                                       (linlin (apply min curve*)
+                                                               (apply max curve*)
+                                                               0
+                                                                ;; End in the last channel of the `outs` array. This doesn't correspond to the PanAZ documentation (for pos) but it seems to work
+                                                               (* 2 (/ (dec 4) 4))
+                                                               curve*))
+                                     :pan-orientation (* 2 pos)
+                                     :panner-width range})))
       (do (timbre/warn (format "No panner %s selected, will use default."
                                active-panner))
           params))))
@@ -379,6 +407,8 @@ lfo-kr
       :hpf (hpf params (timbre/spy :info "hpf" filter-config))
       :moog-ladder (moog-ladder params (timbre/spy :info "moog-ladder" filter-config))
       :moog-ladhp (moog-ladhp params (timbre/spy :info "moog-ladhp" filter-config))
+      :moog-hplad (moog-hplad params (timbre/spy :info "moog-hplad" filter-config))
+      :moog-bp (moog-bp params (timbre/spy :info "moog-bp" filter-config))
       (do (timbre/warn "No filter selecte")
           params))))
 
@@ -400,7 +430,7 @@ lfo-kr
                                     (cristal-liquidizado-2 params*)]
                                 (bardo.synth-management/add-synth! instance (:dur params))
                                 instance)
-                     :granular (amanecer*guitar-clouds-2 params))]
+                     :granular (amanecer*guitar-clouds-2 params*))]
         #_(timbre/info (assoc params* :buf buf :dur 10))
         (timbre/debug "[play-synth]\n" data)
         (timbre/debug "[play-synth]\n" (keys data))

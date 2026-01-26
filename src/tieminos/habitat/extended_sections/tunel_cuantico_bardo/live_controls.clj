@@ -81,8 +81,9 @@
 ;; Clouds
 ;;;;;;;;;;;;;;;;;;
 
-(defn- make-clouds-id [player-k]
-  (keyword "bardo.clouds" (name player-k)))
+(defn- make-clouds-id
+  ([player-k bank] (keyword "bardo.clouds" (str (name player-k) bank)))
+  ([player-k] (keyword "bardo.clouds" (name player-k))))
 
 (def rit (bzs/f 20 0.5 10))
 (def accel (bzs/s 20 0.5 10))
@@ -101,25 +102,25 @@
 
 (defn get-lorentz-envelope
   [index lorentz min* max*]
-  {:a (lorentz/bound (lorentz (* 50 index)) :x min* max*)
-   :d (lorentz/bound (lorentz (* 50 index)) :y min* max*)
-   :r (lorentz/bound (lorentz (* 50 index)) :z min* max*)})
+  [#_:a (lorentz/bound (lorentz (* 50 index)) :x min* max*)
+   #_:d (lorentz/bound (lorentz (* 50 index)) :y min* max*)
+   #_:r (lorentz/bound (lorentz (* 50 index)) :z min* max*)])
 
 (defn get-envelope [index env-k lorentz]
   (case env-k
     :lor-1_4 (get-lorentz-envelope index lorentz 1 4)
     :lor-0.1_2 (get-lorentz-envelope index lorentz 0.1 2)
-    :a-0.1_0.4*d-2*r-3 {:a (rrange 0.1 0.4) :d 2 :r 3}
-    :weights-largos {:a (weighted {10 1
-                                   15 0.3})
-                     :d (weighted {40 1
-                                   30 0.3})
-                     :r (weighted {10 1
-                                   20 0.3})}
+    :a-0.1_0.4*d-2*r-3 [#_:a (rrange 0.1 0.4) #_:d 2 #_:r 3]
+    :weights-largos [#_:a (weighted {10 1
+                                     15 0.3})
+                     #_:d (weighted {40 1
+                                     30 0.3})
+                     #_:r (weighted {10 1
+                                     20 0.3})]
     (do
       (timbre/error (ex-info "Unknown envelope key, using default"
                              {:env-k env-k}))
-      {:a 3 :d 3 :r 2})))
+      [3 3 2])))
 
 (defn lorentz-chord
   [index lorentz lor-speed lowest-note highest-note]
@@ -233,6 +234,8 @@
                   player
                   lib-size
                   #{bank})]
+    (when-not buf
+      (timbre/warn "No buffer for bank" bank))
     buf))
 
 (defn- clouds-rates
@@ -258,7 +261,7 @@
   ;; TODO: remove this adjustment... where is it?
   ;; 2. The `granular` has less loudeness than the crystal synth
 
-  (bardo.live-state/get-player-data player bank :amp))
+  (o/db->amp (bardo.live-state/get-player-data player bank :amp)))
 
 (defn- clouds-out [player]
   (main-returns (case player
@@ -286,12 +289,20 @@
              rhythm
              (:lorentz state))))
 
-(defn- ranged-dur
+(defn- ranged-dur%
   [buf-dur rate max-dur%]
   (let [max-dur (/ buf-dur rate)
         min-dur 0.01
         dur-amp (first (linlin 0 1 0.001 1 [max-dur%]))]
     (max min-dur (* max-dur dur-amp))))
+
+(defn- ranged-dur-abs
+  [buf-dur rate max-dur%]
+  (let [buf-dur* (/ buf-dur rate)
+        max-dur-abs (if (> max-dur% 0.95)
+                      buf-dur*
+                      (first (linlin 0 1 0.01 20 [max-dur%])))]
+    (min buf-dur* max-dur-abs)))
 #_(ranged-dur 4 1/2 0.1)
 
 (defn clouds-synth-dur
@@ -300,45 +311,59 @@
         dur (:duration buf)]
     (timbre/spy :info "clouds-synth-dur"
                 (case synth
-                  :crystal (ranged-dur dur rate max-dur%)
+                  :crystal (ranged-dur-abs dur rate max-dur%)
                   :granular (* 2 max-dur%)))))
 
 (defn clouds-start-pos
   [dur {:as _buf
         :keys [rate n-samples duration]}]
-  (if-not (< dur duration)
-    0
-    (let [dur-samples (* dur rate)]
-      (rand-int (- n-samples dur-samples)))))
 
-(comment
-  (linexp* 0 1 0.5 200 0.5))
+  (timbre/spy :info "SP"
+              (if (< dur duration)
+                0
+                (rand-int n-samples))))
+
 (defn make-voice-params
-  [{:as synth-config :keys [synth player bank params]}
+  [{:as synth-config :keys [synth player index bank params]}
    rates]
+
   (->> rates
        (mapv (fn [rate]
                (let [d-level-weights {0.3 1}
                      room-weights {0.2 2, 2 1/2 4 1/2}
                      trig-rate (+ 90 (rand-int 20))
-                     dur (clouds-synth-dur player bank synth (:buf params) rate)
-                     params* (assoc (:params synth-config)
-                                    :dur dur
-                                    :start-pos (clouds-start-pos dur rate)
-                                    :d-level (weighted d-level-weights)
-                                    :rev-room (weighted room-weights)
-                                    :trig-rate 100
+                     buf (:buf params)
+                     dur (clouds-synth-dur player bank synth buf rate)
+                     start-pos (clouds-start-pos dur buf)
+                     params* (-> synth-config
+                                 :params
+                                 (assoc :dur dur
+                                        :start-pos start-pos
+                                        :rate rate)
+                                 (cond->
+                                  (= :granular synth)
+
+                                   (assoc
                                     :grain-dur (/ 1 (/ trig-rate 2))
+                                    :trig-rate 100
+                                    :interp (rand-nth [1 2 4])
+                                    :amp (adjust-amp 9 (:amp params))
                                     :amp-lfo (rrange 0.1 0.4)
                                     :amp-lfo-min 0.95
                                     :lpf-max (rrange 2000 10000)
-                                    :rate rate
-                                    :interp (rand-nth [1 2 4]))]
+                                    :amp-env-durations (get-envelope
+                                                        index
+                                                        (bardo.live-state/get-player-data player bank :env)
+                                                        (:lorentz @bardo.live-state/live-state))
+                                    :rev-room (weighted room-weights))))]
                  (assoc synth-config :params params*))))))
-
+(comment
+  (bardo.live-state/get-independent-banks :milo))
 (defn get-synth-data-vectors
-  [player {:keys [index]}]
-  (let [active-banks  (bardo.live-state/get-group-banks player)
+  [player independent-bank {:keys [index]}]
+  (let [active-banks (if independent-bank
+                       #{independent-bank}
+                       (bardo.live-state/get-group-banks player))
         banks? (seq active-banks)
         bank (when banks? (rand-nth (into [] active-banks)))
         buf (when bank (clouds-buf player bank))
@@ -353,6 +378,7 @@
                                 {:synth synth
                                  :player player
                                  :bank bank
+                                 :index index
                                  :params {:group (groups/mid)
                                           :buf buf
                                           :start 0
@@ -366,9 +392,9 @@
   (bardo.live-state/get-player-data :milo)
   (get-synth-data-vectors :milo {:index 0}))
 (defn clouds-on-event
-  [player {refrain-event-data :data}]
-  (doseq [data* (get-synth-data-vectors player refrain-event-data)]
-    (play-synth data*)))
+  [player independent-bank {refrain-event-data :data}]
+  (doseq [data* (get-synth-data-vectors player independent-bank refrain-event-data)]
+    (play-synth  data*)))
 
 (comment
   (do ;; trigger clouds event on bank 0
@@ -377,13 +403,18 @@
 
 ;; FIXME: simplify workflow, the generation of params inside clouds-refrain2 seems somewhat redundant (as related to :get-param-data, probably merge both into on-play and exctract taht function so that i can be called via dispatch - for debugging purposes-)
 (defn start-clouds
-  [{:keys [player]}]
+  [{:keys [player bank independent?]}]
   (clouds-refrain2
-   {:id (make-clouds-id player)
+   {:id  (if independent?
+           (make-clouds-id player bank)
+           (make-clouds-id player))
     :durs-fn (partial clouds-durs player)
-    :on-event (partial clouds-on-event player)}))
+    :on-event (partial clouds-on-event player bank)}))
 
 (comment
+  (-> @gp/refrains keys)
+  (-> @gp/refrains :bardo.clouds/milo)
+  (gp/stop)
   (-> @live-state :algo-2.2.9-clouds :milo)
   (swap! live-state assoc-in [:algo-2.2.9-clouds :milo :rhythm] :lor-0.1_2)
   (o/amp->db 0.0015420217847956035)
@@ -412,8 +443,11 @@
                  (str/includes? (name k) "mic-")))))
 
 (defn stop-clouds
-  [{:keys [player]}]
-  (gp/stop (make-clouds-id player)))
+  [{:keys [player bank independent?]}]
+  (if independent?
+    (gp/stop (make-clouds-id player bank))
+    (when-not (seq (bardo.live-state/get-group-banks player))
+      (gp/stop (make-clouds-id player)))))
 
 (defn start-gusano
   []
