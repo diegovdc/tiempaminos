@@ -363,7 +363,7 @@ lfo-kr
 (defn- add-panner
   [params {:keys [active-panner panner-config]}]
   (let [{:keys [vel x y xy radius vel direction pos range]} panner-config]
-    (timbre/spy :info :panner-config [panner-config params])
+    (timbre/spy :debug :panner-config [panner-config params])
     (case active-panner
       :random (random-panaz params {:pan-vel vel})
       :manual (manual-pan4 params {:pan-x (-> (first xy) (* 2) (+ -1))
@@ -380,7 +380,7 @@ lfo-kr
                 (timbre/warn "TODO: directional-panaz (arrows) panner still needs work")
                 (directional-panaz params
                                    (timbre/spy
-                                    :info "ARROWS"
+                                    :debug "ARROWS"
                                     {:panner-env-time-scale vel
                                      :pan-env-levels (let [curve* (bz/curve 8 [0 (rrange -3 3)
                                                                                (rrange -3 3)
@@ -402,15 +402,13 @@ lfo-kr
   [params {:keys [active-filter filter-config]}]
   (let [{:keys [_lpf _hpf _reso _q]} filter-config]
     (case active-filter
-      ;; :lpf :TODO/lpf
-      :lpf (lpf params (timbre/spy :info "lpf" filter-config))
-      :hpf (hpf params (timbre/spy :info "hpf" filter-config))
-      :moog-ladder (moog-ladder params (timbre/spy :info "moog-ladder" filter-config))
-      :moog-ladhp (moog-ladhp params (timbre/spy :info "moog-ladhp" filter-config))
-      :moog-hplad (moog-hplad params (timbre/spy :info "moog-hplad" filter-config))
-      :moog-bp (moog-bp params (timbre/spy :info "moog-bp" filter-config))
-      (do (timbre/warn "No filter selecte")
-          params))))
+      :lpf (lpf params (timbre/spy :debug "lpf" filter-config))
+      :hpf (hpf params (timbre/spy :debug "hpf" filter-config))
+      :moog-ladder (moog-ladder params (timbre/spy :debug "moog-ladder" filter-config))
+      :moog-ladhp (moog-ladhp params (timbre/spy :debug "moog-ladhp" filter-config))
+      :moog-hplad (moog-hplad params (timbre/spy :debug "moog-hplad" filter-config))
+      :moog-bp (moog-bp params (timbre/spy :debug "moog-bp" filter-config))
+      params)))
 
 (defn play-synth
   "Plays a synth. The `:synth` key should be a keyword."

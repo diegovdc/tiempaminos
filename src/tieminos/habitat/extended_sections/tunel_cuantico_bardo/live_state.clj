@@ -92,13 +92,18 @@
   [player]
   (get-banks! #(:on? %) player))
 
-(defn get-independent-banks
+(defn get-active-independent-banks
   "Get banks that are independent."
   ([player]
    (get-banks! #(and (:on? %) (:independent? %))
                player)))
 
-(defn get-group-banks
+(defn get-independent-banks
+  "Get banks that are independent."
+  ([player]
+   (get-banks! #(:independent? %) player)))
+
+(defn get-active-group-banks
   "Get that are not indepedent."
   ([player]
    (get-banks! #(and (:on? %) (not (:independent? %)))
@@ -110,8 +115,8 @@
    (get-banks! #(:gusano? %) player)))
 
 (comment [(get-active-banks :milo)
-          (get-independent-banks :milo)
-          (get-group-banks :milo)
+          (get-active-independent-banks :milo)
+          (get-active-group-banks :milo)
           (get-gusano-banks :milo)])
 
 (def default-rec-config
@@ -319,7 +324,7 @@
   (get-player-data player :refrains bank :on?))
 
 (defn other-refains-on? [player excluded-bank]
-  (seq (set/difference (get-group-banks player)
+  (seq (set/difference (get-active-group-banks player)
                        #{excluded-bank})))
 
 (defn set-independent-refrain

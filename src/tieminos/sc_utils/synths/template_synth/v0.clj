@@ -415,7 +415,7 @@
 (defn call-synth
   [ns synth-symbol params-map]
   (def csp {:ns ns :synth-symbol synth-symbol :params-map params-map})
-  (timbre/info "call synth" synth-symbol)
+  (timbre/debug "call synth" synth-symbol)
   (let [group (:group params-map)
         params-map (dissoc params-map :group)
         {:keys [synth merged-params]} (get-instance-data ns (symbol synth-symbol) params-map)

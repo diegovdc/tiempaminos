@@ -309,7 +309,7 @@
   [player bank synth buf rate]
   (let [{:keys [max-dur%]} (bardo.live-state/get-player-data player bank)
         dur (:duration buf)]
-    (timbre/spy :info "clouds-synth-dur"
+    (timbre/spy :debug "clouds-synth-dur"
                 (case synth
                   :crystal (ranged-dur-abs dur rate max-dur%)
                   :granular (* 2 max-dur%)))))
@@ -318,7 +318,7 @@
   [dur {:as _buf
         :keys [rate n-samples duration]}]
 
-  (timbre/spy :info "SP"
+  (timbre/spy :debug "SP"
               (if (< dur duration)
                 0
                 (rand-int n-samples))))
