@@ -9,15 +9,14 @@
     :as tc.synth-persistance]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.scratch.main]
    [tieminos.habitat.groups :as groups]
-   [tieminos.habitat.recording :as rec :refer [norm-amp]]
+   [tieminos.habitat.recording :as rec]
    [tieminos.habitat.routing :as habitat.route]
    [tieminos.habitat.synths.granular
     :refer [clouds2-4ch]]
    [tieminos.sc-utils.ndef.v1 :as ndef]
    [tieminos.sc-utils.synths.v1 :refer [lfo-kr]]
-   [tieminos.utils :refer [rrange wrap-at]]
-   [time-time.dynacan.players.gen-poly :as gp :refer [on-event ref-rain]]
-   [time-time.standard :refer [rrand]]))
+   [tieminos.utils :refer [rrange]]
+   [time-time.dynacan.players.gen-poly :as gp :refer [on-event ref-rain]]))
 
 (comment
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -140,47 +139,3 @@
                      (#(o/pan-az 4 % (lfo-kr 0.1 -1 1)))))))
         o/mix)
    {:out (habitat.route/get-mixed-main-out)}))
-
-(defonce smooth-configs (atom []))
-
-(defn smooth-clouds
-  [root
-   {:keys [r buf amp rate index]
-    :as config}]
-  #_(println :smooth-clouds rate)
-  (let [index (+ index (rrand -3 3))
-        params (merge config
-                      {:interp 3
-                       :trig-rate 10
-                       :grain-dur 1/10
-                       :rate rate
-                       :amp (* amp (norm-amp buf))
-                       :dly-mix (rrand 0.8 1.3)
-                       :dly-time-mult (rrand 1 2.5)
-                       :root root
-                       :moog-freq (* (rand-nth [1 2 8 16]) r root)
-                       :moog-reso (rrand 0.5 1.3)})]
-    (if (> (count @smooth-configs) 15)
-      (do
-        (println "#---" index)
-        (clouds2-4ch (wrap-at index @smooth-configs)))
-      (do
-        (println "#" (count @saved-synth-params))
-        (swap! saved-synth-params conj params)
-        (swap! smooth-configs conj params)
-        (clouds2-4ch params)))))
-
-(o/defsynth images
-  [buf 0
-   rate 1
-   a 2
-   r 2
-   out 0
-   amp 1]
-  (o/out out
-         (-> (o/play-buf 1 buf :rate rate)
-             (o/free-verb)
-             (* amp (lfo-kr (o/rand 0.5 2) 0.2 1)
-                (o/env-gen (o/env-perc a r)
-                           :action o/FREE))
-             (#(o/pan-az 4 % (lfo-kr 0.1 -1 1))))))
