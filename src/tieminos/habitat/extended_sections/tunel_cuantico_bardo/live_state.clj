@@ -518,7 +518,7 @@
                                    [k (get current-config* k
                                            (get-in filter-data [k :default-value]))]))
                             (into {}))
-        base-path (case player :milo "/Milo" :diego "/diego")
+        base-path (case player :milo "/Milo" :diego "/Diego")
         osc-msgs (->> current-config
                       (map (fn [[k v]]
                              (let [path (str base-path (-> filter-data k :path))
@@ -611,7 +611,7 @@
 (defn player-path
   "Creates an OSC path of the form /player/some/path "
   [player param-path]
-  (format "%s%s" (case player :milo "/Milo" :diego "/diego")
+  (format "%s%s" (case player :milo "/Milo" :diego "/Diego")
           (if (str/starts-with? param-path "/")
             param-path
             (str "/" param-path))))
@@ -627,7 +627,7 @@
                                    (map (juxt first (comp :default-value second)))
                                    (into {}))
                               current-config*)
-        base-path (case player :milo "/Milo" :diego "/diego")
+        base-path (case player :milo "/Milo" :diego "/Diego")
         groups-visibility-osc (->> panner-keys
                                    (map (fn [k] [(format "%s/panner-%s-group" base-path (name k)) [(osc-bool (= k active-panner))]]))
                                    (into {}))
@@ -697,7 +697,8 @@
                #_(clojure.pprint/pprint (get-selected-synth-data :milo))))
   (get-in panner-data [:random :vel :path])
   (get-selected-synth-bank :milo)
-  (get-selected-synth-data :milo))
+  (get-selected-synth-data :milo)
+  (:active-panner (get-selected-synth-data :diego)))
 
 ;;;;;;;;;;;;;;;;;
 ;; Envelopes
