@@ -28,11 +28,11 @@
   (bardo.osc/init!
     ;; NOTE if a client is missing there will be a "Host is Down" error.
    [["127.0.0.1" 16181]      ;; local
-    #_["192.168.0.101" 16180]  ;; diego
+    #_["192.168.0.101" 16180] ;; diego
     #_["192.168.0.104" 16180] ;; milo
     ])
   (bardo.osc/reset-default-state!)
-  ;; init everything (habitat and input synths) except SC, REAPER and OSC communications
+  ;; init everything (habitat and input synths, bardo.comms) except SC, REAPER and OSC communications
   (bardo.init/all!)
   (bardo.osc/post-live-state-to-ui!)
   (bardo.osc/post-live-state-to-ui! :print-instead? true))

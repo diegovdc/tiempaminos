@@ -86,3 +86,14 @@
 
 (defn transpose-chord [chord transpositions]
   (map (fn [t] (map (fn [deg] (+ t deg)) chord)) transpositions))
+
+(defn get-harmony
+  [harmony-k]
+  (case harmony-k
+    :meta-slendro-5 meta-slendro-5
+    :meta-slendro-12 meta-slendro1
+    :fib fib-21
+    :meta-pelog-5 meta-pelog
+    :meta-pelog-7 meta-pelog-7
+    :meta-pelog-11 meta-pelog-11
+    meta-slendro1))
