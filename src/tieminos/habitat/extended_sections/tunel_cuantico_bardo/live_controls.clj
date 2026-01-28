@@ -358,12 +358,12 @@
                                     :rev-room (weighted room-weights))))]
                  (assoc synth-config :params params*))))))
 (comment
-  (bardo.live-state/get-independent-banks :milo))
+  (bardo.live-state/get-active-independent-banks :milo))
 (defn get-synth-data-vectors
   [player independent-bank {:keys [index]}]
   (let [active-banks (if independent-bank
                        #{independent-bank}
-                       (bardo.live-state/get-group-banks player))
+                       (bardo.live-state/get-active-group-banks player))
         banks? (seq active-banks)
         bank (when banks? (rand-nth (into [] active-banks)))
         buf (when bank (clouds-buf player bank))
@@ -446,7 +446,7 @@
   [{:keys [player bank independent?]}]
   (if independent?
     (gp/stop (make-clouds-id player bank))
-    (when-not (seq (bardo.live-state/get-group-banks player))
+    (when-not (seq (bardo.live-state/get-active-group-banks player))
       (gp/stop (make-clouds-id player)))))
 
 (defn start-gusano

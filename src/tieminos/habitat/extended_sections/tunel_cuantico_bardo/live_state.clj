@@ -436,86 +436,88 @@
 ;; Filters
 ;;;;;;;;;;;;
 
-(def ^:private filter-data
+(def ^:private filter-data*
   ;; TODO: find good defaults and proper param mappings, This is just a place holder.
   ;; NOTE: for params to be proporly updated, they should be present in the the particular filter data map. Otherwise the `:path` will be missing and no update will happen.
-  {:none {:lpf {:path "/filter-lpf-fader"
-                :visible? false
+  [[:none {:lpf {:path "/filter-lpf-fader"
+                 :visible? false
+                 :default-value (float 1)}
+           :hpf {:path "/filter-hpf-fader"
+                 :visible? false
+                 :default-value (float 0)}
+           :reso {:path "/filter-reso-fader"
+                  :visible? false
+                  :default-value (float 0.5)}
+           :q {:path "/filter-q-fader"
+               :visible? false
+               :default-value (float 0.5)}}]
+   [:lpf {:lpf {:path "/filter-lpf-fader"
                 :default-value (float 1)}
           :hpf {:path "/filter-hpf-fader"
                 :visible? false
-                :default-value (float 0)}
+                :default-value (float 1)}
           :reso {:path "/filter-reso-fader"
-                 :visible? false
-                 :default-value (float 0.5)}
+                 :default-value (float 0)}
           :q {:path "/filter-q-fader"
               :visible? false
-              :default-value (float 0.5)}}
-   :lpf {:lpf {:path "/filter-lpf-fader"
-               :default-value (float 1)}
-         :hpf {:path "/filter-hpf-fader"
-               :visible? false
-               :default-value (float 1)}
-         :reso {:path "/filter-reso-fader"
+              :default-value (float 0.5)}}]
+   [:hpf {:lpf {:path "/filter-lpf-fader"
+                :visible? false
+                :default-value (float 1)}
+          :hpf {:path "/filter-hpf-fader"
                 :default-value (float 0)}
-         :q {:path "/filter-q-fader"
-             :visible? false
-             :default-value (float 0.5)}}
-   :hpf {:lpf {:path "/filter-lpf-fader"
-               :visible? false
-               :default-value (float 1)}
-         :hpf {:path "/filter-hpf-fader"
-               :default-value (float 0)}
-         :reso {:path "/filter-reso-fader"
-                :default-value (float 0)}
-         :q {:path "/filter-q-fader"
-             :visible? false
-             :default-value (float 0.5)}}
-   :moog-ladder {:lpf {:path "/filter-lpf-fader"
+          :reso {:path "/filter-reso-fader"
+                 :default-value (float 0)}
+          :q {:path "/filter-q-fader"
+              :visible? false
+              :default-value (float 0.5)}}]
+   [:moog-ladder {:lpf {:path "/filter-lpf-fader"
+                        :default-value (float 1)}
+                  :hpf {:path "/filter-hpf-fader"
+                        :visible? false
+                        :default-value (float 1)}
+                  :reso {:path "/filter-reso-fader"
+                         :default-value (float 0.5)}
+                  :q {:path "/filter-q-fader"
+                      :visible? false
+                      :default-value (float 0.5)}}]
+   [:moog-ladhp {:lpf {:path "/filter-lpf-fader"
                        :default-value (float 1)}
                  :hpf {:path "/filter-hpf-fader"
-                       :visible? false
-                       :default-value (float 1)}
+                       :default-value (float 0)}
                  :reso {:path "/filter-reso-fader"
                         :default-value (float 0.5)}
                  :q {:path "/filter-q-fader"
-                     :visible? false
-                     :default-value (float 0.5)}}
-   :moog-ladhp {:lpf {:path "/filter-lpf-fader"
-                      :default-value (float 1)}
-                :hpf {:path "/filter-hpf-fader"
-                      :default-value (float 0)}
-                :reso {:path "/filter-reso-fader"
-                       :default-value (float 0.5)}
-                :q {:path "/filter-q-fader"
-                    :default-value (float 0.5)}}
-   :moog-hplad {:lpf {:path "/filter-lpf-fader"
-                      :default-value (float 1)}
-                :hpf {:path "/filter-hpf-fader"
-                      :default-value (float 0)}
-                :reso {:path "/filter-reso-fader"
-                       :default-value (float 0.5)}
-                :q {:path "/filter-q-fader"
-                    :default-value (float 0.5)}}
-   :moog-bp {:lpf {:path "/filter-lpf-fader"
-                   :default-value (float 0.4)}
-             :hpf {:path "/filter-hpf-fader"
-                   :visible? false
-                   :default-value (float 1)}
-             :reso {:path "/filter-reso-fader"
+                     :default-value (float 0.5)}}]
+   [:moog-hplad {:lpf {:path "/filter-lpf-fader"
+                       :default-value (float 1)}
+                 :hpf {:path "/filter-hpf-fader"
+                       :default-value (float 0)}
+                 :reso {:path "/filter-reso-fader"
+                        :default-value (float 0.5)}
+                 :q {:path "/filter-q-fader"
+                     :default-value (float 0.5)}}]
+   [:moog-bp {:lpf {:path "/filter-lpf-fader"
+                    :default-value (float 0.4)}
+              :hpf {:path "/filter-hpf-fader"
                     :visible? false
-                    :default-value (float 0.5)}
-             :q {:path "/filter-q-fader"
-                 :default-value (float 0.2)}}})
+                    :default-value (float 1)}
+              :reso {:path "/filter-reso-fader"
+                     :visible? false
+                     :default-value (float 0.5)}
+              :q {:path "/filter-q-fader"
+                  :default-value (float 0.2)}}]])
+(def ^:private filter-data
+  (into {} filter-data*))
 
 (def ^:private all-filter-params (->> filter-data vals (apply merge) keys))
 
-(def ^:private filter-keys (keys filter-data))
+(def ^:private filter-keys (map first filter-data*))
 
 (defn set-filter-config
   "Sets the appropriate filter configuration and updates UI"
   [player]
-  (let [{:keys [active-filter filter-configs]} (get-selected-synth-data player)
+  (let [{:keys [active-filter filter-configs filter-touch-osc-data]} (get-selected-synth-data player)
         filter-data (get filter-data active-filter)
         current-config* (get filter-configs active-filter)
         current-config (->> all-filter-params
@@ -525,11 +527,13 @@
                             (into {}))
         base-path (case player :milo "/Milo" :diego "/Diego")
         osc-msgs (->> current-config
-                      (map (fn [[k v]]
-                             (let [path (str base-path (-> filter-data k :path))
+                      (map (fn [[k _v]]
+                             (let [{:keys [path default-value]} (k filter-data)
+                                   path* (str base-path path)
+                                   v* (get-in filter-touch-osc-data [active-filter path*])
                                    visible? (get-in filter-data [k :visible?] true)]
-                               {path [v]
-                                (str path "-visible") [(osc-bool visible?)]})))
+                               {path* (or v* [default-value])
+                                (str path* "-visible") [(osc-bool visible?)]})))
                       (apply merge))]
 
     (doseq [[path v] osc-msgs] (apply bardo.osc-helpers/send-osc-msg path v))
@@ -578,10 +582,24 @@
                            param-k)
                           (val-fn value))))))
 
+(defn save-touchosc-filter-param
+  "A variation of `save-touchosc-synth-param` to save the different filter configs"
+  [player path args]
+  (println player path args)
+  (let [active-filter (:active-filter (get-selected-synth-data player))]
+    (swap! live-state
+           #(-> %
+                (assoc-in (selected-synth-bank-path
+                           player
+                           :filter-touch-osc-data
+                           active-filter
+                           path)
+                          args)))))
+
 (comment
   (reset! live-state {})
   (get-selected-synth-bank :milo)
-  (get-selected-synth-data :milo))
+  (get-selected-synth-data :diego))
 
 ;;;;;;;;;;;;
 ;; Panners

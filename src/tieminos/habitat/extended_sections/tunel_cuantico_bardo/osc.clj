@@ -426,12 +426,13 @@
       "/Diego/filter-up-btn" (when press? (set-filter-index :diego 1))
       "/Diego/filter-down-btn" (when press? (set-filter-index :diego -1))
       "/Diego/filter-lpf-fader" (do (set-filter-param :diego :lpf (first args) :val-fn #(linexp* 0 1 40 20000 %))
-                                    (save-touchosc-synth-param :diego path args))
+                                    (bardo.live-state/save-touchosc-filter-param :diego path args))
       "/Diego/filter-hpf-fader" (do (set-filter-param :diego :hpf (first args) :val-fn #(linexp* 0 1 40 20000 %))
-                                    (save-touchosc-synth-param :diego path args))
+                                    (bardo.live-state/save-touchosc-filter-param :diego path args))
       "/Diego/filter-reso-fader" (do (set-filter-param :diego :reso (first args))
-                                     (save-touchosc-synth-param :diego path args))
-      "/Diego/filter-q-fader" (set-filter-param :diego :q (first args))
+                                     (bardo.live-state/save-touchosc-filter-param :diego path args))
+      "/Diego/filter-q-fader" (do (set-filter-param :diego :q (first args))
+                                  (bardo.live-state/save-touchosc-filter-param :diego path args))
       "/Diego/panner-up-btn" (when press? (set-panner-index :diego 1))
       "/Diego/panner-down-btn" (when press? (set-panner-index :diego -1))
       "/Diego/panner-rand-vel-fader" (set-panner-param :diego :vel (first args))
@@ -449,10 +450,14 @@
       "/Diego/bank-delete-btn" (when press? (delete-bank [:guitar]))
       "/Diego/bank-delete-all-btn" (when press? (delete-all-banks [:guitar]))
       "/Diego/harmony-radio" (set-harmony :diego (first args))
-      "/Diego/harmonic-speed" (set-harmonic-speed :diego (first args))
-      "/Diego/harmonic-lowest-note" (set-harmonic-range {:player :diego :low? true :value (first args)})
-      "/Diego/harmonic-highest-note" (set-harmonic-range {:player :diego :low?  false :value (first args)})
-      "/Diego/toggle-harmonic-voice" (set-active-harmonic-voice {:player :diego :voice-index (:index args-map) :on? (== 1 (:on args-map))})
+      "/Diego/harmonic-speed" (do (set-harmonic-speed :diego (first args))
+                                  (save-touchosc-synth-param :diego path args))
+      "/Diego/harmonic-lowest-note" (do (set-harmonic-range {:player :diego :low? true :value (first args)})
+                                        (save-touchosc-synth-param :diego path args))
+      "/Diego/harmonic-highest-note" (do (set-harmonic-range {:player :diego :low?  false :value (first args)})
+                                         (save-touchosc-synth-param :diego path args))
+      "/Diego/toggle-harmonic-voice" (do (set-active-harmonic-voice {:player :diego :voice-index (:index args-map) :on? (== 1 (:on args-map))})
+                                         (save-touchosc-synth-param :diego path args))
       "/Diego/rev-send-clean" (set-rev-send {:player :diego :clean? true :value (first args)})
       "/Diego/rev-send-process" (set-rev-send {:player :diego :clean? false :value (first args)})
       "/Diego/input-amp-boost" (guitar-input-amp-boost (first args))
@@ -561,10 +566,10 @@
 
 (defn ^:private make-synth-defaults
   [player]
-  {:active-filter :lpf,
+  {:active-filter :none,
    :active-panner :random,
    :max-dur% 1.0,
-   :filter-configs {:lpf {:lpf 1.0, :hpf 0.0, :reso 0.0, :q 0.0}},
+   :filter-configs {:none {:lpf 1.0, :hpf 0.0, :reso 0.0, :q 0.0}},
    :panner-configs {:random {:vel 0.1}},
    :active-synth :crystal,
    :amp -36.0,
@@ -573,7 +578,7 @@
    :harmonic-speed 1,
    :rhythm :lor-0.1_2,
    :synth-index 1,
-   :touch-osc-data (->> {"/%s/filter-lpf-fader-visible" [1],
+   :touch-osc-data (->> {"/%s/filter-lpf-fader-visible" [0],
                          "/%s/harmonic-speed" '(0.20449468),
                          "/%s/panner-random-group" [1],
                          "/%s/panner-manual-group" [0],
@@ -595,10 +600,10 @@
                          "/%s/clouds-amp" '(0.0),
                          "/%s/harmonic-lowest-note" '(0.48726025),
                          "/%s/panner-rand-vel-fader" '(0.1),
-                         "/%s/filter-reso-fader-visible" [1],
-                         "/%s/filter-q-fader-visible" [1],
+                         "/%s/filter-reso-fader-visible" [0],
+                         "/%s/filter-q-fader-visible" [0],
                          "/%s/clouds-env-radio" '(0),
-                         "/%s/filter-label" ["lpf"],
+                         "/%s/filter-label" ["none"],
                          "/%s/filter-reso-fader" [0.0]
                          "/%s/independent-sequencer-btn" [0]
                          "/%s/max-dur-fader" [1.0]}
@@ -612,80 +617,80 @@
 
 #_(make-synth-defaults "Milo")
 (def default-touch-osc-state
-  (->> '{"/Milo/bank1-active-label-visible" (0),
-         "/Milo/bank2-active-label-visible" (0),
-         "/Milo/bank3-active-label-visible" (0),
-         "/Milo/bank4-active-label-visible" (0),
-         "/Milo/bank5-active-label-visible" (0),
-         "/Milo/bank6-active-label-visible" (0),
-         "/Milo/bank7-active-label-visible" (0),
-         "/Milo/bank8-active-label-visible" (0)
-         "/Milo/independent-sequencer-btn" (0)
-         "/Diego/independent-sequencer-btn" (0)
-         "/Diego/bank1-active-label-visible" (0),
-         "/Diego/bank2-active-label-visible" (0),
-         "/Diego/bank3-active-label-visible" (0),
-         "/Diego/bank4-active-label-visible" (0),
-         "/Diego/bank5-active-label-visible" (0),
-         "/Diego/bank6-active-label-visible" (0),
-         "/Diego/bank7-active-label-visible" (0),
-         "/Diego/bank8-active-label-visible" (0),
-         "/Diego/bank-rec-radio" (0),
-         "/Diego/clouds-active-btn" (0.0), ;; NOTE: will cause log "Could not find refrain with id: :bardo.clouds/diego"
-         "/Diego/clouds-amp" (0.0),
-         "/Diego/clouds-env-radio" (0),
-         "/Diego/clouds-rhythm-radio" (0),
-         "/Diego/clouds-sample-lib-size-radio" (0),
-         "/Diego/harmonic-highest-note" (0.5),
-         "/Diego/harmonic-lowest-note" (0.5),
-         "/Diego/harmonic-speed" (0.2),
-         "/Diego/harmony-radio" (0),
-         "/Diego/input-amp-boost" (0),
-         "/Diego/clean-master" (0.0),
-         "/Diego/processed-master" (0.0),
-         "/Diego/rec-durs-radio" (0),
-         "/Diego/rec-pulse-radio" (0),
-         "/Diego/rev-send-clean" (0.0),
-         "/Diego/rev-send-process" (0.0),
-         "/Diego/selected-synth-radio" (0),
-         "/Diego/toggle-bank/1" ("on" 0.0 "index" 1),
-         "/Diego/toggle-harmonic-voice/0" ("on" 1 "index" 0),
-         "/Diego/toggle-harmonic-voice/1" ("on" 1 "index" 1),
-         "/Diego/toggle-harmonic-voice/2" ("on" 1 "index" 2),
-         "/EQ/bell-radio" (0),
-         "/EQ/durs-radio" (0),
-         "/EQ/flat-eq" (0.0),
-         "/EQ/hishelf-radio" (0),
-         "/EQ/loshelf-radio" (0),
-         "/EQ/notch-radio" (0),
-         "/gusano/amp" (0.0),
-         "/gusano/durs" (0),
-         "/gusano/grain-durs" (0.0),
-         "/gusano/grain-trig" (0.0),
-         "/gusano/period" (0),
-         "/gusano/rates" (0),
-         "/Milo/bank-rec-radio" (0),
-         "/Milo/clouds-active-btn" (0.0), ;; NOTE: will cause log "Could not find refrain with id: :bardo.clouds/milo"
-         "/Milo/clouds-amp" (0.0),
-         "/Milo/clouds-env-radio" (0),
-         "/Milo/clouds-rhythm-radio" (0),
-         "/Milo/clouds-sample-lib-size-radio" (0),
-         "/Milo/harmonic-highest-note" (0.5),
-         "/Milo/harmonic-lowest-note" (0.5),
-         "/Milo/harmonic-speed" (0.2),
-         "/Milo/harmony-radio" (0),
-         "/Milo/processed-master" (0.0),
-         "/Milo/processes-amp-boost" (3),
-         "/Milo/rec-durs-radio" (0),
-         "/Milo/rec-pulse-radio" (0),
-         "/Milo/rev-send-clean" (0.0),
-         "/Milo/rev-send-process" (0.0),
-         "/Milo/selected-synth-radio" (0),
-         "/Milo/toggle-bank/1" ("on" 0.0 "index" 1)
-         "/Milo/toggle-harmonic-voice/0" ("on" 1 "index" 0),
-         "/Milo/toggle-harmonic-voice/1" ("on" 1 "index" 1),
-         "/Milo/toggle-harmonic-voice/2" ("on" 1 "index" 2)
-         "/System/voces-master" (reaper/zero-db)}
+  (->> {"/Milo/bank1-active-label-visible" '(0),
+        "/Milo/bank2-active-label-visible" '(0),
+        "/Milo/bank3-active-label-visible" '(0),
+        "/Milo/bank4-active-label-visible" '(0),
+        "/Milo/bank5-active-label-visible" '(0),
+        "/Milo/bank6-active-label-visible" '(0),
+        "/Milo/bank7-active-label-visible" '(0),
+        "/Milo/bank8-active-label-visible" '(0)
+        "/Milo/independent-sequencer-btn" '(0)
+        "/Diego/independent-sequencer-btn" '(0)
+        "/Diego/bank1-active-label-visible" '(0),
+        "/Diego/bank2-active-label-visible" '(0),
+        "/Diego/bank3-active-label-visible" '(0),
+        "/Diego/bank4-active-label-visible" '(0),
+        "/Diego/bank5-active-label-visible" '(0),
+        "/Diego/bank6-active-label-visible" '(0),
+        "/Diego/bank7-active-label-visible" '(0),
+        "/Diego/bank8-active-label-visible" '(0),
+        "/Diego/bank-rec-radio" '(0),
+        "/Diego/clouds-active-btn" '(0.0), ;; NOTE: will cause log "Could not find refrain with id: :bardo.clouds/diego"
+        "/Diego/clouds-amp" '(0.0),
+        "/Diego/clouds-env-radio" '(0),
+        "/Diego/clouds-rhythm-radio" '(0),
+        "/Diego/clouds-sample-lib-size-radio" '(0),
+        "/Diego/harmonic-highest-note" '(0.5),
+        "/Diego/harmonic-lowest-note" '(0.5),
+        "/Diego/harmonic-speed" '(0.2),
+        "/Diego/harmony-radio" '(0),
+        "/Diego/input-amp-boost" '(0),
+        "/Diego/clean-master" '(0.0),
+        "/Diego/processed-master" '(0.0),
+        "/Diego/rec-durs-radio" '(0),
+        "/Diego/rec-pulse-radio" '(0),
+        "/Diego/rev-send-clean" '(0.0),
+        "/Diego/rev-send-process" '(0.0),
+        "/Diego/selected-synth-radio" '(0),
+        "/Diego/toggle-bank/1" '("on" 0.0 "index" 1),
+        "/Diego/toggle-harmonic-voice/0" '("on" 1 "index" 0),
+        "/Diego/toggle-harmonic-voice/1" '("on" 1 "index" 1),
+        "/Diego/toggle-harmonic-voice/2" '("on" 1 "index" 2),
+        "/EQ/bell-radio" '(0),
+        "/EQ/durs-radio" '(0),
+        "/EQ/flat-eq" '(0.0),
+        "/EQ/hishelf-radio" '(0),
+        "/EQ/loshelf-radio" '(0),
+        "/EQ/notch-radio" '(0),
+        "/gusano/amp" '(0.0),
+        "/gusano/durs" '(0),
+        "/gusano/grain-durs" '(0.0),
+        "/gusano/grain-trig" '(0.0),
+        "/gusano/period" '(0),
+        "/gusano/rates" '(0),
+        "/Milo/bank-rec-radio" '(0),
+        "/Milo/clouds-active-btn" '(0.0), ;; NOTE: will cause log "Could not find refrain with id: :bardo.clouds/milo"
+        "/Milo/clouds-amp" '(0.0),
+        "/Milo/clouds-env-radio" '(0),
+        "/Milo/clouds-rhythm-radio" '(0),
+        "/Milo/clouds-sample-lib-size-radio" '(0),
+        "/Milo/harmonic-highest-note" '(0.5),
+        "/Milo/harmonic-lowest-note" '(0.5),
+        "/Milo/harmonic-speed" '(0.2),
+        "/Milo/harmony-radio" '(0),
+        "/Milo/processed-master" '(0.0),
+        "/Milo/processes-amp-boost" '(3),
+        "/Milo/rec-durs-radio" '(0),
+        "/Milo/rec-pulse-radio" '(0),
+        "/Milo/rev-send-clean" '(0.0),
+        "/Milo/rev-send-process" '(0.0),
+        "/Milo/selected-synth-radio" '(0),
+        "/Milo/toggle-bank/1" '("on" 0.0 "index" 1)
+        "/Milo/toggle-harmonic-voice/0" '("on" 1 "index" 0),
+        "/Milo/toggle-harmonic-voice/1" '("on" 1 "index" 1),
+        "/Milo/toggle-harmonic-voice/2" '("on" 1 "index" 2)
+        "/System/voces-master" [reaper/zero-db]}
        cast-osc-data
        (#(merge %
                 (:touch-osc-data (make-synth-defaults "Milo"))

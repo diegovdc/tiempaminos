@@ -1,9 +1,12 @@
+#+STARTUP: overview
+
 Código tomado de las grabaciones de 2.2.9, por lo que en el directorio de reaper todas las sesiones se nombrarán como 2.2.9.x
 * Imágenes
 ** Retorno al origen: Regresar a la roca y de ahí al universo
 ** El ojo de visión del gusano cuántico
 
-* V 2.3
+
+* PROJ V 2.3
 ** DONE Simplificar =bardo.live-controls/start-clouds=
 CLOSED: [2026-01-17 Sat 18:29]
 ** STRT Agregar =group= en =template-synth=
@@ -14,12 +17,17 @@ el uso de ~(flatten (seq params))~
 ** TODO Mejorar debuggeo en =template-synth=
 Loggear los params de llamado de las funciones relevantes y registrarlos en un event-log o algo así
 ** TODO =max-dur= mostrar cuántos segundos en label
+** DONE [#A] params de afinación de Diego no funcionan bien
+CLOSED: [2026-01-28 Wed 12:25] DEADLINE: <2026-02-02 Mon>
+** DONE [#A] Fitros de diego no se resetean bien
+CLOSED: [2026-01-28 Wed 12:52] DEADLINE: <2026-02-02 Mon>
 ** DONE [#A] Agregar =plug= a los demás panners
-sCLOSED: [2026-01-19 Mon 17:25] SCHEDULED: <2026-01-18 Sun>
+CLOSED: [2026-01-19 Mon 17:25] SCHEDULED: <2026-01-18 Sun>
 ** DONE [#A] Integrar filtros
 CLOSED: [2026-01-19 Mon 17:25] SCHEDULED: <2026-01-18 Sun>
 ** DONE =random-panaz= lfo width modulation
 CLOSED: [2026-01-17 Sat 18:30]
+
 
 * V 2.2.9.10+
 ** DONE [#A] Extender rango de lentitud de la velocidad armónica
