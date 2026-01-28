@@ -328,7 +328,7 @@
   ;; set OSC EQ envelope to write
   (reaper/stop)
   (doseq [track automated-tracks]
-    (reaper/set-autotrim track)))
+    (reaper/set-autoread track)))
 
 (comment
   (update-clients @habitat-osc/receiver-clients "/Milo/harmonic-speed-label" [(str (round2 2 0.3455))]))

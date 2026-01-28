@@ -17,6 +17,8 @@ el uso de ~(flatten (seq params))~
 ** TODO Mejorar debuggeo en =template-synth=
 Loggear los params de llamado de las funciones relevantes y registrarlos en un event-log o algo así
 ** TODO =max-dur= mostrar cuántos segundos en label
+** TODO [#A] revisar niveles de guitarra en reaper y entre gusano y cristal
+DEADLINE: <2026-02-02 Mon>
 ** DONE [#A] params de afinación de Diego no funcionan bien
 CLOSED: [2026-01-28 Wed 12:25] DEADLINE: <2026-02-02 Mon>
 ** DONE [#A] Fitros de diego no se resetean bien
@@ -34,8 +36,8 @@ CLOSED: [2026-01-17 Sat 18:30]
 CLOSED: [2025-10-25 Sat 13:47] SCHEDULED: <2025-10-17 Fri>
 ** DONE [#A] Resetear fader de procesos de Milo
 CLOSED: [2025-12-22 Mon 17:17] SCHEDULED: <2025-12-17 Wed>
-** TODO [#A] Cambiar /trim/ por /read/
-SCHEDULED: <2025-12-29 Mon>
+** DONE [#A] Cambiar /trim/ por /read/
+CLOSED: [2026-01-28 Wed 13:23] SCHEDULED: <2025-12-29 Mon>
 En modo default para tracks con envolventes activas
 ** IDEA [#A] Bancos de memoria interaccional
 *** IDEA seleccionar momentos o vestigios de materials
