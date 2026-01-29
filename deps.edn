@@ -28,6 +28,7 @@
         thi.ng/color {:mvn/version "1.4.0"}
         ;; another interesting possibility, may offer other options
         ;; com.dean/interval-tree {:mvn/version  "0.1.2"}
+        djblue/portal {:mvn/version "0.62.2"}
         }
  :aliases {:test {:extra-paths ["test"]
                   :extra-deps {io.github.cognitect-labs/test-runner

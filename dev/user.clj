@@ -189,3 +189,28 @@
   (test-sound)
   (test-4chan-surround)
   (disconnect))
+
+;;;;;;;;;;;;;;;;;;
+;; Portal
+;;;;;;;;;;;;;;;;;;
+
+(comment
+  (do
+    (require '[portal.api :as portal])
+    (def p (portal/open))
+    (add-tap #'portal/submit)
+
+    (defmacro tap
+      "For standard usage and/or thread-last"
+      ([v] (tap nil v))
+      ([k v]
+       `(doto ~v (#(tap> (with-meta % {~k true}))))))
+
+    (defmacro tapf
+      "For thread-first usage"
+      ([v] (tap nil v))
+      ([v k]
+       `(doto ~v (#(tap> (if (and ~k (coll? ~v))
+                           (with-meta % {~k true})
+                           %)))))))
+  (tap :my-map {:a 2/3}))
