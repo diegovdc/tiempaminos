@@ -167,7 +167,7 @@ lfo-kr
 (defplug moog-ladder
   {:lpf 20000
    :reso 0.1
-   :ugen/filter '((fn [sig] (o/moog-ladder sig lpf reso)))})
+   :ugen/filter '((fn [sig] (o/moog-ladder sig (o/clip lpf 30 20000) reso)))})
 
 (defplug moog-ladhp
   {:lpf 20000
@@ -175,20 +175,20 @@ lfo-kr
    :reso 0.5
    :q 0.5
    :ugen/filter '((fn [sig] (-> sig
-                                (o/moog-ladder lpf reso)
-                                (o/b-moog hpf q 1))))})
+                                (o/moog-ladder (o/clip lpf 30 20000) reso)
+                                (o/b-moog (o/clip hpf 60 20000) q 1))))})
 (defplug moog-hplad
   {:lpf 20000
    :hpf 40
    :reso 0.5
    :q 0.5
    :ugen/filter '((fn [sig] (-> sig
-                                (o/moog-ladder lpf reso)
-                                (o/b-moog hpf q 1))))})
+                                (o/moog-ladder (o/clip lpf 30 20000) reso)
+                                (o/b-moog (o/clip hpf 60 20000) q 1))))})
 (defplug moog-bp
   {:lpf 400
    :q 0.5
-   :ugen/filter '((fn [sig] (o/b-moog sig lpf q 2)))})
+   :ugen/filter '((fn [sig] (o/b-moog sig (o/clip lpf 60 20000) q 2)))})
 
 (defn map-outs
   "Given a sequence of outs, map a signal array to each out."

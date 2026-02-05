@@ -7,8 +7,14 @@ Código tomado de las grabaciones de 2.2.9, por lo que en el directorio de reape
 
 
 * PROJ V 2.3
-** DONE Simplificar =bardo.live-controls/start-clouds=
-CLOSED: [2026-01-17 Sat 18:29]
+
+** TODO Gusano parece estar roto en este momento
+DEADLINE: <2026-02-09 Mon>
+** TODO Label default de sinte activo es =g=, pero debería de actualizarse inmediatamente al encenderse el sinte
+DEADLINE: <2026-02-09 Mon>
+** TODO Agregar control de volumen de =clean= para Milo
+** TODO =Sec. Ind.= debe ser el valor default
+DEADLINE: <2026-02-09 Mon>
 ** STRT Agregar =group= en =template-synth=
 *** TODO investigar si hay manera de mejorar la implementación actual
 el uso de ~(flatten (seq params))~
@@ -21,8 +27,9 @@ Loggear los params de llamado de las funciones relevantes y registrarlos en un e
 DEADLINE: <2026-02-02 Mon>
 ** DONE [#A] params de afinación de Diego no funcionan bien
 CLOSED: [2026-01-28 Wed 12:25] DEADLINE: <2026-02-02 Mon>
-** DONE [#A] Fitros de diego no se resetean bien
-CLOSED: [2026-01-28 Wed 12:52] DEADLINE: <2026-02-02 Mon>
+** TODO [#A] Fitros de diego no se resetean bien
+Cuando me muevo de un sínte a otro los filtos no recuperan el estado que deberían tener
+DEADLINE: <2026-02-09 Mon>
 ** DONE [#A] Agregar =plug= a los demás panners
 CLOSED: [2026-01-19 Mon 17:25] SCHEDULED: <2026-01-18 Sun>
 ** DONE [#A] Integrar filtros
@@ -30,6 +37,8 @@ CLOSED: [2026-01-19 Mon 17:25] SCHEDULED: <2026-01-18 Sun>
 ** DONE =random-panaz= lfo width modulation
 CLOSED: [2026-01-17 Sat 18:30]
 
+** DONE Simplificar =bardo.live-controls/start-clouds=
+CLOSED: [2026-01-17 Sat 18:29]
 
 * V 2.2.9.10+
 ** DONE [#A] Extender rango de lentitud de la velocidad armónica
