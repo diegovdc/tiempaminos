@@ -111,16 +111,19 @@
 (defonce lattice-sketch-atom (atom nil))
 
 (defn draw-lattice2
-  [ratios lattice-size]
+  [ratios lattice-size
+   & {:as lattice-config}]
   (if @lattice-sketch-atom
     (lattice.v1/update-ratios! @lattice-sketch-atom ratios)
     (reset! lattice-sketch-atom
             (lattice.v1/draw-lattice
-             {:id "Harmonic Experience Lattice"
-              :ratios ratios
-              :width (* 16 lattice-size)
-              :height (* 9 lattice-size)
-              :on-close (fn [] (reset! lattice-sketch-atom nil))})))
+             (merge {:id "Harmonic Experience Lattice"
+                     :frame-rate 10
+                     :ratios ratios
+                     :width (* 16 lattice-size)
+                     :height (* 9 lattice-size)
+                     :on-close (fn [] (reset! lattice-sketch-atom nil))}
+                    lattice-config))))
   lattice-sketch-atom)
 (comment
   (-> @lattice-sketch-atom))
@@ -154,7 +157,8 @@
 (defn setup-kb
   [{:keys [midi-kb ref-note root scale lattice? lattice-size
            stroke-width note-color sound? on-note-on
-           replacements]
+           replacements
+           lattice-config]
     :or {lattice? true
          lattice-size 120
          stroke-width 10
@@ -165,7 +169,7 @@
                                                   :root root
                                                   :scale scale*
                                                   :midi-note (:note ev)}))
-        lattice-atom (when lattice? @(draw-lattice2 (map :bounded-ratio scale*) lattice-size))]
+        lattice-atom (when lattice? @(draw-lattice2 (map :bounded-ratio scale*) lattice-size lattice-config))]
 
     (add-watch played-ratios ::print-intervals
                (fn [_ _ _ new-val]
