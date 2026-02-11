@@ -891,7 +891,7 @@
              (assoc :on? on?)))
 
   (bardo.comms/dispatch
-   {:type (if on? :start-gusano :stop-stop)
+   {:type (if on? :start-gusano :stop-gusano)
     :data {}}))
 
 (comment
