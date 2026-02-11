@@ -3,17 +3,20 @@
    [clojure.set :as set]
    [erv.cps.utils :refer [+degree]]
    [overtone.core :as o]
-   [tieminos.compositions.7D-percusion-ensamble.base :refer [diat->polydori-degree
-                                                             root]]
-   [tieminos.compositions.7D-percusion-ensamble.base :as *7d-base]
-   [tieminos.compositions.7D-percusion-ensamble.dreams.dream-2.space :as space]
-   [tieminos.compositions.7D-percusion-ensamble.dreams.dream-2.utils :refer [subrain]]
+   [tieminos.compositions.7D-percusion-ensamble.base
+    :as *7d-base
+    :refer [diat->polydori-degree root]]
+   [tieminos.compositions.7d-percusion-ensamble.dreams.dream-2.nil-space
+    :as space]
+   [tieminos.compositions.7D-percusion-ensamble.dreams.dream-2.utils
+    :refer [subrain]]
    [tieminos.overtone-extensions :as oe]
-   [tieminos.polydori.analysis.dorian-hexanies :refer [dorian-hexanies-in-polydori-2]]
+   [tieminos.polydori.analysis.dorian-hexanies
+    :refer [dorian-hexanies-in-polydori-2]]
    [tieminos.polydori.scale :refer [polydori-v2]]
    [tieminos.sc-utils.synths.v1 :refer [lfo-kr]]
-   [tieminos.seq-utils.core :refer [** ++ choose graph lin mancha mirror mseq
-                                    rainseq ret rev xo]]
+   [tieminos.seq-utils.core
+    :refer [** ++ choose graph lin mancha mirror mseq rainseq ret rev xo]]
    [tieminos.synths :as s]
    [tieminos.utils :refer [rrange wrap-at]]
    [time-time.dynacan.players.refrain.v2 :as rain.v2]

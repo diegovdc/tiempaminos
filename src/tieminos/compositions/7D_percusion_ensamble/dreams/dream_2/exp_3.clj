@@ -2,13 +2,14 @@
   "Chords"
   (:require
    [tieminos.compositions.7D-percusion-ensamble.base
-    :refer [root] :as *7d-base]
-   [tieminos.compositions.7D-percusion-ensamble.dreams.dream-2.space :refer [main-graph]]
+    :as *7d-base
+    :refer [root]]
+   [tieminos.compositions.7d-percusion-ensamble.dreams.dream-2.nil-space
+    :refer [main-graph]]
    [tieminos.compositions.7D-percusion-ensamble.dreams.dream-2.utils
     :refer [subrain]]
-   [tieminos.compositions.7D-percusion-ensamble.dreams.dream-2.wavetable :refer [akwf-samples
-                                                                                 available-dirs
-                                                                                 mono-mooglad]]
+   [tieminos.compositions.7D-percusion-ensamble.dreams.dream-2.wavetable
+    :refer [akwf-samples available-dirs mono-mooglad]]
    [tieminos.seq-utils.core :refer [++ graph lin mseq ret xo]]
    [tieminos.seq-utils.utils :refer [subgraph]]
    [time-time.dynacan.players.refrain.v2

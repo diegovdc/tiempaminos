@@ -1,16 +1,19 @@
 (ns tieminos.compositions.7D-percusion-ensamble.dreams.dream-2.nil-10-06-2025
-  #_{:clj-kondo/ignore [:unused-referred-var]}
   (:require
    [erv.scale.core :as scale]
-   [tieminos.compositions.7D-percusion-ensamble.base :as *7d-base :refer [root]]
-   [tieminos.compositions.7D-percusion-ensamble.dreams.dream-2.space :as space]
-   [tieminos.compositions.7D-percusion-ensamble.dreams.dream-2.utils :refer [subrain]]
-   [tieminos.compositions.7D-percusion-ensamble.dreams.dream-2.wavetable :refer [akwf-samples
-                                                                                 available-dirs]]
+   [tieminos.compositions.7D-percusion-ensamble.base
+    :as *7d-base
+    :refer [root]]
+   [tieminos.compositions.7d-percusion-ensamble.dreams.dream-2.nil-space
+    :as space]
+   [tieminos.compositions.7D-percusion-ensamble.dreams.dream-2.utils
+    :refer [subrain]]
+   [tieminos.compositions.7D-percusion-ensamble.dreams.dream-2.wavetable
+    :refer [akwf-samples available-dirs]]
    [tieminos.math.bezier-samples :as bezier-a]
    [tieminos.polydori.scale :refer [polydori-v2]]
-   [tieminos.seq-utils.core :refer [** ++ choose graph lin mancha mirror mseq
-                                    rainseq ret rev xo]]
+   [tieminos.seq-utils.core
+    :refer [** ++ choose graph lin mancha mirror mseq rainseq ret rev xo]]
    [tieminos.seq-utils.utils :refer [repcat]]
    [tieminos.synths.mono :as ms :refer [bd]]
    [tieminos.utils :refer [rrange]]

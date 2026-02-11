@@ -1,4 +1,5 @@
-(ns tieminos.compositions.7D-percusion-ensamble.dreams.dream-2.space
+(ns tieminos.compositions.7d-percusion-ensamble.dreams.dream-2.nil-space
+  "Graph for the channel distribution of the NIL (Networed Imagination Laboratory)"
   (:require
    [overtone.core :as o]
    [tieminos.seq-utils.utils :refer [bigraph seq->graph subgraph]]))
