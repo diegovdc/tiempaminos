@@ -2,6 +2,7 @@
   (:require
    [clojure.data.generators :refer [weighted]]
    [clojure.math :refer [floor]]
+   [clojure.set :as set]
    [erv.scale.core :refer [deg->freq]]
    [erv.utils.core :refer [interval period-reduce]]
    [overtone.core :as o]
@@ -62,11 +63,11 @@
   []
   (-> @bardo.live-state/live-state :gusano (:rates-seq-speed 1)))
 
-(def ^:private amp-multiplier (o/db->amp 12))
+(def ^:private amp-multiplier (o/db->amp 6))
 
 (defn- get-amp!
   []
-  (-> @bardo.live-state/live-state :gusano (:amp 0.6) (* amp-multiplier)))
+  (-> @bardo.live-state/live-state :gusano (:amp 0.6) (max 0.001) (* amp-multiplier)))
 
 (def ^:private periods [15 20 25 30 35 40])
 
@@ -124,18 +125,15 @@
 (defn get-buf!-2
   "A more recent version, that will only choose buffers from the active banks of the players."
   [_]
-  (let [active-sources (-> @bardo.live-state/live-state :gusano (:sources #{}))
-        input->banks (merge
-                      (when (active-sources :diego)
-                        (let [banks (bardo.live-state/get-active-banks :diego)]
-                          (->> habitat.route/diego-ins
-                               (map (fn [k] [k banks]))
-                               (into {}))))
-                      (when (active-sources :milo)
-                        (let [banks (bardo.live-state/get-active-banks :milo)]
-                          (->> habitat.route/milo-ins
-                               (map (fn [k] [k banks]))
-                               (into {})))))]
+  (let [input->banks (merge
+                      (when-let [banks (bardo.live-state/get-gusano-banks :diego)]
+                        (->> habitat.route/diego-ins
+                             (map (fn [k] [k banks]))
+                             (into {})))
+                      (when-let [banks (bardo.live-state/get-gusano-banks :milo)]
+                        (->> habitat.route/milo-ins
+                             (map (fn [k] [k banks]))
+                             (into {}))))]
 
     (if-not (seq input->banks)
       (timbre/warn "No active sources. Nothing will sound.")
@@ -293,7 +291,7 @@
                                                          :amp (* amp* (rrange 0 0.7) (norm-amp buf)))))))))))))
 
 (def default-config
-  {:on-play (fn [& _] (println "playing"))
+  {:on-play (fn [& _] (timbre/debug "Playing gusano"))
    :id ::gusano
    :out-bus (main-returns :mixed)
    :silence-thresh 0.0

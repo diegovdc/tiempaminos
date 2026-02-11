@@ -13,7 +13,7 @@ DEADLINE: <2026-02-09 Mon>
 ** DONE Label default de sinte activo es =g=, pero debería de actualizarse inmediatamente al encenderse el sinte
 CLOSED: [2026-02-11 Wed 12:52] DEADLINE: <2026-02-09 Mon>
 ** TODO Agregar control de volumen de =clean= para Milo
-x** DONE =Sec. Ind.= debe ser el valor default
+** DONE =Sec. Ind.= debe ser el valor default
 CLOSED: [2026-02-11 Wed 12:52] DEADLINE: <2026-02-09 Mon>
 ** STRT Agregar =group= en =template-synth=
 *** TODO investigar si hay manera de mejorar la implementación actual
