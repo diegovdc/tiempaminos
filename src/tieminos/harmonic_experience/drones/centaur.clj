@@ -33,7 +33,6 @@
   (hexp.lattice/setup-kb {:ref-note 48
                           :root root
                           :scale scale
-                          :replacements {4/3 (* 8/7 6/5)}
                           :midi-kb (tieminos.midi.core/get-oxygen!)})
   (hexp.trainer/trainer {:scale scale
                          :root (midi->cps 60)

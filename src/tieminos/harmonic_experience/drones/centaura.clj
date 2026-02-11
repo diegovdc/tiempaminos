@@ -8,7 +8,7 @@
    [tieminos.harmonic-experience.trainer :as hexp.trainer]
    [tieminos.midi.core]))
 
-(def ref-note 48)
+(def ref-note 45)
 (def root (midi->cps ref-note))
 (def note-mappings [33/32
                     9/8
@@ -22,7 +22,7 @@
                     7/4
                     15/8
                     2/1])
-(def scale (ratios->scale note-mappings))
+(def scale (ratios->scale (map #(/ % 9/8) note-mappings)))
 
 (comment
   (hexp.lattice/setup-kb {:ref-note 48
@@ -31,14 +31,15 @@
                           :midi-kb (tieminos.midi.core/get-oxygen!)})
   (hexp.trainer/trainer {:scale scale
                          :root (midi->cps 60)
-                         :degrees [0 3 6  10]})
+                         :degrees [0 2 4  8 10]})
 
   (hexp.trainer/stop)
-  (def sa (drone root))
+  (def sa (drone  root))
   (o/ctl sa :gate 0)
   (def sa2 (drone2 root :amp 0.6))
   (o/ctl sa2 :gate 0)
-  (def pa (drone (* 3/2 root)))
+  (def pa (drone (* 40/27 root)))
+  (def pa (drone root))
   (o/ctl pa :gate 0)
   (def ma (drone (* 14/18 root) :amp 0.8))
   (o/ctl ma :gate 0)
