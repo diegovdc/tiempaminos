@@ -382,7 +382,6 @@
                                       (save-touchosc-synth-param :milo path args))
       "/Milo/clouds-sample-lib-size-radio" (do (set-clouds-sample-lib-size :milo (first args))
                                                (save-touchosc-synth-param :milo path args))
-      "/Milo/selected-synth-radio" (set-selected-bank-synth :milo (first args)) ;; TODO eliminate
       "/Milo/synth-up-btn" (when press? (set-synth-index :milo 1))
       "/Milo/synth-down-btn" (when press? (set-synth-index :milo -1))
       "/Milo/max-dur-fader" (do (bardo.live-state/set-clouds-max-dur% :milo (first args))
@@ -423,6 +422,7 @@
                                         (save-touchosc-synth-param :milo path args))
       "/Milo/rev-send-clean" (set-rev-send {:player :milo :clean? true :value (first args)})
       "/Milo/rev-send-process" (set-rev-send {:player :milo :clean? false :value (first args)})
+      "/Milo/clean-master" (set-track-volume2 :percussion-clean-track (first args))
       "/Milo/processed-master" (set-track-volume2 :percussion-processes-track (first args))
       "/Milo/processes-amp-boost" (perc-processes-amp-boost (first args))
       "/Diego/rec-guitar-btn" (toogle-rec {:input :guitar :on? press? :dur (-> @live-state :rec :mic-1 :dur (or 0.5))})
@@ -443,7 +443,6 @@
                                        (save-touchosc-synth-param :diego path args))
       "/Diego/clouds-sample-lib-size-radio" (do (set-clouds-sample-lib-size :diego (first args))
                                                 (save-touchosc-synth-param :diego path args))
-      "/Diego/selected-synth-radio" (set-selected-bank-synth :diego (first args)) ;; TODO eliminate
       "/Diego/synth-up-btn" (when press? (set-synth-index :diego 1))
       "/Diego/synth-down-btn" (when press? (set-synth-index :diego -1))
       "/Diego/max-dur-fader" (do (bardo.live-state/set-clouds-max-dur% :diego (first args))

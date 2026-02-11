@@ -7,17 +7,10 @@ Código tomado de las grabaciones de 2.2.9, por lo que en el directorio de reape
 
 
 * PROJ V 2.3
-
-** TODO Gusano parece estar roto en este momento
-DEADLINE: <2026-02-09 Mon>
-** DONE Label default de sinte activo es =g=, pero debería de actualizarse inmediatamente al encenderse el sinte
-CLOSED: [2026-02-11 Wed 12:52] DEADLINE: <2026-02-09 Mon>
-** TODO Agregar control de volumen de =clean= para Milo
-** DONE =Sec. Ind.= debe ser el valor default
-CLOSED: [2026-02-11 Wed 12:52] DEADLINE: <2026-02-09 Mon>
-** STRT Agregar =group= en =template-synth=
-*** TODO investigar si hay manera de mejorar la implementación actual
-el uso de ~(flatten (seq params))~
+** DONE Gusano parece estar roto en este momento
+CLOSED: [2026-02-11 Wed 14:08] DEADLINE: <2026-02-09 Mon>
+** DONE Agregar control de volumen de =clean= para Milo
+CLOSED: [2026-02-11 Wed 14:19]
 ** TODO documentar =template-synth=
 ** TODO Move ~make-voice-params~ to =synths.clj=
 ** TODO Mejorar debuggeo en =template-synth=
@@ -25,6 +18,13 @@ Loggear los params de llamado de las funciones relevantes y registrarlos en un e
 ** TODO =max-dur= mostrar cuántos segundos en label
 ** TODO [#A] revisar niveles de guitarra en reaper y entre gusano y cristal
 DEADLINE: <2026-02-02 Mon>
+** STRT Agregar =group= en =template-synth=
+*** TODO investigar si hay manera de mejorar la implementación actual
+el uso de ~(flatten (seq params))~
+** DONE Label default de sinte activo es =g=, pero debería de actualizarse inmediatamente al encenderse el sinte
+CLOSED: [2026-02-11 Wed 12:52] DEADLINE: <2026-02-09 Mon>
+** DONE =Sec. Ind.= debe ser el valor default
+CLOSED: [2026-02-11 Wed 12:52] DEADLINE: <2026-02-09 Mon>
 ** DONE [#A] params de afinación de Diego no funcionan bien
 CLOSED: [2026-01-28 Wed 12:25] DEADLINE: <2026-02-02 Mon>
 ** DONE [#A] Fitros de diego no se resetean bien
@@ -37,7 +37,6 @@ CLOSED: [2026-01-19 Mon 17:25] SCHEDULED: <2026-01-18 Sun>
 CLOSED: [2026-01-19 Mon 17:25] SCHEDULED: <2026-01-18 Sun>
 ** DONE =random-panaz= lfo width modulation
 CLOSED: [2026-01-17 Sat 18:30]
-
 ** DONE Simplificar =bardo.live-controls/start-clouds=
 CLOSED: [2026-01-17 Sat 18:29]
 
