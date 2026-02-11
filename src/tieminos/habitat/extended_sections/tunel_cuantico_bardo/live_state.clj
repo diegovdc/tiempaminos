@@ -251,33 +251,42 @@
   ;; many more color pallettes to try: https://colorkit.co/palettes/8-colors/
   (map #(str % "99") ["c7522a" "e5c185" "f0daa5" "fbf2c4" "b8cdab" "74a892" "008585" "004343"]))
 
-(defn set-touchosc-synth-ui
-  [player selected-synth-bank
-   {:keys [touch-osc-data]
+(defn- set-touchosc-params
+  [{:keys [touch-osc-data
+           active-filter
+           filter-touch-osc-data]
     :as _synth-data}]
+  (let [filter-touch-osc-data* (get filter-touch-osc-data active-filter {})]
+    (doseq [[path args] (merge touch-osc-data filter-touch-osc-data*)]
+      (bardo.osc-helpers/update-clients
+       @habitat-osc/receiver-clients
+       path args))))
+
+(defn set-touchosc-synth-ui
+  [player selected-synth-bank synth-data]
   (let [path-base (case player
                     :milo "/Milo"
                     :diego "/Diego")
         bg-color (wrap-at selected-synth-bank bank-colors)]
 
+    ;; selected synth label, at the top left corner (e.g. "#1")
     (bardo.osc-helpers/update-clients
      @habitat-osc/receiver-clients
      (str path-base "/selected-synth-label")
      [(str "#" (inc selected-synth-bank))
       bg-color])
 
+    ;; synth section box
     (bardo.osc-helpers/update-clients
      @habitat-osc/receiver-clients
      (str path-base "/synth-section-box")
      [bg-color])
 
-    (doseq [[path args] touch-osc-data]
-      (println path args)
-      (bardo.osc-helpers/update-clients
-       @habitat-osc/receiver-clients
-       path args))))
+    ;; touch osc params
+    (set-touchosc-params synth-data)))
 (comment
   (init-synth-data :milo 0))
+
 (defn osc-bool [bool] (int (if bool 1 0)))
 
 (comment
@@ -439,7 +448,7 @@
                                   :bank (get-selected-synth-bank player)}})))
 (comment
   (get-selected-synth-bank :milo)
-  (get-selected-synth-data :milo))
+  (get-selected-synth-data :diego))
 
 (comment
   (linexp* 0 1 40 20000 0))
