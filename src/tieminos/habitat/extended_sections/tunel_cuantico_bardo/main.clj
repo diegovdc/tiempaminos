@@ -4,6 +4,7 @@
    [overtone.core :as o]
    [tieminos.attractors.lorentz :as lorentz]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.init :as bardo.init]
+   [tieminos.habitat.extended-sections.tunel-cuantico-bardo.live-state :as bardo.live-state]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.osc :as bardo.osc]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.save-synths
     :as tc.synth-persistance]
@@ -30,11 +31,18 @@
     #_["192.168.0.101" 16180] ;; diego
     #_["192.168.0.104" 16180] ;; milo
     ])
-  (bardo.osc/reset-default-state!)
+  (reset-default-state!)
   ;; init everything (habitat and input synths, bardo.comms) except SC, REAPER and OSC communications
   (bardo.init/all!)
   (bardo.osc/post-live-state-to-ui!)
   (bardo.osc/post-live-state-to-ui! :print-instead? true))
+
+(defn reset-default-state!
+  []
+  (bardo.live-state/init-state!)
+  ;; TODO: perhaps here the default-touch-osc state is duplicated and the state of the :selected-synth should be used instead?
+  (doseq [[path args] bardo.live-state/default-touch-osc-state]
+    (bardo.osc/osc-responder {:path path :args args})))
 
 ;; TODO: figure out if this is still useful
 (defonce saved-synth-params (atom []))

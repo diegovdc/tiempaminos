@@ -3,28 +3,53 @@
    [clojure.set :as set]
    [clojure.string :as str]
    [erv.utils.core :refer [round2]]
-   [org.httpkit.client :as http]
    [overtone.osc :as osc]
    [taoensso.timbre :as timbre]
-   [tieminos.habitat.extended-sections.tunel-cuantico-bardo.config :as bardo.config]
+   [tieminos.habitat.extended-sections.tunel-cuantico-bardo.config
+    :as bardo.config]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.init
     :as bardo.init]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.live-state
     :as bardo.live-state
-    :refer [delete-all-banks delete-bank get-selected-synth-data live-state
-            mute-input osc-bool save-touchosc-synth-param set-active-bank
-            set-active-harmonic-voice set-active-recorded-bank set-clouds-amp
-            set-clouds-env set-clouds-rhythm set-clouds-sample-lib-size
-            set-filter-index set-filter-param set-gusano-2nd-voice
-            set-gusano-amp set-gusano-durs set-gusano-grain-dur
-            set-gusano-grain-trig set-gusano-period set-gusano-rates
-            set-gusano-rates-seq-speed set-harmonic-range set-harmonic-speed
-            set-harmony set-independent-refrain set-panner-index
-            set-panner-param set-rev-send set-selected-bank-synth
-            set-synth-index switch-rec-durs switch-rec-pulse toggle-clouds
-            toggle-gusano toogle-rec]]
+    :refer [cast-osc-data
+            delete-all-banks
+            delete-bank
+            live-state
+            mute-input
+            save-touchosc-synth-param
+            set-active-bank
+            set-active-harmonic-voice
+            set-active-recorded-bank
+            set-clouds-amp
+            set-clouds-env
+            set-clouds-rhythm
+            set-clouds-sample-lib-size
+            set-filter-index
+            set-filter-param
+            set-gusano-2nd-voice
+            set-gusano-amp
+            set-gusano-durs
+            set-gusano-grain-dur
+            set-gusano-grain-trig
+            set-gusano-period
+            set-gusano-rates
+            set-gusano-rates-seq-speed
+            set-harmonic-range
+            set-harmonic-speed
+            set-harmony
+            set-independent-refrain
+            set-panner-index
+            set-panner-param
+            set-rev-send
+            set-selected-bank-synth
+            set-synth-index
+            switch-rec-durs
+            switch-rec-pulse
+            toggle-clouds
+            toggle-gusano
+            toogle-rec]]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.osc-helpers
-    :refer [send-osc-msg update-clients]]
+    :refer [update-clients]]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.presets
     :as bardo.presets]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.synth-management
@@ -333,7 +358,7 @@
 (comment
   (update-clients @habitat-osc/receiver-clients "/Milo/harmonic-speed-label" [(str (round2 2 0.3455))]))
 
-(defn- osc-responder
+(defn osc-responder
   [{:keys [path args] :as msg}]
   (let [HACKED-path (HACK-parse-path path) ;; FIXME: there should be a more elegant way to handle this (see fn definition).
         args-map (habitat-osc/args->map args)
@@ -518,227 +543,5 @@
   (let [internal-client (habitat-osc/make-internal-osc-client)]
     (habitat-osc/responder #'osc-responder)))
 
-(defn ping []
-  (http/get "http://localhost:5000/ping"
-            (fn [{:keys [status headers body error]}] ;; asynchronous response handling
-              (if error
-                (println "Failed, exception is " error)
-                (println "Async HTTP POST: " status)))))
-
-(comment
-  (-> @live-state)
-  (get-local-host)
-  (init! [["127.0.0.1" 16181]
-          #_["192.168.0.100" 16181]
-          ["192.168.0.102" 16180]])
-  (ping))
-
-(defn post [endpoint body & {:keys [debug?]}]
-  (http/post (str "http://localhost:5000" endpoint)
-             {:body (pr-str body)}
-             (fn [{:keys [status headers body error]}] ;; asynchronous response handling
-               (if error
-                 (println "Failed, exception is " error endpoint)
-                 (when debug? (println "Async HTTP POST: " status))))))
-
-(def throttled-post
-  (throttle (fn [state] (post "/gusano-cuantico-bardo" state))
-            50))
-
-(defn post-live-state-to-ui!
-  [& {:keys [print-instead?]}]
-  (add-watch bardo.live-state/live-state ::post-live-state
-             (fn [_key _ref _old-value new-value]
-               (if print-instead?
-                 (timbre/info new-value)
-                 (throttled-post (dissoc new-value :lorentz))))))
-
 (comment
   (remove-watch bardo.live-state/live-state ::post-live-state))
-
-(defn- cast-osc-data [data]
-  (map (fn [[k v]] [k (map #(cond
-                              (symbol? %) (eval %) ;; NOTE this may cause trouble
-                              (not (number? %)) %
-                              (float? %) (float %)
-                              :else (int %)) v)])
-       data))
-
-(defn ^:private make-synth-defaults
-  [player]
-  {:active-filter :none,
-   :active-panner :random,
-   :max-dur% 1.0,
-   :filter-configs {:none {:lpf 1.0, :hpf 0.0, :reso 0.0, :q 0.0}},
-   :panner-configs {:random {:vel 0.1}},
-   :active-synth :crystal,
-   :amp -36.0,
-   :sample-lib-size ##Inf,
-   :env :lor-1_4,
-   :harmonic-speed 1,
-   :rhythm :lor-0.1_2,
-   :synth-index 1,
-   :touch-osc-data (->> {"/%s/filter-lpf-fader-visible" [0],
-                         "/%s/harmonic-speed" '(0.20449468),
-                         "/%s/panner-random-group" [1],
-                         "/%s/panner-manual-group" [0],
-                         "/%s/panner-lissajous-group" [0],
-                         "/%s/panner-arrows-group" [0],
-                         "/%s/filter-q-fader" [0.0],
-                         "/%s/panner-label" ["random"],
-                         "/%s/filter-lpf-fader" [1.0],
-                         "/%s/toggle-harmonic-voice/1" '("on" 1 "index" 1),
-                         "/%s/filter-hpf-fader-visible" [0],
-                         "/%s/toggle-harmonic-voice/0" '("on" 1 "index" 0),
-                         "/%s/clouds-rhythm-radio" '(0),
-                         "/%s/toggle-harmonic-voice/2" '("on" 1 "index" 2),
-                         "/%s/filter-hpf-fader" [1.0],
-                         "/%s/harmonic-highest-note" '(0.5190911),
-                         "/%s/clouds-sample-lib-size-radio" '(0),
-                         "/%s/clouds-active-btn" '(0.0),
-                         "/%s/synth-label" ["crystal"],
-                         "/%s/clouds-amp" '(0.0),
-                         "/%s/harmonic-lowest-note" '(0.48726025),
-                         "/%s/panner-rand-vel-fader" '(0.1),
-                         "/%s/filter-reso-fader-visible" [0],
-                         "/%s/filter-q-fader-visible" [0],
-                         "/%s/clouds-env-radio" '(0),
-                         "/%s/filter-label" ["none"],
-                         "/%s/filter-reso-fader" [0.0]
-                         "/%s/independent-sequencer-btn" [0]
-                         "/%s/max-dur-fader" [1.0]}
-                        (map (fn [[k v]] [(format k player) v]))
-                        cast-osc-data
-                        (into {})),
-   :harmonic-active-voices #{0 1 2},
-   :panner-index -4,
-   :filter-index 3,
-   :harmonic-range {:low -1, :high -1}})
-
-#_(make-synth-defaults "Milo")
-(def default-touch-osc-state
-  (->> {"/Milo/bank1-active-label-visible" '(0),
-        "/Milo/bank2-active-label-visible" '(0),
-        "/Milo/bank3-active-label-visible" '(0),
-        "/Milo/bank4-active-label-visible" '(0),
-        "/Milo/bank5-active-label-visible" '(0),
-        "/Milo/bank6-active-label-visible" '(0),
-        "/Milo/bank7-active-label-visible" '(0),
-        "/Milo/bank8-active-label-visible" '(0)
-        "/Milo/independent-sequencer-btn" '(0)
-        "/Diego/independent-sequencer-btn" '(0)
-        "/Diego/bank1-active-label-visible" '(0),
-        "/Diego/bank2-active-label-visible" '(0),
-        "/Diego/bank3-active-label-visible" '(0),
-        "/Diego/bank4-active-label-visible" '(0),
-        "/Diego/bank5-active-label-visible" '(0),
-        "/Diego/bank6-active-label-visible" '(0),
-        "/Diego/bank7-active-label-visible" '(0),
-        "/Diego/bank8-active-label-visible" '(0),
-        "/Diego/bank-rec-radio" '(0),
-        "/Diego/clouds-active-btn" '(0.0), ;; NOTE: will cause log "Could not find refrain with id: :bardo.clouds/diego"
-        "/Diego/clouds-amp" '(0.0),
-        "/Diego/clouds-env-radio" '(0),
-        "/Diego/clouds-rhythm-radio" '(0),
-        "/Diego/clouds-sample-lib-size-radio" '(0),
-        "/Diego/harmonic-highest-note" '(0.5),
-        "/Diego/harmonic-lowest-note" '(0.5),
-        "/Diego/harmonic-speed" '(0.2),
-        "/Diego/harmony-radio" '(0),
-        "/Diego/input-amp-boost" '(0),
-        "/Diego/clean-master" '(0.0),
-        "/Diego/processed-master" '(0.0),
-        "/Diego/rec-durs-radio" '(0),
-        "/Diego/rec-pulse-radio" '(0),
-        "/Diego/rev-send-clean" '(0.0),
-        "/Diego/rev-send-process" '(0.0),
-        "/Diego/selected-synth-radio" '(0),
-        "/Diego/toggle-bank/1" '("on" 0.0 "index" 1),
-        "/Diego/toggle-harmonic-voice/0" '("on" 1 "index" 0),
-        "/Diego/toggle-harmonic-voice/1" '("on" 1 "index" 1),
-        "/Diego/toggle-harmonic-voice/2" '("on" 1 "index" 2),
-        "/EQ/bell-radio" '(0),
-        "/EQ/durs-radio" '(0),
-        "/EQ/flat-eq" '(0.0),
-        "/EQ/hishelf-radio" '(0),
-        "/EQ/loshelf-radio" '(0),
-        "/EQ/notch-radio" '(0),
-        "/gusano/amp" '(0.0),
-        "/gusano/durs" '(0),
-        "/gusano/grain-durs" '(0.0),
-        "/gusano/grain-trig" '(0.0),
-        "/gusano/period" '(0),
-        "/gusano/rates" '(0),
-        "/Milo/bank-rec-radio" '(0),
-        "/Milo/clouds-active-btn" '(0.0), ;; NOTE: will cause log "Could not find refrain with id: :bardo.clouds/milo"
-        "/Milo/clouds-amp" '(0.0),
-        "/Milo/clouds-env-radio" '(0),
-        "/Milo/clouds-rhythm-radio" '(0),
-        "/Milo/clouds-sample-lib-size-radio" '(0),
-        "/Milo/harmonic-highest-note" '(0.5),
-        "/Milo/harmonic-lowest-note" '(0.5),
-        "/Milo/harmonic-speed" '(0.2),
-        "/Milo/harmony-radio" '(0),
-        "/Milo/processed-master" '(0.0),
-        "/Milo/processes-amp-boost" '(3),
-        "/Milo/rec-durs-radio" '(0),
-        "/Milo/rec-pulse-radio" '(0),
-        "/Milo/rev-send-clean" '(0.0),
-        "/Milo/rev-send-process" '(0.0),
-        "/Milo/selected-synth-radio" '(0),
-        "/Milo/toggle-bank/1" '("on" 0.0 "index" 1)
-        "/Milo/toggle-harmonic-voice/0" '("on" 1 "index" 0),
-        "/Milo/toggle-harmonic-voice/1" '("on" 1 "index" 1),
-        "/Milo/toggle-harmonic-voice/2" '("on" 1 "index" 2)
-        "/System/voces-master" [reaper/zero-db]}
-       cast-osc-data
-       (#(merge %
-                (:touch-osc-data (make-synth-defaults "Milo"))
-                (:touch-osc-data (make-synth-defaults "Diego"))))
-       (into {})))
-(-> @live-state)
-
-(defn init-state!
-  []
-  (bardo.live-state/init!
-   (let [init-player (fn [player]
-                       {player (apply merge
-                                      {:selected-bank 0}
-                                      (map (fn [i]
-                                             {i (make-synth-defaults
-                                                 (-> player
-                                                     name
-                                                     str/capitalize))})
-                                           (range 8)))})]
-     {:algo-2.2.9-clouds ;; TODO: is this key seems unnecessary? At least it is misnamed.
-      (merge
-       (init-player :milo)
-       (init-player :diego))})))
-
-(comment
-
-  (-> default-touch-osc-state))
-
-(comment
-  (send-osc-msg "/Milo/selected-synth-radio" (int 0))
-  (send-osc-msg "/Milo/bank2-active-label-visible" "true")
-  (send-osc-msg "/Milo/panner-manual-group" (osc-bool 1)))
-
-(defn reset-default-state!
-  []
-  (init-state!)
-  (doseq [[path args] default-touch-osc-state]
-    (osc-responder {:path path :args args})))
-
-(comment
-
-  (->> @live-state)
-  (get-selected-synth-data :milo)
-  (reset-default-state!)
-  (reset! live-state {})
-  (add-watch live-state ::post-live-state
-             (fn [_key _ref _old-value new-value]
-               (throttled-post (dissoc new-value :lorentz))))
-  (add-watch live-state ::post-live-state
-             (fn [_key _ref _old-value new-value]
-               (println new-value))))
