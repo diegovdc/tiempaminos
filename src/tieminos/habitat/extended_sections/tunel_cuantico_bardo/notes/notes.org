@@ -16,8 +16,8 @@ CLOSED: [2026-02-11 Wed 14:19]
 ** TODO Mejorar debuggeo en =template-synth=
 Loggear los params de llamado de las funciones relevantes y registrarlos en un event-log o algo así
 ** TODO =max-dur= mostrar cuántos segundos en label
-** TODO [#A] revisar niveles de guitarra en reaper y entre gusano y cristal
-DEADLINE: <2026-02-02 Mon>
+** DONE [#A] revisar niveles de guitarra en reaper y entre gusano y cristal
+CLOSED: [2026-02-11 Wed 14:21] DEADLINE: <2026-02-02 Mon>
 ** STRT Agregar =group= en =template-synth=
 *** TODO investigar si hay manera de mejorar la implementación actual
 el uso de ~(flatten (seq params))~

@@ -374,7 +374,7 @@ lfo-kr
                                    {:liss-freq vel
                                     :liss-radius radius
                                     :liss-ratio (max 0.1 (/ (* 11 x)
-                                                            (* 11 y)))
+                                                            (max 0.001 (* 11 y))))
                                     :liss-phase Math/PI}))
       :arrows (do
                 (timbre/warn "TODO: directional-panaz (arrows) panner still needs work")

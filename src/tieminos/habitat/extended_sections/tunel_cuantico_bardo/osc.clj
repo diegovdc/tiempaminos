@@ -422,6 +422,7 @@
                                         (save-touchosc-synth-param :milo path args))
       "/Milo/rev-send-clean" (set-rev-send {:player :milo :clean? true :value (first args)})
       "/Milo/rev-send-process" (set-rev-send {:player :milo :clean? false :value (first args)})
+      "/Milo/selected-synth-radio" (set-selected-bank-synth :milo (first args))
       "/Milo/clean-master" (set-track-volume2 :percussion-clean-track (first args))
       "/Milo/processed-master" (set-track-volume2 :percussion-processes-track (first args))
       "/Milo/processes-amp-boost" (perc-processes-amp-boost (first args))
@@ -485,6 +486,7 @@
       "/Diego/rev-send-clean" (set-rev-send {:player :diego :clean? true :value (first args)})
       "/Diego/rev-send-process" (set-rev-send {:player :diego :clean? false :value (first args)})
       "/Diego/input-amp-boost" (guitar-input-amp-boost (first args))
+      "/Diego/selected-synth-radio" (set-selected-bank-synth :diego (first args))
       "/Diego/clean-master" (set-track-volume2 :guitar-clean-track (first args))
       "/Diego/processed-master" (set-track-volume2 :guitar-processes-track (first args))
       ;; synth management
