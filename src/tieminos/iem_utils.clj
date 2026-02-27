@@ -28,7 +28,7 @@
 
 (defn configure-multiencoder
   "Sources is a collection with `index`, `azimuth` and `elevation` values"
-  [sources]
+  [client sources]
   (let [total-sources (count sources)]
     (when (> total-sources 64)
       (throw (ex-info "Total inputs exceeds 64" {:total-sources total-sources})))
@@ -78,7 +78,7 @@
                              [{:elevation 90 :azimuth 0}])
                      flatten
                      +index)]
-    (configure-multiencoder sources)))
+    (configure-multiencoder client sources)))
 
 (do
   (defn degree-range
@@ -128,34 +128,35 @@
 
     (osc/osc-send client "/MultiEncoder/masterElevation" (float 0))
     (osc/osc-send client "/MultiEncoder/masterRoll" (float 0))
-    (configure-multiencoder sources)))
-
+    (configure-multiencoder client sources)))
+(comment
+  (degree-seq 45.0 45/2 8))
 (comment
   ;; updown spiral
-  (let [steps 22
+  (let [steps 44
         elevs (degree-range -90 90 steps)
-        sources (->> (concat (line (degree-seq 15 0 steps) elevs)
-                             (line (degree-seq -15 -210 steps) (reverse elevs)))
+        sources (->> (concat (line (degree-seq 55 0 steps) elevs)
+                             #_(line (degree-seq -15 -210 steps) (reverse elevs)))
                      +index)]
 
     (osc/osc-send client "/MultiEncoder/masterRoll" (float 0))
+    (configure-multiencoder client sources)))
 
-    (configure-multiencoder sources)))
 (comment
   (osc/osc-send client "/MultiEncoder/masterRoll" (float (rand 180))))
 
 (comment
-  ;; updown spiral
+  ;; bt-arc
   (let [steps 10
         elevs (degree-range -90 90 steps)
-        dome-degs [0] #_(degree-range -90 90)
+        dome-degs [-90 0 90] #_(degree-range -90 90)
         sources (->> (mapcat #(line (degree-seq 0 % (count elevs)) elevs)
                              dome-degs)
                      +index)]
 
     (osc/osc-send client "/MultiEncoder/masterRoll" (float 0))
 
-    (configure-multiencoder sources)
+    (configure-multiencoder client sources)
     sources
     elevs))
 

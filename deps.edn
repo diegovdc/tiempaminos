@@ -7,7 +7,7 @@
         instaparse/instaparse {:mvn/version "1.5.0"}
         org.clojure/data.generators {:mvn/version "1.0.0"}
         io.github.diegovdc/overtone {:git/url "https://github.com/diegovdc/overtone.git"
-                                     :sha "9436febbb819887bfdc8316034a6e1f5b7f51fcf"} #_{:local/root "../overtone" :deps/manifest :deps}
+                                     :sha "a9395fdea0acf4574bb2a94ff39b59d4212117a3"} #_{:local/root "../overtone" :deps/manifest :deps}
         ;; videco/piratidal {:local/root "../../../code/piratidal" :deps/manifest :deps}
         io.github.diegovdc/time-time {:git/url "https://github.com/diegovdc/time-time.git"
                                       :sha "035a1accd4b3ac955aec246d68334aec133ad230"}
@@ -28,8 +28,7 @@
         thi.ng/color {:mvn/version "1.4.0"}
         ;; another interesting possibility, may offer other options
         ;; com.dean/interval-tree {:mvn/version  "0.1.2"}
-        djblue/portal {:mvn/version "0.62.2"}
-        }
+        djblue/portal {:mvn/version "0.62.2"}}
  :aliases {:test {:extra-paths ["test"]
                   :extra-deps {io.github.cognitect-labs/test-runner
                                {:git/tag "v0.5.1" :git/sha "dfb30dd"}}
