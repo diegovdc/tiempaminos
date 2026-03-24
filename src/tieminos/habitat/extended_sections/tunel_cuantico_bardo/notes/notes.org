@@ -1,6 +1,8 @@
 #+STARTUP: overview
+#+filetags: :hunu:tieminos:
 
 Código tomado de las grabaciones de 2.2.9, por lo que en el directorio de reaper todas las sesiones se nombrarán como 2.2.9.x
+
 * Imágenes
 ** Retorno al origen: Regresar a la roca y de ahí al universo
 ** El ojo de visión del gusano cuántico
@@ -11,6 +13,14 @@ Código tomado de las grabaciones de 2.2.9, por lo que en el directorio de reape
 CLOSED: [2026-02-11 Wed 14:08] DEADLINE: <2026-02-09 Mon>
 ** DONE Agregar control de volumen de =clean= para Milo
 CLOSED: [2026-02-11 Wed 14:19]
+** TODO [#A] default de ritmo: lor 2-6
+DEADLINE: <2026-03-23 Mon>
+** TODO [#B] max dur mostrar duracion en UI
+DEADLINE: <2026-03-23 Mon>
+** TODO [#A] Crear formato en REAPER 8-ch
+DEADLINE: <2026-03-30 Mon>
+** TODO mejorar Lorentz de ritmo-secuenciado
+cómo debe funcionar? todos son sincrónicos? (i.e. usan el mismo índice y dimensión)
 ** TODO documentar =template-synth=
 ** TODO Move ~make-voice-params~ to =synths.clj=
 ** TODO Mejorar debuggeo en =template-synth=

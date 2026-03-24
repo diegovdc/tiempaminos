@@ -23,7 +23,9 @@
 ;;;;;;;;;;;;;;;;;;
 
 (comment
-  (bardo.live-state/get-player-data :milo 0)
+  (bardo.live-state/get-player-data :milo)
+  (-> (bardo.live-state/get-player-data :milo)
+      :refrains)
   (apply dissoc (bardo.live-state/get-player-data :milo) (range 8))
 
   (bardo.live-state/get-selected-synth-data :diego)

@@ -95,21 +95,27 @@
   [player]
   (get-banks! #(:on? %) player))
 
+(defn independent-bank?
+  "All banks are independent by default (i.e. if no `:independent?` value has been set)"
+  [bank]
+  (let [indy? (:independent? bank)]
+    (or indy? (nil? indy?))))
+
 (defn get-active-independent-banks
   "Get banks that are independent."
   ([player]
-   (get-banks! #(and (:on? %) (:independent? %))
+   (get-banks! #(and (:on? %) (independent-bank? %))
                player)))
 
 (defn get-independent-banks
-  "Get banks that are independent."
+  "Get banks that are independent. All banks are independent by default (i.e. if no `:independent?` value has been set)"
   ([player]
-   (get-banks! #(:independent? %) player)))
+   (get-banks! #(independent-bank? %) player)))
 
 (defn get-active-group-banks
   "Get that are not indepedent."
   ([player]
-   (get-banks! #(and (:on? %) (not (:independent? %)))
+   (get-banks! #(and (:on? %) (not (independent-bank? %)))
                player)))
 
 (defn get-gusano-banks
