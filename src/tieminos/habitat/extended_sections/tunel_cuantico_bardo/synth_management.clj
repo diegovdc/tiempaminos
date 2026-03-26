@@ -19,22 +19,22 @@
          (with-meta synth {:live-controls.synth/dur dur})))
 
 (defn- stop-long-running-synths!*
-  [min-synth-duration currently-playing-synths-data]
+  [min-synth-duration-s currently-playing-synths-data]
   ;; NOTE: if a synth is starting right now, it may not be stopped.
   (doseq [s currently-playing-synths-data]
     (let [dur (:live-controls.synth/dur (meta s))]
       (when (and (o/node-active? s)
                  dur
-                 (>= dur min-synth-duration))
+                 (>= dur min-synth-duration-s))
         (timbre/info "Stopping synth:" s)
         ;; using rrand to disperse fadeouts
         (o/ctl s :gate (rrand -6.0 -14))))))
 
 (defn stop-long-running-synths!
   "Stops all long running synths if their total duration (not the remaining) exceed the `min-synth-duration`."
-  [min-synth-duration]
+  [min-synth-duration-s]
   (timbre/info "Stopping long running synths")
-  (stop-long-running-synths!* min-synth-duration @currently-playing-synths))
+  (stop-long-running-synths!* min-synth-duration-s @currently-playing-synths))
 
 (defn clear-currently-playing-synths!
   "Remove synths that are no longer playing from the `currently-playing-synths` atom"

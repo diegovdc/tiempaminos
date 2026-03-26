@@ -490,7 +490,7 @@
       "/Diego/clean-master" (set-track-volume2 :guitar-clean-track (first args))
       "/Diego/processed-master" (set-track-volume2 :guitar-processes-track (first args))
       ;; synth management
-      "/stop-long-running-synths" (when press? (stop-long-running-synths! (* 20 1000)))
+      "/stop-long-running-synths" (when press? (stop-long-running-synths! 20))
       ;; gusano
       "/gusano/gusano-active-btn" (toggle-gusano press?)
       "/gusano/rates" (set-gusano-rates (first args))
