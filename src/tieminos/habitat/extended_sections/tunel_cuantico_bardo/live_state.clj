@@ -210,7 +210,7 @@
 (def default-cloud-config
   {:sample-lib-size 1
    :env :lor-1_4
-   :rhythm :lor-0.1_2
+   :rhythm :lor-2_6
    :amp 0.7
    :reaper.send/reverb {:clean 0 :processes 0}
    :active-banks #{}
@@ -1048,7 +1048,7 @@
         "/Diego/clouds-active-btn" '(0.0), ;; NOTE: will cause log "Could not find refrain with id: :bardo.clouds/diego"
         "/Diego/clouds-amp" '(0.0),
         "/Diego/clouds-env-radio" '(0),
-        "/Diego/clouds-rhythm-radio" '(0),
+        "/Diego/clouds-rhythm-radio" '(1),
         "/Diego/clouds-sample-lib-size-radio" '(0),
         "/Diego/harmonic-highest-note" '(0.5),
         "/Diego/harmonic-lowest-note" '(0.5),
@@ -1082,7 +1082,7 @@
         "/Milo/clouds-active-btn" '(0.0), ;; NOTE: will cause log "Could not find refrain with id: :bardo.clouds/milo"
         "/Milo/clouds-amp" '(0.0),
         "/Milo/clouds-env-radio" '(0),
-        "/Milo/clouds-rhythm-radio" '(0),
+        "/Milo/clouds-rhythm-radio" '(1),
         "/Milo/clouds-sample-lib-size-radio" '(0),
         "/Milo/harmonic-highest-note" '(0.5),
         "/Milo/harmonic-lowest-note" '(0.5),
