@@ -149,7 +149,7 @@
   ;; bt-arc
   (let [steps 10
         elevs (degree-range -90 90 steps)
-        dome-degs [-90 0 90] #_(degree-range -90 90)
+        dome-degs [-90 -45 0 45 90] #_(degree-range -90 90)
         sources (->> (mapcat #(line (degree-seq 0 % (count elevs)) elevs)
                              dome-degs)
                      +index)]
