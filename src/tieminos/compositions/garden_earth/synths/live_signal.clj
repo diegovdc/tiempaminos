@@ -94,14 +94,15 @@
            scale-freqs-ranges scale-freqs-ranges
            pitch-path "/receive-pitch"
            analyzer-amp 1}}]
-  (run-receive-pitch :pitch-path pitch-path
-                     :on-receive-pitch on-receive-pitch
-                     :scale-freqs-ranges scale-freqs-ranges)
-  (run-get-signal-pitches
-   :in in
-   :analyzer-amp analyzer-amp
-   :freq freq
-   :pitch-path pitch-path))
+  {:receive-pitch-handler
+   (run-receive-pitch :pitch-path pitch-path
+                      :on-receive-pitch on-receive-pitch
+                      :scale-freqs-ranges scale-freqs-ranges)
+   :get-signal-pitches-synth (run-get-signal-pitches
+                              :in in
+                              :analyzer-amp analyzer-amp
+                              :freq freq
+                              :pitch-path pitch-path)})
 
 #_(defn add-analysis
     [dur-s buf-key input-bus]

@@ -10,7 +10,7 @@
 ;; IO
 ;;;;;;;;;;;;;;;;;;
 
-(defn bh
+(defn bus
   [i]
   (let [offset (case @interface
                  :minifuse 4

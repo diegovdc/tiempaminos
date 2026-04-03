@@ -2,39 +2,27 @@
   (:require
    [clojure.pprint :as pprint]
    [overtone.osc :as osc]
-   [taoensso.timbre :as timbre]))
-
-;;;;;;;;;;;;;;;;;;
-;; General
-;;;;;;;;;;;;;;;;;;
-
-(def ^:dynamic *interface* :minifuse)
+   [taoensso.timbre :as timbre]
+   [tieminos.blackhole :as bh]))
 
 ;;;;;;;;;;;;;;;;;;
 ;; IO
 ;;;;;;;;;;;;;;;;;;
 
-(defn bh
-  [i]
-  (let [offset (case *interface*
-                 :minifuse 4
-                 :scarlett 20)]
-    (+ offset (dec i))))
-
 (def ins
-  {:fl-main (bh 1)})
+  {:fl-main (bh/bh 3)})
 
-;; First 16 inputs are reserved
+;; First 16 bh buses are reserved as inputs
 (def outs
-  {:nubosidades-fl-2ch (bh 16)
-   :nubosidades-fl2-2ch (bh 18)})
+  {:nubosidades-fl-2ch (bh/bh 16)
+   :nubosidades-fl2-2ch (bh/bh 18)})
 
-(defn get-in [k]
+(defn get-input [k]
   (if-let [bus (ins k)]
     bus
     (throw (ex-info "In bus not found" {:key k}))))
 
-(defn get-out [k]
+(defn get-output [k]
   (if-let [bus (outs k)]
     bus
     (throw (ex-info "Out bus not found" {:key k}))))

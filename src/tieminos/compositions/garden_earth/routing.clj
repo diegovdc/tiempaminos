@@ -2,6 +2,7 @@
   (:require
    [overtone.core :as o]
    [taoensso.timbre :as timbre]
+   [tieminos.blackhole]
    [tieminos.compositions.7D-percusion-ensamble.base :refer [bh]]
    [tieminos.overtone-extensions :as oe]
    [tieminos.sc-utils.groups.v1 :as groups]
@@ -15,7 +16,7 @@
   [in 0 out 0 amp 1]
   (o/out out (* amp (o/sound-in in))))
 
-(def ^:private ins {:in-1 {:in 22}})
+(def ^:private ins {:in-1 {:in (tieminos.blackhole/bh 3)}})
 
 (defonce inputs
   (atom ins))

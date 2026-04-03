@@ -24,8 +24,9 @@
    [tieminos.sc-utils.ndef.v1 :as ndef]
    [tieminos.sc-utils.recording.v1 :as sc.rec.v1]
    [tieminos.seq-utils.core :refer [++ rainseq]]
+   [tieminos.tierra-mar.v1.state :as tm.state :refer [state]]
+   [tieminos.tierra-mar.v1.arp :as tm.arp]
    [tieminos.utils :refer [wrap-at]]
-   [tieminos.tierra-mar.v1.state :as tm.state]
    [time-time.dynacan.players.gen-poly :as gp :refer [on-event ref-rain]]))
 
 (def arp-subcps
@@ -34,12 +35,12 @@
     "2)4 of 3)6 9-1.5.7.11"
     "1)4 of 3)6 5.9-1.3.7.11"]])
 
-(declare live-state make-repeat-cell)
-
+(declare make-repeat-cell)
+#_(ns-unmap *ns* 'state)
 (defn simple-pattern
   [pattern pitch-class scale]
   ;; just for the UI's benefit
-  (swap! live-state assoc :arp/pattern-str (str (into [] pattern)))
+  (swap! state assoc :arp/pattern-str (str (into [] pattern)))
   (map #(interval-from-pitch-class2 scale pitch-class %)
        pattern))
 
@@ -133,12 +134,12 @@
            :arp/scale scale)))
 
 (comment
-  (-> @live-state :section))
+  (-> @state :section))
 (def ^:private initial-state (-> {:section 0}
                                  update-arp-scale-data
                                  update-arp-pattern))
 
-(defonce ^:private live-state (atom initial-state))
+#_(defonce ^:private state (atom initial-state))
 
 (defonce ^:private last-sets (atom '()))
 
@@ -170,7 +171,7 @@
                                                          (set (map (comp :class :pitch)
                                                                    scale-1)))
                                 :on-receive-pitch #'on-receive-pitch})]
-    (swap! tm.state/state assoc :analyzer analyzer-map)))
+    (swap! state assoc :analyzer analyzer-map)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Grain Sample Arp
@@ -178,12 +179,12 @@
 
 ;; NOTE: `ge-live-sig/start-signal-analyzer' should be running
 
-(defn stop-sample-arp! []
-  (timbre/info :stopping-arp)
-  (gp/stop ::arp-rain)
-  (swap! live-state assoc
-         :arp.refrain/on? false))
-(-> @live-state)
+#_(defn stop-sample-arp! []
+    (timbre/info :stopping-arp)
+    (gp/stop ::arp-rain)
+    (swap! state assoc
+           :arp.refrain/on? false))
+(-> @state)
 (defn make-repeat-cell
   [pattern-cell
    pitch-class
@@ -196,32 +197,32 @@
                      flatten
                      (take len))]
     ;; just for the UI's benefit
-    (swap! live-state assoc :arp/pattern-str (str (into [] pattern)))
+    (swap! state assoc :arp/pattern-str (str (into [] pattern)))
 
     (map #(interval-from-pitch-class2 scale pitch-class %)
          pattern)))
 
-(defn start-sample-arp!
-  [{:keys [subcps-name interval-seq-fn]
-    :or {interval-seq-fn default-interval-seq-fn}}]
-  (timbre/info :starting-arp)
-  (ref-rain :id ::arp-rain
-            :durs [5 3 8 2 1 5]
-            :ratio 1/3
-            :on-event (on-event
-                       (let [{:keys [arp/scale arp/pattern]} @live-state]
-                         (arp {:bufs-atom sc.rec.v1/bufs
-                               :dur 0.5
-                               :index index
-                               :in (ge.route/fl-i1 :bus)
-                               :play-fn #_(partial #'arp-reponse-1 {:scale scale
-                                                                    :out (bh 0)})
-                               (partial #'arp-reponse-2 {:scale scale
-                                                         :amp-min 1
-                                                         :amp-max 1.5
-                                                         :interval-seq-fn (:fn pattern)
-                                                         :out (rainseq (++ 25 (map #(mod % 44) (range 0 88 5))))})}))))
-  (swap! live-state assoc :arp.refrain/on? true))
+#_(defn start-sample-arp!
+    [{:keys [subcps-name interval-seq-fn]
+      :or {interval-seq-fn default-interval-seq-fn}}]
+    (timbre/info :starting-arp)
+    (ref-rain :id ::arp-rain
+              :durs [5 3 8 2 1 5]
+              :ratio 1/3
+              :on-event (on-event
+                         (let [{:keys [arp/scale arp/pattern]} @state]
+                           (arp {:bufs-atom sc.rec.v1/bufs
+                                 :dur 0.5
+                                 :index index
+                                 :in (ge.route/fl-i1 :bus)
+                                 :play-fn #_(partial #'arp-reponse-1 {:scale scale
+                                                                      :out (bh 0)})
+                                 (partial #'arp-reponse-2 {:scale scale
+                                                           :amp-min 1
+                                                           :amp-max 1.5
+                                                           :interval-seq-fn (:fn pattern)
+                                                           :out (rainseq (++ 25 (map #(mod % 44) (range 0 88 5))))})}))))
+    (swap! state assoc :arp.refrain/on? true))
 
 ;;;;;;;;;;;;;;;
 ;;; Harmonizer
@@ -230,7 +231,7 @@
 (defn stop-harmonizer! []
   (timbre/info :stopping-harmonizer)
   (ndef/stop ::harmonizer)
-  (swap! live-state assoc :harmonizer/on? false))
+  (swap! state assoc :harmonizer/on? false))
 
 (defn make-harmony
   [root-deg subcps-name]
@@ -246,7 +247,7 @@
 
 (defn start-harmonizer! []
   (timbre/info :starting-harmonizer)
-  (if-let [ratios (:harmonizer/harmony @live-state)]
+  (if-let [ratios (:harmonizer/harmony @state)]
     (do (ndef/ndef
          ::harmonizer
          (-> (o/sound-in (ge.route/fl-i1 :in))
@@ -257,7 +258,7 @@
              (o/pan2)
              (* 8))
          {:out (bh 2)})
-        (swap! live-state assoc :harmonizer/on? true))
+        (swap! state assoc :harmonizer/on? true))
     (timbre/error "No :harmonizer/harmony found")))
 
 (comment
@@ -277,75 +278,89 @@
 (defn sections
   "`config-key` is something like `:arp` or `:harmonizer`.
   All configs should be wrapped in a `fn`"
-  [config-key live-state-data]
+  [config-key state-data]
   (let [sections*
-        {0 {:arp (fn [] {:subcps-name (wrap-at (:arp/cps-index live-state-data 0) arp-subcps)
+        {0 {:arp (fn [] {:subcps-name (wrap-at (:arp/cps-index state-data 0) arp-subcps)
                          :interval-seq-fn (partial make-repeat-cell
-                                                   (wrap-at (:arp/pattern-fn-index live-state-data 0)
+                                                   (wrap-at (:arp/pattern-fn-index state-data 0)
                                                             [[0 2]
                                                              [0 -2]
                                                              [0 3 1 -2]]))})}}]
 
-    #_((get-in sections* [(:section live-state-data 0) config-key]))
+    #_((get-in sections* [(:section state-data 0) config-key]))
     ((get-in sections* [0 :arp]))))
+(comment
+  (gp/stop))
+(defn toggle-sample-arp!
+  []
+  (if (:arp.refrain/on? @state)
+    (tm.arp/stop-sample-arp!)
+    (tm.arp/start-sample-arp! (sections :arp @state))))
+
+(comment
+  (reset! tm.state/state {})
+  (-> @tm.state/state)
+  (-> @state)
+  (-> @live-state))
 
 (defn midi-ctl
   [{:keys [note]}]
   (cond
     ;; set section
-    (= 2 note) (swap! live-state update :section dec)
-    (= 3 note) (swap! live-state update :section inc)
+    (= 2 note) (swap! state update :section dec)
+    (= 3 note) (swap! state update :section inc)
     ;; arp
-    (and (:arp.refrain/on? @live-state)
-         (= 4 note))
-    (stop-sample-arp!)
-
-    (= 4 note) (start-sample-arp! (sections :arp @live-state))
+    (= 4 note) (toggle-sample-arp!)
 
     ;; arp config
-    (= 5 note) (swap! live-state update-arp-scale-data)
-    (= 6 note) (swap! live-state update-arp-pattern)
+    (= 5 note) (swap! state update-arp-scale-data)
+    (= 6 note) (swap! state update-arp-pattern)
 
     ;; harmonizer
-    (and (:harmonizer/on? @live-state)
+    (and (:harmonizer/on? @state)
          (= 7 note))
     (stop-harmonizer!)
 
     (= 7 note) (start-harmonizer!)
     (= 8 note) (do
-                 (swap! live-state update-harmonizer-harmony)
-                 (when (:harmonizer/on? @live-state)
+                 (swap! state update-harmonizer-harmony)
+                 (when (:harmonizer/on? @state)
                    (start-harmonizer!)))))
 
 (comment
-  (-> @live-state)
-  (midi-ctl {:note 2})
-  (midi-ctl {:note 3})
-  (midi-ctl {:note 5})
-  (midi-ctl {:note 6})
-  (midi-ctl {:note 4})                  ; start sample-arp
+  (toggle-sample-arp!)
+  (-> @state)
+  (midi-ctl {:note 2}) ;; section down
+  (midi-ctl {:note 3}) ;; section up
+  (midi-ctl {:note 4}) ;; toggle sample-arp
+  (midi-ctl {:note 5}) ;; update arp scale data
+  (midi-ctl {:note 6}) ;; update arp scale pattern                
   )
 
 (comment
-  (-> @live-state)
-  (do (o/stop) (gp/stop) (reset! live-state initial-state))
+  (reset! tieminos.blackhole/interface :minifuse)
+  (-> @state)
+  (do (o/stop) (gp/stop) (reset! state initial-state))
   (ge.init/init!)
-  #_(-> @live-state)
+  #_(-> @state)
+  ;; TODO: maybe use input bus from (tm.configs/get-bus :fl-main)
   (start-signal-analyzer! (ge.route/fl-i1 :in))
 
-  ;; init live-state
-  (add-watch live-state ::post-live-state
+  ;; init state
+  (add-watch state ::post-state
              (fn [_key _ref _old-value new-value]
                (post-live-state (-> new-value
                                     (update :arp/pattern :name)))))
-  (->> @live-state)
+  (remove-watch state ::post-state)
+  (->> @state)
   (o/kill synth)
+  ;; TODO: maybe use input bus from (tm.configs/get-bus :fl-main)
   (def synth (pan-verb :in (ge.route/fl-i1 :in)
                        :amp 1
                        :mix 0.5 :room 4
                        :damp-min 0.3 :damp 0.2
                        :pan-min -0.5 :pan 0.5
-                       :out 20))
+                       :out 0))
 
   ;; Pacer's TIEMI config
   (midi-in-event
