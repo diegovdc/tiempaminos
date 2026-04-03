@@ -22,7 +22,7 @@
    "1)4 of 3)6 9.11-1.3.5.7"
    "1)4 of 3)6 1.9-3.5.7.11" ;; difícil
    "1)4 of 3)6 3.9-1.5.7.11" ;; clara
-   "1)4 of 3)6 5.9-1.3.7.11" ;; disonante (tonos relativamente cercanos) pero muy hermosa, mística, intensa, sobre todo cuando satura
+   "1)4 of 3)6 5.9-1.3.7.11" ;; disonante (tonos relativamente cercanos) pero muy hermosa, mística, intensa, sobre todo cuando satura ;; en una segunda exploración también me gustó, pero me pareció más sencilla, menos disonante, pero porque la xperimente desde el especto 7:8:11:12
    "1)4 of 3)6 7.9-1.3.5.11"
    "1)4 of 3)6 1.7-3.5.9.11"
    "1)4 of 3)6 3.7-1.5.9.11"
@@ -37,7 +37,7 @@
    "3)4 of 3)6 1.3.5.9" ;; muy chida, recuerda a algo folcórico
    "3)4 of 3)6 1.3.7.11"
    "3)4 of 3)6 1.3.7.9"
-   "3)4 of 3)6 1.3.9.11" ;; TODO: describe effect
+   "3)4 of 3)6 1.3.9.11" ;; difícil, quizá muy neutro o aún no le encuentro mucho
    "3)4 of 3)6 1.5.7.11"
    "3)4 of 3)6 1.5.7.9"
    "3)4 of 3)6 1.5.9.11"
@@ -95,14 +95,15 @@
 
   (def scale-index 7)
 
-  (def cps "3)4 of 3)6 1.3.9.11")
+  (def cps "1)4 of 3)6 5.9-1.3.7.11")
+  #_(def cps "3)4 of 3)6 1.3.7.11")
   (+names base-freq (subcps cps))
   (scale/print-scale-intervals! (subcps cps)
                                 :unit :ratios)
   (scale/print-scale-intervals! (subcps cps)
                                 :unit :cents)
   (o/stop)
-  (gp/stop)
+  (gp/stop ::trainer)
   (let [scale (+names base-freq (subcps cps
                                         #_(*3oo4 scale-index)))
         last-interval (atom '(1 1))]
@@ -111,15 +112,15 @@
      :durs (fn [_] (rand-nth [5 8 10]))
      :on-event
      (on-event
-      (let [degrees (cond
-                      (< index 10) [2 3]
-                      (< index 20) [0 2 3]
-                      (< index 40) [1 2 3]
-                      (< index 50) [1 2]
-                      (< index 65) [0 1 2]
-                      (< index 80) [0 2]
-                      (< index 90) [0 2 3]
-                      :else [0 1 2 3])
+      (let [degrees [0 1 2 3] #_(cond
+                                  (< index 10) [2 3]
+                                  (< index 20) [0 2 3]
+                                  (< index 40) [1 2 3]
+                                  (< index 50) [1 2]
+                                  (< index 65) [0 1 2]
+                                  (< index 80) [0 2]
+                                  (< index 90) [0 2 3]
+                                  :else [0 1 2 3])
             note (nth scale (rand-nth degrees))
             _ (swap! last-interval
                      #(->> (conj % (:bounded-ratio note))
@@ -135,7 +136,7 @@
          :r 6
          :pan (rrange -0.5 0.5)
          :amp (rrange 0.125 0.25)
-         :out (bh 0))
+         :out (bh (+ 6 (rand-int 28))))
         (println (pitch-class->pr-fingering
                   (-> note :pitch :class))
                  "\n\n"))))))

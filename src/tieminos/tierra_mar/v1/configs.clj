@@ -1,6 +1,6 @@
 (ns tieminos.tierra-mar.v1.configs
   (:require
-   [clojure.pprint :as pprint]
+   [overtone.core :as o]
    [overtone.osc :as osc]
    [taoensso.timbre :as timbre]
    [tieminos.blackhole :as bh]))
@@ -10,22 +10,48 @@
 ;;;;;;;;;;;;;;;;;;
 
 (def ins
-  {:fl-main (bh/bh 3)})
+  {:fl-main (bh/bus 3)})
 
 ;; First 16 bh buses are reserved as inputs
 (def outs
-  {:nubosidades-fl-2ch (bh/bh 16)
-   :nubosidades-fl2-2ch (bh/bh 18)})
+  {:nubosidades-fl-2ch (bh/bus 16)
+   :nubosidades-fl2-2ch (bh/bus 18)
+   :nubosidades-arp-2ch (bh/bus 20)
+   :nubosidades-arp2-2ch (bh/bus 22)})
 
 (defn get-input [k]
   (if-let [bus (ins k)]
     bus
     (throw (ex-info "In bus not found" {:key k}))))
 
-(defn get-output [k]
+(defn
+  get-output [k]
   (if-let [bus (outs k)]
     bus
     (throw (ex-info "Out bus not found" {:key k}))))
+
+;; IO Buses
+;;;;;;;;;
+
+(defonce audio-buses (atom {}))
+
+(defn init-buses!
+  []
+  (reset! audio-buses
+          (reduce-kv
+           (fn [m k v] (assoc m k (o/audio-bus v (name k))))
+           {}
+           {:arp->nubosidad 2
+            :arp->nubosidad2 2})))
+
+(defn get-audio-bus
+  [k]
+  (if-let [bus (get @audio-buses k)]
+    bus
+    (timbre/error "Audio Bus not found" {:key k})))
+
+(comment
+  (init-buses!))
 
 ;;;;;;;;;;;;;;;;;;
 ;; IEM
@@ -33,7 +59,9 @@
 
 (def iem-osc-ports
   {:nubosidad-lorenztiana-fl 1234
-   :nubosidad-lorenztiana-fl2 1235})
+   :nubosidad-lorenztiana-fl2 1235
+   :nubosidad-lorenztiana-arp 1236
+   :nubosidad-lorenztiana-arp2 1237})
 
 (defonce iem-osc-clients
   (atom nil))

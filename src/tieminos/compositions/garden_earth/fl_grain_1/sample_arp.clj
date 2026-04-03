@@ -66,7 +66,7 @@
 
 (defn play-sample
   [{:keys [buf] :as _arp-data}
-   & {:keys [out amp adr-env grain-conf d-level rate]
+   & {:keys [out amp adr-env grain-conf d-level rate group]
       :or {out 0
            rate 1
            amp 2
@@ -74,7 +74,7 @@
            grain-conf {:trig-rate 100 :grain-dur 1/10 :start 0 :end 1}
            adr-env (dur->env {:a 2 :d 2 :r 5} 3)}}]
   (sample&hold
-   (merge {:group (groups/mid)
+   (merge {:group (or group (groups/mid))
            :out out
            :buf buf
            :d-level d-level
@@ -210,6 +210,7 @@
 (comment
 
   (default-interval-seq-fn "C+20" (:scale eik))
+  (default-interval-seq-fn "A+92" (:scale eik))
   (interval-from-pitch-class2 (:scale eik) "C+20" 0))
 
 (defn pattern-interval-seq-fn
@@ -220,7 +221,8 @@
   (defn arp-reponse-2
     [{:keys [scale out interval-seq-fn
              env-min-dur env-max-dur
-             amp-min amp-max]
+             amp-min amp-max
+             group]
       :or {out 0
            interval-seq-fn default-interval-seq-fn
            env-min-dur 3
@@ -245,7 +247,8 @@
                   :on-event
                   (on-event
                    (play-sample arp-data
-                                {:out out
+                                {:group group
+                                 :out out
                                  :rate (at-index intervals)
                                  :d-level (at-index d-level)
                                  :amp (at-index amps)

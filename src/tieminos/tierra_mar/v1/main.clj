@@ -5,15 +5,13 @@
    [erv.scale.core :refer [+names]]
    [overtone.core :as o]
    [taoensso.timbre :as timbre]
+   [tieminos.blackhole :as bh]
    [tieminos.compositions.7D-percusion-ensamble.base :refer [bh]]
    [tieminos.compositions.garden-earth.analysis
     :refer [pitch-class->note-set]]
    [tieminos.compositions.garden-earth.base :refer [base-freq
                                                     interval-from-pitch-class2
                                                     subcps]]
-   [tieminos.compositions.garden-earth.fl-grain-1.sample-arp :refer [arp
-                                                                     arp-reponse-2
-                                                                     default-interval-seq-fn]]
    [tieminos.compositions.garden-earth.init :as ge.init]
    [tieminos.compositions.garden-earth.routing :as ge.route]
    [tieminos.compositions.garden-earth.synths.live-signal
@@ -21,13 +19,27 @@
    [tieminos.compositions.garden-earth.web.ajax
     :refer [post-live-state post-note-tuning]]
    [tieminos.midi.core :refer [get-pacer! midi-in-event]]
+   [tieminos.sc-utils.groups.v1 :as sc.groups]
    [tieminos.sc-utils.ndef.v1 :as ndef]
    [tieminos.sc-utils.recording.v1 :as sc.rec.v1]
-   [tieminos.seq-utils.core :refer [++ rainseq]]
-   [tieminos.tierra-mar.v1.state :as tm.state :refer [state]]
    [tieminos.tierra-mar.v1.arp :as tm.arp]
+   [tieminos.tierra-mar.v1.configs :as tm.configs]
+   [tieminos.tierra-mar.v1.state :as tm.state :refer [state]]
    [tieminos.utils :refer [wrap-at]]
-   [time-time.dynacan.players.gen-poly :as gp :refer [on-event ref-rain]]))
+   [time-time.dynacan.players.gen-poly :as gp]))
+
+;;;;;;;;;;;;;;;;;;
+;; Main Controls
+;;;;;;;;;;;;;;;;;;
+(declare init! stop!)
+
+(comment
+  (init!)
+  (stop!))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Implementations and WIP
+;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def arp-subcps
   [;; S.0
@@ -280,22 +292,32 @@
   All configs should be wrapped in a `fn`"
   [config-key state-data]
   (let [sections*
-        {0 {:arp (fn [] {:subcps-name (wrap-at (:arp/cps-index state-data 0) arp-subcps)
-                         :interval-seq-fn (partial make-repeat-cell
-                                                   (wrap-at (:arp/pattern-fn-index state-data 0)
-                                                            [[0 2]
-                                                             [0 -2]
-                                                             [0 3 1 -2]]))})}}]
+        {0 {:arp (fn []
+                   {:subcps-name (wrap-at (:arp/cps-index state-data 0) arp-subcps)
+                    :interval-seq-fn (partial make-repeat-cell
+                                              (wrap-at (:arp/pattern-fn-index state-data 0)
+                                                       [[0 2]
+                                                        [0 -2]
+                                                        [0 3 1 -2]]))
+                    :group (sc.groups/early)
+                    :out-fn (fn [_i]
+                              (tm.configs/get-audio-bus
+                               (rand-nth [:arp->nubosidad
+                                          :arp->nubosidad2])))})}}]
 
     #_((get-in sections* [(:section state-data 0) config-key]))
     ((get-in sections* [0 :arp]))))
 (comment
+
   (gp/stop))
 (defn toggle-sample-arp!
   []
   (if (:arp.refrain/on? @state)
     (tm.arp/stop-sample-arp!)
-    (tm.arp/start-sample-arp! (sections :arp @state))))
+    (tm.arp/start-sample-arp!
+     (assoc (sections :arp @state)
+            :state-atom state)))
+  nil)
 
 (comment
   (reset! tm.state/state {})
@@ -337,6 +359,25 @@
   (midi-ctl {:note 6}) ;; update arp scale pattern                
   )
 
+(defn stop! []
+  (o/stop)
+  (gp/stop)
+  (reset! state initial-state)
+  (reset! tm.configs/audio-buses {}))
+
+(defn init! []
+  (sc.groups/init-groups!)
+  (reset! state initial-state)
+  (ge.init/init!)
+  (tm.configs/init-buses!)
+  (tm.configs/init-osc-clients!)
+  (start-signal-analyzer! (ge.route/fl-i1 :in))
+  (add-watch state ::post-state
+             (fn [_key _ref _old-value new-value]
+               (post-live-state (-> new-value
+                                    (update :arp/pattern :name)
+                                    (dissoc :analyzer))))))
+
 (comment
   (reset! tieminos.blackhole/interface :minifuse)
   (-> @state)
@@ -350,7 +391,8 @@
   (add-watch state ::post-state
              (fn [_key _ref _old-value new-value]
                (post-live-state (-> new-value
-                                    (update :arp/pattern :name)))))
+                                    (update :arp/pattern :name)
+                                    (dissoc :analyzer)))))
   (remove-watch state ::post-state)
   (->> @state)
   (o/kill synth)
@@ -366,4 +408,6 @@
   (midi-in-event
    :midi-input (get-pacer!)
    :note-on #'midi-ctl))
+
+
 

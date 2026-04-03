@@ -44,18 +44,25 @@
          pattern)))
 
 (defn start-sample-arp!
-  [{:keys [subcps-name interval-seq-fn]
-    :or {interval-seq-fn default-interval-seq-fn}}]
+  "On every `dur` call an `arp` (arpeggio) function"
+  [{:keys [state-atom
+           interval-seq-fn
+           durs
+           out-fn
+           group]
+    :or {interval-seq-fn default-interval-seq-fn
+         durs [5 3 8 2 1 5]
+         out-fn (fn [_i] 0)}}]
   (timbre/info :starting-arp)
   (rain.v2/ref-rain
    :id ::arp-rain
-   :durs [5 3 8 2 1 5]
+   :durs durs
    :ratio 1/3
    :on-event (rain.v2/on-event
-              (let [{:keys [arp/scale arp/pattern]} @state
+              (let [{:keys [arp/scale arp/pattern]} @state-atom
                     interval-seq-fn* (fn [& args]
-                                       (println "================== ITERVAL SEQFN" args)
                                        (apply interval-seq-fn args))]
+
                 (arp {:bufs-atom sc.rec.v1/bufs
                       :dur 0.5
                       :index index
@@ -63,11 +70,18 @@
                       :play-fn #_(partial #'arp-reponse-1 {:scale scale
                                                            :out (bh 0)})
                       (partial #'arp-reponse-2
-                               {:scale scale
-                                :amp-min 1
-                                :amp-max 1.5
-                                :interval-seq-fn interval-seq-fn* #_(:fn pattern)
-                                :out 0 #_(rainseq (++ 25 (map #(mod % 44) (range 0 88 5))))})}))))
-  (swap! state assoc :arp.refrain/on? true))
+                               (cond-> {:scale scale
 
+                                        :amp-min 1
+                                        :amp-max 1.5
+                                        :interval-seq-fn interval-seq-fn* #_(:fn pattern)
+                                        :out (out-fn i) #_(rainseq (++ 25 (map #(mod % 44) (range 0 88 5))))}
+                                 group (assoc :group group)))}))))
+  (swap! state-atom assoc :arp.refrain/on? true))
 
+(comment
+  ()
+  (->> @sc.rec.v1/bufs
+       last
+       last
+       (into {})))

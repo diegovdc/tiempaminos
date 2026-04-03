@@ -16,7 +16,7 @@
   [in 0 out 0 amp 1]
   (o/out out (* amp (o/sound-in in))))
 
-(def ^:private ins {:in-1 {:in (tieminos.blackhole/bh 3)}})
+(def ^:private ins {:in-1 {:in (tieminos.blackhole/bus 3)}})
 
 (defonce inputs
   (atom ins))

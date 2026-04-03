@@ -15,7 +15,8 @@
                          (* 2 freq)
                          (* 3 freq)
                          (* 4 freq)
-                         (* 5 freq)])
+                         (* 5 freq)
+                         (* 6 freq)])
              (o/lpf lpf-freq)
              (o/pan2 pan)
              o/mix
