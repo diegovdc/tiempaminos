@@ -10,24 +10,45 @@
 ;;;;;;;;;;;;;;;;;;
 
 (def ins
-  {:fl-main (bh/bus 3)})
+  "Buses coming in from blackhole"
+  {:fl-main 3})
 
-;; First 16 bh buses are reserved as inputs
+;; First 9 bh buses are reserved as inputs
 (def outs
-  {:nubosidades-fl-2ch (bh/bus 16)
-   :nubosidades-fl2-2ch (bh/bus 18)
-   :nubosidades-arp-2ch (bh/bus 20)
-   :nubosidades-arp2-2ch (bh/bus 22)})
+  "Buses going out to blackhole"
+  {:nubosidades-fl-2ch 10
+   :nubosidades-fl2-2ch 12
+   :nubosidades-arp-2ch 14
+   :nubosidades-arp2-2ch 16
+
+   :olivo-spiral-arp-28ch 18 ;; until 45
+   :olivo-tree-top-30ch 46   ;; until 75
+
+   :lluvia-voice-dome-25ch 76 ;; until 100 (actually 101, but last channel in REAPER is not used, but must be a pair number for REAPER)
+   :lluvia-voice-shadow-2ch 101 ;; until 102
+
+   :lluvia-fl-spirals-22ch 103 ;; until 124
+   :lluvia-fl-shadow-2ch 125   ;; until 126
+
+   ;; NOTE: The next section overlaps with the `nubosidades`and `olivo`, but they shouldn't be sounding by now. Tried using Blackhole 256, but Supercollider wouldn't start, at least not with the Aggregate device.
+   :campo-magentismo-51ch 10 ;; until 61
+   })
+
+(+ 9
+   2 2 2 2
+   28 30
+   25 2 22 2
+   #_51)
 
 (defn get-input [k]
   (if-let [bus (ins k)]
-    bus
+    (bh/bus bus)
     (throw (ex-info "In bus not found" {:key k}))))
 
 (defn
   get-output [k]
   (if-let [bus (outs k)]
-    bus
+    (bh/bus bus)
     (throw (ex-info "Out bus not found" {:key k}))))
 
 ;; IO Buses
@@ -61,7 +82,14 @@
   {:nubosidad-lorenztiana-fl 1234
    :nubosidad-lorenztiana-fl2 1235
    :nubosidad-lorenztiana-arp 1236
-   :nubosidad-lorenztiana-arp2 1237})
+   :nubosidad-lorenztiana-arp2 1237
+   :olivo-copa 1238
+   :olivo-spiral-arp 1239
+   :lluvia-viento-voz 2345
+   :lluvia-viento-fl 2346
+   :lluvia-viento-voz-shadow 2347
+   :lluvia-viento-fl-shadow 2348
+   :campo-magnetismo 3456})
 
 (defonce iem-osc-clients
   (atom nil))

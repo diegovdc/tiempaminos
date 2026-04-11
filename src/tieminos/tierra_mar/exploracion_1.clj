@@ -4,8 +4,8 @@
    [overtone.core :as o]
    [overtone.sc.ugen-collide-list :as oc]
    [taoensso.timbre :as timbre]
+   [tieminos.blackhole :as bh]
    [tieminos.sc-utils.synths.template-synth.v0 :refer [make-synth-fn plug*]]
-   [tieminos.seq-utils.core :refer [** choose lin rainseq ret]]
    [tieminos.synths :refer [low]]
    [time-time.dynacan.players.refrain.v2 :as rain.v2]))
 
@@ -67,10 +67,10 @@
    {:reset? true})
 
   (panny
-   {:out-offset 19
+   {:out-offset (bh/bus 23)
     :outs [1 1]})
   (panny
-   {:out-offset 19
+   {:out-offset (bh/bus 23)
     :outs [1 2 8 16 22 22 22]})
   (panny
    {:out-offset 19

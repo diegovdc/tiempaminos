@@ -9,9 +9,8 @@
    [tieminos.compositions.7D-percusion-ensamble.base :refer [bh]]
    [tieminos.compositions.garden-earth.analysis
     :refer [pitch-class->note-set]]
-   [tieminos.compositions.garden-earth.base :refer [base-freq
-                                                    interval-from-pitch-class2
-                                                    subcps]]
+   [tieminos.compositions.garden-earth.base
+    :refer [base-freq interval-from-pitch-class2 subcps]]
    [tieminos.compositions.garden-earth.init :as ge.init]
    [tieminos.compositions.garden-earth.routing :as ge.route]
    [tieminos.compositions.garden-earth.synths.live-signal
@@ -24,7 +23,10 @@
    [tieminos.sc-utils.recording.v1 :as sc.rec.v1]
    [tieminos.tierra-mar.v1.arp :as tm.arp]
    [tieminos.tierra-mar.v1.configs :as tm.configs]
-   [tieminos.tierra-mar.v1.state :as tm.state :refer [state]]
+   [tieminos.tierra-mar.v1.nubosidad-lorentziana :as tm.nblz]
+   [tieminos.tierra-mar.v1.state
+    :as tm.state
+    :refer [state]]
    [tieminos.utils :refer [wrap-at]]
    [time-time.dynacan.players.gen-poly :as gp]))
 
@@ -34,8 +36,13 @@
 (declare init! stop!)
 
 (comment
+  (-> @state)
   (init!)
-  (stop!))
+  (stop!)
+
+  (tm.nblz/init!)
+  (tm.nblz/start-arp!)
+  (tm.nblz/stop!))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Implementations and WIP
@@ -121,35 +128,17 @@
            :harmonizer/harmony-index index
            :harmonizer/harmony harmony
            :harmonizer/harmony-str (str (into [] harmony) " - " subcps-name* " on " pitch-class " " set*))))
-(defn update-arp-pattern
-  [{:keys [arp/pattern-index section] :as state}]
-  (let [index (inc (or pattern-index 0))
-        pattern (->> arp-patterns
-                     (wrap-at section)
-                     (wrap-at index))]
-    (assoc state
-           :arp/pattern-index index
-           :arp/pattern pattern)))
-
-(defn update-arp-scale-data
-  [{:keys [arp/cps-index section] :as state}]
-  (let [index (inc (or cps-index 0))
-        subcps-name (->> arp-subcps
-                         (wrap-at section)
-                         (wrap-at index))
-        scale (subcps subcps-name)]
-    (assoc state
-           :arp/cps-index  index
-           :arp/subcps-name subcps-name
-           :arp/harmony-strs [(str/replace subcps-name #"of 3\)6" "")
-                              (str/join " " (map (comp :class :pitch) scale))]
-           :arp/scale scale)))
 
 (comment
   (-> @state :section))
 (def ^:private initial-state (-> {:section 0}
-                                 update-arp-scale-data
-                                 update-arp-pattern))
+                                 #_(update-arp-scale-data)
+                                 #_update-arp-pattern))
+
+(defn init-state! []
+  (reset! tm.state/state {})
+  (tm.state/set-arp-pattern! tm.state/state (tm.arp/get-pattern ":default"))
+  (tm.state/set-arp-scale! tm.state/state (tm.arp/get-scale 0)))
 
 #_(defonce ^:private state (atom initial-state))
 
@@ -335,8 +324,8 @@
     (= 4 note) (toggle-sample-arp!)
 
     ;; arp config
-    (= 5 note) (swap! state update-arp-scale-data)
-    (= 6 note) (swap! state update-arp-pattern)
+    (= 5 note) (swap! state tm.state/update-arp-scale-data tm.arp/patterns)
+    (= 6 note) (swap! state tm.state/update-arp-pattern arp-subcps)
 
     ;; harmonizer
     (and (:harmonizer/on? @state)
@@ -360,14 +349,15 @@
   )
 
 (defn stop! []
+  (tm.nblz/stop!)
   (o/stop)
   (gp/stop)
-  (reset! state initial-state)
   (reset! tm.configs/audio-buses {}))
 
 (defn init! []
+  (bh/set-interface! :scarlett)
   (sc.groups/init-groups!)
-  (reset! state initial-state)
+  (init-state!)
   (ge.init/init!)
   (tm.configs/init-buses!)
   (tm.configs/init-osc-clients!)
@@ -376,12 +366,11 @@
              (fn [_key _ref _old-value new-value]
                (post-live-state (-> new-value
                                     (update :arp/pattern :name)
-                                    (dissoc :analyzer))))))
+                                    (dissoc :analyzer tm.state/synths-key))))))
 
 (comment
-  (reset! tieminos.blackhole/interface :minifuse)
+
   (-> @state)
-  (do (o/stop) (gp/stop) (reset! state initial-state))
   (ge.init/init!)
   #_(-> @state)
   ;; TODO: maybe use input bus from (tm.configs/get-bus :fl-main)
@@ -392,7 +381,7 @@
              (fn [_key _ref _old-value new-value]
                (post-live-state (-> new-value
                                     (update :arp/pattern :name)
-                                    (dissoc :analyzer)))))
+                                    (dissoc :analyzer tm.state/synths-key)))))
   (remove-watch state ::post-state)
   (->> @state)
   (o/kill synth)

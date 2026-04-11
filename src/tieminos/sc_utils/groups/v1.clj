@@ -20,7 +20,7 @@
         fx (o/group "fx" :after late)
         post-fx (o/group "post-fx" :after fx)
         output-rec (o/group "output-rec" :after late)]
-    (if @groups
+    (if (seq @groups)
       (timbre/warn "sc-utils.groups.v1 already initialized")
       (reset! groups
               {:main main

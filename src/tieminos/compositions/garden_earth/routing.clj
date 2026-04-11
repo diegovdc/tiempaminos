@@ -2,8 +2,7 @@
   (:require
    [overtone.core :as o]
    [taoensso.timbre :as timbre]
-   [tieminos.blackhole]
-   [tieminos.compositions.7D-percusion-ensamble.base :refer [bh]]
+   [tieminos.blackhole :as bh]
    [tieminos.overtone-extensions :as oe]
    [tieminos.sc-utils.groups.v1 :as groups]
    [tieminos.sc-utils.synths.v1 :refer [ctl-range]]))
@@ -16,12 +15,15 @@
   [in 0 out 0 amp 1]
   (o/out out (* amp (o/sound-in in))))
 
-(def ^:private ins {:in-1 {:in (tieminos.blackhole/bus 3)}})
+(def ^:private ins
+  "Blackhole inputs"
+  {:in-1 {:in 3}})
 
 (defonce inputs
   (atom ins))
 
 (defn init-inputs! [{:keys [inputs config]}]
+  (timbre/info "Initing inputs")
   (doseq [{:keys [bus synth]} (->> @inputs vals)]
     (when bus (o/free-bus bus))
     (when (and synth (o/node-active? synth))
@@ -35,12 +37,12 @@
        (map (fn [[input-key {:keys [in]}]]
 
               (let [bus (o/audio-bus 1 (str (name input-key) "-input"))
-                    amp (-> config input-key (:amp 1))]
-                (println amp)
-                {input-key {:in in
+                    amp (-> config input-key (:amp 1))
+                    in* (bh/bus in)]
+                {input-key {:in in*
                             :bus bus
                             :synth (input {:group (groups/early)
-                                           :in in
+                                           :in in*
                                            :amp amp
                                            :out bus})}})))
        (into {})
@@ -53,10 +55,12 @@
   (-> @inputs :in-1 k))
 
 (comment
+  (init-inputs! ins)
   (->> @inputs)
   (o/stop)
   #_(init-inputs! inputs)
-  (o/demo (o/in (-> @inputs :in-1 :bus))))
+  (o/demo (o/in (-> @inputs :in-1 :bus)))
+  (o/demo (o/sound-in (-> @inputs :in-1 :in))))
 
 ;;;;;;;;;;;;;
 ;; Outs
@@ -85,7 +89,7 @@
        (mapv
         (fn [[k {:keys [bh-out]}]]
           (let [out-bus (o/audio-bus 2 (str (name k) "-out"))
-                bh-out* (bh bh-out)
+                bh-out* (bh/bus bh-out)
                 out-synth (output {:group (groups/post-fx)
                                    :in  out-bus
                                    :out bh-out*})]

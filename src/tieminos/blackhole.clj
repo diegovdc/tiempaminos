@@ -1,10 +1,19 @@
-(ns tieminos.blackhole)
+(ns tieminos.blackhole
+  (:require
+   [taoensso.timbre :as timbre]))
 
 ;;;;;;;;;;;;;;;;;;
 ;; General
 ;;;;;;;;;;;;;;;;;;
 
-(defonce interface (atom :scarlett))
+(defonce ^:private interface (atom :scarlett))
+
+(defn set-interface!
+  [k]
+  (if (#{:scarlett :minifuse} k)
+    (do (reset! interface k)
+        (timbre/info "Using interface:" k))
+    (throw (ex-info "Unknown interface" {:key k}))))
 
 ;;;;;;;;;;;;;;;;;;
 ;; IO
@@ -16,3 +25,5 @@
                  :minifuse 4
                  :scarlett 20)]
     (+ offset (dec i))))
+
+

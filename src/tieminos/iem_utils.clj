@@ -42,14 +42,16 @@
   (defn calculate-az-ring
     "Calculate an azimuth ring for the `MultiEncoder` with sources at equal distances depending on `num-parts` given.
   The returned order is clockwise."
-    [num-parts]
-    (let [degs (/ 360 num-parts)]
-      (->> (range 0 360 degs)
-           ;; format numbers as MultiEncoder expects
+    ([num-parts] (calculate-az-ring 0 num-parts))
+    ([offset num-parts]
+     (let [degs (/ 360 num-parts)]
+       (->> (range 0 360 degs)
+            (mapv #(+ % offset))
+            ;; format numbers as MultiEncoder expects
 
-           (mapv deg->iem-deg)
-           (mapv float))))
-  (calculate-az-ring 6))
+            (mapv deg->iem-deg)
+            (mapv float)))))
+  (calculate-az-ring 20 6))
 (do
   (defn calculate-az-ring-elevation
     "Calculate the elevation of rings for the `MultiEncoder` at equal distances
