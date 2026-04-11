@@ -13,10 +13,13 @@ Código tomado de las grabaciones de 2.2.9, por lo que en el directorio de reape
 CLOSED: [2026-02-11 Wed 14:08] DEADLINE: <2026-02-09 Mon>
 ** DONE Agregar control de volumen de =clean= para Milo
 CLOSED: [2026-02-11 Wed 14:19]
-** TODO [#A] default de ritmo: lor 2-6
-DEADLINE: <2026-03-23 Mon>
-** TODO [#B] max dur mostrar duracion en UI
-DEADLINE: <2026-03-23 Mon>
+** DONE [#A] default de ritmo: lor 2-6
+CLOSED: [2026-03-26 Thu 12:34] DEADLINE: <2026-03-23 Mon>
+** DONE [#A] =stop longs= no está funcionando
+CLOSED: [2026-03-26 Thu 12:34] DEADLINE: <2026-03-31 Tue>
+** IDEA max dur mostrar duracion en UI
+Es un poco difícil, porque se comporta de manera distinta si el sinte es granular o cristal.
+Hay que pensar mejor como debe funcionar este parámetro y cómo homogeneizarlo.
 ** TODO [#A] Crear formato en REAPER 8-ch
 DEADLINE: <2026-03-30 Mon>
 ** TODO mejorar Lorentz de ritmo-secuenciado
