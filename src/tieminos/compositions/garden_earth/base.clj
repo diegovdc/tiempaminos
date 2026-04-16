@@ -146,6 +146,10 @@
        (map (juxt key (comp first val)))
        (into {})))
 
+(defn +degrees [scale]
+  (map (comp :degree eik-sets :set)
+       scale))
+
 (defn subcps [subcps-name]
   (+names base-freq
           (-> eik :subcps (get subcps-name) :scale)))

@@ -1,0 +1,263 @@
+
+* Init
+#+begin_src clojure
+(in-ns 'tierra-mar.harmonies.explorations)
+(ns tierra-mar.harmonies.explorations 
+  (:require
+   [clojure.set :as set]
+   [erv.cps.core :refer [+all-subcps]]
+   [erv.scale.core :refer [+names]]
+   [erv.scale.scl :as scl]
+   [erv.utils.conversions :refer [ratio->cents]]
+   [erv.utils.ratios :refer [ratios->scale]]
+   [tieminos.compositions.garden-earth.analysis :refer [find-subcps-intersections
+                                                        find-supersets]]
+   [tieminos.compositions.garden-earth.base :refer [base-freq eik eik-sets
+                                                    find-supersets
+                                                    +degrees
+                                                    subcps]]
+   [tieminos.osc.surge :as surge]
+   [tieminos.utils :refer [wrap-at]]))
+
+ ;; Make scl and kbm files compatible with the current tuning used by the flute
+;;
+(-> eik)
+  ;; make scl file that maps to the base freq 440 (which doesn't appear in the scale
+  (-> eik :scale first :bounded-ratio) ;; => 33/32
+  (def scl-base-freq (float (* base-freq 33/32))) ;; => 453.75 - MTS-ESP should set this as the freq
+  ;; eik scale with the first note as 1/1
+  (def scl-eik (->> eik :scale (map (fn [note]
+                                      (-> note
+                                          (update :bounded-ratio / 33/32)
+                                          (assoc-in [:pitch :base-freq] scl-base-freq))))))
+  ;; ensure that the names are still correct, that is that the pitches haven't changed
+  (= scl-eik (+names 453.75 scl-eik))
+
+  (def eik-data {:meta {:scl/name "Wilson's 1.3.5.7.9.11 Eikosany"
+                        :scl/description "Used for the Garden Earth project. The flute tunes the 1/1 to 453.75 (* 33/32 440)."}
+                 :scale scl-eik})
+  (scl/spit-file
+   "/Users/diego/Music/tunings/wilson-1-3-5-7-9-11-eikosany_garden-earth/eik.scl"
+   eik-data)
+#+end_src
+
+#+RESULTS:
+: class java.lang.IllegalAccessError
+
+** Init Surge
+#+begin_src clojure
+(surge/init)
+#+end_src
+
+#+RESULTS:
+: nil
+
+* Cosmos: Nubosidades lorentzianas =libre? o quizá un 3)4=
+** cuerpo-tierra-quipu
+* Olivo =3)5 of 3)6 1.3.5.9.11=
+#+begin_src clojure
+(surge/set-kbm
+   (let [name* "3)5 of 3)6 1.3.5.9.11"
+         degs (+degrees (subcps name*))]
+     {:path
+      "/Users/diego/Music/tunings/wilson-1-3-5-7-9-11-eikosany_garden-earth"
+      :kbm-name name*
+      :scale-data eik-data
+      :middle-note 60
+      :middle-note-freq (/ scl-base-freq 2)
+      :comments? false
+      :degrees degs}))
+#+end_src
+* Intersección Olivo -> Lluvia =3)4 of 3)6 1.3.5.9=
+El CPS intersectado es: =3)4 of 3)6 1.3.5.9=
+#+begin_src clojure
+
+(def inter-sets
+  (->> ["3)5 of 3)6 1.3.5.7.9"                ;; lluvia
+        "3)5 of 3)6 1.3.5.9.11"               ;; olivo
+        ]
+       (mapcat subcps)
+       (map :set)
+       (frequencies)
+       (filter #(= 2 (second %)))
+       (map first)))
+
+(->> (find-supersets (set inter-sets))
+     (map first))
+#+end_src
+
+#+RESULTS:
+: ("3)5 of 3)6 1.3.5.7.9" "3)4 of 3)6 1.3.5.9" "3)5 of 3)6 1.3.5.9.11")
+
+* Lluvia: ="3)5 of 3)6 1.3.5.7.9"=
+#+begin_src clojure
+(surge/set-kbm
+   (let [name* "3)5 of 3)6 1.3.5.7.9"
+         degs (+degrees (subcps name*))]
+     {:path
+      "/Users/diego/Music/tunings/wilson-1-3-5-7-9-11-eikosany_garden-earth"
+      :kbm-name name*
+      :scale-data eik-data
+      :middle-note 60
+      :middle-note-freq (/ scl-base-freq 2)
+      :comments? false
+      :degrees degs}))
+#+end_src
+* Transición-Intersección Lluvia -> Campos: =2)4 of 3)6 5-1.3.7.9=
+
+Este es el CPS que intersecta =3)4 of 3)6 1.3.5.9=
+#+begin_src clojure
+'(#{1 3 5} #{3 9 5} #{1 9 5} #{1 3 9})
+#+end_src
+
+Este cálculo es incorrecto, pero puede funcionar, contiene 3 de los conjuntos del =3)4= de arriba.
+#+begin_src clojure
+(surge/set-kbm
+   (let [name* "interseccion 2)5 5-1.3.7.9.11 - 3)5 1.3.5.7.9"
+         degs (->> '(["G+88" #{1 3 5}]
+                     ["C+59" #{7 9 5}]
+                     ["A+92" #{3 9 5}]
+                     ["A#+55" #{7 1 5}]
+                     ["D+90" #{1 9 5}]
+                     ["F+56" #{7 3 5}])
+                   (map second)
+                   (map eik-sets)
+                   (map :degree))]
+     {:path
+      "/Users/diego/Music/tunings/wilson-1-3-5-7-9-11-eikosany_garden-earth"
+      :kbm-name name*
+      :scale-data eik-data
+      :middle-note 60
+      :middle-note-freq (/ scl-base-freq 2)
+      :comments? false
+      :degrees degs}))
+#+end_src
+
+#+RESULTS:
+: nil
+** Cálculo
+#+begin_src clojure
+
+"3)5 of 3)6 1.3.5.7.9"
+
+(def campo-lluvia-inter-sets
+  (->> ["3)5 of 3)6 1.3.5.9.11" ;; campos
+        "3)5 of 3)6 1.3.5.7.9"  ;; lluvia
+        ]
+       (mapcat subcps)
+       (map :set)
+       (frequencies)
+       (filter #(= 2 (second %)))
+       (map first)))
+
+(-> campo-lluvia-inter-sets)
+;; => (#{1 3 5} #{3 9 5} #{1 9 5} #{1 3 9})
+
+(->> (find-supersets (set campo-lluvia-inter-sets))
+     (map first))
+#+end_src
+
+#+RESULTS:
+: ("3)5 of 3)6 1.3.5.7.9" "3)4 of 3)6 1.3.5.9" "3)5 of 3)6 1.3.5.9.11")
+
+* Campos Electromágneticos  =3)5 of 3)6 1.3.5.9.11=
+Partimos de esta dekany como armonía principal: =3)5 of 3)6 1.3.5.9.11=. Es brillante y funcion bien
+
+El propósito será construir una secuencia que no lleve a esta armonía
+#+begin_src clojure
+(surge/set-kbm
+   (let [name* "2)5 of 3)6 5-1.3.7.9.11" 
+         degs (+degrees (subcps name*))]
+     {:path
+      "/Users/diego/Music/tunings/wilson-1-3-5-7-9-11-eikosany_garden-earth"
+      :kbm-name name*
+      :scale-data eik-data
+      :middle-note 60
+      :middle-note-freq (/ scl-base-freq 2)
+      :comments? false
+      :degrees degs}))
+#+end_src
+
+#+RESULTS:
+: nil
+
+** Ideas sobre 2)5 of 3)6 5-1.3.7.9.11" - acorde brillante
+1. Acorde para la parte más "climática"
+   Usando el Oxygen en la  =octava + 1=
+=Ab C F Ab' C' Eb' Ab'' Bb'' (B'' A'')=
+
+=Ab C F Ab' B' D'...=
+
+  - Hay un bonito juego entre C-Eb y B-D...
+
+2. =B'-D'-A''= también funciona bien, es un contraste, podría pertenecer a uno de los lados del campo y también ser una armonía en sí misma
+*** TODO Sacar los ratios y los nombres de las notas de las ideas de arriba y ver cómo tocarlas en la flauta
+
+** Hexany (intuición inicial) =2)4 of 3)6 5-1.3.9.11=
+Contenida en la dekany. Fue una primera intuición.
+#+begin_src clojure
+;; candidata para `campos`
+  (-> eik :subcps
+      (get "2)4 of 3)6 5-1.3.9.11")
+      (+all-subcps)
+      :subcps
+      #_(->> (filter (fn [[_ d]]
+                       (-> d :meta :size (= 4)))))
+      keys
+      sort)
+#+end_src
+
+Los subsets =3)4= que ya conozco y me gustan
+#+begin_src clojure
+;; => 3)4
+  '("3)4 of 3)5 1.3.5.9" ;; conocida (grabada)
+    "3)4 of 3)5 3.5.9.11" ;; desierto - explorada conjuntamente con la de abajo - fue difícil percibir su caracter el día que las toqué, pero escuchando la grabación sugiere un espacio vacío y desierto
+    "3)4 of 3)5 1.3.9.11" ;; difícil, quizá muy neutro o aún no le encuentro mucho
+    "3)4 of 3)5 1.5.9.11"
+    "3)4 of 3)5 1.3.5.11" ;; pro
+    )
+#+end_src
+
+Los supersets en los que aparece
+#+begin_src clojure 
+(->> "2)4 of 3)6 5-1.3.9.11"
+       subcps
+       (map :set)
+       set
+       find-supersets
+       keys)
+
+#+end_src
+  
+#+RESULTS:
+: ("2)4 of 3)6 5-1.3.9.11", "2)5 of 3)6 5-1.3.7.9.11", "3)5 of 3)6 1.3.5.9.11")
+
+=3)5 of 3)6 1.3.5.9.11= Me gusta, contiene la hexany a la vez que es más o menos brillante
+** Intersecciones
+#+begin_src clojure
+(->> (find-subcps-intersections
+       "2)5 of 3)6 5-1.3.7.9.11"
+       #{"3)5"})
+     (map first))
+#+end_src
+
+#+RESULTS:
+: ("3)5 of 3)6 3.5.7.9.11" "3)5 of 3)6 1.5.7.9.11" "3)5 of 3)6 1.3.5.9.11" "3)5 of 3)6 1.3.5.7.9" "3)5 of 3)6 1.3.5.7.11")
+
+
+Estas funcionan bien:
+#+begin_src clojure 
+"3)5 of 3)6 1.3.5.9.11" `olivo`
+"3)5 of 3)6 1.3.5.7.9" `lluvia`
+#+end_src
+
+La intersección entre =lluvia= y =campos=. La hexany =5-1.3.7.9= (cuasi-archytas)
+#+begin_src clojure
+
+'(["G+88" #{1 3 5}] ["C+59" #{7 9 5}] ["A+92" #{3 9 5}] ["A#+55" #{7 1 5}] ["D+90" #{1 9 5}] ["F+56" #{7 3 5}])  
+[1 9/8 7/6 21/16 3/2 7/4 2]
+#+end_src
+
+Podemos empezar con el modo en posición menor e ir subiendo hasta hacerlo mayor. Y =campo= "comienze" en muy brillante. 
+* envío del canto-armonía: nuevamente tierra-cosmos-mar =1)4 of 3)6 1.5-3.7.9.11=
+
