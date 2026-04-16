@@ -16,7 +16,7 @@
   (case [player label-key]
     ;; other cases to come
     (format "/%s/%s"
-            (case player :milo "Milo" :diego "Diego")
+            (case player :milo "Milo" :diego "Diego" :gusano "gusano")
             (str (name label-key) "-label"))))
 (comment
   (update-label :milo "harmonic-lowest-note" 100))

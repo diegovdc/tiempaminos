@@ -11,43 +11,18 @@
     :as bardo.init]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.live-state
     :as bardo.live-state
-    :refer [cast-osc-data
-            delete-all-banks
-            delete-bank
-            live-state
-            mute-input
-            save-touchosc-synth-param
-            set-active-bank
-            set-active-harmonic-voice
-            set-active-recorded-bank
-            set-clouds-amp
-            set-clouds-env
-            set-clouds-rhythm
-            set-clouds-sample-lib-size
-            set-filter-index
-            set-filter-param
-            set-gusano-2nd-voice
-            set-gusano-amp
-            set-gusano-durs
-            set-gusano-grain-dur
-            set-gusano-grain-trig
-            set-gusano-period
-            set-gusano-rates
-            set-gusano-rates-seq-speed
-            set-harmonic-range
-            set-harmonic-speed
-            set-harmony
-            set-independent-refrain
-            set-panner-index
-            set-panner-param
-            set-rev-send
-            set-selected-bank-synth
-            set-synth-index
-            switch-rec-durs
-            switch-rec-pulse
-            toggle-clouds
-            toggle-gusano
-            toogle-rec]]
+    :refer [delete-all-banks delete-bank live-state mute-input
+            save-touchosc-synth-param set-active-bank
+            set-active-harmonic-voice set-active-recorded-bank set-clouds-amp
+            set-clouds-env set-clouds-rhythm set-clouds-sample-lib-size
+            set-filter-index set-filter-param set-gusano-2nd-voice
+            set-gusano-amp set-gusano-durs set-gusano-grain-dur
+            set-gusano-grain-trig set-gusano-period set-gusano-rates
+            set-gusano-rates-seq-speed set-harmonic-range set-harmonic-speed
+            set-harmony set-independent-refrain set-next-gusano-harmony
+            set-panner-index set-panner-param set-rev-send
+            set-selected-bank-synth set-synth-index switch-rec-durs
+            switch-rec-pulse toggle-clouds toggle-gusano toogle-rec]]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.osc-helpers
     :refer [update-clients]]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.presets
@@ -501,6 +476,7 @@
       "/gusano/grain-trig" (set-gusano-grain-trig (first args))
       "/gusano/grain-durs" (set-gusano-grain-dur (first args))
       "/gusano/2nd-voice" (set-gusano-2nd-voice (first args))
+      "/gusano/harmony-up-btn" (when press? (set-next-gusano-harmony))
       ;; presets
       "/save-preset" (when press? (bardo.presets/save-preset!))
       ;; "/presets/load" (bardo.presets/load-preset! internal-client @habitat-osc/receiver-clients (first args))

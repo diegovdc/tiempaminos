@@ -2,13 +2,14 @@
   (:require
    [clojure.data.generators :refer [weighted]]
    [clojure.math :refer [floor]]
-   [clojure.set :as set]
    [erv.scale.core :refer [deg->freq]]
    [erv.utils.core :refer [interval period-reduce]]
    [overtone.core :as o]
    [taoensso.timbre :as timbre]
    [tieminos.habitat.extended-sections.harmonies.chords :refer [fib-21
                                                                 fib-chord-seq
+                                                                get-harmony
+                                                                rate-chord-seq
                                                                 transpose-chord]]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.gusanos.gusano-2-2-4 :as g-2.2.4]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.gusanos.gusano-2-2-6 :as g-2.2.6]
@@ -42,17 +43,22 @@
    (:fib-0.5.13.21-range-3.6-5step-interleaved+reverse g-2.2.4/chords)
    (:fib-multiple-interleaved g-2.2.4/chords)])
 
+(comment
+  (count (get-harmony :meta-pelog-20)))
+
+(def make-rates
+  (memoize
+   (fn [k harmony-k]
+     (let [harmony (get-harmony harmony-k)
+           chord-fn  (partial rate-chord-seq harmony)]
+       (case k
+         :s1 (let [chords (chord-fn (transpose-chord [0 5 13 21] (range 0 (* 21 6) 5)))]
+               (interleave  chords (reverse chords))))))))
+
 (defn get-rates!
   []
-  #_(-> @bardo.live-state/live-state :gusano (:rates 0) (wrap-at rates))
-  [(nth (wrap-at 0 rates) 2)]
-  (wrap-at 0 rates)
-  #_(fib-chord-seq (transpose-chord [0 5 13 21] [-9])))
-
-(->> (get-rates!)
-     first
-     first
-     (period-reduce))
+  (let [harmony-k (bardo.live-state/get-gusano-harmony!)]
+    (make-rates :s1 harmony-k)))
 
 (let [prev-index (atom 0)]
   (defn- next-rate-index! [speed]

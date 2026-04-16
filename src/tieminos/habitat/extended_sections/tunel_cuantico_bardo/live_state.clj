@@ -937,6 +937,26 @@
   [x]
   (swap! live-state assoc-in [:gusano :second-voice-index] x))
 
+(def ^:private gusano-harmonies [:fib :meta-slendro-22 :meta-pelog-20])
+
+(defn set-next-gusano-harmony
+  []
+  (let [{:keys [harmony-index]
+         :or {harmony-index 0}} (:gusano @live-state)
+        i (inc harmony-index)
+        harmony (wrap-at i gusano-harmonies)]
+    (swap! live-state update :gusano merge {:harmony-index i
+                                            :harmony harmony})
+    (bardo.osc-helpers/update-label :gusano :harmony (name harmony))))
+
+(comment
+  (set-next-gusano-harmony)
+  (-> live-state deref :gusano))
+
+(defn get-gusano-harmony!
+  []
+  (get-in @live-state [:gusano :harmony]))
+
 (defn get-harmonic-data!
   [player-k bank]
   (let [data (get-player-data player-k)
@@ -973,6 +993,10 @@
                               (float? %) (float %)
                               :else (int %)) v)])
        data))
+
+(def ^:private gusano-defaults
+  {:harmony-index 0
+   :harmony :fib})
 
 (defn make-synth-defaults
   [player]
@@ -1099,6 +1123,7 @@
         "/Milo/toggle-harmonic-voice/0" '("on" 1 "index" 0),
         "/Milo/toggle-harmonic-voice/1" '("on" 1 "index" 1),
         "/Milo/toggle-harmonic-voice/2" '("on" 1 "index" 2)
+        "/gusano/harmony-label" [(-> gusano-defaults :harmony name)]
         "/System/voces-master" [reaper/zero-db]}
        cast-osc-data
        (#(merge %
@@ -1118,10 +1143,11 @@
                                                      name
                                                      str/capitalize))})
                                            (range 8)))})]
-     {:algo-2.2.9-clouds ;; TODO: is this key seems unnecessary? At least it is misnamed.
-      (merge
-       (init-player :milo)
-       (init-player :diego))})))
+     {:gusano gusano-defaults
+      ;; TODO: is this key seems unnecessary? At least it is misnamed.
+      :algo-2.2.9-clouds (merge
+                          (init-player :milo)
+                          (init-player :diego))})))
 
 (comment
   (init-state!)

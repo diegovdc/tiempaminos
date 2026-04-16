@@ -17,13 +17,17 @@ CLOSED: [2026-02-11 Wed 14:19]
 CLOSED: [2026-03-26 Thu 12:34] DEADLINE: <2026-03-23 Mon>
 ** DONE [#A] =stop longs= no está funcionando
 CLOSED: [2026-03-26 Thu 12:34] DEADLINE: <2026-03-31 Tue>
+** TODO [#A] Reconfigurar scarlett a setup de 6 salidaso
+DEADLINE: <2026-04-20 Mon>
 ** IDEA max dur mostrar duracion en UI
 Es un poco difícil, porque se comporta de manera distinta si el sinte es granular o cristal.
 Hay que pensar mejor como debe funcionar este parámetro y cómo homogeneizarlo.
-** TODO [#A] Crear formato en REAPER 8-ch
-DEADLINE: <2026-03-30 Mon>
+** NOPE [#A] Crear formato en REAPER 8-ch
+CLOSED: [2026-04-11 Sat 14:07] DEADLINE: <2026-03-30 Mon>
 ** TODO mejorar Lorentz de ritmo-secuenciado
 cómo debe funcionar? todos son sincrónicos? (i.e. usan el mismo índice y dimensión)
+** TODO [#A] Terminar de integrar gusano
+Hay varias cosas que aún no funcionan y no que están en la interfaz pero aún no hace nada
 ** TODO documentar =template-synth=
 ** TODO Move ~make-voice-params~ to =synths.clj=
 ** TODO Mejorar debuggeo en =template-synth=

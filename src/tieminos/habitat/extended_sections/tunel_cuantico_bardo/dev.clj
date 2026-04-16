@@ -2,6 +2,7 @@
   (:require
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.async-events :as bardo.comms :refer [dispatch]]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.live-state :as bardo.live-state]
+   [tieminos.habitat.recording :refer [bufs]]
    [time-time.dynacan.players.gen-poly :as gp]))
 ;;;;;;;;;;;;;;;;;;
 ;; Controls
@@ -24,9 +25,12 @@
 
 (comment
   (bardo.live-state/get-player-data :milo)
-  (-> (bardo.live-state/get-player-data :milo)
+  (-> (bardo.live-state/get-player-data :diego)
       :refrains)
   (apply dissoc (bardo.live-state/get-player-data :milo) (range 8))
 
   (bardo.live-state/get-selected-synth-data :diego)
   (bardo.live-state/get-player-data :diego :refrains))
+
+(comment
+  (-> @bufs))
