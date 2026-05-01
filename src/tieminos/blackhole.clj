@@ -21,6 +21,8 @@
 
 (defn bus
   [i]
+  (when (zero? i)
+    (timbre/warn "Blackhole `bus` starts at `1` so that it makes sense when getting the bus in REAPER"))
   (let [offset (case @interface
                  :minifuse 4
                  :scarlett 20)]

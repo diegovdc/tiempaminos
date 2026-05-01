@@ -36,9 +36,9 @@
     srcs))
 
 (comment
-  ;; spiral
-  (let [client (tm.configs/get-iem-osc-client :olivo-spiral)
-        steps 44
+  ;; arpa spiral
+  (let [client (tm.configs/get-iem-osc-client :olivo-spiral-arp)
+        steps 28
         elevs (iem.utils/degree-range -90 90 steps)
         sources (->> (iem.utils/line (iem.utils/degree-seq 15 0 steps) elevs)
                      iem.utils/+index)]
@@ -46,6 +46,29 @@
     (osc/osc-send client "/MultiEncoder/masterElevation" (float 0))
     (osc/osc-send client "/MultiEncoder/masterRoll" (float 0))
     (iem.utils/configure-multiencoder client sources))
+
+  ;; arpa spiral (version para "La Vida del Olivo"
+  (let [client (tm.configs/get-iem-osc-client :olivo-spiral-arp)
+        steps (/ 28 2)
+        elevs (reverse (iem.utils/degree-range -90 90 steps))
+        deg-step 38
+        sources (->> (concat
+                      (iem.utils/line
+                       (iem.utils/degree-seq deg-step 0 steps)
+                       elevs)
+                      (iem.utils/line
+                       (iem.utils/degree-seq deg-step -180 steps)
+                       elevs))
+                     deduplicate-sources
+                     iem.utils/+index)]
+
+    (osc/osc-send client "/MultiEncoder/masterRoll" (float 0))
+    (osc/osc-send client "/MultiEncoder/masterElevation" (float 0))
+    (osc/osc-send client "/MultiEncoder/masterAzimuth" (float 0))
+    (iem.utils/configure-multiencoder client sources)
+    (Thread/sleep 500)
+    sources
+    #_(osc/osc-send client "/MultiEncoder/masterRoll" (float 90)))
 
   ;; Copa del Olivo
   (let [client (tm.configs/get-iem-osc-client :olivo-copa)

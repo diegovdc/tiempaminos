@@ -146,13 +146,21 @@
        (map (juxt key (comp first val)))
        (into {})))
 
+(def eik-ratios
+  "Eikosany scale grouped-by note name (pitch class name)"
+  (->> (eik :scale)
+       (group-by #(-> % :bounded-ratio))
+       (map (juxt key (comp first val)))
+       (into {})))
+
 (defn +degrees [scale]
   (map (comp :degree eik-sets :set)
        scale))
 
 (defn subcps [subcps-name]
-  (+names base-freq
-          (-> eik :subcps (get subcps-name) :scale)))
+  (with-meta (+names base-freq
+                     (-> eik :subcps (get subcps-name) :scale))
+    {:subcps/name subcps-name}))
 
 (defn scale->fingerings [scale]
   (->> scale

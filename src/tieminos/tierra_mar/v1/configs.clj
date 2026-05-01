@@ -11,7 +11,12 @@
 
 (def ins
   "Buses coming in from blackhole"
-  {:fl-main 3})
+  {:voz-main 2
+   :fl-main 3
+   :olivo/surge-pad 4                  ;; 2ch
+   :olivo/plamonic-phantom-resonance 6 ;; 2ch
+   :olivo/plamonic-hal-bop 8           ;; 2ch
+   })
 
 ;; First 9 bh buses are reserved as inputs
 (def outs
@@ -33,20 +38,20 @@
    ;; NOTE: The next section overlaps with the `nubosidades`and `olivo`, but they shouldn't be sounding by now. Tried using Blackhole 256, but Supercollider wouldn't start, at least not with the Aggregate device.
    :campo-magentismo-51ch 10 ;; until 61
    })
-
-(+ 9
-   2 2 2 2
-   28 30
-   25 2 22 2
-   #_51)
+(comment
+  ;; total channels
+  (+ 9
+     2 2 2 2
+     28 30
+     25 2 22 2
+     #_51))
 
 (defn get-input [k]
   (if-let [bus (ins k)]
     (bh/bus bus)
     (throw (ex-info "In bus not found" {:key k}))))
 
-(defn
-  get-output [k]
+(defn get-output [k]
   (if-let [bus (outs k)]
     (bh/bus bus)
     (throw (ex-info "Out bus not found" {:key k}))))

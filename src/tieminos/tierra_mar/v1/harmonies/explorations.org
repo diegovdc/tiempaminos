@@ -1,61 +1,88 @@
 
 * Init
-#+begin_src clojure
+#+begin_src clojure :ns tierra-mar.harmonies.explorations
 (in-ns 'tierra-mar.harmonies.explorations)
 (ns tierra-mar.harmonies.explorations 
   (:require
    [clojure.set :as set]
    [erv.cps.core :refer [+all-subcps]]
-   [erv.scale.core :refer [+names]]
+   [tieminos.blackhole :as bh]
+   [erv.scale.core :refer [+names deg->freq]]
    [erv.scale.scl :as scl]
+   [tieminos.seq-utils.core :refer [** rainseq]]
    [erv.utils.conversions :refer [ratio->cents]]
    [erv.utils.ratios :refer [ratios->scale]]
    [tieminos.compositions.garden-earth.analysis :refer [find-subcps-intersections
                                                         find-supersets]]
    [tieminos.compositions.garden-earth.base :refer [base-freq eik eik-sets
-                                                    find-supersets
+                                                    pitch-class->pr-fingering
+                                                    eik-ratios
                                                     +degrees
                                                     subcps]]
+   [tieminos.compositions.garden-earth.synths.general :refer [tuning-monitor]]
+   [time-time.dynacan.players.refrain.v2 :as rain.v2]
    [tieminos.osc.surge :as surge]
-   [tieminos.utils :refer [wrap-at]]))
-
- ;; Make scl and kbm files compatible with the current tuning used by the flute
-;;
-(-> eik)
-  ;; make scl file that maps to the base freq 440 (which doesn't appear in the scale
-  (-> eik :scale first :bounded-ratio) ;; => 33/32
-  (def scl-base-freq (float (* base-freq 33/32))) ;; => 453.75 - MTS-ESP should set this as the freq
-  ;; eik scale with the first note as 1/1
-  (def scl-eik (->> eik :scale (map (fn [note]
-                                      (-> note
-                                          (update :bounded-ratio / 33/32)
-                                          (assoc-in [:pitch :base-freq] scl-base-freq))))))
-  ;; ensure that the names are still correct, that is that the pitches haven't changed
-  (= scl-eik (+names 453.75 scl-eik))
-
-  (def eik-data {:meta {:scl/name "Wilson's 1.3.5.7.9.11 Eikosany"
-                        :scl/description "Used for the Garden Earth project. The flute tunes the 1/1 to 453.75 (* 33/32 440)."}
-                 :scale scl-eik})
-  (scl/spit-file
-   "/Users/diego/Music/tunings/wilson-1-3-5-7-9-11-eikosany_garden-earth/eik.scl"
-   eik-data)
-#+end_src
-
-#+RESULTS:
-: class java.lang.IllegalAccessError
-
-** Init Surge
-#+begin_src clojure
-(surge/init)
+   [tieminos.utils :refer [wrap-at throttle rrange]]))
 #+end_src
 
 #+RESULTS:
 : nil
 
-* Cosmos: Nubosidades lorentzianas =libre? o quizá un 3)4=
-** cuerpo-tierra-quipu
-* Olivo =3)5 of 3)6 1.3.5.9.11=
-#+begin_src clojure
+
+#+name: harmonies explorations ns/init
+#+begin_src clojure :ns tierra-mar.harmonies.explorations
+;; Make scl and kbm files compatible with the current tuning used by the flute
+;;
+(-> eik)
+  ;; make scl file that maps to the base freq 440 (which doesn't appear in the scale
+(-> eik :scale first :bounded-ratio) ;; => 33/32
+
+(def scl-base-freq (float (* base-freq 33/32))) ;; => 453.75 - MTS-ESP should set this as the freq
+  ;; eik scale with the first note as 1/1
+
+(def scl-eik (->> eik :scale (map (fn [note]
+                                    (-> note
+                                        (update :bounded-ratio / 33/32)
+                                        (assoc-in [:pitch :base-freq] scl-base-freq))))))
+  ;; ensure that the names are still correct, that is that the pitches haven't changed
+
+(= scl-eik (+names 453.75 scl-eik))
+
+
+(def eik-data {:meta {:scl/name "Wilson's 1.3.5.7.9.11 Eikosany"
+                      :scl/description "Used for the Garden Earth project. The flute tunes the 1/1 to 453.75 (* 33/32 440)."}
+               :scale scl-eik})
+
+#+end_src
+
+#+RESULTS: harmonies explorations ns/init
+: #'tierra-mar.harmonies.explorations/eik-data
+
+
+Spit eik.scl file.
+#+begin_src clojure :ns tierra-mar.harmonies.explorations
+  (scl/spit-file
+   "/Users/diego/Music/tunings/wilson-1-3-5-7-9-11-eikosany_garden-earth/eik.scl"
+   eik-data)
+
+#+end_src
+
+#+RESULTS:
+: class clojure.lang.Compiler$CompilerException
+
+** Init Surge
+#+begin_src clojure :ns tierra-mar.harmonies.explorations
+(surge/init)
+#+end_src
+
+#+RESULTS:
+: #<osc-client: destination[127.0.0.1:53280] open?[true] n-listeners[0] n-handlers[0]>
+
+* Secciones
+** Cosmos: Nubosidades lorentzianas =libre? o quizá un 3)4=
+*** cuerpo-tierra-quipu
+** Olivo =3)5 of 3)6 1.3.5.9.11=
+#+begin_src clojure :ns tierra-mar.harmonies.explorations
 (surge/set-kbm
    (let [name* "3)5 of 3)6 1.3.5.9.11"
          degs (+degrees (subcps name*))]
@@ -68,9 +95,44 @@
       :comments? false
       :degrees degs}))
 #+end_src
-* Intersección Olivo -> Lluvia =3)4 of 3)6 1.3.5.9=
+
+#+RESULTS:
+: nil
+
+*** Armonías encontradas
+#+begin_src clojure :ns tierra-mar.harmonies.explorations
+(def olivo-armonias
+  ;; olivo
+[{:subcps "3)5 of 3)6 1.3.5.9.11", :midi-notes '(48 55 60)}
+ {:subcps "3)5 of 3)6 1.3.5.9.11", :midi-notes '(48 55 60 65 67 68 70 72)}
+
+ ;; sombra verde-oscuro
+ {:subcps "3)5 of 3)6 1.3.5.9.11", :midi-notes '(50 54 57 60 62 63 65)}
+ {:subcps "3)5 of 3)6 1.3.5.9.11", :midi-notes '(50 54 57 60 62 65 70)}
+ {:subcps "3)5 of 3)6 1.3.5.9.11", :midi-notes '(50 54 57 60 62 63 67 70)}
+
+ ;; verde mate
+ #_{:subcps "3)5 of 3)6 1.3.5.9.11", :midi-notes (50 55 59 67)} ;; - tension
+ {:subcps "3)5 of 3)6 1.3.5.9.11", :midi-notes '(50 54 58 66)}
+ {:subcps "3)5 of 3)6 1.3.5.9.11", :midi-notes '(50 54 58 63)}
+ {:subcps "3)5 of 3)6 1.3.5.9.11", :midi-notes '(50 54 58 62)}
+ {:subcps "3)5 of 3)6 1.3.5.9.11", :midi-notes '(50 54 58 62 63 65 67 68)}
+
+ 
+ {:subcps "3)5 of 3)6 1.3.5.9.11", :midi-notes '(51 55 59 68)}
+
+ ;; célula melódica
+ {:subcps "3)5 of 3)6 1.3.5.9.11", :midi-notes '(64 65 67 68 70 72)}
+ ])
+#+end_src
+
+#+RESULTS:
+: #'tierra-mar.harmonies.explorations/olivo-armonias
+
+
+** Intersección Olivo -> Lluvia =3)4 of 3)6 1.3.5.9=
 El CPS intersectado es: =3)4 of 3)6 1.3.5.9=
-#+begin_src clojure
+#+begin_src clojure :ns tierra-mar.harmonies.explorations
 
 (def inter-sets
   (->> ["3)5 of 3)6 1.3.5.7.9"                ;; lluvia
@@ -89,7 +151,7 @@ El CPS intersectado es: =3)4 of 3)6 1.3.5.9=
 #+RESULTS:
 : ("3)5 of 3)6 1.3.5.7.9" "3)4 of 3)6 1.3.5.9" "3)5 of 3)6 1.3.5.9.11")
 
-* Lluvia: ="3)5 of 3)6 1.3.5.7.9"=
+** Lluvia: ="3)5 of 3)6 1.3.5.7.9"=
 #+begin_src clojure
 (surge/set-kbm
    (let [name* "3)5 of 3)6 1.3.5.7.9"
@@ -100,10 +162,13 @@ El CPS intersectado es: =3)4 of 3)6 1.3.5.9=
       :scale-data eik-data
       :middle-note 60
       :middle-note-freq (/ scl-base-freq 2)
-      :comments? false
       :degrees degs}))
 #+end_src
-* Transición-Intersección Lluvia -> Campos: =2)4 of 3)6 5-1.3.7.9=
+
+#+RESULTS:
+: class clojure.lang.Compiler$CompilerException
+
+** Transición-Intersección Lluvia -> Campos: ="interseccion 2)5 5-1.3.7.9.11 - 3)5 1.3.5.7.9"=
 
 Este es el CPS que intersecta =3)4 of 3)6 1.3.5.9=
 #+begin_src clojure
@@ -135,7 +200,7 @@ Este cálculo es incorrecto, pero puede funcionar, contiene 3 de los conjuntos d
 
 #+RESULTS:
 : nil
-** Cálculo
+*** Cálculo
 #+begin_src clojure
 
 "3)5 of 3)6 1.3.5.7.9"
@@ -160,7 +225,7 @@ Este cálculo es incorrecto, pero puede funcionar, contiene 3 de los conjuntos d
 #+RESULTS:
 : ("3)5 of 3)6 1.3.5.7.9" "3)4 of 3)6 1.3.5.9" "3)5 of 3)6 1.3.5.9.11")
 
-* Campos Electromágneticos  =3)5 of 3)6 1.3.5.9.11=
+** Campos Electromágneticos  ="2)5 of 3)6 5-1.3.7.9.11"=
 Partimos de esta dekany como armonía principal: =3)5 of 3)6 1.3.5.9.11=. Es brillante y funcion bien
 
 El propósito será construir una secuencia que no lleve a esta armonía
@@ -181,7 +246,7 @@ El propósito será construir una secuencia que no lleve a esta armonía
 #+RESULTS:
 : nil
 
-** Ideas sobre 2)5 of 3)6 5-1.3.7.9.11" - acorde brillante
+*** Ideas sobre 2)5 of 3)6 5-1.3.7.9.11" - acorde brillante
 1. Acorde para la parte más "climática"
    Usando el Oxygen en la  =octava + 1=
 =Ab C F Ab' C' Eb' Ab'' Bb'' (B'' A'')=
@@ -191,9 +256,9 @@ El propósito será construir una secuencia que no lleve a esta armonía
   - Hay un bonito juego entre C-Eb y B-D...
 
 2. =B'-D'-A''= también funciona bien, es un contraste, podría pertenecer a uno de los lados del campo y también ser una armonía en sí misma
-*** TODO Sacar los ratios y los nombres de las notas de las ideas de arriba y ver cómo tocarlas en la flauta
+**** TODO Sacar los ratios y los nombres de las notas de las ideas de arriba y ver cómo tocarlas en la flauta
 
-** Hexany (intuición inicial) =2)4 of 3)6 5-1.3.9.11=
+*** Hexany (intuición inicial) =2)4 of 3)6 5-1.3.9.11=
 Contenida en la dekany. Fue una primera intuición.
 #+begin_src clojure
 ;; candidata para `campos`
@@ -233,7 +298,7 @@ Los supersets en los que aparece
 : ("2)4 of 3)6 5-1.3.9.11", "2)5 of 3)6 5-1.3.7.9.11", "3)5 of 3)6 1.3.5.9.11")
 
 =3)5 of 3)6 1.3.5.9.11= Me gusta, contiene la hexany a la vez que es más o menos brillante
-** Intersecciones
+*** Intersecciones
 #+begin_src clojure
 (->> (find-subcps-intersections
        "2)5 of 3)6 5-1.3.7.9.11"
@@ -259,5 +324,244 @@ La intersección entre =lluvia= y =campos=. La hexany =5-1.3.7.9= (cuasi-archyta
 #+end_src
 
 Podemos empezar con el modo en posición menor e ir subiendo hasta hacerlo mayor. Y =campo= "comienze" en muy brillante. 
-* envío del canto-armonía: nuevamente tierra-cosmos-mar =1)4 of 3)6 1.5-3.7.9.11=
+** Envío del canto-armonía: nuevamente tierra-cosmos-mar =1)4 of 3)6 1.5-3.7.9.11=
+* Harmonic Summary
+#+begin_src clojure :ns tierra-mar.harmonies.explorations
+(def olivo (subcps "3)5 of 3)6 1.3.5.9.11"))
+(def olivo->lluvia (subcps "3)4 of 3)6 1.3.5.9"))
+(def lluvia (subcps "3)5 of 3)6 1.3.5.7.9"))
+(def lluvia->campos (subcps "2)4 of 3)6 5-1.3.7.9"))
+(def campos (subcps "2)5 of 3)6 5-1.3.7.9.11"))
+(def envio (subcps "1)4 of 3)6 1.5-3.7.9.11"))
 
+(def scale-seq
+  [olivo
+   olivo->lluvia
+   lluvia
+   lluvia->campos
+   campos
+   envio])
+
+#+end_src
+
+#+RESULTS:
+: #'tierra-mar.harmonies.explorations/scale-seq
+
+#+begin_src clojure :ns tierra-mar.harmonies.explorations
+(def a 4)
+#+end_src
+
+#+RESULTS:
+: #'tierra-mars.harmonies.explorations/a
+
+* Capture MIDI notes
+1. Imprime en el REPL los acordes sostenidos, tanto los ratios originales como los usados por las =.kbm= en Surge.
+2. Guarda acordes (en el átomo =selections=) cuando se toca la nota MIDI =40= mientras se sostiene un acorde.
+
+#+name: capture notes init
+#+begin_src clojure :ns tierra-mar.harmonies.explorations
+(require '[tieminos.midi.core :refer [midi-in-event get-oxygen!]])
+(def midi-notes (atom {}))
+(defn capture-note
+  [note]
+  (swap! midi-notes assoc note true))
+
+(defn remove-note
+  [note]
+  (swap! midi-notes dissoc note))
+
+(midi-in-event
+  :midi-input (get-oxygen!)
+  :note-on (fn [{:keys [note channel velocity] :as data}]
+             (capture-note note))
+  :note-off (fn [{:keys [note channel]}]
+              (remove-note note)))
+#+end_src
+
+#+RESULTS: capture notes init
+: class clojure.lang.Compiler$CompilerException
+
+#+name: Capture MIDI notes
+#+begin_src clojure
+
+(def current-subcps olivo)
+
+(-> current-subcps)
+
+(do
+  (defn midi-notes->chord
+    [subcps midi-notes]
+    (let [midi (-> midi-notes sort)
+          actual (->> midi
+                      (map #(deg->freq subcps 1 (- % 60))))
+          octave-reduced (map :ratio (mapcat ratios->scale (partition 1 1 actual)))
+          set* (-> octave-reduced set sort)
+          
+          ;; mapped to surge's kbm
+          surge (map #(/ % 33/32) actual)
+          octave-reduced-surge (map :ratio (mapcat ratios->scale (partition 1 1 surge)))]
+      {:size (format "%s/%s" (count set*) (count actual))
+       :midi midi
+       :actual actual
+       :set set*
+       :actual-surge surge
+       :set-surge (-> octave-reduced-surge set sort)
+       :octave-reduced octave-reduced
+       :octave-reduced-surge octave-reduced-surge
+       }))
+  (midi-notes->chord current-subcps (keys {64 true, 57 true, 62 true, 60 true})))
+(do
+  (defn print-data*
+    [current-subcps midi-notes]
+    (println)
+    (->> midi-notes
+         (midi-notes->chord current-subcps)
+         clojure.pprint/pprint))
+  (def print-data (throttle print-data* 400)))
+
+(-> current-subcps)
+
+(defonce selections (atom []))
+
+(add-watch midi-notes ::chord
+           (fn [_ _ _ data]
+             (print-data current-subcps (keys data))
+             (when (get data 40)
+               (let [subcps* (:subcps/name (meta current-subcps))]
+                 (println (format "Saving chord from %s to `selections` atom" subcps*))
+                 (->> (swap! selections conj {:subcps subcps*
+                                              :midi-notes (-> data (dissoc 40) keys sort)})
+                      (last)
+                      (println))))))
+
+(-> @selections)
+(reset! selections [])
+
+#+end_src
+
+#+RESULTS: Capture MIDI notes
+: class clojure.lang.Compiler$CompilerException
+
+* Análisis
+** Intersets
+#+begin_src clojure
+
+;;;;;;;;;;;;;;;;;;
+;; inter sets
+;;;;;;;;;;;;;;;;;;
+
+(defn get-intersets
+  [cps-1 cps-2]
+  (->> [cps-1 cps-2]
+       (mapcat #(map :set %))
+       (frequencies)
+       (filter #(= 2 (second %)))
+       (map first)))
+
+(get-intersets
+  olivo
+  olivo->lluvia)
+
+;; transitions appear as duplicate sets, so that is good
+(->> scale-seq
+     (partition 2 1)
+     (map #(apply get-intersets %)))
+
+
+
+;;;;;;;;;;;;;;;;;;
+;; total notes
+;;;;;;;;;;;;;;;;;;
+
+(->> scale-seq
+     flatten
+     (map :set)
+     set
+     count)
+;; => 17
+
+
+#+end_src
+
+#+RESULTS:
+: class clojure.lang.Compiler$CompilerException
+** Armonías capturadas
+Toma las armonías guardadas (={:subcps :string :midi-notes :num-seq}=) y devuelve información útil
+#+begin_src clojure :ns tierra-mar.harmonies.explorations
+
+
+(-> olivo-armonias)
+(do
+  (defn selected-harmony->chord
+    [{subcps-name :subcps midi :midi-notes}]
+    (midi-notes->chord (subcps subcps-name) midi )
+    )
+  (->> (selected-harmony->chord (nth olivo-armonias 1))
+       :actual
+       #_(map eik-ratios)
+       #_(map (comp :set))
+       #_(map (comp :class :pitch))
+       #_(map #(pitch-class->pr-fingering
+                 (-> % :pitch :class)))))
+
+
+
+
+#+end_src
+
+#+RESULTS:
+: class clojure.lang.ArityException
+
+* Trainer
+#+begin_src clojure
+
+
+(rain.v2/stop)
+(->> (selected-harmony->chord (nth olivo-armonias 1))
+     :octave-reduced
+     (map eik-ratios)
+     rand-nth)
+(let [notes (->> (selected-harmony->chord (nth olivo-armonias 1))
+                 :octave-reduced
+                 (map eik-ratios))
+      last-note (atom nil)]
+  (rain.v2/ref-rain
+    :id ::trainer
+    :durs (fn [_] (/ (rand-nth [5 8 10])
+                     2))
+    :on-event
+    (rain.v2/on-event
+      (let [note (rand-nth notes)
+            {:keys [degree bounded-ratio set pitch]} note]
+
+        (println (:class pitch) set)
+        (when @last-note
+          (println (format "Intervalo: %s cents | %s"
+                           (int (ratio->cents (/ bounded-ratio @last-note)))
+                           (/ bounded-ratio @last-note))))
+        (println)
+        
+        (reset! last-note bounded-ratio)
+        
+        (tuning-monitor                 ; synth
+          :freq (deg->freq (:scale eik)
+                           (/ 440 2)
+                           degree
+                           :period (rainseq {0 4
+                                             -2 1
+                                             -1 2
+                                             1 1
+                                             }))
+          :a 6
+          :r 6
+          :pan (rrange -0.5 0.5)
+          :amp (rrange 0.125 0.25)
+          :out (bh/bus 1) #_0 #_(bh/bus (+ 6 (rand-int 28))))))))
+#+end_src
+
+#+begin_src clojure :ns tierra-mar.harmonies.explorations
+(def a 4)
+#+end_src
+
+#+RESULTS:
+: #'tierra-mar.harmonies.explorations/a
