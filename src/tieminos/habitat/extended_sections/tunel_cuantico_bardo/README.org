@@ -4,6 +4,6 @@ Current quadraphonic setup is:
 1   2
 
 3   4
-** TODO [#A] verify routing respects current quad setup
-DEADLINE: <2026-04-20 Mon>
+** DONE [#A] verify routing respects current quad setup
+CLOSED: [2026-04-29 Wed 10:22] DEADLINE: <2026-04-20 Mon>
 

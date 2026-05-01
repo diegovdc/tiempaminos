@@ -73,7 +73,8 @@
        (map :duration)
        frequencies))
 
-(defn stop-recording [{:keys [input-k]}]
+(defn stop-recording
+  [{:keys [input-k]}]
   (timbre/info "stopping rec on" input-k)
   (gp/stop (make-rec-id input-k)))
 
@@ -282,9 +283,9 @@
      :filter-config (-> data :filter-configs active-filter)}))
 
 (defn clouds-durs
-  [player {:keys [index]}]
+  [player bank {:keys [index]}]
   (let [state @live-state
-        rhythm (bardo.live-state/get-player-data player 0 :rhythm)]
+        rhythm (bardo.live-state/get-player-data player bank :rhythm)]
     (get-dur index
              rhythm
              (:lorentz state))))
@@ -408,7 +409,7 @@
    {:id  (if independent?
            (make-clouds-id player bank)
            (make-clouds-id player))
-    :durs-fn (partial clouds-durs player)
+    :durs-fn (partial clouds-durs player bank)
     :on-event (partial clouds-on-event player bank)}))
 
 (comment
