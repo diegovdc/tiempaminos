@@ -136,17 +136,18 @@
      :id ::ramasintes
      :durs (fn [_] (rrand 3 4.0))
      :on-event (rain.v2/on-event
-                (println i)
+                (println "rama" i)
 
                 (doseq [in (->> ins
                                 shuffle
                                 (take 3))]
                   (let [outs (map dec (make-branch-path (rrand 5 15)))]
                     (rama {:in in
-                           :amp (rrand 0.7 1.6) #_(rrand 2 12)
+                           :amp (rrand 1.3 2.7) #_(rrand 2 12)
                            :dur (weighted {#(rrand 4.0 6) 4
                                            #(rrand 6.0 15) 1})
-                           :asr (normalize (repeatedly 3 rand))
+                           :asr (normalize [1 3 5])
+                           :curve -2
                            :rev-mix (weighted {0 3
                                                #(rrand 0.0 1) 2})
                            :filter-freq (weighted filter-freqs)

@@ -13,7 +13,9 @@
 
 (def ins
   "Buses coming in from blackhole. Will use the `Blackhole-16` devices as inputs."
-  {:voz-main 2
+  {:voz-1 1
+   :voz-2 2
+   :voz-3 10
    :fl-main 3
    :olivo/surge-pad 4                  ;; 2ch
    :olivo/plamonic-phantom-resonance 6 ;; 2ch

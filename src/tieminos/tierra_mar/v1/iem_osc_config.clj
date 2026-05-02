@@ -50,7 +50,7 @@
   ;; arpa spiral (version para "La Vida del Olivo"
   (let [client (tm.configs/get-iem-osc-client :olivo-spiral-arp)
         steps (/ 28 2)
-        elevs (reverse (iem.utils/degree-range -90 90 steps))
+        elevs (iem.utils/degree-range -90 90 steps)
         deg-step 38
         sources (->> (concat
                       (iem.utils/line
