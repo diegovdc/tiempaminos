@@ -16,7 +16,7 @@
     (main/stop-sequencer! hseq/context)
     (reset! rec/bufs {}))
 
-  (habitat/init! {:volume-db -24}))
+  (habitat/init! {:volume-db -18}))
 
 (defn inputs-4ch-gtr&mics-1&2!
   []

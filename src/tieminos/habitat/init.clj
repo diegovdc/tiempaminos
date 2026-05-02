@@ -64,6 +64,8 @@
   [db]
   (timbre/info (format "Output volume set to: %sdb" db))
   (o/volume (o/db->amp db)))
+(comment
+  (overtone-output-vol! 0))
 
 (defn init!
   [& {:keys [_add-custom-groups-fn return-n-chans volume-db]
