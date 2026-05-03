@@ -3,7 +3,8 @@
    [overtone.core :as o]
    [overtone.osc :as osc]
    [taoensso.timbre :as timbre]
-   [tieminos.blackhole :as bh]))
+   [tieminos.blackhole :as bh]
+   [tieminos.midi.core :refer [get-iac2!]]))
 
 ;;;;;;;;;;;;;;;;;;
 ;; IO
@@ -117,6 +118,32 @@
 
 (comment
   (init-buses!))
+
+;;;;;;;;;;;;;;;;;;
+;; MIDI
+;;;;;;;;;;;;;;;;;;
+
+(def ^:private midi-chan
+  {:olivo 0})
+
+(def ^:private midi-cc
+  {:olivo/voice-spirals-sections 22})
+
+(defn get-midi-chan
+  [k]
+  (if-let [chan (midi-chan k)]
+    chan
+    (timbre/error "Unknown key for midi-chan" {:key k})))
+
+(defn get-midi-cc
+  [k]
+  (if-let [cc-val (midi-cc k)]
+    cc-val
+    (timbre/error "Unknown key for midi-cc" {:key k})))
+
+(defn get-midi-sink
+  []
+  (get-iac2!))
 
 ;;;;;;;;;;;;;;;;;;
 ;; IEM

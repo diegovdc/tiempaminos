@@ -2,8 +2,9 @@
   (:require
    [clojure.data.generators :refer [weighted]]
    [overtone.core :as o]
-   [tieminos.blackhole :as bh]
+   [taoensso.timbre :as timbre]
    [tieminos.math.utils :refer [normalize]]
+   [tieminos.midi.core :refer [get-iac2! midi-in-event]]
    [tieminos.sc-utils.groups.v1 :as sc.groups]
    [tieminos.sc-utils.synths.template-synth.v0 :refer [make-synth-fn]]
    [tieminos.sc-utils.synths.v1 :refer [lfo-kr]]
@@ -166,34 +167,108 @@
 ;; * TODO espirales de la voz
 ;;;;;;;;;;;;;;;;;;
 
+(def spiral-a
+  (range 1 15))
+
+(def spiral-b
+  "Shares start and end nodes with `spiral-a` (1 & 14)"
+  (concat [1]
+          (range 16 27)
+          [14]))
+
 (defn calculate-spiral-outs-range
-  [total-outs prev-spiral-outs-range-data]
+  [total-outs min-offset max-len prev-spiral-outs-range-data]
   (let [[prev-start prev-end] prev-spiral-outs-range-data
-        min-offset 2
         start (if (= 0 prev-start prev-end)
                 0
-                (+ min-offset
-                   (rrand  prev-start prev-end)))
-        end (+ start (rrand (inc min-offset) 4))]
+                (rrand
+                 (+ min-offset prev-start)
+                 prev-end))
+        end (+ start (rrand (inc min-offset) max-len))]
     (->> (range start (inc end))
-         (map #(min % total-outs)))))
+         (map #(min % (dec total-outs))))))
 
 (defn reset-spiral-outs-range-atom!
-  [range-atom outs]
-  (let [freqs (frequencies outs)]
-    #_(println)
-    (reset! range-atom
-            (if (> (get freqs 28 0) 2)
+  ([spirals-state-atom spiral-key total-outs outs]
+   (let [freqs (frequencies outs)]
+     (swap! spirals-state-atom
+            assoc
+            spiral-key
+            (if (> (get freqs (dec total-outs) 0) 2)
               [0 0]
-              [(first outs) (last outs)]))))
+              [(first outs) (last outs)])))))
 
-#_(let [prev-spiral-outs-range (atom [0 0])
-        total-outs 28]
-    (doseq [_ (range 20)]
-      (let [outs (calculate-spiral-outs-range total-outs @prev-spiral-outs-range)]
-        (println outs)
-        (reset-spiral-outs-range-atom!
-         prev-spiral-outs-range outs))))
+(defn map-outs-to-spiral
+  "Maps the outs returned by `calculate-spiral-outs-range` to an ordered list of numbers that represent an actual spiral."
+  [offset spiral outs]
+  (map #(nth spiral (min (dec (count spiral))
+                         (+ offset %)))
+       outs))
+
+(defn get-outs-data
+  "Returns two sequences of outs, a `virtual` which always from 0 to `total-outs` and a `real` which has the outs mapped to the given `spiral`."
+  [total-outs offset max-len spiral prev-outs-range]
+  (let [virtual-outs (calculate-spiral-outs-range total-outs
+                                                  1
+                                                  max-len
+                                                  prev-outs-range)
+        real-outs (map-outs-to-spiral offset spiral virtual-outs)]
+    {:virtual-outs virtual-outs
+     :real-outs real-outs}))
+
+(def ^:private default-spirals-state
+  {:offset 0
+   :max-len 4
+   :total-outs 14
+   :spiral-a-prev-range [0 0]
+   :spiral-b-prev-range [0 0]})
+
+(defonce ^:private spirals-state
+  (atom default-spirals-state))
+
+(defn gen-spiral-outs-seq!
+  [spiral-k]
+  (let [{:keys [offset
+                max-len
+                total-outs]} @spirals-state
+        spiral (case spiral-k
+                 :spiral-a spiral-a
+                 :spiral-b spiral-b)
+        spiral-range-k (case spiral-k
+                         :spiral-a :spiral-a-prev-range
+                         :spiral-b :spiral-b-prev-range)
+        spiral-range (@spirals-state spiral-range-k)
+        _ (when-not spiral-range (throw (ex-info "Unknown `spiral-prev-range-k`" {:spiral-k spiral-k
+                                                                                  :spiral-prev-range-k spiral-range-k})))
+        {:keys [virtual-outs real-outs]} (get-outs-data
+                                          total-outs
+                                          offset
+                                          max-len
+                                          spiral
+                                          spiral-range)]
+    (reset-spiral-outs-range-atom! spirals-state
+                                   spiral-range-k
+                                   total-outs
+                                   virtual-outs)
+    real-outs))
+
+(comment
+  (reset! spirals-state default-spirals-state)
+  (-> @spirals-state)
+  (gen-spiral-outs-seq! :spiral-a)
+  #_(swap! spirals-state assoc :reset-range [0 0])
+  (swap! spirals-state assoc :total-outs 14)
+  (swap! spirals-state assoc :offset 0)
+  (doseq [_ (range 20)]
+    (println (gen-spiral-outs-seq! :spiral-a))))
+
+(defn set-spirals-params!
+  "`total-outs`: the total number of available outputs, so if `5` is set only the first five outputs will be used (unless transposed by the offset)
+  `height-offset`: the offset from the starting point of the spiral (0 bieng the bottom)"
+  [total-outs height-offset]
+  (swap! spirals-state assoc
+         :total-outs total-outs
+         :offset height-offset))
 
 (defn start-vozpiral-loop!
   [durs-fn]
@@ -207,10 +282,10 @@
                             total-outs
                             @prev-spiral-outs-range)]
                   (println outs)
-                  (reset-spiral-outs-range-atom!
-                   prev-spiral-outs-range outs)
-                  (println "duration:  " dur-s)
-                  (rama {:in (tm.configs/get-input :voz-main)
+                  (reset-spiral-outs-range-atom! prev-spiral-outs-range
+                                                 outs)
+                  (println "vozpiral:  " dur-s "s")
+                  (rama {:in (tm.configs/get-input :voz-1)
                          :amp 8
                          :dur (* dur-s
                                  (weighted {#(rrand 1.3 2) 4
@@ -237,6 +312,39 @@
 
   (rain.v2/stop)
   (o/stop))
+
+;;;;;;;;;;;;;;;;;;
+;; * MIDI ctl
+;;;;;;;;;;;;;;;;;;
+
+(defn set-section!
+  [val]
+  (timbre/info "Playing section" val)
+  (case val
+    0 (reset! spirals-state default-spirals-state)
+    1 (set-spirals-params! 5 0)
+    2 (set-spirals-params! 7 0)
+    3 (set-spirals-params! 9 0)
+    4 (set-spirals-params! 14 0)
+    5 (set-spirals-params! 14 5)))
+
+(def ^:private cc-responses
+  {(tm.configs/get-midi-cc :olivo/voice-spirals-sections) #'set-section!})
+
+(defn call-cc-response
+  [cc val]
+  (when-let [f (cc-responses cc)]
+    (f val)))
+
+(comment
+
+  (midi-in-event
+   :midi-input (tm.configs/get-midi-sink)
+   :cc (fn [{cc :note
+             val :velocity
+             :as ev}]
+         (when (= (tm.configs/get-midi-chan :olivo) (:channel ev))
+           (call-cc-response cc val)))))
 
 ;;;;;;;;;;;;;;;;;;
 ;; * Main
