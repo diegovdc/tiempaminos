@@ -1,17 +1,21 @@
 (ns tieminos.tierra-mar.v1.olivo
   (:require
    [clojure.data.generators :refer [weighted]]
+   [erv.utils.core :refer [period-reduce]]
    [overtone.core :as o]
    [taoensso.timbre :as timbre]
+   [tieminos.compositions.garden-earth.base :refer [base-freq]]
    [tieminos.math.utils :refer [normalize]]
-   [tieminos.midi.core :refer [get-iac2! midi-in-event]]
+   [tieminos.midi.core :refer [midi-in-event]]
    [tieminos.sc-utils.groups.v1 :as sc.groups]
    [tieminos.sc-utils.synths.template-synth.v0 :refer [make-synth-fn]]
    [tieminos.sc-utils.synths.v1 :refer [lfo-kr]]
    [tieminos.tierra-mar.v1.arp :as tm.arp]
    [tieminos.tierra-mar.v1.configs :as tm.configs]
+   [tieminos.tierra-mar.v1.harmonies.explorations-v2 :as tm.har]
    [tieminos.tierra-mar.v1.state :as tm.state]
-   [tieminos.tierra-mar.v1.synths :refer [+outs1 panaz-line]]
+   [tieminos.tierra-mar.v1.synths :refer [+outs1 cristal-liquidizado-2
+                                          panaz-line]]
    [time-time.dynacan.players.refrain.v2 :as rain.v2]
    [time-time.standard :refer [rrand]]))
 
@@ -253,6 +257,7 @@
     real-outs))
 
 (comment
+  (rain.v2/stop)
   (reset! spirals-state default-spirals-state)
   (-> @spirals-state)
   (gen-spiral-outs-seq! :spiral-a)
@@ -321,12 +326,12 @@
   [val]
   (timbre/info "Playing section" val)
   (case val
-    0 (reset! spirals-state default-spirals-state)
-    1 (set-spirals-params! 5 0)
-    2 (set-spirals-params! 7 0)
-    3 (set-spirals-params! 9 0)
-    4 (set-spirals-params! 14 0)
-    5 (set-spirals-params! 14 5)))
+    0 (do (reset! spirals-state default-spirals-state)
+          (set-spirals-params! 5 0))
+    1 (set-spirals-params! 7 0)
+    2 (set-spirals-params! 9 0)
+    3 (set-spirals-params! 14 0)
+    4 (set-spirals-params! 14 0)))
 
 (def ^:private cc-responses
   {(tm.configs/get-midi-cc :olivo/voice-spirals-sections) #'set-section!})
@@ -346,6 +351,81 @@
          (when (= (tm.configs/get-midi-chan :olivo) (:channel ev))
            (call-cc-response cc val)))))
 
+;;;;;;;;;;;;;;;;;;
+;; * Gongs
+;;;;;;;;;;;;;;;;;;
+
+(def sample-data
+  {:gong-ch {:path "/Users/diego/Music/samples/Milo/gong-chico.wav"
+             :freq 380.3}
+   :gong-gd {:path "/Users/diego/Music/samples/Milo/gong-grande.wav"
+             :freq 194.8}
+   :tam-tam {:path "/Users/diego/Music/samples/Milo/tam-tam.wav"
+             :freq 128.6}})
+
+(defn freq->root-ratio
+  [freq]
+  (period-reduce (/ base-freq freq)))
+
+(defn- load-samples!
+  []
+  (->> sample-data
+       (map (juxt first (fn [[_ m]]
+                          (let [freq (:freq m)]
+                            (assoc (o/load-sample (:path m))
+                                   :freq freq
+                                   :root-ratio (freq->root-ratio freq))))))
+       (into {})))
+
+(comment
+  (def samples (load-samples!))
+  (-> samples :tam-tam :root-ratio))
+
+(defonce state (atom {}))
+(comment
+  (rain.v2/stop ::gongs)
+  (rain.v2/ref-rain
+   :id ::gongs
+   :durs (fn [_] (apply rrand (:gongs/durs @state [1 3])))
+   :on-event
+   (rain.v2/on-event
+    (let [buf (-> [:gong-ch
+                   :gong-gd
+                   :tam-tam]
+                  rand-nth
+                  samples)
+          pos (rand-int (:n-samples buf))]
+      (doseq [_ (range (rrand 2 8))]
+        (let [outs (map dec (make-branch-path (rrand 4 8)))]
+          (cristal-liquidizado-2
+           {:buf buf
+            :rate (* (:root-ratio buf)
+                     (rand-nth [1/16 1/8 1/4 1/2 1 2])
+                     (-> tm.har/olivo
+                         (rand-nth)
+                         :bounded-ratio))
+            :env-levels [0 1 0]
+            :env-durs (normalize [0.5 0.5])
+            :buf-pos pos
+            :dur (rrand 2 5)
+            :amp (* (:gongs/amp @state 1)
+                    (apply rrand (:gongs/amp-range @state [0.3 0.8])))
+            :rev-room (rrand 0.5 1)
+            :rev-mix (rrand 0.3 0.6)
+            :delay-time (rrand 0.1  0.7)
+            :delay-dcy (rrand 0.5  2)
+            :delay-amp 0
+            :ugen/filter '(#(-> % (overtone.core/moog-ladder 3000 0.5) (* 3)))
+            :width-durs (shuffle [0.5 0.3 0.1 0.7])
+            :min-width 4
+            :max-width (rrand 4 (count outs))
+            :out-offset (tm.configs/get-output :olivo-tree-top-30ch)
+            :outs outs})))))))
+
+(reset! state
+        {:gongs/durs [3 5]
+         :gongs/amp 2
+         :gongs/amp-range [1 2]})
 ;;;;;;;;;;;;;;;;;;
 ;; * Main
 ;;;;;;;;;;;;;;;;;;

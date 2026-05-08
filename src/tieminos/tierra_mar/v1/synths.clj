@@ -3,9 +3,9 @@
    [overtone.core :as o]
    [overtone.sc.ugen-collide-list :as oc]
    [taoensso.timbre :as timbre]
-   [tieminos.blackhole :as bh]
    [tieminos.math.utils :refer [normalize]]
-   [tieminos.sc-utils.synths.template-synth.v0 :refer [defplug make-synth-fn]]))
+   [tieminos.sc-utils.synths.template-synth.v0 :refer [defplug make-synth-fn]]
+   [time-time.standard :refer [rrand]]))
 
 (defn map-outs
   "Given a sequence of outs, map a signal array to each out."
@@ -66,6 +66,14 @@
                                    :action o/NO-ACTION)
                  :orientation orientation)))})
 
+(defplug env
+  #{:dur}
+  {:env-levels [0 1 1 0]
+   :env-durs [0.1 0.6 0.4]
+   :ugen/env '(o/env-gen (o/envelope env-levels env-durs)
+                         :time-scale dur
+                         :action o/FREE)})
+
 (make-synth-fn
  'rama
  (-> {:in 0
@@ -123,3 +131,26 @@
     :curve [-1 4]
      ;; :width-durs [0.05 0.15 0.1 0.7]
     :outs (range 4)}))
+
+(make-synth-fn
+ 'cristal-liquidizado-2
+ (-> {:buf 0
+      :buf-pos 0
+      :rate 1
+      :amp 0.5
+      :pan 0
+      :dur 1
+      :rev-mix 0.5
+      :rev-room 1}
+     env
+     panaz-line
+     +outs1)
+ '(-> (o/play-buf 1 buf rate :start-pos buf-pos)
+      :ugen/filter
+      :ugen/panner
+      (o/free-verb rev-mix rev-room)
+      (* amp :ugen/env)
+      :ugen/outs)
+ {:reset? true})
+
+
