@@ -10,10 +10,13 @@
 
 (defn set-interface!
   [k]
-  (if (#{:scarlett :minifuse} k)
+  (if (#{:scarlett :minifuse :headphones} k)
     (do (reset! interface k)
         (timbre/info "Using interface:" k))
     (throw (ex-info "Unknown interface" {:key k}))))
+
+(comment
+  (set-interface! :headphones))
 
 ;;;;;;;;;;;;;;;;;;
 ;; IO
@@ -24,6 +27,7 @@
   (when (zero? i)
     (timbre/warn "Blackhole `bus` starts at `1` so that it makes sense when getting the bus in REAPER"))
   (let [offset (case @interface
+                 :headphones 0
                  :minifuse 4
                  :scarlett 20)]
     (+ offset (dec i))))
