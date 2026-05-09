@@ -100,6 +100,8 @@
       :asr [0.1 0.6 0.3]
       :curve 0
       :rev-mix 0.3
+      :rev-room 0.7
+      :rev-damp 0.7
       :filtered-amp 0.8
       :unfiltered-amp 0.4}
      panaz-line
@@ -107,13 +109,13 @@
  '(-> (o/sound-in in)
       (#(+ (* unfiltered-amp  %)
            (* filtered-amp  (o/moog-ladder % filter-freq filter-q))))
+      :ugen/panner
+      (o/free-verb rev-mix rev-room rev-damp)
       (* amp
          (o/env-gen #_(o/env-perc 0.5 0.5)
           (o/envelope [0 1 1 0] asr curve)
                     :time-scale dur
                     :action o/FREE))
-      :ugen/panner
-      (o/free-verb rev-mix 0.7 0.7)
       :ugen/outs
       #_(#(o/out 0 %)))
  {:reset? true})
@@ -139,20 +141,20 @@
                       #(rrand 8000 20000) 4}]
     (rain.v2/ref-rain
      :id ::ramasintes
-     :durs (fn [_] (rrand 3 4.0))
+     :durs (fn [_] (rrand 0.5 3.0))
      :on-event (rain.v2/on-event
-                (println "rama" i)
+                #_(println "rama" i)
 
                 (doseq [in (->> ins
                                 shuffle
-                                (take 3))]
+                                (take 5))]
                   (let [outs (map dec (make-branch-path (rrand 5 15)))]
                     (rama {:in in
-                           :amp (rrand 1.3 2.7) #_(rrand 2 12)
-                           :dur (weighted {#(rrand 4.0 6) 4
+                           :amp (* 1 (rrand 1.6 2.7)) #_(rrand 2 12)
+                           :dur (weighted {#(rrand 4.0 6) 3
                                            #(rrand 6.0 15) 1})
                            :asr (normalize [1 3 5])
-                           :curve -2
+                           :curve (rrand -4 4)
                            :rev-mix (weighted {0 3
                                                #(rrand 0.0 1) 2})
                            :filter-freq (weighted filter-freqs)
@@ -277,26 +279,26 @@
 
 (defn start-vozpiral-loop!
   [durs-fn]
-  (let [prev-spiral-outs-range (atom [0 0])]
-    (rain.v2/ref-rain
-     :id ::vozpiral
-     :durs durs-fn
-     :on-event (rain.v2/on-event
-                (let [total-outs 28
-                      outs (calculate-spiral-outs-range
-                            total-outs
-                            @prev-spiral-outs-range)]
-                  (println outs)
-                  (reset-spiral-outs-range-atom! prev-spiral-outs-range
-                                                 outs)
-                  (println "vozpiral:  " dur-s "s")
-                  (rama {:in (tm.configs/get-input :voz-1)
+  ;; TODO: (perhaps) have each spiral run on it's own refrain
+  (rain.v2/ref-rain
+   :id ::vozpiral
+   :durs durs-fn
+   :on-event (rain.v2/on-event
+              (let [spiral-a-outs (gen-spiral-outs-seq! :spiral-a)
+                    spiral-b-outs (gen-spiral-outs-seq! :spiral-b)]
+
+                (println "vozpiral:  " dur-s "s")
+                (doseq [[in outs] [[(tm.configs/get-input :voz-1) spiral-a-outs]
+                                   [(tm.configs/get-input :voz-2) spiral-b-outs]]]
+                  (println in outs)
+                  (rama {:in in
                          :amp 8
                          :dur (* dur-s
                                  (weighted {#(rrand 1.3 2) 4
                                             #(rrand 2.0 3) 1}))
                          :asr (normalize [1 1 1])
                          :rev-mix (rrand 0.4 0.6)
+                         :rev-room 0.8
                          :filtered-amp 0 #_(rrand 0.4 0.7)
                          :unfiltered-amp 0.8
                          :filter-freq 3000
