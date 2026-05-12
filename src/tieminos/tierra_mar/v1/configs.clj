@@ -32,7 +32,7 @@
    :nubosidades-arp2-2ch 7
 
    :olivo-spiral-arp-28ch 9 ;; until 36
-   :olivo-tree-top-30ch 37   ;; until 75
+   :olivo-tree-top-30ch 37   ;; until 66
 
    :lluvia-voice-dome-25ch 67 ;; until 92 (actually 91, but last channel in REAPER is not used, but must be a pair number for REAPER)
    :lluvia-voice-shadow-2ch 92 ;; until 93

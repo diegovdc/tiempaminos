@@ -52,7 +52,7 @@
     @iac2*
     (try (reset! iac2* (midi/midi-in "Bus 2"))
          (catch Exception e
-           (timbre/warn (str "Could not connect to Lumatone: " (.getMessage e)))))))
+           (timbre/warn (str "Could not connect to iac2: " (.getMessage e)))))))
 
 (comment
   ;; basic USAGE
@@ -180,8 +180,7 @@
   "`note` events receive a map with the following keys
    `'(:data2 :command :channel :msg :note :status :data1 :device :timestamp :velocity)`"
   [& {:keys [midi-input note-on note-off cc auto-ctl?]
-      :or   {midi-input (get-oxygen!)
-             auto-ctl?  true
+      :or   {auto-ctl?  true
              note-off   (fn [_] nil)
              cc (fn [_] nil)}}]
   (clear-synths-on-overtone-stop!) ;; handle o/stop event

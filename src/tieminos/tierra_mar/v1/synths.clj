@@ -141,13 +141,22 @@
       :pan 0
       :dur 1
       :rev-mix 0.5
-      :rev-room 1}
+      :rev-room 1
+      :delay-time 0.3
+      :delay-dcy 0.7
+      :delay-amp 1}
      env
      panaz-line
      +outs1)
  '(-> (o/play-buf 1 buf rate :start-pos buf-pos)
       :ugen/filter
       :ugen/panner
+      (#(+ % (-> %
+                 (o/comb-l delay-time delay-time delay-dcy)
+                 (o/moog-ladder 1000 0.7)
+                 (* delay-amp))))
+      #_(* (o/env-gen (o/envelope [0 1 1 0] [0 0.5 0.5])
+                      :time-scale (* 2/3 dur)))
       (o/free-verb rev-mix rev-room)
       (* amp :ugen/env)
       :ugen/outs)
