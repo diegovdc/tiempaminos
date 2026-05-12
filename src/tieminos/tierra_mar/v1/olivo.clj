@@ -1,6 +1,7 @@
 (ns tieminos.tierra-mar.v1.olivo
   (:require
    [clojure.data.generators :refer [weighted]]
+   [erv.scale.core :refer [deg->freq]]
    [erv.utils.core :refer [period-reduce]]
    [overtone.core :as o]
    [taoensso.timbre :as timbre]
@@ -272,10 +273,11 @@
 (defn set-spirals-params!
   "`total-outs`: the total number of available outputs, so if `5` is set only the first five outputs will be used (unless transposed by the offset)
   `height-offset`: the offset from the starting point of the spiral (0 bieng the bottom)"
-  [total-outs height-offset]
+  [total-outs height-offset max-len]
   (swap! spirals-state assoc
          :total-outs total-outs
-         :offset height-offset))
+         :offset height-offset
+         :max-len max-len))
 
 (defn start-vozpiral-loop!
   [durs-fn]
@@ -297,6 +299,7 @@
                                  (weighted {#(rrand 1.3 2) 4
                                             #(rrand 2.0 3) 1}))
                          :asr (normalize [1 1 1])
+                         :curve -1
                          :rev-mix (rrand 0.4 0.6)
                          :rev-room 0.8
                          :filtered-amp 0 #_(rrand 0.4 0.7)
@@ -304,7 +307,8 @@
                          :filter-freq 3000
                          :width-durs (shuffle [0.05 0.15 0.1 0.7])
                          :min-width 2
-                         :max-width (rrand 4 6)
+                         :max-width (min (rrand 2.5 4)
+                                         (dec (count outs)))
                          :out-offset (tm.configs/get-output :olivo-spiral-arp-28ch)
                          :outs outs}))))))
 
@@ -329,11 +333,11 @@
   (timbre/info "Playing section" val)
   (case val
     0 (do (reset! spirals-state default-spirals-state)
-          (set-spirals-params! 5 0))
-    1 (set-spirals-params! 7 0)
-    2 (set-spirals-params! 9 0)
-    3 (set-spirals-params! 14 0)
-    4 (set-spirals-params! 14 0)))
+          (set-spirals-params! 1 0 4))
+    1 (set-spirals-params! 6 0 5)
+    2 (set-spirals-params! 9 0 9)
+    3 (set-spirals-params! 14 0 14)
+    4 (set-spirals-params! 14 0 5)))
 
 (def ^:private cc-responses
   {(tm.configs/get-midi-cc :olivo/voice-spirals-sections) #'set-section!})
@@ -344,9 +348,20 @@
     (f val)))
 
 (comment
-
+  (defonce played-notes (atom {}))
+  (add-watch played-notes ::played-noted
+             (fn [_ _ _ state]
+               (let [note (some-> state keys rand-nth)]
+                 (when note
+                   ;; NOTE: multiply by 32/33 to check against the tuning in surge
+                   (println #_state
+                    (* 32/33 (deg->freq tm.har/olivo 1 (- note 60))))))))
   (midi-in-event
    :midi-input (tm.configs/get-midi-sink)
+   :note-on (fn [{:keys [note velocity]}]
+              (swap! played-notes assoc note velocity))
+   :note-off (fn [{:keys [note]}]
+               (swap! played-notes dissoc note))
    :cc (fn [{cc :note
              val :velocity
              :as ev}]
@@ -427,7 +442,7 @@
 (reset! state
         {:gongs/durs [3 5]
          :gongs/amp 2
-         :gongs/amp-range [1 2]})
+         :gongs/amp-range [0.6 1.5]})
 ;;;;;;;;;;;;;;;;;;
 ;; * Main
 ;;;;;;;;;;;;;;;;;;
