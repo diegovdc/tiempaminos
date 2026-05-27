@@ -12,4 +12,4 @@
    :percussion-clean-track 19
    :percussion-processes-track 20
    :mixes-processes-2-track 22
-   :eq-track 26})
+   :eq-track 28})

@@ -19,6 +19,11 @@ CLOSED: [2026-03-26 Thu 12:34] DEADLINE: <2026-03-23 Mon>
 CLOSED: [2026-03-26 Thu 12:34] DEADLINE: <2026-03-31 Tue>
 ** DONE [#A] Reconfigurar scarlett a setup de 6 salidaso
 CLOSED: [2026-04-29 Wed 10:22] DEADLINE: <2026-04-20 Mon>
+** DONE [#A] agregar compresor al sub y bajar un poco el volumen default
+CLOSED: [2026-05-14 Thu 10:53] DEADLINE: <2026-05-11 Mon>
+** TODO [#A] stop longs todavía tiene bug
+** TODO evitar que el lor 0.1-2 toque samples muy largos en duraciones breves
+pensar cuál es la mejor solución
 ** IDEA max dur mostrar duracion en UI
 Es un poco difícil, porque se comporta de manera distinta si el sinte es granular o cristal.
 Hay que pensar mejor como debe funcionar este parámetro y cómo homogeneizarlo.
