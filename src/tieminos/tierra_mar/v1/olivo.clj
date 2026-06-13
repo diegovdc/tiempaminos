@@ -180,7 +180,7 @@
 (def spiral-b
   "Shares start and end nodes with `spiral-a` (1 & 14)"
   (concat [1]
-          (range 16 27)
+          (range 15 27)
           [14]))
 
 (defn calculate-spiral-outs-range
@@ -188,10 +188,11 @@
   (let [[prev-start prev-end] prev-spiral-outs-range-data
         start (if (= 0 prev-start prev-end)
                 0
-                (rrand
-                 (+ min-offset prev-start)
-                 prev-end))
-        end (+ start (rrand (inc min-offset) max-len))]
+                (+ min-offset prev-start)
+                #_(rrand
+                   (+ min-offset prev-start)
+                   prev-end))
+        end (+ start (rrand 3 5) #_(rrand (inc min-offset) max-len))]
     (->> (range start (inc end))
          (map #(min % (dec total-outs))))))
 
@@ -222,6 +223,17 @@
         real-outs (map-outs-to-spiral offset spiral virtual-outs)]
     {:virtual-outs virtual-outs
      :real-outs real-outs}))
+
+(defn get-mirror-outs-data
+  "Returns two sequences of outs, a `virtual` which always from 0 to `total-outs` and a `real` which has the outs mapped to the given `spiral`."
+  [total-outs offset max-len prev-outs-range]
+  (let [virtual-outs (calculate-spiral-outs-range total-outs
+                                                  1
+                                                  max-len
+                                                  prev-outs-range)]
+    {:virtual-outs virtual-outs
+     :real-outs-a (map-outs-to-spiral offset spiral-a virtual-outs)
+     :real-outs-b (map-outs-to-spiral offset spiral-b virtual-outs)}))
 
 (def ^:private default-spirals-state
   {:offset 0
@@ -259,6 +271,35 @@
                                    virtual-outs)
     real-outs))
 
+(defn gen-mirror-spiral-outs-seq!
+  []
+  (let [spiral-k :spiral-a
+        {:keys [offset
+                max-len
+                total-outs]} @spirals-state
+        ;; spiral (case spiral-k
+        ;;          :spiral-a spiral-a
+        ;;          :spiral-b spiral-b)
+        spiral-range-k (case spiral-k
+                         :spiral-a :spiral-a-prev-range
+                         :spiral-b :spiral-b-prev-range)
+        spiral-range (@spirals-state spiral-range-k)
+        _ (when-not spiral-range (throw (ex-info "Unknown `spiral-prev-range-k`" {:spiral-k spiral-k
+                                                                                  :spiral-prev-range-k spiral-range-k})))
+        {:keys [virtual-outs real-outs-a real-outs-b]} (get-mirror-outs-data
+                                                        total-outs
+                                                        offset
+                                                        max-len
+
+                                                        spiral-range)]
+    (reset-spiral-outs-range-atom! spirals-state
+                                   spiral-range-k
+                                   total-outs
+                                   virtual-outs)
+    {:a real-outs-a :b real-outs-b}))
+
+(gen-mirror-spiral-outs-seq!)
+
 (comment
   (rain.v2/stop)
   (reset! spirals-state default-spirals-state)
@@ -279,45 +320,55 @@
          :offset height-offset
          :max-len max-len))
 
-(defn start-vozpiral-loop!
+(def vozpiral-event
+  (rain.v2/on-event
+   (let [#_#_{spiral-a-outs :a spiral-b-outs :b} (gen-mirror-spiral-outs-seq!)
+         spiral-a-outs (gen-spiral-outs-seq! :spiral-a)
+         spiral-b-outs (gen-spiral-outs-seq! :spiral-b)]
+
+     (println "vozpiral:  " dur-s "s")
+     (doseq [[in outs] [[(tm.configs/get-input :voz-1) spiral-a-outs]
+                        [(tm.configs/get-input :voz-2) spiral-b-outs]]]
+       (println in outs)
+       (rama {:in in
+              :amp 8
+              :dur (* dur-s 3
+                      #_(weighted {#(rrand 1.3 2) 4
+                                   #(rrand 2.0 3) 1}))
+              :asr (normalize [0.75 1 0.75])
+              :curve 0
+              :rev-mix (rrand 0.3 0.4)
+              :rev-room 0.5
+              :filtered-amp 0.2 #_(rrand 0.4 0.7)
+              :unfiltered-amp 0.7
+              :filter-freq 3000
+              :width-durs (normalize [1 1 1 1] #_(shuffle [0.05 0.15 0.1 0.7]))
+              :min-width 2
+              :max-width 2.5    #_(min (rrand 2 4)
+                                       (dec (count outs)))
+              :out-offset (tm.configs/get-output :olivo-spiral-arp-28ch)
+              :outs (map dec outs)})))))
+
+(defn start-vozpiral-loop!*
   [durs-fn]
   ;; TODO: (perhaps) have each spiral run on it's own refrain
   (rain.v2/ref-rain
    :id ::vozpiral
    :durs durs-fn
-   :on-event (rain.v2/on-event
-              (let [spiral-a-outs (gen-spiral-outs-seq! :spiral-a)
-                    spiral-b-outs (gen-spiral-outs-seq! :spiral-b)]
+   :on-event #'vozpiral-event))
 
-                (println "vozpiral:  " dur-s "s")
-                (doseq [[in outs] [[(tm.configs/get-input :voz-1) spiral-a-outs]
-                                   [(tm.configs/get-input :voz-2) spiral-b-outs]]]
-                  (println in outs)
-                  (rama {:in in
-                         :amp 8
-                         :dur (* dur-s
-                                 (weighted {#(rrand 1.3 2) 4
-                                            #(rrand 2.0 3) 1}))
-                         :asr (normalize [1 1 1])
-                         :curve -1
-                         :rev-mix (rrand 0.4 0.6)
-                         :rev-room 0.8
-                         :filtered-amp 0 #_(rrand 0.4 0.7)
-                         :unfiltered-amp 0.8
-                         :filter-freq 3000
-                         :width-durs (shuffle [0.05 0.15 0.1 0.7])
-                         :min-width 2
-                         :max-width (min (rrand 2.5 4)
-                                         (dec (count outs)))
-                         :out-offset (tm.configs/get-output :olivo-spiral-arp-28ch)
-                         :outs outs}))))))
+(defn start-vozpiral-loop!
+  []
+  (start-vozpiral-loop!* (fn [_] (weighted {#(rrand 2 4.0) 3
+                                            #(rrand 0.3 2.0) 1}))))
 
 (defn stop-vozpiral-loop!
   []
   (rain.v2/stop ::vozpiral))
 
 (comment
-  (start-vozpiral-loop! (fn [_] (rrand 3 8.0)))
+  (start-vozpiral-loop!* (fn [_] (weighted {#(rrand 2 4.0) 3
+                                            #(rrand 0.3 2.0) 1})))
 
   (stop-vozpiral-loop!)
 
@@ -333,11 +384,21 @@
   (timbre/info "Playing section" val)
   (case val
     0 (do (reset! spirals-state default-spirals-state)
-          (set-spirals-params! 1 0 4))
-    1 (set-spirals-params! 6 0 5)
-    2 (set-spirals-params! 9 0 9)
-    3 (set-spirals-params! 14 0 14)
-    4 (set-spirals-params! 14 0 5)))
+          (set-spirals-params! 1 0 4)
+          (stop-vozpiral-loop!))
+    1 (do
+        (start-vozpiral-loop!)
+        (reset! spirals-state default-spirals-state)
+        (set-spirals-params! 6 0 5))
+    2 (do
+        (start-vozpiral-loop!)
+        (set-spirals-params! 9 0 9))
+    3 (do
+        (start-vozpiral-loop!)
+        (set-spirals-params! 14 0 14))
+    4 (do
+        (start-vozpiral-loop!)
+        (set-spirals-params! 14 0 5))))
 
 (def ^:private cc-responses
   {(tm.configs/get-midi-cc :olivo/voice-spirals-sections) #'set-section!})
