@@ -220,8 +220,10 @@ lfo-kr
         :amp 0.5
         :pan 0
         :dur 1
+        :gate 1
         :ugen/env (plug* #{:levels :env-durs :dur}
                          '(o/env-gen (o/envelope levels env-durs)
+                                     :gate gate
                                      :time-scale dur
                                      :action o/FREE))
         :levels [0 1 1 0]
@@ -265,7 +267,8 @@ lfo-kr
       :rev-mix 1
       :rev-room 0.5
       :interp 1
-      :a-level 1}
+      :a-level 1
+      :gate 1}
      +outs1
      (random-panaz))
  '(o/out out
@@ -286,6 +289,7 @@ lfo-kr
                 (o/env-gen (o/envelope amp-env-levels
                                        amp-env-durations
                                        [-1 -5])
+                           :gate gate
                            :action o/FREE))
              :ugen/outs))
  {:reset? true})
@@ -421,14 +425,15 @@ lfo-kr
             params* (-> params
                         (add-panner data)
                         (add-filter data))
-            _ (def params* params*)
+            ;; _ (def params* params*)
             buf (:buf params)
             synth* (case synth
                      :crystal (let [instance #_(cristal-liquidizado (assoc params :out (:out-offset params)))
                                     (cristal-liquidizado-2 params*)]
-                                (bardo.synth-management/add-synth! instance (:dur params))
+                                (bardo.synth-management/add-synth! instance (:dur params*))
                                 instance)
-                     :granular (amanecer*guitar-clouds-2 params*))]
+                     :granular (let [instance (amanecer*guitar-clouds-2 params*)]
+                                 (bardo.synth-management/add-synth! instance (apply + (:amp-env-durations params*)))))]
         #_(timbre/info (assoc params* :buf buf :dur 10))
         (timbre/debug "[play-synth]\n" data)
         (timbre/debug "[play-synth]\n" (keys data))

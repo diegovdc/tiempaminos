@@ -28,10 +28,10 @@
                  (>= dur min-synth-duration-s))
         (timbre/info "Stopping synth:" s)
         ;; using rrand to disperse fadeouts
-        (o/ctl s :gate (rrand -6.0 -14))))))
+        (o/ctl s :gate (rrand -6.0 -12))))))
 
 (defn stop-long-running-synths!
-  "Stops all long running synths if their total duration (not the remaining) exceed the `min-synth-duration`."
+  "Stops all long running synths if their total duration (not the remaining) exceeds the `min-synth-duration`."
   [min-synth-duration-s]
   (timbre/info "Stopping long running synths")
   (stop-long-running-synths!* min-synth-duration-s @currently-playing-synths))
