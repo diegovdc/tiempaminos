@@ -21,6 +21,21 @@
              (* (o/env-gen (o/env-perc atk dcy) :action o/FREE))
              (* amp (o/amp-comp-a freq)))))
 
+(oe/defsynth demo-sine
+  [freq 200
+   amp 0.5
+   out 0
+   pan 0
+   r 2
+   gate 1]
+  (o/out out
+         (-> (o/sin-osc (o/lag freq 0.2))
+             (* (o/lag2 amp 0.4)
+                (o/env-gen (o/env-asr 0.1 0.9 r)
+                           :gate gate
+                           :action o/FREE))
+             (o/pan2 (o/lag pan 0.1)))))
+
 ;;;;;;;;;;;;;;;;
 ;; Percussion ;;
 ;;;;;;;;;;;;;;;;
