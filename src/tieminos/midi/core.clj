@@ -123,11 +123,12 @@
 (defonce synths (atom {}))
 
 (defn- synth-midi-data [{:keys [channel note velocity]} synth-or-synths]
-  (if (seq? synth-or-synths)
+  (if (sequential? synth-or-synths)
     (map #(assoc %
                  ::midi-chan channel
                  ::midi-note note
-                 ::midi-velocity velocity) synth-or-synths)
+                 ::midi-velocity velocity)
+         synth-or-synths)
     (assoc synth-or-synths
            ::midi-chan channel
            ::midi-note note
@@ -151,6 +152,7 @@
 (comment
   (o/stop)
   (clear-all-synths!)
+  (sequential? [{:i-am :synth} {:i-am :synth2}])
   (with-redefs [synths (atom {})
                 node? map?]
     (add-synth {:note 5} [{:i-am :synth}
