@@ -7,6 +7,8 @@
    [overtone.core :as o]
    [taoensso.timbre :as timbre]))
 
+(def tieminos-path (System/getProperty "user.dir"))
+
 (defn now []
   (System/currentTimeMillis))
 

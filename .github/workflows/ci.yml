@@ -38,4 +38,16 @@ jobs:
       - name: Run tests
         run: clojure -M:test
 
+      - name: Check all namespaces compile
+        run: |
+          clojure -e "(do (require '[clojure.tools.namespace.repl :refer [refresh set-refresh-dirs]]) \
+              (set-refresh-dirs \"src\" \"test\") \
+              (println \"Refreshing...\") \
+              (let [result (refresh)] \
+                 (when (or (instance? Throwable result) \
+                           (and (map? result) (:error result))) \
+                       (throw (or (when (map? result) (:error result)) result)))) \
+              (println \"Refresh complete!\") \
+              (System/exit 0))"
+
         
