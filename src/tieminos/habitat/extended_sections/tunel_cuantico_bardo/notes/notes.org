@@ -21,7 +21,12 @@ CLOSED: [2026-03-26 Thu 12:34] DEADLINE: <2026-03-31 Tue>
 CLOSED: [2026-04-29 Wed 10:22] DEADLINE: <2026-04-20 Mon>
 ** DONE [#A] agregar compresor al sub y bajar un poco el volumen default
 CLOSED: [2026-05-14 Thu 10:53] DEADLINE: <2026-05-11 Mon>
-** TODO [#A] stop longs todavía tiene bug
+** TODO bajar clean de milo en template
+DEADLINE: <2026-06-22 Mon>
+** TODO agregar slider para seleccionar punto de convergencia
+DEADLINE: <2026-06-22 Mon>
+** DONE [#A] stop longs todavía tiene bug
+CLOSED: [2026-06-15 Mon 21:31]
 ** TODO evitar que el lor 0.1-2 toque samples muy largos en duraciones breves
 pensar cuál es la mejor solución
 ** IDEA max dur mostrar duracion en UI
