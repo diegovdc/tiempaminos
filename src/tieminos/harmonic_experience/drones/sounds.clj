@@ -10,7 +10,7 @@
   (o/out 0
          (* amp (o/pan2 (o/saw freq) 0))))
 
-(o/defsynth drone ;; sine
+(o/defsynth drone
   [freq 130
    amp 1
    gate 1]
@@ -30,6 +30,7 @@
    a 2
    s 1
    r 2
+   curve 0
    gate 1]
   (o/out 0
          (-> (* 0.7 #_(lfo 0.6 0.2 0.6) (o/mix (o/sin-osc
@@ -41,7 +42,7 @@
              (o/pan2 #_(lfo 0.4 -0.5 0.5))
              #_(o/hpf 700)
              #_(#(+ % (o/bpf % (lfo 0.5 (* 2 freq) 800) 0.3)))
-             (* amp (o/env-gen (o/env-asr a s r) :gate gate :action o/FREE)))))
+             (* amp (o/env-gen (o/env-asr a s r curve) :gate gate :action o/FREE)))))
 
 (o/defsynth sine
   [freq 130
