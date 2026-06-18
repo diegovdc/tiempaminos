@@ -1010,7 +1010,7 @@
    :sample-lib-size ##Inf,
    :env :lor-1_4,
    :harmonic-speed 1,
-   :rhythm :lor-0.1_2,
+   :rhythm :lor-2_6,
    :synth-index 1,
    :touch-osc-data (->> {"/%s/filter-lpf-fader-visible" [0],
                          "/%s/harmonic-speed" '(0.20449468),
