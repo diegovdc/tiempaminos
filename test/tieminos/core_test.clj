@@ -1,7 +1,8 @@
 (ns tieminos.core-test
   (:require
-   [clojure.test :refer [deftest is]]
+   [clojure.test :refer [deftest is testing]]
    [tieminos.core :as subject]))
 
 (deftest refresh-test
-  (is (= :ok (subject/refresh))))
+  (testing "Project compiles"
+    (is (= :ok (subject/refresh)))))
