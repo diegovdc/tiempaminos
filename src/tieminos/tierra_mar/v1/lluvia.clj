@@ -1,4 +1,5 @@
 (ns tieminos.tierra-mar.v1.lluvia
+
   (:require
    [clojure.data.generators :refer [weighted]]
    [erv.scale.core :refer [deg->freq]]
@@ -10,6 +11,7 @@
    [tieminos.math.utils :refer [normalize]]
    [tieminos.overtone-extensions :as oe]
    [tieminos.sc-utils.synths.template-synth.v0 :refer [make-synth-fn]]
+   [tieminos.sc-utils.synths.v1 :refer [lfo-kr]]
    [tieminos.tierra-mar.v1.configs :as tm.configs]
    [tieminos.tierra-mar.v1.synths :refer [+outs1 panaz-line]]
    [time-time.dynacan.players.refrain.v2 :as rain.v2]
@@ -174,6 +176,9 @@
                               :gate gate
                               :action o/FREE))))))
 
+(comment
+  ;; usado abajo
+  lfo-kr)
 (make-synth-fn
  'flowering
  (-> {:in 0

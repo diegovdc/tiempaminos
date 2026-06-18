@@ -1,4 +1,4 @@
-(ns set-tultitlan-rossana-20251511
+(ns tieminos.lc.set-tultitlan-rossana-20251511
   ;; NOTE: un buen título para la pieza: caminos hacia el agua
   (:require
    [overtone.core :as o]

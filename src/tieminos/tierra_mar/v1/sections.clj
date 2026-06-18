@@ -1,4 +1,7 @@
-(ns tieminos.tierra-mar.v1.sections)
+(ns tieminos.tierra-mar.v1.sections
+  (:require
+   [tieminos.tierra-mar.v1.arp :refer [arp-subcps make-repeat-cell]]
+   [tieminos.utils :refer [wrap-at]]))
 
 (defn sections
   "`config-key` is something like `:arp` or `:harmonizer`.

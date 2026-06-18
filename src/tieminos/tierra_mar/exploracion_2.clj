@@ -289,8 +289,9 @@
                     :action o/FREE))
       :ugen/outs)
  {:reset? true})
-(o/stop)
+
 (comment
+  (o/stop)
   (panny
    {:out-offset (+ 32)
     :dur 10
@@ -305,7 +306,7 @@
   (rain.v2/stop)
   (def eiko (:scale (cps/make 3 [1 3 5 7 9 11])))
   (rain.v2/ref-rain
-   :id :test-spiral                    ;; 44ch
+   :id :test-spiral ;; 44ch
    :durs [3 2 2]
    :tempo 120
    :ratio 1/4

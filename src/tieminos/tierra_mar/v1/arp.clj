@@ -8,7 +8,6 @@
     :refer [arp arp-reponse-2 default-interval-seq-fn]]
    [tieminos.compositions.garden-earth.routing :as ge.route]
    [tieminos.sc-utils.recording.v1 :as sc.rec.v1]
-   [tieminos.tierra-mar.v1.arp :as arp]
    [tieminos.tierra-mar.v1.state :as tm.state :refer [state]]
    [tieminos.utils :refer [wrap-at]]
    [time-time.dynacan.players.refrain.v2 :as rain.v2]
