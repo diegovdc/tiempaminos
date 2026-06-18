@@ -45,3 +45,20 @@
               (o/ctl synth :amp (linexp* 0 127 0.1 1 val)))})
   
 #+end_src
+
+* Legato sustainer
+Sustain a note or notes until they change. Useful within a loop (refrain) to prevent a note from being retriggered every time.
+#+begin_src clojure
+(require '[tieminos.overtone-extensions :as oe]
+         '[tieminos.harmonic-experience.drones.sounds :refer [drone]]
+         '[tieminos.harmonic-experience.sustainer :as legato])
+  (def root 200)
+  (legato/play! :id1 {:inst drone :params {:freq (* root 1)}})
+  (legato/stop! :id1)
+  (legato/multi :my-chord
+         {1 {:inst drone :params {:freq (* root 1)}}
+          3/2 {:inst drone :params {:freq (* root 3/2)}}})
+  (legato/multi :my-chord {1 {:inst drone :params {:freq (* root 1)}}})
+  (legato/multi :my-chord {1 {:inst drone :params {:freq (* root 2)}}})
+  (legato/multi :my-chord {})
+#+end_src
