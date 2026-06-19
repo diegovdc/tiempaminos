@@ -1,10 +1,12 @@
-(ns tieminos.compositions.7D-percusion-ensamble.base-test
+(ns tieminos.compositions.7d-percusion-ensamble.base-test
   (:require
    [clojure.test :refer [deftest is testing]]
    [erv.utils.core :refer [period-reduce]]
-   [tieminos.compositions.7D-percusion-ensamble.base :refer [deg->freq
-                                                             freq->out]]
-   [tieminos.polydori.analysis.dorian-hexanies :refer [dorian-hexanies-in-polydori-2]]))
+   [tieminos.compositions.7d-percusion-ensamble.base
+    :refer [deg->freq freq->out]]
+   [tieminos.polydori.analysis.dorian-hexanies
+    :refer
+    [dorian-hexanies-in-polydori-2]]))
 
 (deftest freq->out-test
   (let [chan-map {200 0

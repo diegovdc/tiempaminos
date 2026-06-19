@@ -1,9 +1,17 @@
-(ns tieminos.compositions.7D-percusion-ensamble.exploration-4b
+(ns tieminos.compositions.7d-percusion-ensamble.exploration-4b
   "Introduces `sub-rain`"
   (:require
    [clojure.data.generators :refer [weighted]]
-   [tieminos.compositions.7D-percusion-ensamble.base
-    :refer [bh deg->freq diat->polydori-degree init! mempan my-malgo surge-suave synths sub-rain]]
+   [tieminos.compositions.7d-percusion-ensamble.base
+    :refer [bh
+            deg->freq
+            diat->polydori-degree
+            init!
+            mempan
+            my-malgo
+            sub-rain
+            surge-suave
+            synths]]
    [tieminos.midi.core :refer [all-notes-off]]
    [tieminos.utils :refer [rrange]]
    [time-time.dynacan.players.gen-poly :as gp :refer [on-event ref-rain]]

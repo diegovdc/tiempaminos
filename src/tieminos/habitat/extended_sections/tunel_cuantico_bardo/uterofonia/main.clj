@@ -1,9 +1,11 @@
 (ns tieminos.habitat.extended-sections.tunel-cuantico-bardo.uterofonia.main
   (:require
    [overtone.core :as o]
-   [tieminos.compositions.7D-percusion-ensamble.base :refer [bh]]
-   [tieminos.habitat.extended-sections.tunel-cuantico-bardo.init :as bardo.init]
-   [tieminos.habitat.extended-sections.tunel-cuantico-bardo.osc :as bardo.osc]
+   [tieminos.compositions.7d-percusion-ensamble.base :refer [bh]]
+   [tieminos.habitat.extended-sections.tunel-cuantico-bardo.init
+    :as bardo.init]
+   [tieminos.habitat.extended-sections.tunel-cuantico-bardo.osc
+    :as bardo.osc]
    [tieminos.overtone-extensions :as oe]
    [tieminos.sc-utils.synths.v1 :refer [lfo-kr]]))
 

@@ -1,4 +1,4 @@
-(ns tieminos.compositions.7D-percusion-ensamble.dreams.dream-2.utils
+(ns tieminos.compositions.7d-percusion-ensamble.dreams.dream-2.utils
   (:require
    [time-time.dynacan.players.refrain.v2
     :as

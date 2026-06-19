@@ -1,8 +1,9 @@
-(ns tieminos.compositions.7D-percusion-ensamble.dreams.dream-2.harmonies
+(ns tieminos.compositions.7d-percusion-ensamble.dreams.dream-2.harmonies
   (:require
    [erv.scale.core :as scale]
-   [tieminos.compositions.7D-percusion-ensamble.base :refer [root]]
-   [tieminos.polydori.analysis.dorian-hexanies :refer [dorian-hexanies-in-polydori-2]]
+   [tieminos.compositions.7d-percusion-ensamble.base :refer [root]]
+   [tieminos.polydori.analysis.dorian-hexanies
+    :refer [dorian-hexanies-in-polydori-2]]
    [tieminos.polydori.scale :refer [polydori-set->deg polydori-v2]]
    [tieminos.synths :refer [short-plate]]
    [time-time.dynacan.players.refrain.v2 :as rain.v2]))

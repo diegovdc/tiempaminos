@@ -1,4 +1,4 @@
-(ns tieminos.compositions.7D-percusion-ensamble.dreams.hydra-control
+(ns tieminos.compositions.7d-percusion-ensamble.dreams.hydra-control
   (:require
    [clojure.core.async :as a]
    [clojure.data.generators :refer [weighted]]

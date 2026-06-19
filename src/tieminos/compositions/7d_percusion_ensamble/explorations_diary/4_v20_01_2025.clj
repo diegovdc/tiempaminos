@@ -1,9 +1,19 @@
 (ns tieminos.compositions.7d-percusion-ensamble.explorations-diary.4-v20-01-2025
   (:require
    [clojure.data.generators :refer [weighted]]
-   [tieminos.compositions.7D-percusion-ensamble.base
-    :refer [vel deg->freq diat->polydori-degree init! mempan my-malgo out
-            pbell root ssuave surge-suave synths]]
+   [tieminos.compositions.7d-percusion-ensamble.base
+    :refer [deg->freq
+            diat->polydori-degree
+            init!
+            mempan
+            my-malgo
+            out
+            pbell
+            root
+            ssuave
+            surge-suave
+            synths
+            vel]]
    [tieminos.midi.core :refer [all-notes-off]]
    [tieminos.utils :refer [rrange]]
    [time-time.dynacan.players.gen-poly :as gp :refer [on-event ref-rain]]

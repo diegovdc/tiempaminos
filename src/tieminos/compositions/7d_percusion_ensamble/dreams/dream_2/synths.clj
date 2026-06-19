@@ -1,4 +1,4 @@
-(ns tieminos.compositions.7D-percusion-ensamble.dreams.dream-2.synths
+(ns tieminos.compositions.7d-percusion-ensamble.dreams.dream-2.synths
   (:require
    [overtone.core :as o]))
 

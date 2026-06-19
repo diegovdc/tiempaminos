@@ -1,4 +1,4 @@
-(ns tieminos.compositions.7D-percusion-ensamble.base
+(ns tieminos.compositions.7d-percusion-ensamble.base
   (:require
    [erv.scale.core :as scale]
    [erv.utils.conversions :as conv]

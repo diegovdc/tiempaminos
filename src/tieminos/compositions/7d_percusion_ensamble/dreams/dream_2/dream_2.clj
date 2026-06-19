@@ -1,15 +1,17 @@
-(ns tieminos.compositions.7D-percusion-ensamble.dreams.dream-2.dream-2
+(ns tieminos.compositions.7d-percusion-ensamble.dreams.dream-2.dream-2
   "NOTE for starting, based on `dream_1`"
   (:require
    [clojure.data.generators :refer [weighted]]
    [overtone.core :as o]
    [overtone.midi :as midi]
-   [tieminos.compositions.7D-percusion-ensamble.base
-    :refer [bh diat->polydori-degree init! mempan my-malgo root stop!] :as *7d-base]
+   [tieminos.compositions.7d-percusion-ensamble.base
+    :as *7d-base
+    :refer [bh diat->polydori-degree init! mempan my-malgo root stop!]]
+   [tieminos.compositions.7d-percusion-ensamble.dreams.hydra-client
+    :as hydra]
    [tieminos.sc-utils.groups.v1 :as groups]
    [tieminos.sc-utils.synths.v1 :refer [lfo-kr]]
    [tieminos.seq-utils.core :refer [mseq rot xo]]
-   [tieminos.compositions.7D-percusion-ensamble.dreams.hydra-client :as hydra]
    [tieminos.utils :refer [rbool rrange wrap-at]]
    [time-time.dynacan.players.gen-poly :as gp :refer [on-event ref-rain]]
    [time-time.standard :refer [rrand]]))

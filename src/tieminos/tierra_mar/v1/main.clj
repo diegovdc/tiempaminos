@@ -6,7 +6,7 @@
    [overtone.core :as o]
    [taoensso.timbre :as timbre]
    [tieminos.blackhole :as bh]
-   [tieminos.compositions.7D-percusion-ensamble.base :refer [bh]]
+   [tieminos.compositions.7d-percusion-ensamble.base :refer [bh]]
    [tieminos.compositions.garden-earth.analysis
     :refer [pitch-class->note-set]]
    [tieminos.compositions.garden-earth.base
@@ -24,9 +24,7 @@
    [tieminos.tierra-mar.v1.arp :as tm.arp]
    [tieminos.tierra-mar.v1.configs :as tm.configs]
    [tieminos.tierra-mar.v1.nubosidad-lorentziana :as tm.nblz]
-   [tieminos.tierra-mar.v1.state
-    :as tm.state
-    :refer [state]]
+   [tieminos.tierra-mar.v1.state :as tm.state :refer [state]]
    [tieminos.utils :refer [wrap-at]]
    [time-time.dynacan.players.gen-poly :as gp]))
 

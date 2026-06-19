@@ -1,4 +1,4 @@
-(ns tieminos.compositions.7D-percusion-ensamble.dreams.dream-2.snippets)
+(ns tieminos.compositions.7d-percusion-ensamble.dreams.dream-2.snippets)
 
 (comment
   ;; one

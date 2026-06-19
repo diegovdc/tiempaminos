@@ -1,4 +1,4 @@
-(ns tieminos.compositions.7D-percusion-ensamble.exploration2
+(ns tieminos.compositions.7d-percusion-ensamble.exploration2
   "Based on excerpts from https://www.youtube.com/watch?v=_0p0Cqw-fHY"
   (:require
    [overtone.midi :as midi :refer [midi-control]]

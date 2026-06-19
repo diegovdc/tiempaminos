@@ -1,9 +1,8 @@
-(ns tieminos.compositions.7D-percusion-ensamble.dreams.dream-1-technical-analysis
+(ns tieminos.compositions.7d-percusion-ensamble.dreams.dream-1-technical-analysis
   "Analysis of a few aspects of the isorhythmic processes"
-
   (:require
    [erv.utils.core :refer [interval]]
-   [tieminos.compositions.7D-percusion-ensamble.base :refer [deg->freq]]
+   [tieminos.compositions.7d-percusion-ensamble.base :refer [deg->freq]]
    [tieminos.utils :refer [wrap-at]]))
 
 (defn make-at-i [index]

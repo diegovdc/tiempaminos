@@ -1,11 +1,11 @@
-(ns tieminos.compositions.7D-percusion-ensamble.dreams.dream-2.wavetable
+(ns tieminos.compositions.7d-percusion-ensamble.dreams.dream-2.wavetable
   (:require
    [clojure.data.generators :refer [weighted]]
    [clojure.edn :as edn]
    [clojure.java.io :as io]
    [clojure.string :as str]
    [overtone.core :as o]
-   [tieminos.compositions.7D-percusion-ensamble.base :refer [bh]]
+   [tieminos.compositions.7d-percusion-ensamble.base :refer [bh]]
    [tieminos.overtone-extensions :as oe]
    [time-time.dynacan.players.refrain.v2 :as rain2]
    [time-time.standard :refer [rrand]]

@@ -1,4 +1,4 @@
-(ns tieminos.compositions.7D-percusion-ensamble.16y7)
+(ns tieminos.compositions.7d-percusion-ensamble.16y7)
 
 (comment
   (ref-rain

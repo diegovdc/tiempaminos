@@ -1,4 +1,4 @@
-(ns tieminos.compositions.7D-percusion-ensamble.exploration1
+(ns tieminos.compositions.7d-percusion-ensamble.exploration1
   (:require
    [overtone.midi :as midi]
    [tieminos.midi.plain-algo-note :refer [malgo-note]]

@@ -1,14 +1,14 @@
-(ns tieminos.compositions.7D-percusion-ensamble.dreams.dream-2.nil-10-06-2025
+(ns tieminos.compositions.7d-percusion-ensamble.dreams.dream-2.nil-10-06-2025
   (:require
    [erv.scale.core :as scale]
-   [tieminos.compositions.7D-percusion-ensamble.base
+   [tieminos.compositions.7d-percusion-ensamble.base
     :as *7d-base
     :refer [root]]
    [tieminos.compositions.7d-percusion-ensamble.dreams.dream-2.nil-space
     :as space]
-   [tieminos.compositions.7D-percusion-ensamble.dreams.dream-2.utils
+   [tieminos.compositions.7d-percusion-ensamble.dreams.dream-2.utils
     :refer [subrain]]
-   [tieminos.compositions.7D-percusion-ensamble.dreams.dream-2.wavetable
+   [tieminos.compositions.7d-percusion-ensamble.dreams.dream-2.wavetable
     :refer [akwf-samples available-dirs]]
    [tieminos.math.bezier-samples :as bezier-a]
    [tieminos.polydori.scale :refer [polydori-v2]]

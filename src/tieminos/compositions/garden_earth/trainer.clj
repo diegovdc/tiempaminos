@@ -1,16 +1,15 @@
 (ns tieminos.compositions.garden-earth.trainer
   (:require
    [clojure.set :as set]
-   [erv.scale.core :refer [+names]]
-   [erv.scale.core :as scale]
+   [erv.scale.core :as scale :refer [+names]]
    [erv.utils.conversions :as conv]
    [erv.utils.core :refer [interval]]
    [overtone.core :as o]
-   [tieminos.compositions.7D-percusion-ensamble.base :refer [bh]]
+   [tieminos.compositions.7d-percusion-ensamble.base :refer [bh]]
    [tieminos.compositions.garden-earth.base
-    :refer
-    [base-freq on-event pitch-class->pr-fingering ref-rain subcps]]
-   [tieminos.compositions.garden-earth.synths.general :refer [tuning-monitor]]
+    :refer [base-freq on-event pitch-class->pr-fingering ref-rain subcps]]
+   [tieminos.compositions.garden-earth.synths.general
+    :refer [tuning-monitor]]
    [tieminos.utils :refer [rrange]]
    [time-time.dynacan.players.gen-poly :as gp]))
 

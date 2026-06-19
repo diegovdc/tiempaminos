@@ -1,14 +1,14 @@
-(ns tieminos.compositions.7D-percusion-ensamble.dreams.dream-2.exp-3
+(ns tieminos.compositions.7d-percusion-ensamble.dreams.dream-2.exp-3
   "Chords"
   (:require
-   [tieminos.compositions.7D-percusion-ensamble.base
+   [tieminos.compositions.7d-percusion-ensamble.base
     :as *7d-base
     :refer [root]]
    [tieminos.compositions.7d-percusion-ensamble.dreams.dream-2.nil-space
     :refer [main-graph]]
-   [tieminos.compositions.7D-percusion-ensamble.dreams.dream-2.utils
+   [tieminos.compositions.7d-percusion-ensamble.dreams.dream-2.utils
     :refer [subrain]]
-   [tieminos.compositions.7D-percusion-ensamble.dreams.dream-2.wavetable
+   [tieminos.compositions.7d-percusion-ensamble.dreams.dream-2.wavetable
     :refer [akwf-samples available-dirs mono-mooglad]]
    [tieminos.seq-utils.core :refer [++ graph lin mseq ret xo]]
    [tieminos.seq-utils.utils :refer [subgraph]]

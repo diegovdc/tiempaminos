@@ -1,4 +1,4 @@
-(ns tieminos.compositions.7D-percusion-ensamble.dreams.hydra-client
+(ns tieminos.compositions.7d-percusion-ensamble.dreams.hydra-client
   (:require
    [overtone.osc :as osc]))
 

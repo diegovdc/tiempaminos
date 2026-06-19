@@ -1,14 +1,14 @@
-(ns tieminos.compositions.7D-percusion-ensamble.dreams.dream-2.exp-1
+(ns tieminos.compositions.7d-percusion-ensamble.dreams.dream-2.exp-1
   (:require
    [clojure.data.generators :refer [weighted]]
    [erv.utils.core :refer [period-reduce]]
    [tieminos.compositions.7d-percusion-ensamble.dreams.dream-2.nil-space
     :refer [main-graph]]
-   [tieminos.compositions.7D-percusion-ensamble.dreams.dream-2.synths
+   [tieminos.compositions.7d-percusion-ensamble.dreams.dream-2.synths
     :refer [low]]
-   [tieminos.compositions.7D-percusion-ensamble.dreams.dream-2.utils
+   [tieminos.compositions.7d-percusion-ensamble.dreams.dream-2.utils
     :refer [subrain]]
-   [tieminos.compositions.7D-percusion-ensamble.dreams.dream-2.wavetable
+   [tieminos.compositions.7d-percusion-ensamble.dreams.dream-2.wavetable
     :refer [akwf-samples available-dirs]]
    [tieminos.seq-utils.core :refer [** choose graph lin mseq xo]]
    [tieminos.utils :refer [rrange]]

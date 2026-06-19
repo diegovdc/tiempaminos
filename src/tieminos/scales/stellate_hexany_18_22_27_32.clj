@@ -8,7 +8,7 @@
    [erv.utils.ratios :refer [ratios->scale]]
    [erv.utils.scale :refer [dedupe-scale]]
    [overtone.core :as o]
-   [tieminos.compositions.7D-percusion-ensamble.base :refer [bh]]
+   [tieminos.compositions.7d-percusion-ensamble.base :refer [bh]]
    [tieminos.sc-utils.ndef.v1 :as ndef]
    [tieminos.sc-utils.synths.v1 :refer [lfo-kr]]
    [time-time.dynacan.players.gen-poly :as gp]))

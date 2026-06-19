@@ -1,14 +1,14 @@
-(ns tieminos.compositions.7D-percusion-ensamble.dreams.dream-2.melody-exp
+(ns tieminos.compositions.7d-percusion-ensamble.dreams.dream-2.melody-exp
   (:require
    [clojure.set :as set]
    [erv.cps.utils :refer [+degree]]
    [overtone.core :as o]
-   [tieminos.compositions.7D-percusion-ensamble.base
+   [tieminos.compositions.7d-percusion-ensamble.base
     :as *7d-base
     :refer [diat->polydori-degree root]]
    [tieminos.compositions.7d-percusion-ensamble.dreams.dream-2.nil-space
     :as space]
-   [tieminos.compositions.7D-percusion-ensamble.dreams.dream-2.utils
+   [tieminos.compositions.7d-percusion-ensamble.dreams.dream-2.utils
     :refer [subrain]]
    [tieminos.overtone-extensions :as oe]
    [tieminos.polydori.analysis.dorian-hexanies
