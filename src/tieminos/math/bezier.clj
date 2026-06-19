@@ -21,8 +21,8 @@
                                 (Math/pow (- 1 t)
                                           (- (count points) (inc i)))
                                 (nth points i))))))]
-    (with-meta (map (fn [t] (apply + (map #(% t) curve-fns)))
-                    timesteps) {:points points})))
+    (with-meta (mapv (fn [t] (apply + (map #(% t) curve-fns)))
+                     timesteps) {:points points})))
 
 (defn curve [num-timesteps points]
   (curve* (range 0 1 (/ 1 num-timesteps)) points))
@@ -31,21 +31,32 @@
   (defn pow [base exponent]
     (reduce *' (repeat exponent base))))
 
+(defonce plots (atom {}))
+
+;; TODO: figure out what was this for
 (defn plot-xy
-  ([xs ys] (plot-xy xs ys ""))
-  ([xs ys plot-title]
+  ([xs ys] (plot-xy :default xs ys ""))
+  ([id xs ys plot-title]
    (let [dataset (incanter/conj-cols xs ys)
-         xy-plot (charts/xy-plot 0 1 :data dataset :points true :title plot-title)]
-     (incanter/view xy-plot))))
+         xy-plot (charts/xy-plot 0 1 :data dataset :points true :title plot-title)
+         view (incanter/view xy-plot)
+         prev-view (get @plots id)]
+     (when prev-view (.dispose prev-view))
+     (swap! plots assoc id view)
+     view)))
 
 (defn plot
-  ([curve] (plot curve (-> curve meta :points str (or "anonymous plot"))))
-  ([curve plot-title]
+  ([curve] (plot :default curve (-> curve meta :points str (or "anonymous plot"))))
+  ([id curve plot-title]
    (let [xs (range (count curve))
          ys curve
          dataset (incanter/conj-cols xs ys)
-         xy-plot (charts/xy-plot 0 1 :data dataset :points true :title plot-title)]
-     (incanter/view xy-plot))))
+         xy-plot (charts/xy-plot 0 1 :data dataset :points true :title plot-title)
+         view (incanter/view xy-plot)
+         prev-view (get @plots id)]
+     (when prev-view (.dispose prev-view))
+     (swap! plots assoc id view)
+     view)))
 
 (comment
   (plot-xy (curve* (range 0 1 (/ 1 100)) [10 20 90 220])
@@ -78,4 +89,3 @@
               (linexp 1 5)
               to-intervals))
   (c 4))
-

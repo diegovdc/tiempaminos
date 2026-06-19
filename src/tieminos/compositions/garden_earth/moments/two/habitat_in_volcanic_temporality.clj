@@ -3,20 +3,28 @@
    [clojure.data.generators :refer [weighted]]
    [overtone.core :as o]
    [taoensso.timbre :as timbre]
-   [tieminos.compositions.7D-percusion-ensamble.base :refer [bh]]
+   [tieminos.compositions.7d-percusion-ensamble.base :refer [bh]]
    [tieminos.compositions.garden-earth.base :refer [eik subcps]]
-   [tieminos.compositions.garden-earth.fl-grain-1.sample-arp :refer [arp-reponse-2
-                                                                     default-interval-seq-fn]]
+   [tieminos.compositions.garden-earth.fl-grain-1.sample-arp
+    :refer [arp-reponse-2 default-interval-seq-fn]]
    [tieminos.compositions.garden-earth.init :as ge.init]
-   [tieminos.compositions.garden-earth.moments.two.async-sequencer :as aseq]
-   [tieminos.compositions.garden-earth.moments.two.interface :as two.interface]
+   [tieminos.compositions.garden-earth.moments.two.async-sequencer
+    :as aseq]
+   [tieminos.compositions.garden-earth.moments.two.interface
+    :as two.interface]
    [tieminos.compositions.garden-earth.moments.two.live-state :as two.ls]
-   [tieminos.compositions.garden-earth.moments.two.rec :refer [start-rec-loop!]]
-   [tieminos.compositions.garden-earth.moments.two.sections.erupcion :as erupcion]
-   [tieminos.compositions.garden-earth.moments.two.sections.fondo-oceanico :as fondo-oceanico]
-   [tieminos.compositions.garden-earth.moments.two.sections.formacion-terrestre :as formacion-terrestre]
-   [tieminos.compositions.garden-earth.moments.two.sections.totalidad :as totalidad]
-   [tieminos.compositions.garden-earth.moments.two.synths :refer [buf-mvts-subterraneos]]
+   [tieminos.compositions.garden-earth.moments.two.rec
+    :refer [start-rec-loop!]]
+   [tieminos.compositions.garden-earth.moments.two.sections.erupcion
+    :as erupcion]
+   [tieminos.compositions.garden-earth.moments.two.sections.fondo-oceanico
+    :as fondo-oceanico]
+   [tieminos.compositions.garden-earth.moments.two.sections.formacion-terrestre
+    :as formacion-terrestre]
+   [tieminos.compositions.garden-earth.moments.two.sections.totalidad
+    :as totalidad]
+   [tieminos.compositions.garden-earth.moments.two.synths
+    :refer [buf-mvts-subterraneos]]
    [tieminos.compositions.garden-earth.routing :refer [fl-i1]]
    [tieminos.habitat.amp-trigger :as amp-trig]
    [tieminos.habitat.recording :as habitat.rec]
@@ -28,7 +36,6 @@
    [tieminos.synths :as synths]
    [tieminos.utils :refer [rrange]]
    [time-time.dynacan.players.gen-poly :as gp :refer [on-event ref-rain]]))
-
 
 (defonce analyzers-registry (atom {}))
 
@@ -50,9 +57,9 @@
     (reset! analyzers-registry
             (into {}
                   (map
-                    (fn [[input-name {:keys [bus]}]]
-                      {input-name (habitat.rec/start-signal-analyzer :input-bus bus)})
-                    inputs*)))))
+                   (fn [[input-name {:keys [bus]}]]
+                     {input-name (habitat.rec/start-signal-analyzer :input-bus bus)})
+                   inputs*)))))
 
 (defn stop!
   [{:keys [reset-bufs?]
@@ -65,38 +72,35 @@
       (timbre/warn "Buffs from the previous session are being preserved")))
   (reset! habitat.rec/recording? {}))
 
-
-
 (defn init!
   []
   (let [{:keys [inputs outputs]
          :as init-data}
         (ge.init/init!
-          {:inputs-config {:in-1 {:amp (o/db->amp 8)}}
-           :outputs-config {:rain-1 {:bh-out 2}
-                            :ndef-1 {:bh-out 4}
-                            ;; TODO maybe use another `:bh-out`
-                            :magma-rain {:bh-out 2}
-                            :magma-ndef {:bh-out 4}
-                            :estratos-rain {:bh-out 2}
-                            :clean-ndef {:bh-out 4}
-                            :mantle-plume-rev {:bh-out 4}
-                            :mantle-plume-main {:bh-out 6}
-                            :erupcion-rain {:bh-out 8}
-                            :erupcion-ndef {:bh-out 10}
-                            :totalidad-ecosistema {:bh-out 12}
-                            :with-rev-send {:bh-out 14}
-                            }
-           :controls-config {:exp/pedal-1 {:chans 1}
-                             :exp/btn-a {:chans 1}
-                             :exp/btn-b {:chans 1}
-                             :exp/btn-c {:chans 1}
-                             :exp/btn-d {:chans 1}
-                             :exp/btn-1 {:chans 1}
-                             :exp/btn-2 {:chans 1}
-                             :exp/btn-3 {:chans 1}
-                             :exp/btn-4 {:chans 1}
-                             :exp/btn-5 {:chans 1}}})
+         {:inputs-config {:in-1 {:amp (o/db->amp 8)}}
+          :outputs-config {:rain-1 {:bh-out 2}
+                           :ndef-1 {:bh-out 4}
+                            ;; TODO: maybe use another `:bh-out`
+                           :magma-rain {:bh-out 2}
+                           :magma-ndef {:bh-out 4}
+                           :estratos-rain {:bh-out 2}
+                           :clean-ndef {:bh-out 4}
+                           :mantle-plume-rev {:bh-out 4}
+                           :mantle-plume-main {:bh-out 6}
+                           :erupcion-rain {:bh-out 8}
+                           :erupcion-ndef {:bh-out 10}
+                           :totalidad-ecosistema {:bh-out 12}
+                           :with-rev-send {:bh-out 14}}
+          :controls-config {:exp/pedal-1 {:chans 1}
+                            :exp/btn-a {:chans 1}
+                            :exp/btn-b {:chans 1}
+                            :exp/btn-c {:chans 1}
+                            :exp/btn-d {:chans 1}
+                            :exp/btn-1 {:chans 1}
+                            :exp/btn-2 {:chans 1}
+                            :exp/btn-3 {:chans 1}
+                            :exp/btn-4 {:chans 1}
+                            :exp/btn-5 {:chans 1}}})
         ;; Amp analyzer
         amp-analyzers (init-analyzers! inputs outputs)]
     (reaper/init)
@@ -113,19 +117,18 @@
   #_(do (stop! {:reset-bufs? true}) (aseq/stop))
   (aseq/stop)
   (let [sections (concat
-                   fondo-oceanico/sections
-                   formacion-terrestre/sections
-                   erupcion/sections
-                   totalidad/sections)]
+                  fondo-oceanico/sections
+                  formacion-terrestre/sections
+                  erupcion/sections
+                  totalidad/sections)]
     (stop! {:reset-bufs? false})
     (init!)
     (aseq/run-sections
-      (merge aseq/reaper-events
-             {:sections sections
-              :start-at 0
-              :initial-countdown-seconds 40
-              :on-sequencer-end (fn [] (stop! {:reset-bufs? false}))})))
-
+     (merge aseq/reaper-events
+            {:sections sections
+             :start-at 0
+             :initial-countdown-seconds 40
+             :on-sequencer-end (fn [] (stop! {:reset-bufs? false}))})))
 
   (erupcion/init-section-buses&outs!)
   (two.ls/set-section (-> erupcion/sections (nth 4)))
@@ -141,9 +144,7 @@
        deref
        vals
        (map (comp (juxt :section :subsection) :rec/meta))
-       frequencies
-       )
-  )
+       frequencies))
 
 (comment
   (require '[tieminos.compositions.garden-earth.moments.two.habitat-in-volcanic-temporality :as ivt])
@@ -153,15 +154,12 @@
   (init!*)
   (-> init-data)
 
-
-  ;; TODO make this an init function
+;; TODO: make this an init function
   ;; For some reason amp via o/sound-in is coming 8db lower than it should be
   ;; so allowing here for compensation.
-  ;; FIXME find the cause for the above.
+  ;; FIXME: find the cause for the above.
   (ge.init/init!
-    {:inputs-config {:in-1 {:amp (o/db->amp 8)}}}))
-
-
+   {:inputs-config {:in-1 {:amp (o/db->amp 8)}}}))
 
 (comment
   (oe/defsynth io
@@ -193,7 +191,7 @@
    :id ::movimientos-subterraneos
    :durs (fn [_] (+ 0.1 (rand 5)))
    :on-event (on-event
-                ;; TODO remove use of rand-buf
+                ;; TODO: remove use of rand-buf
               (when-let [buf (rand-buf)]
                 (println (into {} buf))
                 (buf-mvts-subterraneos {:buf buf
@@ -216,7 +214,7 @@
   (ndef/ndef
    ::movimientos-subterraneos
    (-> (o/in (fl-i1 :bus))
-       (o/lpf 6000) ;; FIXME high pitched noise due to guitar amp line out
+       (o/lpf 6000) ;; FIXME: high pitched noise due to guitar amp line out
        (o/pitch-shift 0.2 [1/2 1/2])
        (o/mix)
        (o/pan2 (lfo-kr 0.3 -1 1))
@@ -231,7 +229,7 @@
   (ndef/ndef
    ::movimientos-submarinos
    (-> (o/in (fl-i1 :bus))
-       (o/lpf 8000) ;; FIXME high pitched noise due to guitar amp line out
+       (o/lpf 8000) ;; FIXME: high pitched noise due to guitar amp line out
        ((fn [sig]
           (o/mix (map (fn [ratio]
                         (-> sig
@@ -277,16 +275,16 @@
                         (o/buf-samples:kr buf))
                 :interp 2
                 :pan pan)
-               (o/lpf 800) ;; FIXME high pitched noise due to guitar amp line out
+               (o/lpf 800) ;; FIXME: high pitched noise due to guitar amp line out
                (* 4 (o/env-gen
                      (o/envelope
-                        ;; TODO ADSR
+                        ;; TODO: ADSR
                       [0 a-level d-level 0]
                       [(* 0.01 dur)
                        (* 0.79 dur)
                        (* 0.2 dur)])
                      :action o/FREE))
-               ;; NOTE rangos (asumiendo a-level 3):
+               ;; NOTE: rangos (asumiendo a-level 3):
                ;; 0.05 - burbujeos
                ;; 0.3 - magma viva
                ;; 0.5 - ya bastante suave, y brilloso
@@ -300,7 +298,7 @@
    :id ::magma
    :durs #_(fn [_] 1) [1/5]
    :on-event (on-event
-                ;; TODO remove use of rand-buf
+                ;; TODO: remove use of rand-buf
                 ;; Por ahora usando samples de atractores/drone guitarra
               (when-let [buf (-> @habitat.rec/bufs vals rand-nth)]
                 (println "Dur" (* 1 (:duration buf)))
@@ -329,17 +327,17 @@
 
   (ref-rain
    :id ::sucesion-especies
-    ;; TODO control durs so that this could go faster or slower
+    ;; TODO: control durs so that this could go faster or slower
    :durs (fn [_] (+ 0.1 (rand 2)))
    :on-event (on-event
               (let [buf (-> @habitat.rec/bufs vals rand-nth)
                     scale (at-i [#_"1)3 of 3)6 1.5-7.9.11"
                                  #_"2)4 of 3)6 11-1.3.7.9"
                                  "2)4 of 3)6 1-3.5.7.9"])
-                    arp-config {;; TODO improve control of scale
+                    arp-config {;; TODO: improve control of scale
                                 :scale (subcps scale)
                                 :out (bh 4)
-                                  ;; TODO use custom interval-seq-fn
+                                  ;; TODO: use custom interval-seq-fn
                                 :interval-seq-fn (comp (partial map #(+ (rand-int -10) %))
                                                        default-interval-seq-fn)
                                   ;; envs can grow from [1, 3] to [8, 17] - maybe weight in different ways
@@ -348,9 +346,9 @@
                                 :amp-min 0.3
                                 :amp-max 1}
                     arp-data {:pitch-class "A+92"
-                                ;; TODO use bufs from another section
-                                ;; TODO allow custom synth
-                                ;; TODO allow general control of amp - uses bezier amp curve so general-amp*bezier-curve
+                                ;; TODO: use bufs from another section
+                                ;; TODO: allow custom synth
+                                ;; TODO: allow general control of amp - uses bezier amp curve so general-amp*bezier-curve
                               :buf buf}]
                 (when (> 0.5 (rand))
                     ;; Bass
@@ -358,7 +356,7 @@
                                         :interval-seq-fn (comp (partial map #(+ (rand-int -40) %))
                                                                default-interval-seq-fn))
                                  arp-data)
-                    ;; TODO make a good synth for this section that will play the
+                    ;; TODO: make a good synth for this section that will play the
                     ;; current buf in a nice way... depends on what is going to be played
                     ;; but perhaps some transparentish granulation or a longish play-buf
                     ;; could be nice...
@@ -411,7 +409,7 @@
     (let [sig (o/in in)]
       (o/out out
              (+
-               ;; TODO remove pure sig, just for testing
+               ;; TODO: remove pure sig, just for testing
               (* 0.05 sig)
               (-> sig
                   (o/pitch-shift:ar 0.05 rate)
@@ -425,7 +423,7 @@
                                     :action o/FREE))
                   (o/pan2 pan))))))
 
-  ;; NOTE this seems useful for strata and mountain texture
+  ;; NOTE: this seems useful for strata and mountain texture
   (let [in test-bus]
     (ref-rain
      :id :ps/simple

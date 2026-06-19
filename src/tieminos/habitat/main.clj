@@ -36,13 +36,13 @@
 
 (def sections
   [;; amanecer
-   ;; TODO revisar timestamps vs texto sonoro
+   ;; TODO: revisar timestamps vs texto sonoro
    [[0 0] #'amanecer/humedad]
    [[5 20] #'amanecer/sol-y-luminosidad]
    ;;  bajarle a la conv
    [[7 30] #'amanecer/intercambios-de-energia]
    [[9 0] #'amanecer/descomposicion]
-   ;; TODO cascabeles giratorios
+   ;; TODO: cascabeles giratorios
    [[12 50] #'amanecer/coro-de-la-manana-cantos-iniciales]
    [[14 30] #'amanecer/coro-de-la-manana-interacciones-cuanticas]
    [[17 0] #'amanecer/coro-de-la-manana-distancia-de-la-escucha]
@@ -53,16 +53,16 @@
    [[24 30] #'dia/dueto-con-polinizadores=pt2-percepción-de-señal-danza-desarrollo-de-energía]
    [[25 47] #'dia/dueto-con-polinizadores=pt3-polen-electromagnetismo-agitación]
    [[27 51] #'dia/dueto-con-polinizadores=pt4-multiplicación-atracción-orbitales]
-   ;; NOTE cambio en marca de tiempo respecto de la partitura
+   ;; NOTE: cambio en marca de tiempo respecto de la partitura
    [[28 30] #'dia/dueto-con-polinizadores=pt5-movimiento-energía-alejamiento->viento]
    #_[[29 55] tacet]
    [[31 11] #'dia/escucha-de-aves]
    ;; noche
    [[39 56] #'noche/de-la-montana-al-fuego]
    [[42 30] #'noche/fuego]
-   ;; TODO revisar convolución
+   ;; TODO: revisar convolución
    [[52 22] #'noche/polinizadores-nocturnos]
-   ;; FIXME parece que hay un error en la transición de estas dos secciones
+   ;; FIXME: parece que hay un error en la transición de estas dos secciones
    [[62 10] #'noche/hacia-un-nuevo-universo]
    [[67 45] #'noche/hacia-un-nuevo-universo-stop]])
 
@@ -73,7 +73,7 @@
    :main-fx main-fx
    :special-inputs special-inputs
    :texto-sonoro-rand-mixer-bus texto-sonoro-rand-mixer-bus
-   :reaper-returns reaper-returns ;; TODO remove these
+   :reaper-returns reaper-returns ;; TODO: remove these
    :main-returns main-returns
    :recordable-outputs recordable-outputs})
 
@@ -157,7 +157,7 @@
          "/panner-rate" (TEMPORARY-multichan-wrapper panner-rate args-map)
          "/reso-pan-voices" (reso-pan/update-state :voices (map-val args-map 1 10))
          "/reso-pan-dur" (reso-pan/update-state :dur (map-val args-map 5 60))
-          ;; TODO add reso-pan-amp
+          ;; TODO: add reso-pan-amp
          "/reso-pan" (reso-pan/trigger (:in args-map) 0 5 10)
          "/rec" (rec/rec-controller args-map)
          (println "Unknown path for message: " msg))))))

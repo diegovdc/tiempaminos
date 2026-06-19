@@ -1,18 +1,19 @@
 {:paths ["src" "dev" "test" "resources"]
- :deps {org.clojure/clojure {:mvn/version "1.11.1"}
+ :deps {org.clojure/clojure {:mvn/version "1.12.0"}
         org.clojure/core.async {:mvn/version "1.3.618"}
         org.clojure/tools.namespace {:mvn/version "1.2.0"}
         http-kit/http-kit {:mvn/version "2.7.0"}
         potemkin/potemkin {:mvn/version "0.4.5"}
+        instaparse/instaparse {:mvn/version "1.5.0"}
         org.clojure/data.generators {:mvn/version "1.0.0"}
         io.github.diegovdc/overtone {:git/url "https://github.com/diegovdc/overtone.git"
-                                     :sha "9436febbb819887bfdc8316034a6e1f5b7f51fcf"} #_{:local/root "../overtone" :deps/manifest :deps}
+                                     :sha "a9395fdea0acf4574bb2a94ff39b59d4212117a3"} #_{:local/root "../overtone" :deps/manifest :deps}
         ;; videco/piratidal {:local/root "../../../code/piratidal" :deps/manifest :deps}
         io.github.diegovdc/time-time {:git/url "https://github.com/diegovdc/time-time.git"
-                                      :sha "d6d7379dbadc8cdcfe07aff6c5929649436720b7"}
+                                      :sha "035a1accd4b3ac955aec246d68334aec133ad230"}
         #_{:local/root "../time-tiem" :deps/manifest :deps}
         io.github.diegovdc/erv {:git/url "https://github.com/diegovdc/erv.git"
-                                :sha "77132a99e8235ea0cc66568c3434f679dad3624a"
+                                :sha "1e0f13026addc4b78b3529dacfc83726857094be"
                                 ;; :tag "0.0.7"
                                 }#_{:local/root "../erv" :deps/manifest :deps}
         com.taoensso/timbre {:mvn/version "4.10.0"}
@@ -27,13 +28,15 @@
         thi.ng/color {:mvn/version "1.4.0"}
         ;; another interesting possibility, may offer other options
         ;; com.dean/interval-tree {:mvn/version  "0.1.2"}
-        }
- :aliases {:cljfmt {:deps {dev.weavejester/cljfmt {:git/tag "0.11.2",
-                                                   :git/sha "fb26b22f569724b05c93eb2502592dfc2de898c3",
-                                                   :git/url "https://github.com/weavejester/cljfmt.git"}}
-                    :ns-default cljfmt.tool}
-           :test {:extra-paths ["test"]
+        djblue/portal {:mvn/version "0.62.2"}}
+ :aliases {:test {:extra-paths ["test"]
                   :extra-deps {io.github.cognitect-labs/test-runner
                                {:git/tag "v0.5.1" :git/sha "dfb30dd"}}
                   :main-opts ["-m" "cognitect.test-runner"]
-                  :exec-fn cognitect.test-runner.api/test}}}
+                  :exec-fn cognitect.test-runner.api/test}
+           :codox {:extra-deps {codox/codox {:mvn/version "0.10.8"}}
+                   :extra-paths ["build-scripts"]
+                   :exec-fn docs/run-codox-with-timeout
+                   :exec-args {:timeout-ms 30000
+                               :codox-args {:output-path "docs"
+                                            :source-paths ["src"]}}}}}

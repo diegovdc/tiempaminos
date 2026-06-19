@@ -1,0 +1,53 @@
+name: Test Suite
+
+on:
+  push:
+    branches: [ main, dev ]
+  pull_request:
+    branches: [ main, dev ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Clojure CLI
+        uses: DeLaGuardo/setup-clojure@10.1
+        with:
+          cli: latest
+
+      - name: Cache Maven dependencies
+        uses: actions/cache@v3
+        with:
+          path: ~/.m2
+          key: ${{ runner.os }}-m2-${{ hashFiles('deps.edn') }}
+          restore-keys: |
+            ${{ runner.os }}-m2-
+
+      - name: Cache gitlibs
+        uses: actions/cache@v3
+        with:
+          path: ~/.gitlibs
+          key: ${{ runner.os }}-gitlibs-${{ hashFiles('deps.edn') }}
+          restore-keys: |
+            ${{ runner.os }}-gitlibs-
+
+      - name: Run tests
+        run: clojure -M:test
+
+      - name: Check all namespaces compile
+        run: |
+          clojure -e "(do (require '[clojure.tools.namespace.repl :refer [refresh set-refresh-dirs]]) \
+              (set-refresh-dirs \"src\" \"test\") \
+              (println \"Refreshing...\") \
+              (let [result (refresh)] \
+                 (when (or (instance? Throwable result) \
+                           (and (map? result) (:error result))) \
+                       (throw (or (when (map? result) (:error result)) result)))) \
+              (println \"Refresh complete!\") \
+              (System/exit 0))"
+
+        

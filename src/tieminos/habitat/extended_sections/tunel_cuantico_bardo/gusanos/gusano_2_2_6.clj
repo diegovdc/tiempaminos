@@ -18,7 +18,7 @@
    :buf-fn (fn [_] (->> @rec/bufs vals (sort-by :rec/time) reverse (filter :analysis) (take 5) (#(when (seq %) (rand-nth %)))))
    :rates (interleave (fib-chord-seq (transpose-chord [0 5 13 21] (range 0 (* 21 6) 5)))
                       (reverse (fib-chord-seq (transpose-chord [0 5 13 21] (range 0 (* 21 6) 5)))))
-   ;; FIXME implement control
+   ;; FIXME: implement control
    :amp-fn (fn [_i] 1)
    :period 30
    :durs [2 3 5 3 8]
@@ -41,7 +41,7 @@
    :buf-fn (fn [_] (->> @rec/bufs vals (sort-by :rec/time) reverse (filter :analysis) (take 5) (#(when (seq %) (rand-nth %)))))
    :rates (interleave (fib-chord-seq (transpose-chord [0 5 13 21] (range (* 21 -3) (* 21 6) 5)))
                       (reverse (fib-chord-seq (transpose-chord [0 5 13 21] (range (* 21 -3) (* 21 6) 5)))))
-   ;; FIXME implement control
+   ;; FIXME: implement control
    :amp-fn (fn [_i] 1)
    :period 20
    :durs [1 2 3]
@@ -62,7 +62,7 @@
    :buf-fn (fn [_] (->> @rec/bufs vals (sort-by :rec/time) reverse (filter :analysis) (take 5) (#(when (seq %) (rand-nth %)))))
    :rates (interleave (fib-chord-seq (transpose-chord [0 5 13 21] (range (* 21 -3) (* 21 6) 5)))
                       (reverse (fib-chord-seq (transpose-chord [0 5 13 21] (range (* 21 -3) (* 21 6) 5)))))
-   ;; FIXME implement control
+   ;; FIXME: implement control
    :amp-fn (fn [_i] 1)
    :period 30
    :durs [2 3 5 3 8]
@@ -90,7 +90,7 @@
                       (fib-chord-seq (transpose-chord [-15 21] [20 19 27 23 34 50 48 0]))
                       (fib-chord-seq (transpose-chord [13] [20 19 2 27 23 34 50 48])))
 
-   ;; FIXME implement control
+   ;; FIXME: implement control
    :amp-fn (fn [_i] 1)
    :period 15
    :d-weights {8 1

@@ -8,6 +8,8 @@
    [taoensso.timbre :as timbre]
    [tieminos.habitat.extended-sections.harmonies.chords :refer [fib-21
                                                                 fib-chord-seq
+                                                                get-harmony
+                                                                rate-chord-seq
                                                                 transpose-chord]]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.gusanos.gusano-2-2-4 :as g-2.2.4]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.gusanos.gusano-2-2-6 :as g-2.2.6]
@@ -25,6 +27,13 @@
    [time-time.dynacan.players.gen-poly :as gp :refer [on-event ref-rain]]
    [time-time.standard :refer [rrand]]))
 
+(comment
+  (fib-chord-seq (transpose-chord [0 6 12 18] (range 21))) ;; acorde bonito, muy liso
+  (fib-chord-seq (transpose-chord [0 4 8 12 16 20 24 28] [0 1])) ;; calido con un poco de disonancia
+  (fib-chord-seq (transpose-chord [11 15 19] (range 21))) ;; estable claro (segmento de arriba: 4-4)
+  (fib-chord-seq (transpose-chord [10 15 20] (range 21))) ;; nocturno (5-5)
+  )
+;; TODO: add the rates above
 (def ^:private rates
   [(:rates g-2.2.6/s1)
    (:rates g-2.2.6/s2)
@@ -34,17 +43,22 @@
    (:fib-0.5.13.21-range-3.6-5step-interleaved+reverse g-2.2.4/chords)
    (:fib-multiple-interleaved g-2.2.4/chords)])
 
+(comment
+  (count (get-harmony :meta-pelog-20)))
+
+(def make-rates
+  (memoize
+   (fn [k harmony-k]
+     (let [harmony (get-harmony harmony-k)
+           chord-fn  (partial rate-chord-seq harmony)]
+       (case k
+         :s1 (let [chords (chord-fn (transpose-chord [0 5 13 21] (range 0 (* 21 6) 5)))]
+               (interleave  chords (reverse chords))))))))
+
 (defn get-rates!
   []
-  #_(-> @bardo.live-state/live-state :gusano (:rates 0) (wrap-at rates))
-  [(nth (wrap-at 0 rates) 2)]
-  (wrap-at 0 rates)
-  #_(fib-chord-seq (transpose-chord [0 5 13 21] [-9])))
-
-(->> (get-rates!)
-     first
-     first
-     (period-reduce))
+  (let [harmony-k (bardo.live-state/get-gusano-harmony!)]
+    (make-rates :s1 harmony-k)))
 
 (let [prev-index (atom 0)]
   (defn- next-rate-index! [speed]
@@ -55,9 +69,11 @@
   []
   (-> @bardo.live-state/live-state :gusano (:rates-seq-speed 1)))
 
+(def ^:private amp-multiplier (o/db->amp 6))
+
 (defn- get-amp!
   []
-  (-> @bardo.live-state/live-state :gusano (:amp 0.6)))
+  (-> @bardo.live-state/live-state :gusano (:amp 0.6) (max 0.001) (* amp-multiplier)))
 
 (def ^:private periods [15 20 25 30 35 40])
 
@@ -93,31 +109,61 @@
   []
   (-> @bardo.live-state/live-state :gusano (:grain-dur 0.5) map-grain-dur))
 
-(defn get-buf!
+(defn ^:deprecated get-buf! ;; legacy can be used in place of `get-buf!-2`
   [_]
-  (timbre/spy :info
-              (->> @rec/bufs vals (sort-by :rec/time)
-                   reverse
-                   (filter (fn [data]
-                             (let [has-analysis? (:analysis data)
-                                   active-sources (-> @bardo.live-state/live-state :gusano (:sources #{}))
-                                   ins (->> (concat
-                                             (when (active-sources :diego) habitat.route/diego-ins)
-                                             (when (active-sources :milo) habitat.route/milo-ins))
-                                            (into #{}))]
-                               (if-not (seq active-sources)
-                                 has-analysis?
-                                 (and has-analysis?
-                                      (ins (:input-name (:rec/meta data))))))))
-                   (take 3)
-                   (#(when (seq %) (rand-nth %))))))
+  (->> @rec/bufs vals (sort-by :rec/time)
+       reverse
+       (filter (fn [data]
+                 (let [has-analysis? (:analysis data)
+                       active-sources (-> @bardo.live-state/live-state :gusano (:sources #{}))
+                       ins (->> (concat
+                                 (when (active-sources :diego) habitat.route/diego-ins)
+                                 (when (active-sources :milo) habitat.route/milo-ins))
+                                (into #{}))]
+                   (when-not (seq ins)
+                     (timbre/warn "No active sources. Nothing will sound."))
+                   (and has-analysis?
+                        (ins (:input-name (:rec/meta data)))))))
+       ;; TODO: use banks
+       (take 3)
+       (#(when (seq %) (rand-nth %)))))
+
+(defn get-buf!-2
+  "A more recent version, that will only choose buffers from the active banks of the players."
+  [_]
+  (let [input->banks (merge
+                      (when-let [banks (bardo.live-state/get-gusano-banks :diego)]
+                        (->> habitat.route/diego-ins
+                             (map (fn [k] [k banks]))
+                             (into {})))
+                      (when-let [banks (bardo.live-state/get-gusano-banks :milo)]
+                        (->> habitat.route/milo-ins
+                             (map (fn [k] [k banks]))
+                             (into {}))))]
+
+    (if-not (seq input->banks)
+      (timbre/warn "No active sources. Nothing will sound.")
+      (->> @rec/bufs
+           vals
+           (filter (fn [data]
+                     (let [has-analysis? (:analysis data)
+                           {:keys [input-name subsection]} (:rec/meta data)
+                           banks (input->banks input-name #{})]
+                       (when has-analysis?
+                         (banks subsection)))))
+
+           (sort-by :rec/time)
+           reverse
+           ;; prioritze more recent buffers but also take from older ones
+           (take (rand-int 500))
+           (#(when (seq %) (rand-nth %)))))))
 
 (def fib-ratios-indexes
   (->> fib-21
        (map-indexed (fn [i {:keys [bounded-ratio]}] {bounded-ratio i}))
        (into {})))
 
-(deg->freq fib-21 1 0)
+#_(deg->freq fib-21 1 0)
 
 (let [degree-wave (concat (range 0 -37 -4)
                           (range -37 37 4)
@@ -173,7 +219,6 @@
               (println dur-s)))
   (gp/stop :x))
 
-;; TODO left here
 (defn gusano
   "Based on `tieminos.habitat.scratch.sample-rec2/hacia-un-nuevo-universo-perc-refrain-v1p2`
   Can handle rate chords (as a vector of rates)"
@@ -234,12 +279,13 @@
                                     :end end
                                     :out out-bus
                                     :pan (rrange -1 1)}]
+
+                        (timbre/debug "Playing Gusano" (:out config))
                         (when on-play
-                          #_(println "ONPLAY")
+                          (timbre/debug "Gusano on-play" (:out config))
                           (on-play (assoc config
                                           :amp amp*
                                           :rate (float r))))
-                        (timbre/info "Playing-----" (:out config))
                         (amanecer*guitar-clouds (assoc config
                                                        :rate (float r)
                                                        :interp (rand-nth [1 2 4])
@@ -251,11 +297,12 @@
                                                          :amp (* amp* (rrange 0 0.7) (norm-amp buf)))))))))))))
 
 (def default-config
-  {:on-play (fn [& _] (println "playing"))
+  {:on-play (fn [& _] (timbre/debug "Playing gusano"))
    :id ::gusano
    :out-bus (main-returns :mixed)
    :silence-thresh 0.0
-   :buf-fn get-buf!
+   :buf-fn get-buf!-2
+   ;; TODO make this dynamic
    :rates (interleave (fib-chord-seq (transpose-chord [0 5 13 21] (range 0 (* 21 6) 5)))
                       (reverse (fib-chord-seq (transpose-chord [0 5 13 21] (range 0 (* 21 6) 5)))))
    :amp-fn (fn [_i] 1)

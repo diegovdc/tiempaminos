@@ -1,0 +1,15 @@
+
+* Paso de G+88 a A+92 (y viceversa) :G88:A92:
+#+begin_src 
+   2 3 |   2 3(p):: A+92
+   2 3p|   2 3(p)::
+ 1 2 3p|   2 3(p)::
+ 1 2  p|   2 3(p):: G+88
+#+end_src
+
+* Trino sobre A+92 :A92:
+Variando la amplitud (pero =pp= en general) se pueden generar destellos multifónicos
+#+begin_src 
+   2 3 |   2 3(p):: 
+   2 3 | 1 2 3(p):: trino
+#+end_src

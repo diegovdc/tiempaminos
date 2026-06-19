@@ -6,7 +6,7 @@
   (let [sum (apply + ns)]
     (map #(/ % sum) ns)))
 
-;; TODO implement for non lists
+;; TODO: implement for non lists
 ;; mapping functions
 ;; https://github.com/supercollider/supercollider/blob/18c4aad363c49f29e866f884f5ac5bd35969d828/lang/LangSource/MiscInlineMath.h
 
@@ -17,22 +17,28 @@
   (throw "Implement me"))
 
 (do
+  (defn linlin*
+    ([in-min in-max out-min out-max x]
+     (let [in-range (- in-max in-min)
+           out-range (- out-max out-min)]
+       (->  (/ (- x in-min) in-range)
+            (* out-range)
+            (+ out-min)))))
+
   (defn linlin
     "Linear to linear scaling"
     ([out-min out-max nums]
      (linlin (apply min nums) (apply max nums) out-min out-max nums))
 
     ([in-min in-max out-min out-max nums]
-     (let [in-range (- in-max in-min)
-           out-range (- out-max out-min)]
-       (map #(-> % (* out-range) (+ out-min))
-            (map #(/ (- % in-min) in-range) nums)))))
+     (map #(linlin* in-min in-max out-min out-max %) nums)))
 
   (= (mapv float (linlin 1 5 1 3 [1 2 3 4 5]))
-     [1.0, 1.5, 2.0, 2.5, 3.0]))
+     [1.0, 1.5, 2.0, 2.5, 3.0])
 
-(comment
-  (mapv float (linlin 5 0.5 1 3 [1 2 3 4 5])))
+  (comment
+    (= (map #(linlin* 5 0.5 1 3 %) [1 2 3 4 5])
+       (linlin 5 0.5 1 3 [1 2 3 4 5]))))
 
 (defn linexp*
   "Linear to exponential scaling"
@@ -93,7 +99,7 @@
                    xs))
          (apply + (map (fn [i] (Math/pow alpha (- n i))) (range 1 (inc n))))))))
 
-;; TODO add tests
+;; TODO: add tests
 (linearly-weighted-avg [1 1 1 1])
 (linearly-weighted-avg [1 9/10 8/10 7/10 6/10 5/10])
 (linearly-weighted-avg (reverse [1 9/10 8/10 7/10 6/10 5/10]))
@@ -107,7 +113,7 @@
       (+ (Math/pow Math/E (* scale x)) 1))))
 
 (defn hyperbolic-decay
-  ;; NOTE initially intended as a feedback mechanism for controlling amplitudes
+  ;; NOTE: initially intended as a feedback mechanism for controlling amplitudes
   "Works with values between 0 and 1.
   `max-threshold` is the value after which the hyperbolic function is applied
   `scale` is the steepness of the curve.

@@ -11,8 +11,8 @@
    [tieminos.habitat.recording :as rec]))
 
 (def ^:private saved-synth-params-dir
-    (str (System/getProperty "user.dir")
-         "/src/tieminos/habitat/extended_sections/tunel_cuantico_bardo/saved_synth_params"))
+  (str (System/getProperty "user.dir")
+       "/src/tieminos/habitat/extended_sections/tunel_cuantico_bardo/saved_synth_params"))
 
 (defn- serialize-group
   [synth-params]
@@ -30,26 +30,23 @@
       serialize-group
       (dissoc :out)))
 
-
 (defn- serialize-params
-    "Serialize the params corresponding to the `params-indexes`."
+  "Serialize the params corresponding to the `params-indexes`."
   [{:keys [params-atom
            params-indexes
            db-full-keyword
            buffers-atom]}]
-    (map #(serialize-params*
-            {:db-full-keyword db-full-keyword
-             :buf->keys-map (-> @buffers-atom
-                                set/map-invert)
-             :synth-params (nth @params-atom %)})
-         params-indexes))
-
+  (map #(serialize-params*
+         {:db-full-keyword db-full-keyword
+          :buf->keys-map (-> @buffers-atom
+                             set/map-invert)
+          :synth-params (nth @params-atom %)})
+       params-indexes))
 
 (defn- save-params*
-    [file-name serialized-params]
-    (spit (str saved-synth-params-dir "/" file-name)
-          (str (into [] serialized-params))))
-
+  [file-name serialized-params]
+  (spit (str saved-synth-params-dir "/" file-name)
+        (str (into [] serialized-params))))
 
 (defn save-params
   "Save the params to `file-name` under the `saved-synth-params-dir` and writes the used audio buffers to `/samples/habitat_samples/`.
@@ -78,9 +75,9 @@
 (defn get-db-keyword-atom!
   [buffers-db-keyword-prefix]
   (rec/load-own-samples!
-    :buffers-atom (atom {})
-    :prefixes-set #{buffers-db-keyword-prefix}
-    :samples-path rec/habitat-samples-path))
+   :buffers-atom (atom {})
+   :prefixes-set #{buffers-db-keyword-prefix}
+   :samples-path rec/habitat-samples-path))
 
 (defn rehydrate-synth-params
   "Recreate synth params with live buffers.
@@ -107,5 +104,5 @@
                                      (if-let [group* (groups group)]
                                        group*
                                        default-group)))
-                    ;; TODO out has not be serialized at the moment
+                    ;; TODO: out has not be serialized at the moment
                     (update :out (constantly default-out))))))))

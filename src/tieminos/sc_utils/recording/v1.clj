@@ -32,7 +32,7 @@
   ([{:keys [bufs-atom buf-key seconds input-bus writer-fn group]
      :or {writer-fn writer}}]
    (let [buf (alloc bufs-atom buf-key seconds)]
-     ;; NOTE IMPORTANT writer-fn is expected to be an oe/defsynth
+     ;; NOTE: IMPORTANT writer-fn is expected to be an oe/defsynth
      (writer-fn (cond-> {:in-bus input-bus
                          :buf buf
                          :seconds seconds}
@@ -81,22 +81,22 @@
                           (make-progress-bar-fn progress-range))]
     (when-not input-bus
       (throw (ex-info "No `input-bus` provided for recording." {})))
-    ;; TODO rename the keyword below and allow for a custom `id-key-fn`
+    ;; TODO: rename the keyword below and allow for a custom `id-key-fn`
     (ref-rain :id (keyword "sc.rec.v1" (str "recording"
-                                           (name-buf-key buf-key)))
+                                            (name-buf-key buf-key)))
               :tempo (dur->bpm (* seconds 1000))
               :loop? false
               :durs durs
               :on-event
               (on-event
-                (when (zero? index)
-                  (rec-buf {:group group
-                            :bufs-atom bufs-atom
-                            :buf-key buf-key
-                            :seconds seconds
-                            :input-bus input-bus}))
-                (when progress-bar?
-                  (progress-bar-fn index))))))
+               (when (zero? index)
+                 (rec-buf {:group group
+                           :bufs-atom bufs-atom
+                           :buf-key buf-key
+                           :seconds seconds
+                           :input-bus input-bus}))
+               (when progress-bar?
+                 (progress-bar-fn index))))))
 
 (def recording?
   "For external use only (an outside check if something is being recorded)"
@@ -240,8 +240,8 @@
     (throw (ex-info "Could not delete sample. Probably the sample was not loaded with load-own-samples!."
                     {:sample sample}))
     (delete-sample!*
-      (:db/samples-atom sample)
-      (:db/sample-key sample))))
+     (:db/samples-atom sample)
+     (:db/sample-key sample))))
 
 (defn filter*
   "Filters bufs by passing the `bufkey` to `f`"
@@ -304,8 +304,8 @@
                                               mic-2-bus
                                               mic-3-bus]])
   (defn rec-input
-    ;; FIXME make something easier to test without needing habitat routing
-    ;; NOTE uses habitat routing
+    ;; FIXME: make something easier to test without needing habitat routing
+    ;; NOTE: uses habitat routing
     [input-bus]
     (let [name* (:name input-bus)]
       (start-recording

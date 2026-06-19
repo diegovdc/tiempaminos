@@ -10,14 +10,13 @@
             [taoensso.timbre :as timbre]
             [time-time.dynacan.players.gen-poly :as gp :refer [on-event ref-rain]]))
 
-(def outy (midi/midi-out "VirMIDI"))
 (def hex (cps/make 2 [1 3 5 7]))
 (def eik (->> [1 3 5 7 9 11]
               (cps/make 3)
               cps/+all-subcps))
 
 (comment
-  )
+  (def outy (midi/midi-out "VirMIDI")))
 
 #_(on-event (println dur))
 (def seq-1
@@ -40,10 +39,7 @@
        (map #(u/wrap-at % (:scale eik)))
        (map :set))
   (->> eik :scale
-       (filter (partial has-set? #{11 7}))
-       ))
-
-
+       (filter (partial has-set? #{11 7}))))
 
 (comment
 ;;;  test
@@ -77,16 +73,12 @@
   (gp/stop)
   (gp/reset)
   (all-notes-off outy)
-  (->> eik :scale (filter (partial has-set? #{3 11})))
-
-)
-
+  (->> eik :scale (filter (partial has-set? #{3 11}))))
 
 (comment
   "Melody exploration"
   (->> eik cps/+all-subcps :subcps keys sort (filter #(str/includes? % "2)5")))
   (defn sub-cps-scale [cps-name] (-> eik cps/+all-subcps :subcps (get cps-name) :scale))
-
 
   (midi-in-event
    :note-on (fn [msg]
@@ -107,7 +99,7 @@
   (def dek-9 "2)5 of 3)6 9-1.3.5.7.11")
   (def dek-11 "2)5 of 3)6 11-1.3.5.7.9")
   (def deks (map (fn [cps-name] [cps-name
-                                (sub-cps-scale cps-name)])
+                                 (sub-cps-scale cps-name)])
                  [dek-1 dek-3 dek-5 dek-7 dek-9 dek-11]))
   (gp/stop)
   (-> deks)

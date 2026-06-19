@@ -1,0 +1,6 @@
+<sequence> = token*
+ws = #"\s+"
+<posint> = #"[0-9]+"
+interpolation = posint
+<k> = <ws>? #"[a-zA-Z]" <ws>?
+<token> = (k | interpolation)

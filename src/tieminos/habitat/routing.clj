@@ -7,7 +7,7 @@
    [tieminos.sc-utils.synths.v1 :refer [lfo]]
    [tieminos.utils :refer [ctl-synth ctl-synth2]]))
 
-;; TODO IMPORTANT free the buses with `(when bus (o/free-bus bus))`
+;; TODO: IMPORTANT free the buses with `(when bus (o/free-bus bus))`
 
 (comment
   ;;  USAGE
@@ -43,14 +43,14 @@
   (reset! return-n-chans 8)
   (reaper-returns 5))
 
-;; TODO eventually remove
+;; TODO: eventually remove
 (def clean-return (reaper-returns 1))
 (def reverb-return (reaper-returns 2))
 (def processes-return-1
   "Return for buffers and sounds processed by SC"
   (reaper-returns 3))
 
-;; NOTE ns will need to be recompiled if the `return-n-chans` value changes. Therefore it's better to not use these `def`s  anymore.
+;; NOTE: ns will need to be recompiled if the `return-n-chans` value changes. Therefore it's better to not use these `def`s  anymore.
 (def guitar-main-out (reaper-returns 1))
 (def guitar-processes-main-out (reaper-returns 2))
 (def percussion-main-out (reaper-returns 3))
@@ -72,7 +72,7 @@
 (defn get-mixed-main-out [] (reaper-returns 5))
 (defn get-non-recordable-main-out [] (reaper-returns 6))
 
-(oe/defsynth recordable-output ;; TODO make octophonic version
+(oe/defsynth recordable-output ;; TODO: make octophonic version
   ;; mixdown a 4-ch input into a 1-ch output
   [bus 0 out 0]
   (o/out out (o/mix (o/in bus 4))))

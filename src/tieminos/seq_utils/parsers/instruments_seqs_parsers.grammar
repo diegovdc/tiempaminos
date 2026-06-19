@@ -1,0 +1,11 @@
+<sequence> = event*
+op-ratchet = "*" | "/"
+ratchet = token op-ratchet posint <ws>?
+<token> = ( ratchet | k | chord | subseq | token)
+repeat = (token | ratchet) "!" posint <ws>?
+<event> = (token | ratchet | repeat) 
+posint = #"[0-9]+"
+ws = #"\s+"
+chord = <#"\["> token* <#'\]'>
+subseq = <#"\<"> token* <#'\>'>
+<k> = <ws>? (#"[a-zA-Z]" | #"-") <ws>?

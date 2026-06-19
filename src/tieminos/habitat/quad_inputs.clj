@@ -183,7 +183,7 @@
          "/panner-rate" (panner-rate args-map)
          "/reso-pan-voices" (reso-pan/update-state :voices (map-value args-map 1 10))
          "/reso-pan-dur" (reso-pan/update-state :dur (map-value args-map 5 60))
-          ;; TODO add reso-pan-amp
+          ;; TODO: add reso-pan-amp
          "/reso-pan" (reso-pan/trigger (:in args-map) main-pre-out 5 10)
          (println "Unknown path for message: " msg)))))
 

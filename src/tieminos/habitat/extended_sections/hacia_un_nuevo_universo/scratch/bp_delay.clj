@@ -131,7 +131,7 @@
                                                        (inc (rand-int 12)))))}])
 
   (doseq [synth (:delays delay-bank1)]
-    (o/ctl synth :room 2 :amp 0.2)) ;; TODO agregar control continuo
+    (o/ctl synth :room 2 :amp 0.2)) ;; TODO: agregar control continuo
   (doseq [synth (:delays delay-bank2)]
     (o/ctl synth :room 2 :amp 0.3))
 

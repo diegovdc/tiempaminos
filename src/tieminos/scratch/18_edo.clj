@@ -1,7 +1,7 @@
 (ns tieminos.scratch.18-edo
   (:require
    [clojure.set :as set]
-   [erv.edo.molt :as molt]
+   [erv.edo.mlt :as mlt]
    [erv.utils.core :refer [get-all-rotations]]))
 
 (do
@@ -14,7 +14,7 @@
 
   (as-degrees '(5 4 5 4)))
 
-(sort-by count (molt/make 18))
+(sort-by count (mlt/make 18))
 
 (set/subset? #{1} #{1})
 
@@ -30,9 +30,9 @@
 
   (count-chord-in-molt [7 7 4] [5 4 5 4]))
 
-(molt/make 18)
+(mlt/make 18)
 
-(->> (molt/make 18)
+(->> (mlt/make 18)
      (map (fn [molt]
             [molt]
             [molt [(count-chord-in-molt [3 3 1 3 3 1 3 1]
@@ -41,17 +41,17 @@
 
 (sort-by (fn [[_ counts]] (apply + counts))
          (merge-with concat
-                     (->> (molt/make 18)
+                     (->> (mlt/make 18)
                           (map (fn [molt]
                                  [molt]
                                  [molt [(count-chord-in-molt [7 7 4] molt)]]))
                           (into {}))
-                     (->> (molt/make 18)
+                     (->> (mlt/make 18)
                           (map (fn [molt]
                                  [molt]
                                  [molt [(count-chord-in-molt [5 7 6] molt)]]))
                           (into {}))
-                     (->> (molt/make 18)
+                     (->> (mlt/make 18)
                           (map (fn [molt]
                                  [molt]
                                  [molt [(count-chord-in-molt [7 5 6] molt)]]))

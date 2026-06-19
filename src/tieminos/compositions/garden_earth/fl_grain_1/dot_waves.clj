@@ -13,7 +13,7 @@
    [tieminos.compositions.garden-earth.synths.recording :as rec]))
 
 (do
-  ;; TODO fix test-samples usage
+  ;; TODO: fix test-samples usage
   #_(defn ex1 []
       (let [bufs @rec/test-samples
             scale (subcps "1)4 of 3)6 1.11-3.5.7.9")

@@ -5,8 +5,8 @@
    [erv.scale.core :as scale]
    [overtone.core :as o]
    [tieminos.habitat.extended-sections.harmonies.chords :refer [fib-chord-seq
-                                                               transpose-chord]]
-   [tieminos.midi.core :refer [midi-in-event oxygen]]
+                                                                transpose-chord]]
+   [tieminos.midi.core :refer [get-oxygen! midi-in-event]]
    [tieminos.synths :as synths]
    [time-time.dynacan.players.gen-poly :as gp :refer [on-event ref-rain]]))
 
@@ -91,7 +91,7 @@
 
 (comment
   (midi-in-event
-   :midi-input oxygen
+   :midi-input (get-oxygen!)
    :note-on (fn [{:as event}]
               (let [vel (/ (:velocity event) 127)]
                 (synths/soft-saw2

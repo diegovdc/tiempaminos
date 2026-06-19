@@ -76,7 +76,7 @@
    #(rrange 0.9 1) 4
    #(rrange 1 1.5) 2})
 
-;; TODO with frequency analyzer make pitch-class useful
+;; TODO: with frequency analyzer make pitch-class useful
 (defn interval-seq-fn
   [_pitch-class scale]
   (let [direction (rand-nth [1 -1])
@@ -417,7 +417,7 @@
                                    :pan-min pan-min
                                    :lpf (rrange 700 8000)
                                    :pan-max pan-max
-                                   :amp (rrange 0.2 0.5) ;; TODO use bezier
+                                   :amp (rrange 0.2 0.5) ;; TODO: use bezier
                                    :ratio (if (> 0.3 (rand))
                                             (* (-> harmony rand-nth :bounded-ratio)
                                                (weighted transp-weights))
@@ -523,7 +523,7 @@
                     :durs-fn (fn [_] (rrange 6 19))
                     :amp-fn (fn [_] (weighted amp-weights-mid-prominence))
                     :old-weight 8
-                    ;; TODO use other kinds of rates
+                    ;; TODO: use other kinds of rates
                     :rates-fn (fn [_] (formacion-terrestre/tectonic-rates (rrand 1 5) (rrand 1 9)))
                     :out (ge.route/out :ndef-1)})
 

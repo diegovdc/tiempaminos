@@ -1,12 +1,13 @@
 (ns tieminos.utils
   (:require
    [clojure.core.async :as a]
-   [clojure.string :as str]
    [erv.cps.core :as cps]
    [erv.scale.core :as scale]
    [erv.utils.conversions :as conv]
    [overtone.core :as o]
    [taoensso.timbre :as timbre]))
+
+(def tieminos-path (System/getProperty "user.dir"))
 
 (defn now []
   (System/currentTimeMillis))
@@ -220,30 +221,45 @@
         delta (/ val-diff ticks)]
     {:ticks ticks :delta delta}))
 
+(defn- wrap-interpolator-callback
+  [cb]
+  (fn [val]
+    (try (cb val)
+         (catch Exception e (timbre/error e)))))
+
 (defn make-interpolator
-  [{:keys [id _dur-ms tick-ms init-val _target-val cb]
+  [{:keys [id _dur-ms tick-ms init-val _target-val cb on-end]
     :as interpolator-config
-    :or {init-val 0 tick-ms 100}}]
+    :or {init-val 0 tick-ms 100
+         on-end (fn [_data])}}]
   (let [in-chan  (a/chan)
         stop-chan (a/chan)
         {:keys [ticks delta]} (get-interpolation-data interpolator-config)]
     (a/go-loop [delta delta
-                cb cb
+                cb (wrap-interpolator-callback cb)
+                on-end (wrap-interpolator-callback on-end)
                 tick-ms tick-ms
                 ticks-left ticks
                 val init-val]
       (let [ticks-left? (>= ticks-left 1)]
         (a/alt!
-          in-chan ([{:keys [tick-ms] :as interpolator-config}]
+          in-chan ([{:keys [tick-ms]
+                     new-cb :cb
+                     new-on-end :on-end
+                     :as interpolator-config}]
                    (let [{:keys [ticks delta]} (get-interpolation-data (assoc interpolator-config
-                                                                              :init-val val))]
-                     (cb {:ticks-left ticks :val val})
-                     (recur delta cb tick-ms ticks val)))
+                                                                              :init-val val))
+                         cb* (if-not new-cb cb (wrap-interpolator-callback new-cb))
+                         on-end* (if-not new-on-end on-end (wrap-interpolator-callback new-on-end))]
+                     (cb* {:ticks-left ticks :val val})
+                     (recur delta cb* on-end* tick-ms ticks val)))
           (a/timeout (if ticks-left? tick-ms 2000)) (if ticks-left?
                                                       (let [new-val (+ val delta)]
                                                         (cb {:ticks-left ticks-left :val new-val})
-                                                        (recur delta cb tick-ms (dec ticks-left) new-val))
-                                                      (recur delta cb tick-ms ticks-left val))
+                                                        (when (and on-end (= 1 ticks-left))
+                                                          (on-end {:ticks-left ticks-left :val new-val}))
+                                                        (recur delta cb on-end tick-ms (dec ticks-left) new-val))
+                                                      (recur delta cb on-end tick-ms ticks-left val))
           stop-chan (stop-interpolator!* id))))
     (swap! interpolators
            assoc id (merge interpolator-config
@@ -262,7 +278,17 @@
                    :tick-ms 500
                    :init-val 0
                    :target-val 10
-                   :cb println})
+                   :cb println
+                   :on-end (fn [_] (println "interpolation end"))})
+  (cb-interpolate {:id :hola
+                   :dur-ms 5000
+                   :tick-ms 500
+                   :init-val 0
+                   :target-val 10
+                   :cb (fn [data]
+                         #_(when (= 10 (:val data))
+                             (throw (ex-info "ups" {})))
+                         (println "new cb" data))})
 
   (stop-all-interpolators!)
   (stop-interpolator! :hola)
@@ -323,8 +349,23 @@
   (doseq [x (range 5)]
     (sequence-call 100 #(println x))))
 
+(defn sequence-calls2
+  "Like sequence-call but does not need to init any loop. In contains a loop in itself."
+  [f time-ms]
+  (let [c (a/chan)]
+    (a/go-loop []
+      (apply f (a/<! c))
+      (a/<! (a/timeout time-ms))
+      (recur))
+    (fn [& args]
+      (a/put! c (or args [])))))
+
+(comment
+  (def tprint (sequence-calls2 #(println "hola" %) 1000))
+  (doseq [x (range 6)] (tprint x)))
+
 (defn throttle
-  ;; NOTE Seems to be like `sequence-call` but better
+  ;; NOTE: Seems to be like `sequence-call` but better
   "Will imediately call a function and then wait for `time-ms` to call it again, if it was called in the interim.
   The second call will use the latest value with which the function was called.
   So it calls the function at the start and the end of the period."
@@ -357,22 +398,6 @@
   (def tprint2 (throttle2 #(println "hola" %) 2000))
   (doseq [x (range 6)] (tprint2 x)))
 
-(defn- parse-xo
-  [xo-str]
-  (-> xo-str
-      (str/replace #" " "")
-      (str/split #"")
-      (->> (map-indexed (fn [i x]
-                          (if (= x "x") i nil)))
-           (remove nil?)
-           set)))
-
-(defn xo
-  ([xo-str index]
-   (when-not (zero? (count xo-str))
-     (let [index-set (parse-xo xo-str)]
-       (index-set (mod index (count xo-str)))))))
-
 (defn careful-merge
   [& ms]
   (let [total-keys (->> ms
@@ -382,3 +407,7 @@
     (when (not= total-keys (count (keys merged)))
       (throw (ex-info "Some keys are being overwritten by the merge" {:keys (map keys ms)})))
     merged))
+
+(defn ensure-seq
+  [x]
+  (if (sequential? x) x [x]))

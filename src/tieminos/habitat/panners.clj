@@ -169,7 +169,7 @@
     (try (when (:synth current-panner)
            (o/ctl (:synth current-panner) :gate 0))
          (catch Exception e (timbre/error e)))
-    ;; TODO maybe refactor the key `in` into `id` or something...
+    ;; TODO: maybe refactor the key `in` into `id` or something...
     (swap! current-panners assoc in* {:in in*
                                       :synth new-panner
                                       :type type

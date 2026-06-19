@@ -56,7 +56,7 @@
   [data-seq]
   (let [analysis (->> data-seq
                       (reduce (fn [acc {:keys [amp original-freq pitch-class transp]}]
-                                (println pitch-class)
+                                #_(timbre/debug pitch-class)
                                 (-> acc
                                     (update :min-amp min amp)
                                     (update :max-amp max amp)
@@ -86,9 +86,9 @@
                :avg-freq (avg (:freqs analysis))
                :avg-amp (avg (:amps analysis))
                :amp-norm-mult (normalize-amp (:max-amp analysis))))))
-(analyze* test-data)
+#_(analyze* test-data)
 
-;; TODO left here, figure out how to plug it in to the recorder.
+;; TODO: left here, figure out how to plug it in to the recorder.
 (defn analyze
   [freq-history start-time end-time]
   (let [data (->> freq-history

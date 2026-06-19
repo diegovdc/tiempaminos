@@ -331,7 +331,7 @@
     - emision/multiplication of space-resonance (filtered) + individuality (small sounds, less wide, vibrating differently)
   "
   [context]
-  ;; NOTE milo transiciona al dueto
+  ;; NOTE: milo transiciona al dueto
   (timbre/info "dueto-con-polinizadores=pt1-emisión-de-señal-intercambio-de-energía")
   (let [{:keys [dur-s inputs texto-sonoro-rand-mixer-bus reaper-returns]} @context
         wave-dur (/ dur-s 3)
@@ -464,7 +464,7 @@
         avg-dur (/ dur-s polens)
         min-dur (* 0.7 avg-dur)
         max-dur (* 3 avg-dur)
-        ;; TODO improve durs with bezier curves
+        ;; TODO: improve durs with bezier curves
         durs* (->> polens
                    (range)
                    (map (fn [_] (max min-dur (rand max-dur)))))]
@@ -473,7 +473,7 @@
      :durs durs*
      :loop? false
      :on-event (on-event
-                 ;; TODO perhaps substitute with a grain synth (using `dust`) and some cps melodicish movement
+                 ;; TODO: perhaps substitute with a grain synth (using `dust`) and some cps melodicish movement
                 (timbre/debug "polen" {:index index :max-dur max-dur})
                 (make-convolver-1
                  input-buses
@@ -607,7 +607,7 @@
 
 (defn dueto-con-polinizadores=pt4-multiplicación-atracción-orbitales
   [context]
-  ;; TODO improve with other panning patterns, like a simple pan-az
+  ;; TODO: improve with other panning patterns, like a simple pan-az
   (timbre/info "dueto-con-polinizadores=pt4-multiplicación-atracción-orbitales")
   (let [{:keys [dur-s inputs main-fx reaper-returns current-panners]} @context
         rand-pan-config {:bus (o/audio-bus 1 "dueto-polinizadores-pt4-rand-pan")
@@ -649,7 +649,7 @@
                                              :out3 (:bus circle-r-pan-2-config)
                                              :out4 (:bus circle-r-pan-config)}))
                                          @inputs)
-        ;; NOTE this `mapv` will initialize the panners
+        ;; NOTE: this `mapv` will initialize the panners
         stop-ctl-fns (mapv (fn [{:keys [bus type out rate]}]
                              (let [width 1.2]
                                (panner
@@ -799,7 +799,7 @@
                                              :min-room end-min-room
                                              :min-damp end-min-damp)
                                       (stop-chan-fn)))))))))
-    ;; TODO use some sort of bezier curve
+    ;; TODO: use some sort of bezier curve
     (a/go
       (a/<! (a/timeout 30000))
       (let [osc-reverb (:synth (:osc-reverb @main-fx))

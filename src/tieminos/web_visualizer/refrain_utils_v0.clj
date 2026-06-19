@@ -13,7 +13,7 @@
 (comment
   ;; Usage
   (declare get-visualizer-data event->viz-event send-events!
-           ;; NOTE helper functions
+           ;; NOTE: helper functions
            adr-dur grain-sample-freq)
 
   (def scale (:scale (cps/make 2 [1 3 5 7])))
@@ -33,7 +33,7 @@
                           :synth-args {:freq (deg->freq scale 200 (at-i (range 20)))}}))))
 
   ;; Generate the events
-  ;; NOTE `refrain-playback-rate` is used to accelarate the playback of the refrain so that the events can be generated quickly
+  ;; NOTE: `refrain-playback-rate` is used to accelarate the playback of the refrain so that the events can be generated quickly
   (test-refrain
    (let [refrain-playback-rate 2
          end-after-ms 2000
@@ -42,7 +42,7 @@
       :on-play (fn [event-data]
                  (let [viz-data (get-visualizer-data event-data
                                                      {:refrain-playback-rate refrain-playback-rate
-                                                       ;; NOTE helper functions can be used here, i.e. adr-dur grain-sample-freq, see arity of function
+                                                       ;; NOTE: helper functions can be used here, i.e. adr-dur grain-sample-freq, see arity of function
                                                       })]
                    (swap! events conj viz-data)
                    (when (>= (:elapsed-ms viz-data) end-after-ms)
@@ -193,7 +193,7 @@
        add-c-lines))
 
 (comment
-  ;; TODO left here
+  ;; TODO: left here
   ;;
   ;; https://sneakycode.net/custom-edn-readers-for-dummies
   ;;

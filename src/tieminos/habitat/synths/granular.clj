@@ -14,7 +14,7 @@
     {:start start :end end}))
 
 (oe/defsynth amanecer*guitar-clouds
-    ;; TODO pass in manual envelope
+    ;; TODO: pass in manual envelope
   [buf 0
    trig-rate 40
    grain-dur 1/20
@@ -55,7 +55,6 @@
                                        [-1 -5])
                            :action o/FREE)))))
 
-
 (oe/defsynth clouds2-4ch
   [buf 0
    trig-rate 40
@@ -87,32 +86,32 @@
   (let [comb-mix* (min 1 (max 0 dly-mix))]
     (o/out out
            (-> [(o/grain-buf
-                  :num-channels 1
-                  :trigger (o/impulse trig-rate)
-                  :dur grain-dur
-                  :sndbuf buf
-                  :rate rate
-                  :pos (o/line start end (+ a d r))
-                  :interp interp
-                  :pan 0)
+                 :num-channels 1
+                 :trigger (o/impulse trig-rate)
+                 :dur grain-dur
+                 :sndbuf buf
+                 :rate rate
+                 :pos (o/line start end (+ a d r))
+                 :interp interp
+                 :pan 0)
                 (o/grain-buf
-                  :num-channels 1
-                  :trigger (o/impulse (* 13/7 trig-rate))
-                  :dur (* 13/7 grain-dur)
-                  :sndbuf buf
-                  :rate rate
-                  :pos (o/line start end (+ a d r)) #_(lfo 1 start end)
-                  :interp interp
-                  :pan 0)
+                 :num-channels 1
+                 :trigger (o/impulse (* 13/7 trig-rate))
+                 :dur (* 13/7 grain-dur)
+                 :sndbuf buf
+                 :rate rate
+                 :pos (o/line start end (+ a d r)) #_(lfo 1 start end)
+                 :interp interp
+                 :pan 0)
                 (o/grain-buf
-                  :num-channels 1
-                  :trigger (o/impulse (* 19/17 trig-rate))
-                  :dur (* 19/17 grain-dur)
-                  :sndbuf buf
-                  :rate rate
-                  :pos  (lfo-kr 1 start end)
-                  :interp interp
-                  :pan 0)]
+                 :num-channels 1
+                 :trigger (o/impulse (* 19/17 trig-rate))
+                 :dur (* 19/17 grain-dur)
+                 :sndbuf buf
+                 :rate rate
+                 :pos  (lfo-kr 1 start end)
+                 :interp interp
+                 :pan 0)]
                o/mix
                ((fn [sig]
                   (+ (* (- 1 comb-mix*) sig)
@@ -142,8 +141,7 @@
 
   (do
 
-
-    ;; TODO left here WIP
+;; TODO: left here WIP
     ;; Sounds good on long sounds
     ;; And also with short sounds where `d` is short and `d-level` goes significantly down
     ;; Can be computationally expensive
@@ -155,28 +153,28 @@
       (doseq [r (rand-nth [[1 11/9 11/8 3/2]
                            [4/3 11/7 11/5 11/6]])]
         (clouds2-4ch
-          {:buf buf
-           :trig-rate 10
-           :grain-dur 1/10
-           :amp (*  (:amp-norm-mult buf))
-           :start 0.5
-           :end 0.9
-           :interp 3
-           :rate r
-           :a 0.01
-           :d 0.5
-           :r 3
-           :a-level 1
-           :d-level 0.2
-           :dly-mix 2
-           :dly-time-mult 2
-           :root root
-           :moog-freq (* (rand-nth [1 2 8]) r root)
-           :moog-reso 1
-           :out 0})))))
+         {:buf buf
+          :trig-rate 10
+          :grain-dur 1/10
+          :amp (*  (:amp-norm-mult buf))
+          :start 0.5
+          :end 0.9
+          :interp 3
+          :rate r
+          :a 0.01
+          :d 0.5
+          :r 3
+          :a-level 1
+          :d-level 0.2
+          :dly-mix 2
+          :dly-time-mult 2
+          :root root
+          :moog-freq (* (rand-nth [1 2 8]) r root)
+          :moog-reso 1
+          :out 0})))))
 
 (oe/defsynth amanecer*snare-mist
-  ;; TODO pass in manual envelope
+  ;; TODO: pass in manual envelope
   [buf 0
    trig-rate 100
    grain-dur 1/10
@@ -239,13 +237,13 @@
                                      :rate r
                                      :amp (* (rrange 0.9 1) (norm-amp buf))
                                      :pan (rrange -1 1)))))
-  ;; todo generate bufs go to `tieminos.sc-utils.recording.v1`
+  ;; TODO: generate bufs go to `tieminos.sc-utils.recording.v1`
   ;; and play some stuff in the `comment` at the bottom
   (->> @rec/bufs keys)
 
   (play-buf* (:amanecer-pt4-mic-3-4 @rec/bufs))
   (oe/defsynth amanecer*snare-mist
-    ;; TODO pass in manual envelope
+    ;; TODO: pass in manual envelope
     [buf 0
      trig-rate 100
      grain-dur 1/10

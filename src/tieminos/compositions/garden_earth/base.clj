@@ -64,12 +64,37 @@
                   false))
    (gp/stop)))
 
-(def midi-out-1 (midi/midi-out "VirMIDI"))
+(def midi-out-1 (try (midi/midi-out "VirMIDI")
+                     (catch Exception _e (println "VirMIDI not found."))))
 
 (def eik (-> [1 3 5 7 9 11]
              (->> (cps/make 3)
                   cps/+all-subcps)
              (update :scale (partial +names base-freq))))
+
+(comment
+  (require '[erv.scale.scl :as scl])
+  (-> eik)
+  ;; make scl file that maps to the base freq 440 (which doesn't appear in the scale
+  (-> eik :scale first :bounded-ratio) ;; => 33/32
+  (float (* base-freq 33/32)) ;; => 453.75 - MTS-ESP should set this as the freq
+  ;; eik scale with the first note as 1/1
+  (def scl-eik (->> eik :scale (map (fn [note]
+                                      (-> note
+                                          (update :bounded-ratio / 33/32)
+                                          (update-in [:pitch :base-freq] (comp float *) 33/32))))))
+  ;; ensure that the names are still correct, that is that the pitches haven't changed
+  (= scl-eik (+names 453.75 scl-eik))
+
+  (scl/make-scl-file {:scale scl-eik})
+
+  ;; get eikosany degrees for kbm files
+  (->> eik :subcps
+       (filter (fn [[_ {:keys [meta]}]]
+                 (= 6 (:size meta))))
+       (map (fn [[k data]]
+              [k (map (comp :degree eik-sets :set) (:scale data))])))
+  (-> eik-sets))
 
 (defn has-set? [set* degree]
   (= set* (set/intersection (:set degree) set*)))
@@ -121,9 +146,21 @@
        (map (juxt key (comp first val)))
        (into {})))
 
+(def eik-ratios
+  "Eikosany scale grouped-by note name (pitch class name)"
+  (->> (eik :scale)
+       (group-by #(-> % :bounded-ratio))
+       (map (juxt key (comp first val)))
+       (into {})))
+
+(defn +degrees [scale]
+  (map (comp :degree eik-sets :set)
+       scale))
+
 (defn subcps [subcps-name]
-  (+names base-freq
-          (-> eik :subcps (get subcps-name) :scale)))
+  (with-meta (+names base-freq
+                     (-> eik :subcps (get subcps-name) :scale))
+    {:subcps/name subcps-name}))
 
 (defn scale->fingerings [scale]
   (->> scale

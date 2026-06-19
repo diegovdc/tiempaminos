@@ -28,3 +28,7 @@ resources/*.wav
 .cider-repl-history
 # use (overtone.linter/emit!) to regenerate the configuration
 .clj-kondo/overtone/
+docs/
+.clj-kondo/instaparse/
+.clj-kondo/metosin/
+.clj-kondo/hiccup/

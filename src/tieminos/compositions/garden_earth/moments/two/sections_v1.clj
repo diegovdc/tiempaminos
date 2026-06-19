@@ -70,31 +70,30 @@
 (comment
   ;; real sections durations
   (+
-    (->> fondo-oceanico/sections
-         (map :dur/minutes)
-         (apply +))
-    (->> formacion-terrestre/sections
-         (map :dur/minutes)
-         (apply +))
-    (->> erupcion/sections
-         (map :dur/minutes)
-         (apply +))
-    (->> totalidad/sections
-         (map :dur/minutes)
-         (apply +)))
-
+   (->> fondo-oceanico/sections
+        (map :dur/minutes)
+        (apply +))
+   (->> formacion-terrestre/sections
+        (map :dur/minutes)
+        (apply +))
+   (->> erupcion/sections
+        (map :dur/minutes)
+        (apply +))
+   (->> totalidad/sections
+        (map :dur/minutes)
+        (apply +)))
 
   (require '[tieminos.compositions.garden-earth.moments.two.async-sequencer :as aseq])
 
   (def sections (concat
-                  fondo-oceanico/sections
-                  formacion-terrestre/sections
-                  erupcion/sections
-                  totalidad/sections))
+                 fondo-oceanico/sections
+                 formacion-terrestre/sections
+                 erupcion/sections
+                 totalidad/sections))
   (aseq/run-sections
-    {:sections sections
-     :start-at 0
-     :initial-countdown-seconds 5})
+   {:sections sections
+    :start-at 0
+    :initial-countdown-seconds 5})
 
   (aseq/skip)
   (aseq/pause)
@@ -111,5 +110,4 @@
   ;; DONE multiplicación-de-ecosistemas error
   ;;
   (->> sections
-       (map (juxt :name :dur/minutes :description)))
-  )
+       (map (juxt :name :dur/minutes :description))))

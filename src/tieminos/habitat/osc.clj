@@ -47,15 +47,17 @@
 
 (defn args->map [args]
   (try
-    (->> args (partition 2 2)
+    (->> args
+         (partition 2 2)
          (map (fn [[k v]]
                 {(keyword k) (cond (and (= "in" k) (string? v)) (edn/read-string v)
                                    (string? v) (keyword v)
                                    :else v)}))
          (apply merge))
-    (catch Exception _
+    (catch Exception e
       (throw (ex-info "Could not convert args to map"
-                      {:args args})))))
+                      {:args args
+                       :exception e})))))
 
 (defn map-val
   "Linearly maps a `value-key` from an `args-map` between `min*` and `max*`,
@@ -71,13 +73,19 @@
                            ;; ensure it doesn't go beyond stated max, if value is > 1
                            (min max*)))))
 
-(defonce reaper-client (atom nil))
-
+(defonce
+  reaper-client (atom nil))
+(comment
+  (reset! reaper-client nil))
 (defn make-reaper-osc-client
   []
   (if @reaper-client
     @reaper-client
-    (reset! reaper-client (osc/osc-client (get-local-host) 65432))))
+    (reset! reaper-client (osc/osc-client
+                           #_(get-local-host) ;; for some reason this is not working
+                           #_"0.0.0.0" ;; and this doesn't work anymore (after OS update?)
+                           "127.0.0.1" ;; this one seems to work for now
+                           65432))))
 
 (defn make-internal-osc-client
   []
@@ -88,6 +96,12 @@
 (defn make-receiver-clients
   "`clients` is a vector of [host port]"
   [clients]
+  ;; Close existing clients
+  (doseq [client (vals @receiver-clients)]
+    (osc/osc-close client))
+
+  (reset! receiver-clients {})
+
   (doseq [client clients]
     (when-not (@receiver-clients client)
       (let [[host port] client]
@@ -99,6 +113,7 @@
 
 (comment
   (init)
+  (-> (vals @receiver-clients))
   (reset! osc-server nil)
   (osc/osc-debug true)
   (-> @reaper-client)

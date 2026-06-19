@@ -1,0 +1,64 @@
+
+* MIDI
+** MIDI controller template
+#+begin_src clojure
+(require '[tieminos.midi.core :refer [midi-in-event get-oxygen!]])
+(midi-in-event
+  :midi-input (get-oxygen!)
+  :note-on (fn [{:keys [note channel velocity] :as data}]
+             (println data)
+             (println (keys data)))
+  :note-off (fn [{:keys [note channel]}]
+              (println :note-off)))
+
+#+end_src
+** MPE Controller (Exquis)
+#+begin_src clojure
+(require '[tieminos.midi.core :refer [midi-in-event get-exquis! clear-all-synths!]])
+
+(require
+  '[overtone.core :as o]
+  '[tieminos.overtone-extensions :as oe]
+  '[erv.utils.conversions :as conv]
+  '[tieminos.math.utils :refer [linlin* linexp*]]
+  '[tieminos.synths :refer [demo-sine]])
+
+  (midi-in-event
+   :midi-input (get-exquis!)
+   :note-on (fn [{:keys [note velocity]}]
+              (demo-sine :freq (conv/midi->cps note)
+                         :amp (linlin* 0 127 0.4 0.9 velocity)))
+   :cc (fn [{:keys [note velocity]}]
+          ;; for some reason javax.sound.midi misses some note-off messages so...
+         (when (and (= note 21) ;; knob 1 click
+                    (= velocity 127))
+           (clear-all-synths!)))
+   :before-gate-0 (fn [{:keys [velocity]} synth]
+                    (o/ctl synth :r (linlin* 0 127 3 1 velocity)))
+   :mpe {:x (fn [synth val]
+              (let [note (::midi-note synth)]
+                (o/ctl synth :freq (-> (linlin* 0 127 (- note 2) (+ note 2) val)
+                                       (conv/midi->cps)))))
+         :y (fn [synth val]
+              (o/ctl synth :pan (linlin* 0 127 -1 1 val)))
+         :z (fn [synth val]
+              (o/ctl synth :amp (linexp* 0 127 0.1 1 val)))})
+  
+#+end_src
+
+* Legato sustainer
+Sustain a note or notes until they change. Useful within a loop (refrain) to prevent a note from being retriggered every time.
+#+begin_src clojure
+(require '[tieminos.overtone-extensions :as oe]
+         '[tieminos.harmonic-experience.drones.sounds :refer [drone]]
+         '[tieminos.harmonic-experience.sustainer :as legato])
+  (def root 200)
+  (legato/play! :id1 {:inst drone :params {:freq (* root 1)}})
+  (legato/stop! :id1)
+  (legato/multi :my-chord
+         {1 {:inst drone :params {:freq (* root 1)}}
+          3/2 {:inst drone :params {:freq (* root 3/2)}}})
+  (legato/multi :my-chord {1 {:inst drone :params {:freq (* root 1)}}})
+  (legato/multi :my-chord {1 {:inst drone :params {:freq (* root 2)}}})
+  (legato/multi :my-chord {})
+#+end_src

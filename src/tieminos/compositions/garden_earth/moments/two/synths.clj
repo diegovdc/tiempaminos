@@ -34,7 +34,7 @@
     (o/out out
            (-> (o/play-buf 1 buf rate :start-pos start-pos)
                (o/delay-l delay delay)
-               ;; TODO agregar control de reverb via OSC
+               ;; TODO: agregar control de reverb via OSC
                (o/free-verb rev-mix rev-room rev-damp)
                (* amp
                   (ctl-range amp-ctl amp-ctl-min amp-ctl-max)
@@ -53,7 +53,7 @@
    rate 1
    amp 0.5
    pan 0
-   max-rev-mix 0 ;; NOTE no reverb by default
+   max-rev-mix 0 ;; NOTE: no reverb by default
    rev-room 1
    amp-ctl 1000
    amp-ctl-min 1
@@ -97,7 +97,7 @@
   (ndef/ndef
    id
    (-> (o/in (fl-i1 :bus))
-       (o/lpf lpf) ;; FIXME high pitched noise due to guitar amp line out
+       (o/lpf lpf) ;; FIXME: high pitched noise due to guitar amp line out
        ((fn [sig]
           (o/mix (map (fn [ratio]
                         (-> sig
@@ -108,7 +108,7 @@
                       rates))))
        (o/free-verb 0.7 2)
 
-       (* (o/db->amp 20) ;; TODO perhaps this should be a control bus
+       (* (o/db->amp 20) ;; TODO: perhaps this should be a control bus
           (if-not amp-boost-ctl-bus
             1
             (o/lag (ctl-range amp-boost-ctl-bus
@@ -158,16 +158,16 @@
              (o/buf-samples:kr buf))
      :interp 2
      :pan pan)
-    (o/lpf 800) ;; FIXME high pitched noise due to guitar amp line out
+    (o/lpf 800) ;; FIXME: high pitched noise due to guitar amp line out
     (* 4 (o/env-gen
           (o/envelope
-               ;; TODO ADSR
+               ;; TODO: ADSR
            [0 a-level d-level 0]
            [(* 0.01 dur)
             (* 0.79 dur)
             (* 0.2 dur)])
           :action o/FREE))
-      ;; NOTE rangos (asumiendo `a-level` 3): -- pero puede llegar hasta el 10 sin problemas
+      ;; NOTE: rangos (asumiendo `a-level` 3): -- pero puede llegar hasta el 10 sin problemas
       ;; 0.05 - burbujeos
       ;; 0.3 - magma viva
       ;; 0.5 - ya bastante suave, y brilloso
@@ -213,7 +213,7 @@
       (o/pitch-shift 0.2 [1/2 2/3 1 3/2 11/4 13/4])
       (#(o/compander % % 0.5 1 2))
       (* pre-amp)
-          ;; NOTE rangos (asumiendo `a-level` 3): -- pero puede llegar hasta el 10 sin problemas
+          ;; NOTE: rangos (asumiendo `a-level` 3): -- pero puede llegar hasta el 10 sin problemas
           ;; 0.05 - burbujeos
           ;; 0.3 - magma viva
           ;; 0.5 - ya bastante suave, y brilloso
@@ -227,7 +227,7 @@
       (#(o/compander % % (o/db->amp -8) :slope-above 1/3))
       (o/free-verb 0.5 2)
       (o/pan2 (lfo-kr 0.5 -0.5 0.5)))
-      ;; FIXME without the explicit default 7 it doesn't work
+      ;; FIXME: without the explicit default 7 it doesn't work
      {:fade-in (or fade-in fade-time 7)
       :fade-out (or fade-out fade-time 7)
       :out out
@@ -569,10 +569,10 @@
                       :out golpe-bus})))
   (gp/stop :test))
 
-;; FIXME probably not going to work
+;; FIXME: probably not going to work
 (oe/defsynth meru-filter
   ;; For use in totalidad with a meru scale
-  ;; NOTE input must be stereo
+  ;; NOTE: input must be stereo
   [in 0
    freq 200
    gate 1

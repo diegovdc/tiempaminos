@@ -121,7 +121,7 @@
                     :recording/end-time now}]
       (when true #_pitch-class
             (play-fn s&h-data)
-            ;; TODO rename key to include analyzed "dominant" pitch
+            ;; TODO: rename key to include analyzed "dominant" pitch
             (swap! bufs-atom set/rename-keys {buf-key new-buf-key})
             (swap! s&h-seq conj s&h-data))))
   (comment

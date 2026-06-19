@@ -58,6 +58,12 @@
        (map (fn [[k vs]] [k (mapv first vs)]))
        (into {})))
 
+(def polydori-bounded-ratio->deg
+  (->> polydori-v2
+       :scale
+       (map (fn [note] [(:bounded-ratio note) (:degree note)]))
+       (into {})))
+
 (comment
   (->> polydori-set->deg (sort-by second))
   (polydori-set->deg #{1 15 21 9})
@@ -70,4 +76,3 @@
   (let [{:keys [filename content]} (make-scl-file polydori-v2)]
     (println filename)
     (spit (str "/Users/diego/Music/tunings/" filename) content)))
-

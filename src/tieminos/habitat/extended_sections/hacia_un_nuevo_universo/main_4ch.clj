@@ -297,7 +297,7 @@
       (panner (merge {:in bus
                       :type :rand
                       :out (:bus (k @preouts))
-                      ;; TODO is amp something that is wanted?
+                      ;; TODO: is amp something that is wanted?
                       :amp 0.5}
                      (k config)))
       (panner-rate (merge {:in bus
@@ -412,7 +412,7 @@
                                        :rec-input-config {:print-info? false}}))
                                    (do
                                      (timbre/info "Stopping sampler")
-                                      ;; NOTE that `::rec-loop` is never stopped
+                                      ;; NOTE: that `::rec-loop` is never stopped
                                      (reset! play-sample? false)))
 
          "/Sections/ps2-ratios-index" (let [index (first args)]
@@ -440,7 +440,7 @@
   #_(stop-panned-inputs!)
 
   (do ;; Amp triggers
-    ;; NOTE IMPORTANT do not forget to add the `add-ringz-group` `:add-custom-groups-fn`
+    ;; NOTE: IMPORTANT do not forget to add the `add-ringz-group` `:add-custom-groups-fn`
     ;; to the `init!` function's config
 
     ;; prevent doubling of synths
@@ -448,7 +448,7 @@
     (try (o/kill ps-ringz-4ins*) (amp-trig/dereg-handler mic-1-ampt) (amp-trig/dereg-handler mic-2-ampt) (amp-trig/dereg-handler mic-3-ampt) (amp-trig/dereg-handler guitar-ampt) (catch Exception _ nil))
 
     (def ps-ringz-4ins-bus (o/audio-bus 1 "ps-ringz-4ins-bus"))
-    ;; FIXME TODO work on calibrating this with milo (params :mic-<x>-amp and :guitar-amp)
+    ;; FIXME: TODO work on calibrating this with milo (params :mic-<x>-amp and :guitar-amp)
     (def ps-ringz-4ins* (ps-ringz-4ins {:group (ringz-group :head)
                                         :mic-1 (-> @inputs :mic-1 :bus)
                                         :mic-2 (-> @inputs :mic-2 :bus)
@@ -457,7 +457,7 @@
                                         :guitar-amp 0.9
                                         :out ps-ringz-4ins-bus}))
 
-    ;; NOTE when checking triggers. Make sure to review the levels on the mic group and not on the mic input.
+    ;; NOTE: when checking triggers. Make sure to review the levels on the mic group and not on the mic input.
     ;; `:thresh` seems approximative. Sometimes off by ~0.8db.
     ;; Probably because of the way the amplitude is measured.
     (def mic-1-ampt (reg-amp-trigger {:in (-> @inputs :mic-1 :bus)
@@ -480,7 +480,7 @@
 
   (o/ctl ps-ringz-4ins* :guitar-amp 1.2)
   (o/ctl mic-1-ampt :thresh (o/db->amp -30))
-  (o/ctl mic-2-ampt :thresh (o/db->amp -30)) ;; TODO may need to change this
+  (o/ctl mic-2-ampt :thresh (o/db->amp -30)) ;; TODO: may need to change this
   (o/ctl mic-3-ampt :thresh (o/db->amp -30))
   (o/ctl guitar-ampt :thresh (o/db->amp -25))
 

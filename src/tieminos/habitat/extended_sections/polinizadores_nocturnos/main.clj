@@ -81,7 +81,7 @@
                            11/4 2})
         dur (/ (:duration buf) rate)
         amp   (* (rrand 0.01 0.25) (let [amp-norm (:amp-norm-mult buf)]
-                                   ;; TODO check and improve
+                                   ;; TODO: check and improve
                                      (cond (> amp-norm 5) (/ amp-norm 2)
                                            :else amp-norm)))]
     (-> (sample-player* {:buf buf
@@ -94,7 +94,7 @@
                          :out out}))))
 
 (do
-  ;; FIXME refactor
+  ;; FIXME: refactor
   (defn start-layers-refrain!
     [bus-name-str]
     (ref-rain
@@ -117,7 +117,7 @@
     (noche/polinizadores-nocturnos context))
 
   (def polinizadores-nocturnos-main
-    ;; TODO revisar refrains de emision hay cosas raras (aumentos de volumen y saturación del servidor)
+    ;; TODO: revisar refrains de emision hay cosas raras (aumentos de volumen y saturación del servidor)
     {:context (merge main/context {})
      :sections [[[52 22] #'polinizadores-nocturnos*]
                 [[62 10] (fn [_] (println "end"))]]
@@ -151,7 +151,7 @@
                                       (o/free-verb (lfo 0.2 0.2 1)
                                                    (lfo 0.2 0.5 1)))
                        convolver-synth (-> (o/convolution main-synth
-                                                             ;; TODO test amps
+                                                             ;; TODO: test amps
                                                           (+ (* (o/delay-n (o/mix main-synth) 0.01 0.01))
                                                              (* 0.7 (o/delay-n (o/mix main-synth) 0.02 0.02))
                                                              (* 1.5 convolver-input))

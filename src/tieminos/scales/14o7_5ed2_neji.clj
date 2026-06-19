@@ -19,10 +19,8 @@
                           #_(* 3/2 9/8)])})
 (comment
   (surge/set-scale
-    {:scale symmetric-5t-7&13
-     :scale-name (:scl/name (:meta symmetric-5t-7&13))}))
-
-
+   {:scale symmetric-5t-7&13
+    :scale-name (:scl/name (:meta symmetric-5t-7&13))}))
 
 (comment
   ;; Live tuning experiment
@@ -38,23 +36,23 @@
                                              (map #(* 3/2 15/7  %) cell)))}
         scale-size (count (:scale scale))]
     (ref-rain
-      :id :sequencer2
-      :tempo 160
-      :durs [3 2]
-      :on-event (on-event
-                  (malgo-note {:sink sink
-                               :dur 1
-                               :vel (int (* 1 (at-i [80 50 80 60 100])))
-                               :chan 6
-                               :scale-size scale-size
-                               :base-midi-deg 60
-                               :base-midi-chan 6
-                               :deg (int (+ (rand-nth [0
-                                                       (* -1 scale-size )
-                                                       (* 1/2 scale-size )])
-                                            0
-                                            (* 2 (rand-nth [0 4 4.5 7 10]))))})))
+     :id :sequencer2
+     :tempo 160
+     :durs [3 2]
+     :on-event (on-event
+                (malgo-note {:sink sink
+                             :dur 1
+                             :vel (int (* 1 (at-i [80 50 80 60 100])))
+                             :chan 6
+                             :scale-size scale-size
+                             :base-midi-deg 60
+                             :base-midi-chan 6
+                             :deg (int (+ (rand-nth [0
+                                                     (* -1 scale-size)
+                                                     (* 1/2 scale-size)])
+                                          0
+                                          (* 2 (rand-nth [0 4 4.5 7 10]))))})))
     (surge/set-scale
-      {:scale scale
-       :scale-name "dev/16t-cluster-15o7-"})
+     {:scale scale
+      :scale-name "dev/16t-cluster-15o7-"})
     scale))

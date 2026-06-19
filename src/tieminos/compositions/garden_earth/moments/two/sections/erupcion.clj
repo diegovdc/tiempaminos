@@ -90,7 +90,7 @@
            loop?]
     :or {id :erupcion/magma
          amp 1/2
-         durs-fn (fn [_] 1/5) ;; TODO might be too fast? but that was in the original
+         durs-fn (fn [_] 1/5) ;; TODO: might be too fast? but that was in the original
          a-level-fn (fn [i]
                       ;;  Incluso llegando a 10 suena muy chingon y la secuencia funciona bien
                       (wrap-at i  [3 ;; 2 3 4 5 ;; 6 7 8 9 10
@@ -198,7 +198,7 @@
                     "amp 0.5w, pastilla 3"]
       :dur/minutes dur
       :on-start (fn []
-                  ;; NOTE important setup for this section
+                  ;; NOTE: important setup for this section
                   (init-section-buses&outs!)
                   (rec-loop!
                    (merge al-interior-de-la-tierra-query
@@ -259,9 +259,9 @@
       :on-start (fn []
                   ;; grabar para posteriormente usar en refrain de lava
                   (rec-loop!
-                    (merge mvts-magmaticos-query
-                           {:dur 2
-                            :input-bus (fl-i1 :bus)}))
+                   (merge mvts-magmaticos-query
+                          {:dur 2
+                           :input-bus (fl-i1 :bus)}))
 
                   (let [rates [1 2/3 1/2]]
                     (rain-simple-playbuf
@@ -306,19 +306,19 @@
       :on-start (fn []
                   ;;  TODO quizá grabar y usar para erupción
                   #_(rec-loop!
-                      {:subsection subsection
-                       :dur 10
-                       :input-bus (fl-i1 :bus)})
+                     {:subsection subsection
+                      :dur 10
+                      :input-bus (fl-i1 :bus)})
 
-                  ;; TODO IMPORTANT free all these things
+                  ;; TODO: IMPORTANT free all these things
 
                   ;; main fx
                   (ndef-interior-del-la-tierra
-                    {:id :erupcion/mantel-plume.interior-del-la-tierra
-                     :group (groups/mid)
-                     :in (fl-i1 :bus)
-                     :out @bi-out-bus
-                     :fade-time 15})
+                   {:id :erupcion/mantel-plume.interior-del-la-tierra
+                    :group (groups/mid)
+                    :in (fl-i1 :bus)
+                    :out @bi-out-bus
+                    :fade-time 15})
 
                   (let [rates [1 2/3 1/2]]
                     (rain-simple-playbuf
@@ -335,35 +335,35 @@
                       :out (ge.route/out :rain-1)}))
 
                   (ref-rain
-                    :id :erupcion/mantel-plume.ps
-                    :durs (fn [_] (rrange 0.7 3))
-                    :on-event (on-event
-                                (delayed-ps
-                                  (delayed-ps-estratos-base-config
-                                    {:lpf 4000
-                                     :amp (rrange 0.6 1)
-                                     :amp-boost-ctl-bus (ge.route/ctl-bus (rand-nth [:exp/btn-3 :exp/btn-b]))
-                                     :ratio
-                                     (if (> 0.5 (rand))
-                                       (* (-> two.harmonies/fib rand-nth :bounded-ratio)
-                                          (weighted {1 1
-                                                     1/2 3
-                                                     11/4
-                                                     8/7
-                                                     16/11
-                                                     16/7}))
-                                       (scale/deg->freq two.harmonies/fib 1
-                                                        (at-i ps-degrees)))
+                   :id :erupcion/mantel-plume.ps
+                   :durs (fn [_] (rrange 0.7 3))
+                   :on-event (on-event
+                              (delayed-ps
+                               (delayed-ps-estratos-base-config
+                                {:lpf 4000
+                                 :amp (rrange 0.6 1)
+                                 :amp-boost-ctl-bus (ge.route/ctl-bus (rand-nth [:exp/btn-3 :exp/btn-b]))
+                                 :ratio
+                                 (if (> 0.5 (rand))
+                                   (* (-> two.harmonies/fib rand-nth :bounded-ratio)
+                                      (weighted {1 1
+                                                 1/2 3
+                                                 11/4
+                                                 8/7
+                                                 16/11
+                                                 16/7}))
+                                   (scale/deg->freq two.harmonies/fib 1
+                                                    (at-i ps-degrees)))
 
-                                     :out @bi-out-bus}))))
+                                 :out @bi-out-bus}))))
                   (fade-rev
-                    {:id :erupcion/mentel-plume.fade-rev
-                     :ins [(ge.route/fl-i1 :bus)]
-                     :out (ge.route/out :ndef-1)
-                     :amp-boost-bus (ge.route/ctl-bus :exp/btn-1)
-                     :amp-boost-min 0
-                     :amp-boost-max 1.2
-                     :amp-boost-lag 4}))
+                   {:id :erupcion/mentel-plume.fade-rev
+                    :ins [(ge.route/fl-i1 :bus)]
+                    :out (ge.route/out :ndef-1)
+                    :amp-boost-bus (ge.route/ctl-bus :exp/btn-1)
+                    :amp-boost-min 0
+                    :amp-boost-max 1.2
+                    :amp-boost-lag 4}))
 
       :handlers (merge
                  {:exp/btn-1 "toggle: fade-rev"}
@@ -424,7 +424,7 @@
                     :amp-boost-max 0.7
                     :amp-boost-lag 4}))
 
-      ;; TODO implement
+      ;; TODO: implement
       ;; :exp/pedal-1 {:description "[TODO] Vol de todo excepto rev-con-magma y exp/btn-3"}
       ;; :exp/btn-3 {:description "[TODO] humo-delay-ps ~1/1 (low-prob gliss ascedente), envs lfo-kr amp+pan"}
       :handlers (-> (lava-handlers {:ndef-magma-lava-params (fn [] {:amp (rrange 0.3 1)})})
@@ -441,7 +441,7 @@
 ;;; Lava
 ;;;;;;;;;;;;;;;;
    (let [name* :lava
-         dur 2.5 ;; TODO shorten when rest of the sections are added
+         dur 2.5 ;; TODO: shorten when rest of the sections are added
          subsection (name name*)
          rain-config {:id (keyword "erupcion" subsection)
                       :rec-query {:section "erupcion"
@@ -511,14 +511,14 @@
                                 (let [a-levels [3 2 1 (rand 0.5) (rand 0.3) (rand 0.2) (rand 0.1) (rand 0.05) (rand 0.01)]
                                       rates [1  2/3 1/2 8/7 1/3 32/11 1/2 1/4]]
                                   (rain-magma-lava
-                                    {:id ::rain-magma-lava.on-shot
-                                     :rec-query  mvts-magmaticos-query
-                                     :loop? false
-                                     :durs (map #(* 10 %) [1/5 1/5 1/4 1/4 1/3 1/2 1 3/2])
-                                     :amp 1/4
-                                     :a-level-fn (fn [i] (wrap-at i a-levels))
-                                     :rates-fn (fn [i] (wrap-at i rates))})))}))
-      ;; TODO handlers, controlar parámetros de la lava
+                                   {:id ::rain-magma-lava.on-shot
+                                    :rec-query  mvts-magmaticos-query
+                                    :loop? false
+                                    :durs (map #(* 10 %) [1/5 1/5 1/4 1/4 1/3 1/2 1 3/2])
+                                    :amp 1/4
+                                    :a-level-fn (fn [i] (wrap-at i a-levels))
+                                    :rates-fn (fn [i] (wrap-at i rates))})))}))
+      ;; TODO: handlers, controlar parámetros de la lava
       :handlers (lava-handlers
                  {:ndef-magma-lava-params (fn [] {:amp (rrange 0.7 1.5)})})
       :on-end (fn []
@@ -529,7 +529,7 @@
                 (ndef/stop :erupcion/btn-2.mantel-plume.magma-lava)
                 (ndef/stop :erupcion/erupcion.fade-rev)
                 (o/ctl @bi-out-synth-1 :gate 0)
-                ;; TODO cómo decrecer al final?
+                ;; TODO: cómo decrecer al final?
                 (let [a-levels [3 2 1 (rand 0.5) (rand 0.3) (rand 0.2) (rand 0.1) (rand 0.05) (rand 0.01)]
                       rates [1  2/3 1/2 8/7 1/3 32/11 1/2 1/4]]
                   (rain-magma-lava

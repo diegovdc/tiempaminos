@@ -29,7 +29,7 @@
                                  (o/i-rand low high)
                                  (lfo-kr 0.25 0.01 0.3))))
                   (o/free-verb (lfo-kr 0.1 0.4 0.6) (lfo-kr 0.4 0.5 0.7) (lfo-kr 0.43 0 0.9))
-                  ;; TODO put reverb in delay?
+                  ;; TODO: put reverb in delay?
                   (#(o/pan-az 4 % (lfo-kr 0.2 -1 1) :width 0.5 :orientation (lfo-kr 0.3 0 1)))
                   (* amp
                      (lfo-kr (o/i-rand 0.01 0.1) 0.4 1.3)

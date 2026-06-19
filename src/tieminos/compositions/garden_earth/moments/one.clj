@@ -6,14 +6,13 @@
    [erv.scale.core :refer [+names]]
    [overtone.core :as o]
    [taoensso.timbre :as timbre]
-   [tieminos.compositions.7D-percusion-ensamble.base :refer [bh]]
+   [tieminos.compositions.7d-percusion-ensamble.base :refer [bh]]
    [tieminos.compositions.garden-earth.analysis
     :refer [pitch-class->note-set]]
-   [tieminos.compositions.garden-earth.base :refer [base-freq
-                                                    interval-from-pitch-class2 subcps]]
-   [tieminos.compositions.garden-earth.fl-grain-1.sample-arp :refer [arp
-                                                                     arp-reponse-2
-                                                                     default-interval-seq-fn]]
+   [tieminos.compositions.garden-earth.base
+    :refer [base-freq interval-from-pitch-class2 subcps]]
+   [tieminos.compositions.garden-earth.fl-grain-1.sample-arp
+    :refer [arp arp-reponse-2 default-interval-seq-fn]]
    [tieminos.compositions.garden-earth.init :as ge.init]
    [tieminos.compositions.garden-earth.routing :as ge.route]
    [tieminos.compositions.garden-earth.synths.live-signal
@@ -32,7 +31,6 @@
     "2)4 of 3)6 9-1.5.7.11"]])
 
 (declare live-state make-repeat-cell)
-
 
 (defn simple-pattern
   [pattern pitch-class scale]
@@ -59,7 +57,7 @@
                    :converge? false}))
 
 (def arp-patterns
-  [ ;; S.0
+  [;; S.0
    [{:name (str [0 2])
      :fn #(make-repeat-cell [0 2] %1 %2 {:max-len 15})}
     {:name (str [0 -2])
@@ -70,11 +68,11 @@
      :fn #(make-repeat-cell (shuffle [6 -6 -12 -6 0 6]) %1 %2 {:max-len 9})}
     {:name ":div-conv"
      :fn #(simple-pattern
-            (make-seq-range {:len (rand-int 5)
-                             :interval (inc (rand-int 4))
-                             :down? (rand-nth [true false])
-                             :converge? (rand-nth [true false])})
-            %1 %2)}]])
+           (make-seq-range {:len (rand-int 5)
+                            :interval (inc (rand-int 4))
+                            :down? (rand-nth [true false])
+                            :converge? (rand-nth [true false])})
+           %1 %2)}]])
 
 (comment
   ((-> arp-patterns
@@ -82,11 +80,10 @@
        (nth 3)
        :fn)
    "A+92"
-   (subcps "2)4 of 3)6 11-1.5.7.9")
-   ))
+   (subcps "2)4 of 3)6 11-1.5.7.9")))
 
 (def harmonizer-harmonies
-  [ ;; S.0
+  [;; S.0
    [[0 "3)4 of 3)6 1.3.5.9"]
     [0 "1)4 of 3)6 3.9-1.5.7.11"]
     [2 "1)4 of 3)6 5.9-1.3.7.11"]
@@ -106,7 +103,7 @@
     (assoc state
            :harmonizer/harmony-index index
            :harmonizer/harmony harmony
-           :harmonizer/harmony-str (str (into [] harmony) " - " subcps-name* " on " pitch-class " " set*) )))
+           :harmonizer/harmony-str (str (into [] harmony) " - " subcps-name* " on " pitch-class " " set*))))
 (defn update-arp-pattern
   [{:keys [arp/pattern-index section] :as state}]
   (let [index (inc (or pattern-index 0))
@@ -162,16 +159,16 @@
                           :analyzer-amp 3
                           :pitch-path "/receive-pitch-5"
                           #_#_:scale-freqs-ranges (make-scale-freqs-ranges
-                                                    scale-freqs-map
-                                                    (set (map (comp :class :pitch)
-                                                              scale-1)))
+                                                   scale-freqs-map
+                                                   (set (map (comp :class :pitch)
+                                                             scale-1)))
                           :on-receive-pitch #'on-receive-pitch}))
 
 ;;;;;;;;;;;;;;;;;
 ;;; SAMPLE & Hold
 ;;;;;;;;;;;;;;;;;
 
-;; NOTE `ge-live-sig/start-signal-analyzer' should be running
+;; NOTE: `ge-live-sig/start-signal-analyzer' should be running
 
 (defn stop-sample-arp! []
   (timbre/info :stopping-arp)
@@ -204,16 +201,16 @@
             :durs [5 3 8 2 1 5]
             :ratio 1/3
             :on-event (on-event
-                        (let [{:keys [arp/scale arp/pattern]} @live-state]
-                          (arp {:bufs-atom sc.rec.v1/bufs
-                                :dur 0.5
-                                :index index
-                                :in (ge.route/fl-i1 :bus)
-                                :play-fn #_(partial #'arp-reponse-1 {:scale scale
-                                                                     :out (bh 0)})
-                                (partial #'arp-reponse-2 {:scale scale
-                                                          :interval-seq-fn (:fn pattern)
-                                                          :out (bh 2)})}))))
+                       (let [{:keys [arp/scale arp/pattern]} @live-state]
+                         (arp {:bufs-atom sc.rec.v1/bufs
+                               :dur 0.5
+                               :index index
+                               :in (ge.route/fl-i1 :bus)
+                               :play-fn #_(partial #'arp-reponse-1 {:scale scale
+                                                                    :out (bh 0)})
+                               (partial #'arp-reponse-2 {:scale scale
+                                                         :interval-seq-fn (:fn pattern)
+                                                         :out (bh 2)})}))))
   (swap! live-state assoc :arp.refrain/on? true))
 
 ;;;;;;;;;;;;;;;
@@ -235,33 +232,30 @@
                    (map (fn [d] (/ (:bounded-ratio d) root-ratio)))
                    (remove #(= 1 %)))}))
 (comment
-  (make-harmony 0 "3)4 of 3)6 1.3.5.9")
-  )
+  (make-harmony 0 "3)4 of 3)6 1.3.5.9"))
 
 (defn start-harmonizer! []
   (timbre/info :starting-harmonizer)
   (if-let [ratios (:harmonizer/harmony @live-state)]
     (do (ndef/ndef
-          ::harmonizer
-          (-> (o/sound-in (ge.route/fl-i1 :in))
-              #_(o/delay-l 1 1)
-              (o/pitch-shift 0.1 ratios)
-              ((fn [sig] (if (> (count ratios) 1) (o/mix sig) sig)))
-              (o/free-verb 0.5 3)
-              (o/pan2)
-              (* 8))
-          {:out (bh 2)})
+         ::harmonizer
+         (-> (o/sound-in (ge.route/fl-i1 :in))
+             #_(o/delay-l 1 1)
+             (o/pitch-shift 0.1 ratios)
+             ((fn [sig] (if (> (count ratios) 1) (o/mix sig) sig)))
+             (o/free-verb 0.5 3)
+             (o/pan2)
+             (* 8))
+         {:out (bh 2)})
         (swap! live-state assoc :harmonizer/on? true))
     (timbre/error "No :harmonizer/harmony found")))
 
 (comment
   (ndef/ndef
-      ::debug-signal-analyzer
-      (-> (o/sound-in (ge.route/fl-i1 :in))
-          #_(o/delay-l 1 1)
-          )
-    {:out (bh )})
-  )
+   ::debug-signal-analyzer
+   (-> (o/sound-in (ge.route/fl-i1 :in))
+       #_(o/delay-l 1 1))
+   {:out (bh)}))
 
 (comment
   (-> freq-history)
@@ -304,31 +298,31 @@
 
   ;; Pacer's TIEMI config
   (midi-in-event
-    :midi-input (get-pacer!)
-    :note-on (fn [{:keys [note]}]
-               (println note)
-               (cond
+   :midi-input (get-pacer!)
+   :note-on (fn [{:keys [note]}]
+              (println note)
+              (cond
                  ;; set section
-                 (= 2 note) (swap! live-state update :section dec)
-                 (= 3 note) (swap! live-state update :section inc)
+                (= 2 note) (swap! live-state update :section dec)
+                (= 3 note) (swap! live-state update :section inc)
                  ;; arp
-                 (and (:arp.refrain/on? @live-state)
-                      (= 4 note))
-                 (stop-sample-arp!)
+                (and (:arp.refrain/on? @live-state)
+                     (= 4 note))
+                (stop-sample-arp!)
 
-                 (= 4 note) (start-sample-arp! (sections :arp @live-state))
+                (= 4 note) (start-sample-arp! (sections :arp @live-state))
 
                  ;; arp config
-                 (= 5 note) (swap! live-state update-arp-scale-data)
-                 (= 6 note) (swap! live-state update-arp-pattern)
+                (= 5 note) (swap! live-state update-arp-scale-data)
+                (= 6 note) (swap! live-state update-arp-pattern)
 
                  ;; harmonizer
-                 (and (:harmonizer/on? @live-state)
-                      (= 7 note))
-                 (stop-harmonizer!)
+                (and (:harmonizer/on? @live-state)
+                     (= 7 note))
+                (stop-harmonizer!)
 
-                 (= 7 note) (start-harmonizer!)
-                 (= 8 note) (do
-                              (swap! live-state update-harmonizer-harmony)
-                              (when (:harmonizer/on? @live-state)
-                                (start-harmonizer!)))))))
+                (= 7 note) (start-harmonizer!)
+                (= 8 note) (do
+                             (swap! live-state update-harmonizer-harmony)
+                             (when (:harmonizer/on? @live-state)
+                               (start-harmonizer!)))))))

@@ -1,0 +1,6 @@
+* Routing
+Current quadraphonic setup is:
+
+1   2
+
+3   4

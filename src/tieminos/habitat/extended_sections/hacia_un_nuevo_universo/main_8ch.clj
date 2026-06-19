@@ -189,7 +189,7 @@
    (+ (chan-pos* chan-pos-k)
       (* pos-dif offset))))
 
-;; TODO move to panners file
+;; TODO: move to panners file
 (defn linear-path
   "Calculate `:start` and `:end` positions of a linear path with `pan-az`"
   [pos-diff ;; pan-az position differential between channels
@@ -204,7 +204,7 @@
 (linear-8ch-path (chan-pos :chan1) -8)
 
 (comment
-  ;; NOTE PanAZ 8 notes 2024-06-06
+  ;; NOTE: PanAZ 8 notes 2024-06-06
   ;; -0.125 - channel 1 - currently 1/8 to the left on the binaural
   ;; 0.125 - channel 2
   ;; 0.375 - channel 3
@@ -394,7 +394,7 @@
       (panner (merge {:in bus
                       :type :rand8
                       :out (:bus (k @preouts))
-                      ;; TODO is amp something that is wanted?
+                      ;; TODO: is amp something that is wanted?
                       :amp 0.5}
                      (k config)))
       (panner-rate (merge {:in bus
@@ -541,7 +541,7 @@
                                        :rec-input-config {:print-info? false}}))
                                    (do
                                      (timbre/info "Stopping sampler")
-                                      ;; NOTE that `::rec-loop` is never stopped
+                                      ;; NOTE: that `::rec-loop` is never stopped
                                      (reset! play-sample? false)))
 
          "/Sections/ps2-ratios-index" (let [index (first args)]
@@ -573,7 +573,7 @@
   #_(stop-panned-inputs!)
 
   (do ;; Amp triggers
-    ;; NOTE IMPORTANT do not forget to add the `add-ringz-group` `:add-custom-groups-fn`
+    ;; NOTE: IMPORTANT do not forget to add the `add-ringz-group` `:add-custom-groups-fn`
     ;; to the `init!` function's config
 
     ;; prevent doubling of synths
@@ -581,7 +581,7 @@
     (try (o/kill ps-ringz-4ins*) (amp-trig/dereg-handler mic-1-ampt) (amp-trig/dereg-handler mic-2-ampt) (amp-trig/dereg-handler mic-3-ampt) (amp-trig/dereg-handler guitar-ampt) (catch Exception _ nil))
 
     (def ps-ringz-4ins-bus (o/audio-bus 1 "ps-ringz-4ins-bus"))
-    ;; FIXME TODO work on calibrating this with milo (params :mic-<x>-amp and :guitar-amp)
+    ;; FIXME: TODO work on calibrating this with milo (params :mic-<x>-amp and :guitar-amp)
     (def ps-ringz-4ins* (ps-ringz-4ins {:group (ringz-group :head)
                                         :mic-1 (-> @inputs :mic-1 :bus)
                                         :mic-2 (-> @inputs :mic-2 :bus)
@@ -590,7 +590,7 @@
                                         :guitar-amp 0.9
                                         :out ps-ringz-4ins-bus}))
 
-    ;; NOTE when checking triggers. Make sure to review the levels on the mic group and not on the mic input.
+    ;; NOTE: when checking triggers. Make sure to review the levels on the mic group and not on the mic input.
     ;; `:thresh` seems approximative. Sometimes off by ~0.8db.
     ;; Probably because of the way the amplitude is measured.
     (def mic-1-ampt (reg-amp-trigger {:in (-> @inputs :mic-1 :bus)
@@ -610,7 +610,7 @@
                                        :thresh (o/db->amp -25)
                                        :handler-args {:in-bus ps-ringz-4ins-bus}})))
   (do ;; Amp triggers
-    ;; NOTE IMPORTANT do not forget to add the `add-ringz-group` `:add-custom-groups-fn`
+    ;; NOTE: IMPORTANT do not forget to add the `add-ringz-group` `:add-custom-groups-fn`
     ;; to the `init!` function's config
 
     ;; prevent doubling of synths
@@ -618,7 +618,7 @@
     (try (o/kill ps-ringz-4ins*) (amp-trig/dereg-handler mic-1-ampt) (amp-trig/dereg-handler mic-2-ampt) (amp-trig/dereg-handler mic-3-ampt) (amp-trig/dereg-handler guitar-ampt) (catch Exception _ nil))
 
     (def ps-ringz-4ins-bus (o/audio-bus 1 "ps-ringz-4ins-bus"))
-    ;; FIXME TODO work on calibrating this with milo (params :mic-<x>-amp and :guitar-amp)
+    ;; FIXME: TODO work on calibrating this with milo (params :mic-<x>-amp and :guitar-amp)
     (def ps-ringz-4ins* (ps-ringz-4ins {:group (ringz-group :head)
                                         :mic-1 (-> @inputs :mic-1 :bus)
                                         :mic-2 (-> @inputs :mic-2 :bus)
@@ -627,7 +627,7 @@
                                         :guitar-amp 0.9
                                         :out ps-ringz-4ins-bus}))
 
-    ;; NOTE when checking triggers. Make sure to review the levels on the mic group and not on the mic input.
+    ;; NOTE: when checking triggers. Make sure to review the levels on the mic group and not on the mic input.
     ;; `:thresh` seems approximative. Sometimes off by ~0.8db.
     ;; Probably because of the way the amplitude is measured.
     (def mic-1-ampt (reg-amp-trigger {:in (-> @inputs :mic-1 :bus)
@@ -650,7 +650,7 @@
 
   (o/ctl ps-ringz-4ins* :guitar-amp (o/db->amp 4.5)) ;; 3 - 6
   (o/ctl mic-1-ampt :thresh (o/db->amp -30))
-  (o/ctl mic-2-ampt :thresh (o/db->amp -38)) ;; TODO may need to change this
+  (o/ctl mic-2-ampt :thresh (o/db->amp -38)) ;; TODO: may need to change this
   (o/ctl mic-3-ampt :thresh (o/db->amp -20))
   (o/ctl guitar-ampt :thresh (o/db->amp -18))
 
@@ -666,7 +666,7 @@
     (declare amp-reg-ins ar)
     (try (o/kill amp-reg-ins) (o/kill ar) (catch Exception _ nil))
 
-    ;; FIXME this must be 8 channels as well as the ins
+    ;; FIXME: this must be 8 channels as well as the ins
     (def amp-regulator-ins-bus (o/audio-bus 8 "amp-regulator-ins-bus"))
     (def amp-reg-ins (amp-regulator-ins {:group (groups/fx)
                                          :guitar (routing/get-guitar-main-out)

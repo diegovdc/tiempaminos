@@ -24,7 +24,6 @@
   [data]
   (post "/garden-earth/live-state" data))
 
-
 (comment
   (post-fingering "D+24")
   (post-fingering "C#+71")
@@ -33,5 +32,4 @@
 
   (post-live-state {:s&h.refrain/on? true
                     :harmonizer/on? true
-                    :harmonizer/harmony-str (str [3/2 7/6])})
-  )
+                    :harmonizer/harmony-str (str [3/2 7/6])}))

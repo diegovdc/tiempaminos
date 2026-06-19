@@ -5,7 +5,7 @@
    [overtone.core :as o]
    [taoensso.timbre :as timbre]
    [tieminos.habitat.extended-sections.harmonies.chords :refer [fib-chord-seq
-                                                               transpose-chord]]
+                                                                transpose-chord]]
    [tieminos.habitat.extended-sections.ui.v1 :as ui.v1]
    [tieminos.habitat.init :refer [habitat-initialized? init!]]
    [tieminos.habitat.main :as main]

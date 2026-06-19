@@ -71,7 +71,7 @@
     (let [{:keys [touch-osc-state]} (edn/read-string (slurp (str presets-dir file-name)))]
       (doseq [[path args] (select-keys touch-osc-state  (keys loadable-touch-osc-params))]
         ;; Send osc data to internal receiver so that all data can be updated
-        ;; TODO selected banks are missing, but may be useful
+        ;; TODO: selected banks are missing, but may be useful
         (osc/osc-send internal-client
                       path
                       (let [format-fn (get loadable-touch-osc-params path)

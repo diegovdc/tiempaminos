@@ -64,14 +64,14 @@
                                            5 1}))
                        freq (scale/deg->freq scale base-freq deg)]
                    (when (> 0.1 (rand))
-                     ;; TODO move this to another refrain
+                     ;; TODO: move this to another refrain
                      (low  :freq (/ freq 4)
                            :mod-freq (rand-nth [2000 500 9000])
                            :amp 0.3
                            :dcy 4
                            :out (get-out :dq-highs)))
                    (when (> lvl (rand))
-                     ;; TODO better that sini? ... maybe both growing in probability
+                     ;; TODO: better that sini? ... maybe both growing in probability
                      (sharp-plate
                       :freq (* (weighted {1/8 10
                                           1/16 20

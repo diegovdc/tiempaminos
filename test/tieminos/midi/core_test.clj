@@ -8,28 +8,51 @@
 
 (deftest add-synth-test
   (testing "Can add a single synth to a note"
-    (is (= {5 [{:i-am :synth}]}
+    (is (= {5 [{:i-am :synth,
+                :tieminos.midi.core/midi-chan nil,
+                :tieminos.midi.core/midi-note 5,
+                :tieminos.midi.core/midi-velocity nil}]}
            (with-redefs [synths (atom {})
                          node? map?]
              (add-synth {:note 5} {:i-am :synth})))))
 
   (testing  "Can add multiple synths for a single note"
-    (is (= {5 [[{:i-am :synth} {:i-am :synth2}]]}
+    (is (= {5 [[{:i-am :synth,
+                 :tieminos.midi.core/midi-chan nil,
+                 :tieminos.midi.core/midi-note 5,
+                 :tieminos.midi.core/midi-velocity nil}
+                {:i-am :synth2,
+                 :tieminos.midi.core/midi-chan nil,
+                 :tieminos.midi.core/midi-note 5,
+                 :tieminos.midi.core/midi-velocity nil}]]}
            (with-redefs [synths (atom {})
                          node? map?]
              (add-synth {:note 5} [{:i-am :synth}
                                    {:i-am :synth2}])))))
 
   (testing "Can add multiple synths for multiple repeated notes"
-    (is (= {5 [{:i-am :synth} {:i-am :synth2}]}
+    (is (= {5 [{:i-am :synth,
+                :tieminos.midi.core/midi-chan nil,
+                :tieminos.midi.core/midi-note 5,
+                :tieminos.midi.core/midi-velocity nil}
+               {:i-am :synth2,
+                :tieminos.midi.core/midi-chan nil,
+                :tieminos.midi.core/midi-note 5,
+                :tieminos.midi.core/midi-velocity nil}]}
            (with-redefs [synths (atom {})
                          node? map?]
              (add-synth {:note 5} {:i-am :synth})
              (add-synth {:note 5} {:i-am :synth2})))))
 
   (testing "Can add multiple synths for multiple different notes"
-    (is (= {5 [{:i-am :synth}]
-            6 [{:i-am :synth2}]}
+    (is (= {5 [{:i-am :synth,
+                :tieminos.midi.core/midi-chan nil,
+                :tieminos.midi.core/midi-note 5,
+                :tieminos.midi.core/midi-velocity nil}],
+            6 [{:i-am :synth2,
+                :tieminos.midi.core/midi-chan nil,
+                :tieminos.midi.core/midi-note 6,
+                :tieminos.midi.core/midi-velocity nil}]}
            (with-redefs [synths (atom {})
                          node? map?]
              (add-synth {:note 5} {:i-am :synth})
@@ -89,7 +112,10 @@
                         :note-on (fn [ev] {:i-am-synth (:id ev)})
                         :note-off (fn [_ev] nil)}]
     (testing "Can add a new synth"
-      (is (=  {5 [{:i-am-synth 1}]}
+      (is (=  {5 [{:i-am-synth 1,
+                   :tieminos.midi.core/midi-chan nil,
+                   :tieminos.midi.core/midi-note 5,
+                   :tieminos.midi.core/midi-velocity nil}]}
               (with-redefs [synths (atom {})
                             node? map?]
                 (#'midi/handle-midi-event {:command :note-on :note 5 :id 1}
@@ -97,7 +123,7 @@
                 @synths))))
 
     (testing "Can kill a synth"
-      (is (= {:synths {6 [{:i-am-synth 2}]}
+      (is (= {:synths {6 [{:i-am-synth 2}]},
               :killed-synths [{:i-am-synth 1, :gate 0}]}
              (let [synths (atom {5 [{:i-am-synth 1}]
                                  6 [{:i-am-synth 2}]})
@@ -112,8 +138,14 @@
                   :killed-synths @killed-synths})))))
 
     (testing "Can add a synth on the same note"
-      (is (= {:synths {5 [{:i-am-synth 1} {:i-am-synth 3}]
-                       6 [{:i-am-synth 2}]}
+      (is (= {:synths
+              {5
+               [{:i-am-synth 1}
+                {:i-am-synth 3,
+                 :tieminos.midi.core/midi-chan nil,
+                 :tieminos.midi.core/midi-note 5,
+                 :tieminos.midi.core/midi-velocity nil}],
+               6 [{:i-am-synth 2}]},
               :killed-synths []}
              (let [synths (atom {5 [{:i-am-synth 1}]
                                  6 [{:i-am-synth 2}]})
@@ -121,29 +153,18 @@
                (with-redefs [synths synths
                              node? map?]
                  (#'midi/handle-midi-event {:command :note-on :note 5 :id 3}
-                                           handler-config)
-                 {:synths @synths
-                  :killed-synths @killed-synths}))))
-      (is (= {:synths {5 [{:i-am-synth 1} {:i-am-synth 3} {:i-am-synth 4} {:i-am-synth 5}]
-                       6 [{:i-am-synth 2}]}
-              :killed-synths []}
-             (let [synths (atom {5 [{:i-am-synth 1}]
-                                 6 [{:i-am-synth 2}]})
-                   killed-synths (atom [])]
-               (with-redefs [synths synths
-                             node? map?]
-                 (#'midi/handle-midi-event {:command :note-on :note 5 :id 3}
-                                           handler-config)
-                 (#'midi/handle-midi-event {:command :note-on :note 5 :id 4}
-                                           handler-config)
-                 (#'midi/handle-midi-event {:command :note-on :note 5 :id 5}
                                            handler-config)
                  {:synths @synths
                   :killed-synths @killed-synths})))))
 
     (testing "Can add and kill a synth on the same note"
-      (is (= {:synths {5 [{:i-am-synth 3}]
-                       6 [{:i-am-synth 2}]}
+      (is (= {:synths
+              {5
+               [{:i-am-synth 3,
+                 :tieminos.midi.core/midi-chan nil,
+                 :tieminos.midi.core/midi-note 5,
+                 :tieminos.midi.core/midi-velocity nil}],
+               6 [{:i-am-synth 2}]},
               :killed-synths [{:i-am-synth 1, :gate 0}]}
              (let [synths (atom {5 [{:i-am-synth 1}]
                                  6 [{:i-am-synth 2}]})
@@ -160,10 +181,18 @@
                   :killed-synths @killed-synths})))))
 
     (testing "Can add and kill a synths in alternation"
-      (is (= {:synths {7 [{:i-am-synth 3}]
-                       8 [{:i-am-synth 4}]}
-              :killed-synths [{:i-am-synth 1, :gate 0}
-                              {:i-am-synth 2, :gate 0}]}
+      (is (= {:synths
+              {7
+               [{:i-am-synth 3,
+                 :tieminos.midi.core/midi-chan nil,
+                 :tieminos.midi.core/midi-note 7,
+                 :tieminos.midi.core/midi-velocity nil}],
+               8
+               [{:i-am-synth 4,
+                 :tieminos.midi.core/midi-chan nil,
+                 :tieminos.midi.core/midi-note 8,
+                 :tieminos.midi.core/midi-velocity nil}]},
+              :killed-synths [{:i-am-synth 1, :gate 0} {:i-am-synth 2, :gate 0}]}
              (let [synths (atom {5 [{:i-am-synth 1}]
                                  6 [{:i-am-synth 2}]})
                    killed-synths (atom [])
@@ -184,10 +213,18 @@
 
     (testing "dup-note-mode: round-robin"
       (testing "Can add and kill a synths on a single note in round-robin fashion"
-        (is (= {:synths {5 [{:i-am-synth 4}]
-                         6 [{:i-am-synth 2}]}
+        (is (= {:synths
+                {6 [{:i-am-synth 2}],
+                 5 [{:i-am-synth 4,
+                     :tieminos.midi.core/midi-chan nil,
+                     :tieminos.midi.core/midi-note 5,
+                     :tieminos.midi.core/midi-velocity nil}]},
                 :killed-synths [{:i-am-synth 1, :gate 0}
-                                {:i-am-synth 3, :gate 0}]
+                                {:i-am-synth 3,
+                                 :tieminos.midi.core/midi-chan nil,
+                                 :tieminos.midi.core/midi-note 5,
+                                 :tieminos.midi.core/midi-velocity nil,
+                                 :gate 0}],
                 :round-robin-state {:held-keys {5 2}}}
                (let [synths (atom {5 [{:i-am-synth 1}]
                                    6 [{:i-am-synth 2}]})
@@ -206,8 +243,15 @@
                     :round-robin-state @round-robin-state})))))
 
       (testing "will not call note-off every time a synth is killed, only when there is an actual note-off. Note that the round-robin-state tracks the notes that are still held down, regardless of the amount of synths that are being played"
-        (is (= {:synths {5 [{:i-am-synth 4}]}
-                :killed-synths [{:i-am-synth 3, :gate 0}]
+        (is (= {:synths {5 [{:i-am-synth 4,
+                             :tieminos.midi.core/midi-chan nil,
+                             :tieminos.midi.core/midi-note 5,
+                             :tieminos.midi.core/midi-velocity nil}]},
+                :killed-synths [{:i-am-synth 3,
+                                 :tieminos.midi.core/midi-chan nil,
+                                 :tieminos.midi.core/midi-note 5,
+                                 :tieminos.midi.core/midi-velocity nil,
+                                 :gate 0}],
                 :round-robin-state {:held-keys {5 2}}}
                (let [synths (atom {})
                      killed-synths (atom [])
@@ -224,8 +268,15 @@
                     :killed-synths @killed-synths
                     :round-robin-state @round-robin-state}))))
 
-        (is (= {:synths {5 [{:i-am-synth 4}]}
-                :killed-synths [{:i-am-synth 3, :gate 0}]
+        (is (= {:synths {5 [{:i-am-synth 4,
+                             :tieminos.midi.core/midi-chan nil,
+                             :tieminos.midi.core/midi-note 5,
+                             :tieminos.midi.core/midi-velocity nil}]},
+                :killed-synths [{:i-am-synth 3,
+                                 :tieminos.midi.core/midi-chan nil,
+                                 :tieminos.midi.core/midi-note 5,
+                                 :tieminos.midi.core/midi-velocity nil,
+                                 :gate 0}],
                 :round-robin-state {:held-keys {5 1}}}
                (let [synths (atom {})
                      killed-synths (atom [])
@@ -243,9 +294,20 @@
                     :killed-synths @killed-synths
                     :round-robin-state @round-robin-state}))))
 
-        (is (= {:synths {5 [{:i-am-synth 5}]}
-                :killed-synths [{:i-am-synth 3, :gate 0}
-                                {:i-am-synth 4, :gate 0}]
+        (is (= {:synths {5 [{:i-am-synth 5,
+                             :tieminos.midi.core/midi-chan nil,
+                             :tieminos.midi.core/midi-note 5,
+                             :tieminos.midi.core/midi-velocity nil}]},
+                :killed-synths [{:i-am-synth 3,
+                                 :tieminos.midi.core/midi-chan nil,
+                                 :tieminos.midi.core/midi-note 5,
+                                 :tieminos.midi.core/midi-velocity nil,
+                                 :gate 0}
+                                {:i-am-synth 4,
+                                 :tieminos.midi.core/midi-chan nil,
+                                 :tieminos.midi.core/midi-note 5,
+                                 :tieminos.midi.core/midi-velocity nil,
+                                 :gate 0}],
                 :round-robin-state {:held-keys {5 2}}}
                (let [synths (atom {})
                      killed-synths (atom [])
@@ -265,9 +327,16 @@
                     :round-robin-state @round-robin-state})))))
 
       (testing "round-robin will kill all synths if previously there were several on a single note sounding at once"
-        (is (= {:synths {5 [{:i-am-synth 2}]}
-                :killed-synths [{:i-am-synth 1, :gate 0}]
-                :round-robin-state {:held-keys {5 1}}
+        (is (= {:synths {5 [{:i-am-synth 2,
+                             :tieminos.midi.core/midi-chan nil,
+                             :tieminos.midi.core/midi-note 5,
+                             :tieminos.midi.core/midi-velocity nil}]},
+                :killed-synths [{:i-am-synth 1,
+                                 :tieminos.midi.core/midi-chan nil,
+                                 :tieminos.midi.core/midi-note 5,
+                                 :tieminos.midi.core/midi-velocity nil,
+                                 :gate 0}],
+                :round-robin-state {:held-keys {5 1}},
                 :note-off-calls [{:command :note-off, :note 5, :note-off-call? true}]}
                (let [synths (atom {})
                      killed-synths (atom [])

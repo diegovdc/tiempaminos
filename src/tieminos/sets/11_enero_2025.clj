@@ -60,18 +60,20 @@
                                                    0.0002)
                                                 0.0001])
                                    :action o/FREE)))))
-(def rim (o/sample (delacreme-stacks "Rim_multirim")))
-(def bd (o/sample (delacreme-single "bd29_01_Synthdrum Pack")))
-(def bd2 (o/sample (delacreme-single "BD_Kick boom1_Kick Pack Deluxe")))
-(def hh (o/sample (delacreme-single "HH_Zildjian Avedis_V-08_s_HiHat Essentials")))
-(def hho (o/sample (delacreme-single "HH_Zildjian quick_V-01_s_HiHat Essentials")))
-(def congao (o/sample (delacreme-single "conga open_World Sounds Vol3")))
-(def conga-low (o/sample (delacreme-single "conga low open_World Sounds Vol3")))
-(def conga-high (o/sample (delacreme-single "conga high hit_World Sounds Vol3")))
-(def sd (o/sample (delacreme-single "SD_dnb_Raw Muffled Snares")))
-(st-smpl rim :out 20)
-(st-smpl bd)
-(-> sd :n-channels)
+(comment
+  (def rim (o/sample (delacreme-stacks "Rim_multirim")))
+  (def bd (o/sample (delacreme-single "bd29_01_Synthdrum Pack")))
+  (def bd2 (o/sample (delacreme-single "BD_Kick boom1_Kick Pack Deluxe")))
+  (def hh (o/sample (delacreme-single "HH_Zildjian Avedis_V-08_s_HiHat Essentials")))
+  (def hho (o/sample (delacreme-single "HH_Zildjian quick_V-01_s_HiHat Essentials")))
+  (def congao (o/sample (delacreme-single "conga open_World Sounds Vol3")))
+  (def conga-low (o/sample (delacreme-single "conga low open_World Sounds Vol3")))
+  (def conga-high (o/sample (delacreme-single "conga high hit_World Sounds Vol3")))
+  (def sd (o/sample (delacreme-single "SD_dnb_Raw Muffled Snares")))
+
+  (st-smpl rim :out 20)
+  (st-smpl bd)
+  (-> sd :n-channels))
 
 (comment
 

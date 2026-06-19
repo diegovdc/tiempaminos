@@ -2,7 +2,7 @@
   (:require
    [overtone.core :as o]
    [tieminos.habitat.extended-sections.harmonies.chords :refer [fib-chord-seq
-                                                               transpose-chord]]
+                                                                transpose-chord]]
    [tieminos.habitat.groups :as groups]
    [tieminos.habitat.init :refer [habitat-initialized? init!]]
    [tieminos.habitat.main :as main]

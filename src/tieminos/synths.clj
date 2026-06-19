@@ -1,5 +1,8 @@
 (ns tieminos.synths
-  (:require [overtone.core :as o]))
+  (:require
+   [overtone.core :as o]
+   [tieminos.overtone-extensions :as oe]
+   [tieminos.sc-utils.synths.v1 :refer [lfo]]))
 
 ;;;;;;;;;;;
 ;; Basic ;;
@@ -17,6 +20,21 @@
              (o/pan2 pan)
              (* (o/env-gen (o/env-perc atk dcy) :action o/FREE))
              (* amp (o/amp-comp-a freq)))))
+
+(oe/defsynth demo-sine
+  [freq 200
+   amp 0.5
+   out 0
+   pan 0
+   r 2
+   gate 1]
+  (o/out out
+         (-> (o/sin-osc (o/lag freq 0.2))
+             (* (o/lag2 amp 0.4)
+                (o/env-gen (o/env-asr 0.1 0.9 r)
+                           :gate gate
+                           :action o/FREE))
+             (o/pan2 (o/lag pan 0.1)))))
 
 ;;;;;;;;;;;;;;;;
 ;; Percussion ;;
@@ -182,3 +200,83 @@
 (comment
   (noise-tone :amp 1)
   (o/stop))
+
+(oe/defsynth hh2
+  [freq 100
+   amp 1
+   pan 0
+   atk 0
+   dcy 0.5
+   perc-curve -5
+   lpf-freq 6000
+   hpf-freq 6000
+   out 0]
+  (o/out out (-> (o/sin-osc (* (lfo 0.4 9000 15000)
+                               (o/sin-osc (* 7000 (o/sin-osc
+                                                   (* 800 (o/pulse freq)))))))
+                 (o/pan2 pan)
+                 (o/comb-l 0.01 (o/line 0.05 0.02 0.05) 0.4)
+                 (o/rhpf hpf-freq 0.4)
+                 (o/moog-ff lpf-freq 2.3)
+                 (* (o/env-gen (o/env-perc atk dcy :curve perc-curve) :action o/FREE))
+                 (* amp (o/amp-comp-a freq)))))
+
+(comment
+  (hh2 {:freq 100
+        :atk 0
+        :hpf-freq 6000
+        :dcy (rand-nth [0.5])
+        :mod-freq 100}))
+
+(oe/defsynth mooga
+      ;; A nice analog sounding synth by Alex Franco Briones.
+      ;; Good as a mono synth.
+  [freq 100
+   amp 0.5
+   gate 1
+   pan 0
+   detuning 0.05
+   filter-lfo-rate 0.2
+   filter-min-freq 1000
+   filter-max-freq 6000
+   q-lfo-rate 1
+   filter-mode 1
+   out 0]
+  (let [amount-hz (/ (* detuning 100) freq)
+        freq1 (- freq amount-hz)
+        freq2 (+ freq amount-hz)
+        env (o/env-gen (o/env-adsr 0.01 0.1 0.6 0.1)
+                       :gate gate
+                       :action o/FREE)
+        sig (-> (o/b-moog
+                 (o/lf-saw (o/lag [freq1 freq2] 0.075))
+                 (o/range-lin (o/sin-osc:kr filter-lfo-rate) filter-min-freq filter-max-freq)
+                 (+ 0.1 (* 0.8 (o/sin-osc:kr q-lfo-rate)))
+                 filter-mode))]
+    (o/out out
+           (-> (o/comb-n sig 0.15 [0.1 0.15] 2)
+               (* 0.4)
+               (+ (* 0.5 sig))
+               (* amp env)
+               (o/pan2 pan)
+               (o/mix)))))
+
+(comment
+  (require '[time-time.dynacan.players.gen-poly :as gp])
+  ;; wip
+  ;; 2 freqs detuning calc
+  (do
+    (o/stop)
+
+    (mooga)
+    (gp/stop)
+    (def mooga1 (mooga {:detuning 0.05
+                        :freq 400}))
+
+    (gp/ref-rain
+     :id :mooga
+     :durs [0.2]
+     :on-event (gp/on-event
+
+                (o/ctl mooga1
+                       :freq (* 300 (at-i [1 6/5 3/2])))))))

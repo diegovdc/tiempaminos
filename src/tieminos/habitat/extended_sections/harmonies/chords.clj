@@ -2,9 +2,27 @@
   (:require
    [erv.meru.core :as meru]
    [erv.scale.core :as scale]
-   [erv.utils.ratios :refer [ratios->scale]]))
+   [erv.utils.ratios :refer [ratios->scale]]
+   [taoensso.timbre :as timbre]))
 
+(comment
+  (fib-chord-seq (transpose-chord [0 6 12 18] (range 21))) ;; acorde bonito, muy liso
+  (fib-chord-seq (transpose-chord [0 4 8 12 16 20 24 28] [0 1])) ;; calido con un poco de disonancia
+  (fib-chord-seq (transpose-chord [11 15 19] (range 21))) ;; estable claro (segmento de arriba: 4-4)
+  (fib-chord-seq (transpose-chord [10 15 20] (range 21))) ;; nocturno (5-5)
+  )
+#_:clj-kondo/ignore
 (def fib-21 [{:ratio 1, :bounded-ratio 1024/987, :bounding-period 2} {:ratio 4181/4096, :bounded-ratio 4181/3948, :bounding-period 2} {:ratio 17/16, :bounded-ratio 1088/987, :bounding-period 2} {:ratio 17711/16384, :bounded-ratio 17711/15792, :bounding-period 2} {:ratio 9/8, :bounded-ratio 384/329, :bounding-period 2} {:ratio 305/256, :bounded-ratio 1220/987, :bounding-period 2} {:ratio 5/4, :bounded-ratio 1280/987, :bounding-period 2} {:ratio 323/256, :bounded-ratio 1292/987, :bounding-period 2} {:ratio 21/16, :bounded-ratio 64/47, :bounding-period 2} {:ratio 5473/4096, :bounded-ratio 5473/3948, :bounding-period 2} {:ratio 89/64, :bounded-ratio 1424/987, :bounding-period 2} {:ratio 1449/1024, :bounded-ratio 69/47, :bounding-period 2} {:ratio 377/256, :bounded-ratio 1508/987, :bounding-period 2} {:ratio 3/2, :bounded-ratio 512/329, :bounding-period 2} {:ratio 1597/1024, :bounded-ratio 1597/987, :bounding-period 2} {:ratio 13/8, :bounded-ratio 1664/987, :bounding-period 2} {:ratio 6765/4096, :bounded-ratio 2255/1316, :bounding-period 2} {:ratio 55/32, :bounded-ratio 1760/987, :bounding-period 2} {:ratio 28657/16384, :bounded-ratio 28657/15792, :bounding-period 2} {:ratio 233/128, :bounded-ratio 1864/987, :bounding-period 2} {:ratio 987/512, :bounded-ratio 2N, :bounding-period 2}])
+
+(def meta-slendro-5
+  "5 tone meta-slendro"
+  (->> {:seed [1 1 1]
+        :formula :meta-slendro}
+       (meru/recurrent-series)
+       :series
+       (drop 10)
+       (take 5)
+       (ratios->scale)))
 
 (def meta-slendro1
   "12 tone meta-slendro"
@@ -16,6 +34,16 @@
        (take 12)
        (ratios->scale)))
 
+(def meta-slendro-22
+  "22 tone meta-slendro"
+  (->> {:seed [1 1 1]
+        :formula :meta-slendro}
+       (meru/recurrent-series)
+       :series
+       (drop 10)
+       (take 22)
+       (ratios->scale)))
+
 (def meta-pelog
   "5 tone meta-pelog"
   (->> {:seed [1 1 1]
@@ -25,6 +53,62 @@
        (drop 5)
        (take 5)
        (ratios->scale)))
+
+(def meta-pelog-7
+  "7 tone meta-pelog"
+  (->> {:seed [1 1 1]
+        :formula :meta-pelog}
+       (meru/recurrent-series)
+       :series
+       (drop 5)
+       (take 7)
+       (ratios->scale)))
+
+(def meta-pelog-11
+  "11 tone meta-pelog"
+  (->> {:seed [1 1 1]
+        :formula :meta-pelog}
+       (meru/recurrent-series)
+       :series
+       (drop 5)
+       (take 11)
+       (ratios->scale)))
+
+(def meta-pelog-20
+  "20 tone meta-pelog"
+  (->> {:seed [1 1 1]
+        :formula :meta-pelog}
+       (meru/recurrent-series)
+       :series
+       (drop 5)
+       (take 20)
+       (ratios->scale)))
+
+(comment
+
+  (require '[erv.mos.v3.core :as mos]
+           '[tieminos.pitch-wheel.v1.pitch-wheel :as pitch-wheel.v1])
+
+  (->> {:seed [1 1 1]
+        :formula :meta-slendro}
+       (meru/recurrent-series))
+  (->> (mos/gen->mos-ratios 13247/10000 2 100)
+
+       (map (juxt (comp :size :meta)
+                  (comp :mos/sL-ratio.float :meta))))
+
+  ;; pitch wheel
+  (pitch-wheel.v1/init! {:id ::my-pw
+                         :scale-data
+                         {:scale (->> {:seed [1 1 1]
+                                       :formula :meta-slendro}
+                                      (meru/recurrent-series)
+                                      :series
+                                      (drop 10)
+                                      (take 22)
+                                      (ratios->scale)
+                                      ((fn [x] (println "Tones" (count x))
+                                         x)))}}))
 
 (defn rate-chord
   [scale degs]
@@ -39,3 +123,17 @@
 
 (defn transpose-chord [chord transpositions]
   (map (fn [t] (map (fn [deg] (+ t deg)) chord)) transpositions))
+
+(defn get-harmony
+  [harmony-k]
+  (case harmony-k
+    :meta-slendro-5 meta-slendro-5
+    :meta-slendro-12 meta-slendro1
+    :meta-slendro-22 meta-slendro-22
+    :fib fib-21
+    :meta-pelog-5 meta-pelog
+    :meta-pelog-7 meta-pelog-7
+    :meta-pelog-11 meta-pelog-11
+    :meta-pelog-20 meta-pelog-20
+    (do (timbre/warn "Resorting to default harmony. Something may be wrong...")
+        meta-slendro1)))

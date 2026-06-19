@@ -9,7 +9,7 @@
    [tieminos.habitat.extended-sections.hacia-un-nuevo-universo.synths
     :refer [algo-basic-pitch-shifter]]
    [tieminos.habitat.extended-sections.harmonies.chords :refer [fib-chord-seq
-                                                               transpose-chord]]
+                                                                transpose-chord]]
    [tieminos.habitat.groups :as groups]
    [tieminos.habitat.init :refer [habitat-initialized? init!]]
    [tieminos.habitat.main :as main]
@@ -21,11 +21,12 @@
     :refer [inputs main-returns percussion-processes-main-out preouts]]
    [tieminos.habitat.scratch.sample-rec2
     :refer [hacia-un-nuevo-universo-perc-refrain
-            hacia-un-nuevo-universo-perc-refrain-v1p2 hacia-un-nuevo-universo-perc-refrain-v2-scalable-durs
-            quad-router-2o rev-filter rising-upwards start-rec-loop! start-rec-loop2!
-            start-rec-loop3!]]
+            hacia-un-nuevo-universo-perc-refrain-v1p2
+            hacia-un-nuevo-universo-perc-refrain-v2-scalable-durs
+            quad-router-2o rev-filter rising-upwards start-rec-loop!
+            start-rec-loop2! start-rec-loop3!]]
    [tieminos.habitat.utils :refer [open-inputs-with-rand-pan]]
-   [tieminos.midi.core :refer [midi-in-event oxygen]]
+   [tieminos.midi.core :refer [get-oxygen! midi-in-event]]
    [tieminos.utils :refer [rrange]]
    [time-time.dynacan.players.gen-poly :as gp :refer [on-event ref-rain]]))
 
@@ -98,7 +99,7 @@
                  (gp/stop :rising-upwards-loop))]])))
 
 (def polinizadores-nocturnos
-  ;; TODO revisar refrains de emision hay cosas raras (aumentos de volumen y saturación del servidor)
+  ;; TODO: revisar refrains de emision hay cosas raras (aumentos de volumen y saturación del servidor)
   {:context (merge main/context {})
    :sections [[[52 22] #'polinizadores-nocturnos*]
               [[62 10] (fn [_] (println "end"))]]
@@ -113,7 +114,7 @@
    :sequencer/hacia-un-nuevo-universo
    context
 
-    ;; TODO coso percusivo con samples ganulados, breves y reson-eco-reverb, tal vez convlucieon
+    ;; TODO: coso percusivo con samples ganulados, breves y reson-eco-reverb, tal vez convlucieon
     ;; Siempre usar últimos sonidos tocados
     ;; Transponer siempre espectral
 
@@ -195,7 +196,7 @@
 
   (declare in1)
 
-  ;; TODO renombrar
+  ;; TODO: renombrar
   (defn hacia-un-nuevo-universo-live
     [context]
     (subsequencer
@@ -798,7 +799,7 @@
   (gp/stop)
   (def cps (cps/make 2 [1 3 5 7]))
   (midi-in-event
-   :midi-input oxygen
+   :midi-input (get-oxygen!)
    :note-on (fn [{:as event}]
               (let [vel (:velocity event)
                     note (:note event)
@@ -876,7 +877,7 @@
   (main/start-sequencer! hacia-un-nuevo-universo-impro))
 
 (comment
-  ;; TODO generar función para abrir y cerrar los micros para probar
+  ;; TODO: generar función para abrir y cerrar los micros para probar
   (reset! recording? {})
   (reset! rec/bufs {})
   (main/start-sequencer! hacia-un-nuevo-universo-impro)
