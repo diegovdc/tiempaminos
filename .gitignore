@@ -31,3 +31,4 @@ resources/*.wav
 docs/
 .clj-kondo/instaparse/
 .clj-kondo/metosin/
+.clj-kondo/hiccup/

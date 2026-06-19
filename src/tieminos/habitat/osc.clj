@@ -47,15 +47,17 @@
 
 (defn args->map [args]
   (try
-    (->> args (partition 2 2)
+    (->> args
+         (partition 2 2)
          (map (fn [[k v]]
                 {(keyword k) (cond (and (= "in" k) (string? v)) (edn/read-string v)
                                    (string? v) (keyword v)
                                    :else v)}))
          (apply merge))
-    (catch Exception _
+    (catch Exception e
       (throw (ex-info "Could not convert args to map"
-                      {:args args})))))
+                      {:args args
+                       :exception e})))))
 
 (defn map-val
   "Linearly maps a `value-key` from an `args-map` between `min*` and `max*`,

@@ -94,7 +94,6 @@
 (defn ns-kw?
   [kw-ns-str kw]
   (and (keyword? kw) (= kw-ns-str (namespace kw))))
-(-> #'my-pan)
 
 (defn analyze-arg
   [k arg]

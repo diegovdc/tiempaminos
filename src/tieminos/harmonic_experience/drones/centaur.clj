@@ -6,6 +6,7 @@
    [tieminos.harmonic-experience.drones.sounds :refer [drone drone2 harmonic]]
    [tieminos.harmonic-experience.lattice :as hexp.lattice]
    [tieminos.harmonic-experience.trainer :as hexp.trainer]
+   [tieminos.harmonic-experience.utils :as hexp.utils]
    [tieminos.midi.core :refer [get-oxygen!]]))
 
 (def root (midi->cps 48))
@@ -26,29 +27,18 @@
   "Scale modes of in the white keys:
   1 - 5-limit major ji
   7/6 - archytas ionian on white keys (starting in C) - major sounding, but with a touch of sadness/nostalgia"
-  (ratios->scale (map #(/ % 7/6) note-mappings)))
+  (ratios->scale (map #(/ % #_7/6 1) note-mappings)))
 
 (comment
   (o/stop)
   (hexp.lattice/setup-kb {:ref-note 48
                           :root root
                           :scale scale
-                          :replacements {4/3 (* 8/7 6/5)}
-                          :midi-kb (tieminos.midi.core/get-oxygen!)})
+                          :midi-kb (tieminos.midi.core/get-exquis!)})
+
   (hexp.trainer/trainer {:scale scale
                          :root (midi->cps 60)
-                         :degrees [2 4 5 7 9 0]})
+                         :degrees [0 3 10]})
   (hexp.trainer/stop)
-  (def sa (drone (* 8/7 root)))
-  (o/ctl sa :gate 0)
-  (def sa2 (drone2 root :amp 0.6))
-  (o/ctl sa2 :gate 0)
-  (def pa (drone (* 12/7 root)))
-  (o/ctl pa :gate 0)
-  (def ma (drone (* 14/18 root) :amp 0.8))
-  (o/ctl ma :gate 0)
-
-  (def h (harmonic (* root 9/8)))
-  (o/ctl h :gate 0)
-
-  (o/stop))
+  (hexp.utils/drone-box root scale [0 #_7] [1])
+  (hexp.utils/drone-box root scale []))

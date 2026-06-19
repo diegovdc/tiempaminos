@@ -5,12 +5,12 @@
    [erv.utils.conversions :as conv]
    [overtone.core :as o]
    [taoensso.timbre :as timbre]
-   [tieminos.compositions.7D-percusion-ensamble.base :refer [bh]]
-   [tieminos.compositions.garden-earth.analysis :refer [pitch-class->bounded-ratio
-                                                        pitch-class->note-set]]
+   [tieminos.compositions.7d-percusion-ensamble.base :refer [bh]]
+   [tieminos.compositions.garden-earth.analysis
+    :refer [pitch-class->bounded-ratio pitch-class->note-set]]
    [tieminos.compositions.garden-earth.base :refer [base-freq subcps]]
-   [tieminos.compositions.garden-earth.synths.live-signal :refer [freq-history
-                                                                  start-signal-analyzer]]
+   [tieminos.compositions.garden-earth.synths.live-signal
+    :refer [freq-history start-signal-analyzer]]
    [tieminos.compositions.garden-earth.web.ajax :refer [post-note-tuning]]
    [tieminos.sc-utils.ndef.v1 :as ndef]
    [tieminos.sc-utils.synths.v1 :refer [lfo-kr]]

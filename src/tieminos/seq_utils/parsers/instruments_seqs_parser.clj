@@ -9,8 +9,11 @@
 (def parser (insta/parser grammar))
 (comment
   (parser "a*2!2")
+  (parser "a*2")
   (parser "ab [ab]!2 [qqq]*2")
-  (parser "ab*3 [cd] ddd  e/2 e/4 e/5"))
+  (parser "ab*3 [cd] ddd  e/2 e/4 e/5")
+  (post-process-parsed-seq (parser "a<a[c*2]d>"))
+  (post-process-parsed-seq (parser "a<ad>")))
 
 (defn post-process-parsed-seq
   [parsed-seq]
@@ -30,8 +33,10 @@
 (declare build-play-fn)
 (defn- build-ratchet-play-fn
   [rain-data [_ sub-event [_ op] [_ times]] player-fn]
+  #_(println [rain-data [_ sub-event [_ op] [_ times]] player-fn])
   (let [times* (edn/read-string times)
         op* (if (= op "/") * /)]
+    #_(println "===========" (:dur-s rain-data) times*)
     (fn [] (rain.v2/ref-rain
             :id (random-uuid)
             :durs (repeat times*
@@ -39,6 +44,21 @@
             :loop? false
             :on-event (fn [data]
                         ((build-play-fn data sub-event player-fn)))))))
+
+(defn- build-subseq-play-fn
+  [rain-data [_ & subevents] player-fn]
+  #_(println subevents)
+  (let [durs (repeat (count subevents)
+                     (/ (:dur-s rain-data) (count subevents)))]
+    (fn []
+      (rain.v2/ref-rain
+       :id (random-uuid)
+       :durs durs
+       :loop? false
+       :on-event (fn [data]
+                   ((build-play-fn (:event data)
+                                   (nth subevents (:index (:event data)))
+                                   player-fn)))))))
 
 (defn- build-chord-play-fn
   [rain-data event player-fn]
@@ -55,6 +75,7 @@
 
   (cond
     (= :ratchet (first event)) (build-ratchet-play-fn rain-data event player-fn)
+    (= :subseq (first event))  (build-subseq-play-fn rain-data event player-fn)
     (= :chord (first event))   (build-chord-play-fn rain-data event player-fn)
     (char? (first event))      (build-element-play-fn rain-data event player-fn)
     :else                      noop))
@@ -77,9 +98,19 @@
     `(let [event# (wrap-at (:index ~'data) ~events-seq)
            player# (fn [case*] (case case*  ~@body* nil))]
        ((build-play-fn ~'data event# player#)))))
+
 (comment
   (macroexpand-1 '(evseq (str "ab" "c")
                          "a" (println "hola" (rainseq (lin 1 2 3))))))
+(defmacro evseqs [body-map & patterns]
+  (let [body (->> body-map seq (apply concat))
+        body* (into body nil)]
+    (mapv
+     (fn [pattern] `(evseq ~pattern ~@body*))
+     patterns)))
+(macroexpand-1 '(evseqs {"a" (println "hola")
+                         "b" (println "adios")}
+                        "abb"))
 
 (comment
   (require '[tieminos.seq-utils.core :refer [** choose lin rainseq] :rename {rainseq rseq}]
@@ -106,4 +137,15 @@
                                              (rseq (lin 1 2 4))
                                              (rseq (lin 2 5 2 7)))
                                     :dcy (* 1/4 (rseq [2 5 2 7 1]))
-                                    :amp (rseq (qwerty/amp "afjvlvkpv"))))))))
+                                    :amp (rseq (qwerty/amp "afjvlvkpv")))))))
+  (rain.v2/ref-rain
+   :id :evseqs-test
+   :durs [1 1]
+   :loop? true
+   :on-event (rain.v2/on-event
+              (evseqs {"a" (println "hola")
+                       "b" (println "adios")
+                       "c" (println "cccccccccc")
+                       "d" (println "d")}
+                      "a<b*2cc>"
+                      "d--"))))

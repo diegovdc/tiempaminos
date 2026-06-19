@@ -47,6 +47,8 @@
   (sort (keys (find-supersets
                (set (map :set (subcps "1)4 of 3)6 1.11-3.5.7.9"))))))
   (sort (keys (find-supersets
+               (set (map :set (subcps "2)4 of 3)6 5-1.3.9.11"))))))
+  (sort (keys (find-supersets
                #{#{7 1 11} #{1 11 9} #{1 11 5}})))
   (sort (keys (find-supersets #{#{1 11 9} #{1 11 5}})))
 

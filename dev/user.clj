@@ -9,18 +9,22 @@
    [overtone.sc.machinery.server.connection :as oc]
    [taoensso.timbre :as timbre]
    [tieminos.osc.core :refer [osc-servers stop-server]]
-   [tieminos.overtone-extensions :as oe]
-   [tieminos.scales.core :as scales]
+   #_[tieminos.overtone-extensions :as oe]
+   #_[tieminos.scales.core :as scales]
    [time-time.dynacan.players.gen-poly :as gp]))
 
-(timbre/set-level! :info)
+(set-refresh-dirs "src" "test")
+
+(defn log-level!
+  [level]
+  (timbre/set-level! level))
+
+(log-level! :info)
 
 (comment
   (repl/clear)
   ;; FIXME: Ya casi funciona solo hay que arreglar el require en tieminos.compositions.garden-earth.synths.granular
   (refresh))
-
-(set-refresh-dirs "src" "dev" "test")
 
 (defn restart []
   (doseq [[port _] @osc-servers]
@@ -123,48 +127,48 @@
         vs (map #(get arg-map % (defaults %)) ks)]
     (apply synth vs)))
 
-(defn test-4chan-surround
-  "`sound` #{:saw :white}"
-  [& {:keys [freq dur amp sound]
-      :or {freq 200
-           dur 10
-           amp 0.2
-           sound :white}}]
-  ((o/synth []
-            (let [f (mapv #(* % freq) [1 1.2 1.34 1.5])
-                  in (if (= :saw sound)
-                       (o/mix (o/saw f))
-                       (o/white-noise))]
-              (o/out 0 (* (o/env-gen (o/envelope [0 1 1 0]
-                                                 (map #(* % dur) [0.2 0.6 0.2]))
-                                     :action o/FREE)
-                          (oe/circle-az :num-channels 4
-                                        :in (* amp in)
-                                        :pos (o/lf-saw 0.2)))))))
-  :surrounding...?)
+#_(defn test-4chan-surround
+    "`sound` #{:saw :white}"
+    [& {:keys [freq dur amp sound]
+        :or {freq 200
+             dur 10
+             amp 0.2
+             sound :white}}]
+    ((o/synth []
+              (let [f (mapv #(* % freq) [1 1.2 1.34 1.5])
+                    in (if (= :saw sound)
+                         (o/mix (o/saw f))
+                         (o/white-noise))]
+                (o/out 0 (* (o/env-gen (o/envelope [0 1 1 0]
+                                                   (map #(* % dur) [0.2 0.6 0.2]))
+                                       :action o/FREE)
+                            (oe/circle-az :num-channels 4
+                                          :in (* amp in)
+                                          :pos (o/lf-saw 0.2)))))))
+    :surrounding...?)
 
-(def default-scl-dir "/Users/diego/Music/tunings/")
-(defn spit-scl
-  [{:keys [meta] :as scale-data}]
-  (if-not (:scl/name meta)
-    (throw (ex-info "`:meta :scl/name` is required" scale-data))
-    (scl/spit-file (str default-scl-dir (:scl/name meta) ".scl") scale-data)))
+#_(def default-scl-dir "/Users/diego/Music/tunings/")
+#_(defn spit-scl
+    [{:keys [meta] :as scale-data}]
+    (if-not (:scl/name meta)
+      (throw (ex-info "`:meta :scl/name` is required" scale-data))
+      (scl/spit-file (str default-scl-dir (:scl/name meta) ".scl") scale-data)))
 
-(defn scales
-  ([] (scales []))
-  ([path]
-   (if-not (seq path)
-     (var-get #'scales/scales)
-     (get-in (var-get #'scales/scales) path))))
+#_(defn scales
+    ([] (scales []))
+    ([path]
+     (if-not (seq path)
+       (var-get #'scales/scales)
+       (get-in (var-get #'scales/scales) path))))
 
-(defn scales-keys
-  [& {:keys [pprint?]}]
-  (let [data (->> (scales)
-                  (mapcat (fn [[k scales*]] (map (fn [scale-k] [k scale-k])
-                                                 (sort (keys scales*)))))
-                  (sort-by first))]
-    (when pprint? (pprint data))
-    data))
+#_(defn scales-keys
+    [& {:keys [pprint?]}]
+    (let [data (->> (scales)
+                    (mapcat (fn [[k scales*]] (map (fn [scale-k] [k scale-k])
+                                                   (sort (keys scales*)))))
+                    (sort-by first))]
+      (when pprint? (pprint data))
+      data))
 
 (def datasets-dir "/Users/diego/Music/code/tieminos-datasets")
 
@@ -185,3 +189,28 @@
   (test-sound)
   (test-4chan-surround)
   (disconnect))
+
+;;;;;;;;;;;;;;;;;;
+;; Portal
+;;;;;;;;;;;;;;;;;;
+
+(comment
+  (do
+    (require '[portal.api :as portal])
+    (def p (portal/open))
+    (add-tap #'portal/submit)
+
+    (defmacro tap
+      "For standard usage and/or thread-last"
+      ([v] (tap nil v))
+      ([k v]
+       `(doto ~v (#(tap> (with-meta % {~k true}))))))
+
+    (defmacro tapf
+      "For thread-first usage"
+      ([v] (tap nil v))
+      ([v k]
+       `(doto ~v (#(tap> (if (and ~k (coll? ~v))
+                           (with-meta % {~k true})
+                           %)))))))
+  (tap :my-map {:a 2/3}))

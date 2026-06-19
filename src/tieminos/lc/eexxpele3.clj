@@ -1,14 +1,15 @@
 (ns tieminos.lc.eexxpele3
-  #_{:clj-kondo/ignore [:unused-referred-var]}
   (:require
    [clojure.core.async :as async]
    [clojure.data.generators :refer [weighted]]
    [clojure.math :as math]
    [overtone.midi :as midi]
-   [tieminos.compositions.7D-percusion-ensamble.dreams.dream-2.utils :refer [subrain]]
+   [tieminos.compositions.7d-percusion-ensamble.dreams.dream-2.utils
+    :refer [subrain]]
    [tieminos.midi.plain-algo-note :refer [algo-note]]
-   [tieminos.osc.reaper :as reaper :refer [make-toogle-tracks-fx
-                                           unselect-all-tracks]]
+   [tieminos.osc.reaper
+    :as reaper
+    :refer [make-toogle-tracks-fx unselect-all-tracks]]
    [tieminos.osc.surge :as surge]
    [tieminos.seq-utils.core :refer [** ++ choose lin mirror rainseq xo]]
    [tieminos.seq-utils.parsers.instruments-seqs-parser :refer [evseq]]

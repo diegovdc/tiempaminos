@@ -8,6 +8,8 @@
    [taoensso.timbre :as timbre]
    [tieminos.habitat.extended-sections.harmonies.chords :refer [fib-21
                                                                 fib-chord-seq
+                                                                get-harmony
+                                                                rate-chord-seq
                                                                 transpose-chord]]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.gusanos.gusano-2-2-4 :as g-2.2.4]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.gusanos.gusano-2-2-6 :as g-2.2.6]
@@ -41,17 +43,22 @@
    (:fib-0.5.13.21-range-3.6-5step-interleaved+reverse g-2.2.4/chords)
    (:fib-multiple-interleaved g-2.2.4/chords)])
 
+(comment
+  (count (get-harmony :meta-pelog-20)))
+
+(def make-rates
+  (memoize
+   (fn [k harmony-k]
+     (let [harmony (get-harmony harmony-k)
+           chord-fn  (partial rate-chord-seq harmony)]
+       (case k
+         :s1 (let [chords (chord-fn (transpose-chord [0 5 13 21] (range 0 (* 21 6) 5)))]
+               (interleave  chords (reverse chords))))))))
+
 (defn get-rates!
   []
-  #_(-> @bardo.live-state/live-state :gusano (:rates 0) (wrap-at rates))
-  [(nth (wrap-at 0 rates) 2)]
-  (wrap-at 0 rates)
-  #_(fib-chord-seq (transpose-chord [0 5 13 21] [-9])))
-
-(->> (get-rates!)
-     first
-     first
-     (period-reduce))
+  (let [harmony-k (bardo.live-state/get-gusano-harmony!)]
+    (make-rates :s1 harmony-k)))
 
 (let [prev-index (atom 0)]
   (defn- next-rate-index! [speed]
@@ -62,11 +69,11 @@
   []
   (-> @bardo.live-state/live-state :gusano (:rates-seq-speed 1)))
 
-(def ^:private amp-multiplier (o/db->amp 12))
+(def ^:private amp-multiplier (o/db->amp 6))
 
 (defn- get-amp!
   []
-  (-> @bardo.live-state/live-state :gusano (:amp 0.6) (* amp-multiplier)))
+  (-> @bardo.live-state/live-state :gusano (:amp 0.6) (max 0.001) (* amp-multiplier)))
 
 (def ^:private periods [15 20 25 30 35 40])
 
@@ -124,18 +131,15 @@
 (defn get-buf!-2
   "A more recent version, that will only choose buffers from the active banks of the players."
   [_]
-  (let [active-sources (-> @bardo.live-state/live-state :gusano (:sources #{}))
-        input->banks (merge
-                      (when (active-sources :diego)
-                        (let [banks (bardo.live-state/get-active-banks :diego)]
-                          (->> habitat.route/diego-ins
-                               (map (fn [k] [k banks]))
-                               (into {}))))
-                      (when (active-sources :milo)
-                        (let [banks (bardo.live-state/get-active-banks :milo)]
-                          (->> habitat.route/milo-ins
-                               (map (fn [k] [k banks]))
-                               (into {})))))]
+  (let [input->banks (merge
+                      (when-let [banks (bardo.live-state/get-gusano-banks :diego)]
+                        (->> habitat.route/diego-ins
+                             (map (fn [k] [k banks]))
+                             (into {})))
+                      (when-let [banks (bardo.live-state/get-gusano-banks :milo)]
+                        (->> habitat.route/milo-ins
+                             (map (fn [k] [k banks]))
+                             (into {}))))]
 
     (if-not (seq input->banks)
       (timbre/warn "No active sources. Nothing will sound.")
@@ -275,12 +279,13 @@
                                     :end end
                                     :out out-bus
                                     :pan (rrange -1 1)}]
+
+                        (timbre/debug "Playing Gusano" (:out config))
                         (when on-play
-                          #_(println "ONPLAY")
+                          (timbre/debug "Gusano on-play" (:out config))
                           (on-play (assoc config
                                           :amp amp*
                                           :rate (float r))))
-                        (timbre/info "Playing-----" (:out config))
                         (amanecer*guitar-clouds (assoc config
                                                        :rate (float r)
                                                        :interp (rand-nth [1 2 4])
@@ -292,7 +297,7 @@
                                                          :amp (* amp* (rrange 0 0.7) (norm-amp buf)))))))))))))
 
 (def default-config
-  {:on-play (fn [& _] (println "playing"))
+  {:on-play (fn [& _] (timbre/debug "Playing gusano"))
    :id ::gusano
    :out-bus (main-returns :mixed)
    :silence-thresh 0.0

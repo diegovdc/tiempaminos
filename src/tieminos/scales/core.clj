@@ -4,10 +4,12 @@
    [clojure.string :as str]
    [erv.scale.scl :as scl]
    [taoensso.timbre :as timbre]
-   [tieminos.scales.17o7.core :as *17o7]))
+   [tieminos.scales.17o7.core :as *17o7]
+   [tieminos.scales.diffractions.meta-slendro :as diffracted-meta-slendro]))
 
 (def scales
-  {:17o7 *17o7/scales})
+  {:17o7 *17o7/scales
+   :diffracted/meta-slendro diffracted-meta-slendro/scales})
 
 (def ^:private default-scl-dir "/Users/diego/Music/tunings/")
 

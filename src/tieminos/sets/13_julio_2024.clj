@@ -2,13 +2,12 @@
   (:require
    [clojure.data.generators :refer [weighted]]
    [overtone.core :as o]
-   [tieminos.compositions.7D-percusion-ensamble.base :refer [bh]]
+   [tieminos.compositions.7d-percusion-ensamble.base :refer [bh]]
    [tieminos.overtone-extensions :as oe]
    [tieminos.sc-utils.groups.v1 :as groups]
    [tieminos.sc-utils.ndef.v1 :as ndef]
    [tieminos.sc-utils.synths.v1 :refer [lfo-kr]]
-   [time-time.dynacan.players.gen-poly :refer [on-event ref-rain]]
-   [time-time.dynacan.players.gen-poly :as gp]
+   [time-time.dynacan.players.gen-poly :as gp :refer [on-event ref-rain]]
    [time-time.standard :refer [rrand]]))
 
 (defn load-sample [filename] (o/load-sample (str "/Users/diego/Music/diego/rossana+videco/concierto_13_julio_2024/Media/" filename)))

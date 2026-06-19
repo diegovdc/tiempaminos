@@ -1,6 +1,7 @@
 (ns tieminos.sc-utils.groups.v1
   (:require
-   [overtone.core :as o]))
+   [overtone.core :as o]
+   [taoensso.timbre :as timbre]))
 
 (defonce groups (atom {}))
 
@@ -19,14 +20,16 @@
         fx (o/group "fx" :after late)
         post-fx (o/group "post-fx" :after fx)
         output-rec (o/group "output-rec" :after late)]
-    (reset! groups
-            {:main main
-             :early early
-             :mid mid
-             :late late
-             :fx fx
-             :post-fx post-fx
-             :output-rec output-rec})))
+    (if (seq @groups)
+      (timbre/warn "sc-utils.groups.v1 already initialized")
+      (reset! groups
+              {:main main
+               :early early
+               :mid mid
+               :late late
+               :fx fx
+               :post-fx post-fx
+               :output-rec output-rec}))))
 
 (comment
   (init-groups!))

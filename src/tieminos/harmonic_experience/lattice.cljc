@@ -5,6 +5,7 @@
    [erv.lattice.v2 :refer [base-coords ratios->lattice-data]]
    [erv.utils.conversions :as conv]
    [erv.utils.core :refer [round2]]
+   [overtone.core :as o]
    [quil.core :as q]
    [tieminos.harmonic-experience.drones.sounds :refer [harmonic]]
    [tieminos.harmonic-experience.utils :refer [intervals midi->ratio&freq]]
@@ -111,16 +112,19 @@
 (defonce lattice-sketch-atom (atom nil))
 
 (defn draw-lattice2
-  [ratios lattice-size]
+  [ratios lattice-size
+   & {:as lattice-config}]
   (if @lattice-sketch-atom
     (lattice.v1/update-ratios! @lattice-sketch-atom ratios)
     (reset! lattice-sketch-atom
             (lattice.v1/draw-lattice
-             {:id "Harmonic Experience Lattice"
-              :ratios ratios
-              :width (* 16 lattice-size)
-              :height (* 9 lattice-size)
-              :on-close (fn [] (reset! lattice-sketch-atom nil))})))
+             (merge {:id "Harmonic Experience Lattice"
+                     :frame-rate 10
+                     :ratios ratios
+                     :width (* 16 lattice-size)
+                     :height (* 9 lattice-size)
+                     :on-close (fn [] (reset! lattice-sketch-atom nil))}
+                    lattice-config))))
   lattice-sketch-atom)
 (comment
   (-> @lattice-sketch-atom))
@@ -139,6 +143,15 @@
   [ratio]
   (swap! played-ratios set/difference #{ratio}))
 
+(defn reset-played-notes!
+  []
+  (swap! lattice-sketch-atom update :played-notes
+         (fn [m]
+           (->> m
+                (mapv (fn [[k _v]] [k ()]))
+                (into {}))))
+  true)
+
 (defn- replace-notes
   [replacement-ratios-map
    scale]
@@ -151,10 +164,20 @@
                    :ratio replacement)
             note)))))
 
+(defn- play-sound [freq ev]
+  (println "vel" (:velocity ev))
+  (let [max-vel 110
+        vel (min max-vel (:velocity ev))]
+    (harmonic freq
+              :amp (linexp* 0 max-vel 0.1 0.9 vel)
+              :a 0.1
+              :curve 2)))
+
 (defn setup-kb
   [{:keys [midi-kb ref-note root scale lattice? lattice-size
            stroke-width note-color sound? on-note-on
-           replacements]
+           replacements
+           lattice-config]
     :or {lattice? true
          lattice-size 120
          stroke-width 10
@@ -165,7 +188,7 @@
                                                   :root root
                                                   :scale scale*
                                                   :midi-note (:note ev)}))
-        lattice-atom (when lattice? @(draw-lattice2 (map :bounded-ratio scale*) lattice-size))]
+        lattice-atom (when lattice? @(draw-lattice2 (map :bounded-ratio scale*) lattice-size lattice-config))]
 
     (add-watch played-ratios ::print-intervals
                (fn [_ _ _ new-val]
@@ -184,12 +207,10 @@
 
                     (println (:note ev) ratio (round2 2 (conv/ratio->cents ratio)))
                     (add-played-absolute-ratio absolute-ratio)
-                    (when on-note-on
-                      (on-note-on {:ratio ratio :absolute-ratio absolute-ratio}))
-                    (when sound?
-                      (harmonic freq
-                                :amp (linexp* 0 127 0.1 3 (:velocity ev))
-                                :a 5))))
+                    (when on-note-on (on-note-on {:ratio ratio :absolute-ratio absolute-ratio}))
+                    (when sound? (play-sound freq ev))))
+       :mpe {:z (fn [synth val]
+                  (o/ctl synth :amp (linexp* 0 127 0.1 1 val)))}
        :note-off (fn [ev]
                    (let [{:keys [ratio absolute-ratio]} (get-note-data ev)]
                      (when lattice? (remove-played-ratio lattice-atom {:ratio ratio, :group-id ::note}))

@@ -1,8 +1,8 @@
 {;; :skip-comments true ;; may have the sideeffect of removing requires of things only used in comments
  :linters {:unresolved-symbol {:exclude [(time-time.dynacan.players.refrain.v2/on-event
-                                          [at-index index dur dur-s at-i i data])
+                                          [at-index index dur dur-s at-i i data dur-ms])
                                          (time-time.dynacan.players.gen-poly/on-event
-                                          [at-index index dur dur-s at-i i data])
+                                          [at-index index dur dur-s at-i i data dur-ms])
                                          (tieminos.compositions.garden-earth.base/on-event
                                           [at-index index dur dur-s at-i i])]}
            :unresolved-var [overtone.core]

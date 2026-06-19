@@ -17,22 +17,28 @@
   (throw "Implement me"))
 
 (do
+  (defn linlin*
+    ([in-min in-max out-min out-max x]
+     (let [in-range (- in-max in-min)
+           out-range (- out-max out-min)]
+       (->  (/ (- x in-min) in-range)
+            (* out-range)
+            (+ out-min)))))
+
   (defn linlin
     "Linear to linear scaling"
     ([out-min out-max nums]
      (linlin (apply min nums) (apply max nums) out-min out-max nums))
 
     ([in-min in-max out-min out-max nums]
-     (let [in-range (- in-max in-min)
-           out-range (- out-max out-min)]
-       (map #(-> % (* out-range) (+ out-min))
-            (map #(/ (- % in-min) in-range) nums)))))
+     (map #(linlin* in-min in-max out-min out-max %) nums)))
 
   (= (mapv float (linlin 1 5 1 3 [1 2 3 4 5]))
-     [1.0, 1.5, 2.0, 2.5, 3.0]))
+     [1.0, 1.5, 2.0, 2.5, 3.0])
 
-(comment
-  (mapv float (linlin 5 0.5 1 3 [1 2 3 4 5])))
+  (comment
+    (= (map #(linlin* 5 0.5 1 3 %) [1 2 3 4 5])
+       (linlin 5 0.5 1 3 [1 2 3 4 5]))))
 
 (defn linexp*
   "Linear to exponential scaling"

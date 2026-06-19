@@ -135,7 +135,8 @@
 
   (->> scale
        (ratios->scale 3))
-  ;;
+
+  ;; this does not work anymore, see file for usage
   (def pw-atom (pitch-wheel.v1/init! {:scale (ratios->scale 3 scale)
                                       :period 3}))
 

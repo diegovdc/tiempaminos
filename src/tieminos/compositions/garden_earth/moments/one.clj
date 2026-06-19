@@ -6,14 +6,13 @@
    [erv.scale.core :refer [+names]]
    [overtone.core :as o]
    [taoensso.timbre :as timbre]
-   [tieminos.compositions.7D-percusion-ensamble.base :refer [bh]]
+   [tieminos.compositions.7d-percusion-ensamble.base :refer [bh]]
    [tieminos.compositions.garden-earth.analysis
     :refer [pitch-class->note-set]]
-   [tieminos.compositions.garden-earth.base :refer [base-freq
-                                                    interval-from-pitch-class2 subcps]]
-   [tieminos.compositions.garden-earth.fl-grain-1.sample-arp :refer [arp
-                                                                     arp-reponse-2
-                                                                     default-interval-seq-fn]]
+   [tieminos.compositions.garden-earth.base
+    :refer [base-freq interval-from-pitch-class2 subcps]]
+   [tieminos.compositions.garden-earth.fl-grain-1.sample-arp
+    :refer [arp arp-reponse-2 default-interval-seq-fn]]
    [tieminos.compositions.garden-earth.init :as ge.init]
    [tieminos.compositions.garden-earth.routing :as ge.route]
    [tieminos.compositions.garden-earth.synths.live-signal

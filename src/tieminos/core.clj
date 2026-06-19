@@ -20,6 +20,9 @@
     (stop-server port))
   (repl/refresh))
 
+(defn refresh []
+  (repl/refresh))
+
 #_:clj-kondo/ignore
 (defn init-garden-earth! []
   (in-ns 'erv-fib-synth.compositions.garden-earth.core))

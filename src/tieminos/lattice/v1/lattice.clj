@@ -77,12 +77,13 @@
            height
            text-type
            custom-edges ;; a set of ratios that should also be connected, i.e. #{17/7}
-           on-close]
+           on-close
+           frame-rate]
     :or {width 1300
          height 800
          on-close (fn [])
          text-type :ratios ;; #{:factors :ratios}
-         }}]
+         frame-rate 24}}]
   (let [ratios (if scale-data
                  (->> scale-data :scale (map :bounded-ratio))
                  ratios)
@@ -114,7 +115,7 @@
                             :settings #(q/smooth 80)
                             :setup (fn []
                                      #_(q/pixel-density 2)
-                                     (q/frame-rate 24))
+                                     (q/frame-rate frame-rate))
                             :draw (#'draw (atom text-type) width height lattice-data)
                             :on-close (fn []
                                         (when id (swap! lattices dissoc id))

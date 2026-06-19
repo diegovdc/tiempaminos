@@ -3,20 +3,28 @@
    [clojure.data.generators :refer [weighted]]
    [overtone.core :as o]
    [taoensso.timbre :as timbre]
-   [tieminos.compositions.7D-percusion-ensamble.base :refer [bh]]
+   [tieminos.compositions.7d-percusion-ensamble.base :refer [bh]]
    [tieminos.compositions.garden-earth.base :refer [eik subcps]]
-   [tieminos.compositions.garden-earth.fl-grain-1.sample-arp :refer [arp-reponse-2
-                                                                     default-interval-seq-fn]]
+   [tieminos.compositions.garden-earth.fl-grain-1.sample-arp
+    :refer [arp-reponse-2 default-interval-seq-fn]]
    [tieminos.compositions.garden-earth.init :as ge.init]
-   [tieminos.compositions.garden-earth.moments.two.async-sequencer :as aseq]
-   [tieminos.compositions.garden-earth.moments.two.interface :as two.interface]
+   [tieminos.compositions.garden-earth.moments.two.async-sequencer
+    :as aseq]
+   [tieminos.compositions.garden-earth.moments.two.interface
+    :as two.interface]
    [tieminos.compositions.garden-earth.moments.two.live-state :as two.ls]
-   [tieminos.compositions.garden-earth.moments.two.rec :refer [start-rec-loop!]]
-   [tieminos.compositions.garden-earth.moments.two.sections.erupcion :as erupcion]
-   [tieminos.compositions.garden-earth.moments.two.sections.fondo-oceanico :as fondo-oceanico]
-   [tieminos.compositions.garden-earth.moments.two.sections.formacion-terrestre :as formacion-terrestre]
-   [tieminos.compositions.garden-earth.moments.two.sections.totalidad :as totalidad]
-   [tieminos.compositions.garden-earth.moments.two.synths :refer [buf-mvts-subterraneos]]
+   [tieminos.compositions.garden-earth.moments.two.rec
+    :refer [start-rec-loop!]]
+   [tieminos.compositions.garden-earth.moments.two.sections.erupcion
+    :as erupcion]
+   [tieminos.compositions.garden-earth.moments.two.sections.fondo-oceanico
+    :as fondo-oceanico]
+   [tieminos.compositions.garden-earth.moments.two.sections.formacion-terrestre
+    :as formacion-terrestre]
+   [tieminos.compositions.garden-earth.moments.two.sections.totalidad
+    :as totalidad]
+   [tieminos.compositions.garden-earth.moments.two.synths
+    :refer [buf-mvts-subterraneos]]
    [tieminos.compositions.garden-earth.routing :refer [fl-i1]]
    [tieminos.habitat.amp-trigger :as amp-trig]
    [tieminos.habitat.recording :as habitat.rec]

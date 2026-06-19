@@ -30,10 +30,12 @@
   [track vol]
   (osc/osc-send @osc-client (format "/track/%s/volume" track) (float vol)))
 
+(def zero-db 0.7158)
+
 (def reaper-db {:-inf 0
                 -6 0.59
                 -3 0.649
-                0 0.7158
+                0 zero-db
                 3 0.79
                 6 0.86})
 
@@ -49,6 +51,11 @@
   "Set automation mode to trim"
   [track]
   (osc/osc-send @osc-client (format "/track/%s/autotrim" track)))
+
+(defn set-autoread
+  "Set automation mode to trim"
+  [track]
+  (osc/osc-send @osc-client (format "/track/%s/autoread" track)))
 
 (defn set-autowrite
   "Set automation mode to write"
