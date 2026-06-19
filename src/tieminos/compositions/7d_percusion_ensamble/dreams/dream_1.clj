@@ -21,17 +21,19 @@
 (def m1-vibes (bh 0))
 (def m2-vibes (bh 2))
 (def bass (bh 4))
-;; midi
 
-(def suave-m1 (midi/midi-out "Bus 1"))
-(def suave-m2 (midi/midi-out "Bus 2"))
-(def suave-bass (midi/midi-out "Bus 3"))
-(def suave-mod (midi/midi-out "Bus 4"))
-(def pbell (midi/midi-out "Bus 5"))
-(def pbell-mod (midi/midi-out "Bus 6"))
-(def sc-m1 (midi/midi-out "Bus 7"))
-(def sc-m2 (midi/midi-out "Bus 8"))
-(def sc-bass (midi/midi-out "Bus 9"))
+(comment
+  ;; midi
+  (do
+    (def suave-m1 (midi/midi-out "Bus 1"))
+    (def suave-m2 (midi/midi-out "Bus 2"))
+    (def suave-bass (midi/midi-out "Bus 3"))
+    (def suave-mod (midi/midi-out "Bus 4"))
+    (def pbell (midi/midi-out "Bus 5"))
+    (def pbell-mod (midi/midi-out "Bus 6"))
+    (def sc-m1 (midi/midi-out "Bus 7"))
+    (def sc-m2 (midi/midi-out "Bus 8"))
+    (def sc-bass (midi/midi-out "Bus 9"))))
 
 ;; TODO: first two sections (tentatively)
 ;; TODO: define different stereo outputs for the different instruments
