@@ -1,3 +1,4 @@
+#+title: Tieminos
 
 * MIDI
 ** MIDI controller template
@@ -62,3 +63,27 @@ Sustain a note or notes until they change. Useful within a loop (refrain) to pre
   (legato/multi :my-chord {1 {:inst drone :params {:freq (* root 2)}}})
   (legato/multi :my-chord {})
 #+end_src
+* Synthdefs
+** Tips
+When writting macros this ~ns~ gives access to the ugen operators
+#+BEGIN_SRC clojure
+[overtone.sc.ugen-collide-list :as oc]
+#+END_SRC
+
+My current music workshop, all my clojure code-music creation since mid-2021 lives here.
+
+Mainly uses ~Supercollider~ via ~Overtone~, my microtonality library [[https://github.com/diegovdc/erv][erv]] and my sequencing library [[https://github.com/diegovdc/time-tiem][time-tiem]].
+
+* License
+
+This program and the accompanying materials are made available under the
+terms of the Eclipse Public License 2.0 which is available at
+http://www.eclipse.org/legal/epl-2.0.
+
+This Source Code may also be made available under the following Secondary
+Licenses when the conditions for such availability set forth in the Eclipse
+Public License, v. 2.0 are satisfied: GNU General Public License as published by
+the Free Software Foundation, either version 2 of the License, or (at your
+option) any later version, with the GNU Classpath Exception which is available
+at https://www.gnu.org/software/classpath/license.html.
+
