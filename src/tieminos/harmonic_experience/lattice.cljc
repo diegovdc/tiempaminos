@@ -3,10 +3,11 @@
    [clojure.set :as set]
    [clojure.string :as str]
    [erv.lattice.v2 :refer [base-coords ratios->lattice-data]]
-   [erv.utils.conversions :as conv]
+   [erv.utils.conversions :as conv :refer [midi->cps]]
    [erv.utils.core :refer [round2]]
    [overtone.core :as o]
    [quil.core :as q]
+   [taoensso.timbre :as timbre]
    [tieminos.harmonic-experience.drones.sounds :refer [harmonic]]
    [tieminos.harmonic-experience.utils :refer [intervals midi->ratio&freq]]
    [tieminos.lattice.v1.lattice :as lattice.v1 :refer [add-played-ratio
@@ -164,25 +165,29 @@
                    :ratio replacement)
             note)))))
 
-(defn- play-sound [freq ev]
-  (println "vel" (:velocity ev))
+(defn- play-sound [ev freq out]
   (let [max-vel 110
         vel (min max-vel (:velocity ev))]
+    (timbre/debug {:freq freq :vel (:velocity ev)})
     (harmonic freq
               :amp (linexp* 0 max-vel 0.1 0.9 vel)
               :a 0.1
-              :curve 2)))
+              :curve 2
+              :out out)))
 
 (defn setup-kb
   [{:keys [midi-kb ref-note root scale lattice? lattice-size
            stroke-width note-color sound? on-note-on
            replacements
-           lattice-config]
-    :or {lattice? true
+           lattice-config out]
+    :or {ref-note 60
+         root (midi->cps 60)
+         lattice? true
          lattice-size 120
          stroke-width 10
          note-color [200 200 120]
-         sound? true}}]
+         sound? true
+         out 0}}]
   (let [scale* (replace-notes replacements scale)
         get-note-data (fn [ev] (midi->ratio&freq {:ref-note ref-note
                                                   :root root
@@ -208,7 +213,7 @@
                     (println (:note ev) ratio (round2 2 (conv/ratio->cents ratio)))
                     (add-played-absolute-ratio absolute-ratio)
                     (when on-note-on (on-note-on {:ratio ratio :absolute-ratio absolute-ratio}))
-                    (when sound? (play-sound freq ev))))
+                    (when sound? (play-sound ev freq out))))
        :mpe {:z (fn [synth val]
                   (o/ctl synth :amp (linexp* 0 127 0.1 1 val)))}
        :note-off (fn [ev]

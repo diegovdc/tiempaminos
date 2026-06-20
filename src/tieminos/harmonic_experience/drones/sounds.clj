@@ -13,8 +13,9 @@
 (o/defsynth drone
   [freq 130
    amp 1
-   gate 1]
-  (o/out 0
+   gate 1
+   out 0]
+  (o/out out
          (-> (map #(* (lfo (o/n-rand 0.5 1.2) 0.2 0.6)
                       (o/sin-osc (* % freq)))
                   [1 2 3 4 5 6 7 8 9 11 13 15])
@@ -31,8 +32,9 @@
    s 1
    r 2
    curve 0
-   gate 1]
-  (o/out 0
+   gate 1
+   out 0]
+  (o/out out
          (-> (* 0.7 #_(lfo 0.6 0.2 0.6) (o/mix (o/sin-osc
                                                 [freq
                                                  (* 2 freq)

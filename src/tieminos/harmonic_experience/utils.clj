@@ -1,6 +1,7 @@
 (ns tieminos.harmonic-experience.utils
   (:require
    [erv.scale.core :as scale :refer [interval->ratio]]
+   [erv.utils.conversions :refer [midi->cps]]
    [erv.utils.core :refer [interval]]
    [taoensso.timbre :as timbre]
    [tieminos.harmonic-experience.drones.sounds :refer [drone]]
@@ -47,18 +48,28 @@
 (def midi->ratio&freq #'midi->ratio&freq*)
 
 (defn drone-box
-  ([root scale degrees] (drone-box root scale degrees [0.5]))
-  ([root scale degrees amps]
+  ([{:keys [root scale degrees amps out]
+     :or {root (midi->cps 60)
+          amps [0.7]
+          out 0}}]
    (let [config (->> degrees
                      (map-indexed (fn [i deg] (let [ratio (:bounded-ratio (wrap-at deg scale))]
-                                                {deg {:inst drone :params {:freq (* root ratio)
-                                                                           :amp (wrap-at i amps)} :ratio ratio}})))
+                                                {deg {:inst drone
+                                                      ::ratio ratio
+                                                      :params {:freq (* root ratio)
+                                                               :amp (wrap-at i amps)
+                                                               :out out}}})))
                      (apply merge))]
-     (timbre/info "Drone Box ratios:" (sort (map :ratio (vals config))))
+     (timbre/info "Drone Box ratios:" (sort (map ::ratio (vals config))))
      (legato/multi :drone-box config))))
+
+(defn stop-drone-box
+  []
+  (timbre/info "Stopping Drone Box")
+  (legato/multi-stop :drone-box))
 
 (comment
   (require '[erv.utils.ratios :refer [ratios->scale]])
   (def scale (ratios->scale [1 5/4 3/2 15/8]))
-  (drone-box 200 scale [0 2] [0.4 0.4])
-  (drone-box 200 scale []))
+  (drone-box {:root 200 :scale scale :degrees [0 2] :amps [0.4 0.4]})
+  (stop-drone-box))

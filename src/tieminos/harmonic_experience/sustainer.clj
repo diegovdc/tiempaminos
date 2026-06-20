@@ -72,3 +72,6 @@
      (swap! state assoc-in path ids)
      (doseq [id ids-to-stop] (stop! id))
      (doseq [[id play-data] play-map] (play! id play-data)))))
+
+(defn multi-stop [chord-id]
+  (multi chord-id {}))

@@ -1,6 +1,6 @@
 (ns tieminos.harmonic-experience.trainer
   (:require
-   [erv.utils.conversions :as conv]
+   [erv.utils.conversions :as conv :refer [midi->cps]]
    [erv.utils.core :refer [interval round2]]
    [overtone.core :as o]
    [taoensso.timbre :as timbre]
@@ -35,8 +35,12 @@
   [{:keys [root
            scale
            degrees
-           lattice?]
-    :or {lattice? true}}]
+           lattice?
+           out]
+    :or {root (midi->cps 60)
+         lattice? true
+         out 0}}]
+  (timbre/info "Starting trainer")
   (let [last-interval (atom '(1 1))]
     (ref-rain
      :id ::trainer
@@ -58,6 +62,7 @@
                      interval*
                      (round2 2 (conv/ratio->cents interval*))
                      "\n")
+        (timbre/debug {:freq freq :ratio (:bounded-ratio note) :root root})
         (when lattice?
           (let [lattice-atom (get-lattice-atom!)]
             (add-played-ratio lattice-atom {:ratio (:ratio note)
@@ -76,8 +81,9 @@
          :r r
          :pan (rrange -0.5 0.5)
          :amp (rrange 0.4 0.8)
-         :out 0))))))
+         :out out))))))
 
 (defn stop []
   (gp/stop ::trainer)
+  (timbre/info "Starting trainer")
   (remove-all-played-ratios (get-lattice-atom!)))
