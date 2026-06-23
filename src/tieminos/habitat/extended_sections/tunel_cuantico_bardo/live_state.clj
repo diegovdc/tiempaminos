@@ -563,16 +563,11 @@
                                 (str path* "-visible") [(osc-bool visible?)]})))
                       (apply merge))]
 
-    (doseq [[path v] osc-msgs] (apply bardo.osc-helpers/send-osc-msg path v))
-
-    (swap! live-state
-           (fn [state]
-             (-> state
-                 (assoc-in (selected-synth-bank-path player :filter-configs active-filter)
-                           current-config)
-                 (update-in (selected-synth-bank-path player :touch-osc-data)
-                            merge
-                            osc-msgs))))
+    (doseq [[path v] osc-msgs]
+      (apply bardo.osc-helpers/send-osc-msg path v)
+      ;; set params values via `osc-responder`
+      (when-not (str/ends-with? path "-visible")
+        (apply bardo.osc-helpers/send-osc-msg-to-self path v)))
     nil))
 
 (defn set-active-filter
@@ -1023,15 +1018,12 @@
                          "/%s/panner-manual-group" [0],
                          "/%s/panner-lissajous-group" [0],
                          "/%s/panner-arrows-group" [0],
-                         "/%s/filter-q-fader" [0.0],
                          "/%s/panner-label" ["random"],
-                         "/%s/filter-lpf-fader" [1.0],
                          "/%s/toggle-harmonic-voice/1" '("on" 1 "index" 1),
                          "/%s/filter-hpf-fader-visible" [0],
                          "/%s/toggle-harmonic-voice/0" '("on" 1 "index" 0),
                          "/%s/clouds-rhythm-radio" '(0),
                          "/%s/toggle-harmonic-voice/2" '("on" 1 "index" 2),
-                         "/%s/filter-hpf-fader" [1.0],
                          "/%s/harmonic-highest-note" '(0.5190911),
                          "/%s/clouds-sample-lib-size-radio" '(0),
                          "/%s/clouds-active-btn" '(0.0),
@@ -1043,7 +1035,6 @@
                          "/%s/filter-q-fader-visible" [0],
                          "/%s/clouds-env-radio" '(0),
                          "/%s/filter-label" ["none"],
-                         "/%s/filter-reso-fader" [0.0]
                          "/%s/independent-sequencer-btn" [1.0]
                          "/%s/max-dur-fader" [1.0]}
                         (map (fn [[k v]] [(format k player) v]))
@@ -1056,6 +1047,7 @@
    :harmonic-range {:low -1, :high -1}})
 
 (def default-touch-osc-state
+  ;; TODO: most of this can be moved to the function above (all the path relative to a synth configuration)
   (->> {"/Milo/bank1-active-label-visible" '(0),
         "/Milo/bank2-active-label-visible" '(0),
         "/Milo/bank3-active-label-visible" '(0),

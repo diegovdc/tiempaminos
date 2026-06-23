@@ -32,3 +32,8 @@
   [path & values]
   (update-clients @habitat-osc/receiver-clients path values)
   {:path path :value values})
+
+(defn send-osc-msg-to-self
+  [path & values]
+  (update-clients {:internal @habitat-osc/internal-client} path values)
+  {:path path :value values})

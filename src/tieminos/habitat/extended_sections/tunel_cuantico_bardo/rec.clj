@@ -6,7 +6,7 @@
    [taoensso.timbre :as timbre]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.live-state :refer [live-state]]
    [tieminos.habitat.recording :refer [bufs rec-input]]
-   [time-time.dynacan.players.gen-poly :refer [on-event ref-rain]]))
+   [time-time.dynacan.players.gen-poly :as gp :refer [on-event ref-rain]]))
 
 (def section-name "gusano-cuantico-bardo")
 
@@ -43,6 +43,10 @@
                             :print-info? false
                             :countdown countdown
                             :on-rec-start on-rec-start})))))
+
+(defn stop-rec-loop!
+  [id]
+  (gp/stop id))
 
 (defn get-buf
   ;; FIXME: get lib-size from each bank

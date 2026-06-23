@@ -520,8 +520,8 @@
   (reaper/init)
   (habitat-osc/make-reaper-osc-client)
   (habitat-osc/make-receiver-clients clients)
-  (let [internal-client (habitat-osc/make-internal-osc-client)]
-    (habitat-osc/responder #'osc-responder)))
+  (habitat-osc/make-internal-osc-client)
+  (habitat-osc/responder #'osc-responder))
 
 (comment
   (remove-watch bardo.live-state/live-state ::post-live-state))
