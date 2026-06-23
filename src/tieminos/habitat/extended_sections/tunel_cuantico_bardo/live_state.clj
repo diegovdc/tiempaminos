@@ -841,6 +841,11 @@
      (if low? :harmonic-lowest-note :harmonic-highest-note)
      (get-in state-data (conj path (if low? :low :high))))))
 
+(defn set-harmonic-voice-convergence-point
+  [{:keys [player value]}]
+  (let [path (selected-synth-bank-path player :harmonic-convergence-point)]
+    (swap! live-state assoc-in path value)))
+
 (defn set-active-harmonic-voice
   [{:keys [player voice-index on?]}]
   (swap! live-state update-in
@@ -1045,6 +1050,7 @@
                         cast-osc-data
                         (into {})),
    :harmonic-active-voices #{0 1 2},
+   :harmonic-convergence-point 0
    :panner-index -4,
    :filter-index 3,
    :harmonic-range {:low -1, :high -1}})
@@ -1074,6 +1080,7 @@
         "/Diego/clouds-env-radio" '(0),
         "/Diego/clouds-rhythm-radio" '(1),
         "/Diego/clouds-sample-lib-size-radio" '(0),
+        "/Diego/harmonic-voice-cp" '(0),
         "/Diego/harmonic-highest-note" '(0.5),
         "/Diego/harmonic-lowest-note" '(0.5),
         "/Diego/harmonic-speed" '(0.2),

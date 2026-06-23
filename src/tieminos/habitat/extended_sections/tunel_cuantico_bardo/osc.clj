@@ -19,10 +19,11 @@
             set-gusano-amp set-gusano-durs set-gusano-grain-dur
             set-gusano-grain-trig set-gusano-period set-gusano-rates
             set-gusano-rates-seq-speed set-harmonic-range set-harmonic-speed
-            set-harmony set-independent-refrain set-next-gusano-harmony
-            set-panner-index set-panner-param set-rev-send
-            set-selected-bank-synth set-synth-index switch-rec-durs
-            switch-rec-pulse toggle-clouds toggle-gusano toogle-rec]]
+            set-harmonic-voice-convergence-point set-harmony
+            set-independent-refrain set-next-gusano-harmony set-panner-index
+            set-panner-param set-rev-send set-selected-bank-synth
+            set-synth-index switch-rec-durs switch-rec-pulse toggle-clouds
+            toggle-gusano toogle-rec]]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.osc-helpers
     :refer [update-clients]]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.presets
@@ -458,6 +459,8 @@
                                          (save-touchosc-synth-param :diego path args))
       "/Diego/toggle-harmonic-voice" (do (set-active-harmonic-voice {:player :diego :voice-index (:index args-map) :on? (== 1 (:on args-map))})
                                          (save-touchosc-synth-param :diego path args))
+      "/Diego/harmonic-voice-cp" (do (set-harmonic-voice-convergence-point {:player :diego :value (first args)})
+                                     (save-touchosc-synth-param :diego path args))
       "/Diego/rev-send-clean" (set-rev-send {:player :diego :clean? true :value (first args)})
       "/Diego/rev-send-process" (set-rev-send {:player :diego :clean? false :value (first args)})
       "/Diego/input-amp-boost" (guitar-input-amp-boost (first args))

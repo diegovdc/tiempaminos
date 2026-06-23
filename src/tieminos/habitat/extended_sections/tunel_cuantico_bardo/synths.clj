@@ -234,11 +234,12 @@ lfo-kr
    '(-> (o/play-buf 1 buf rate :start-pos buf-pos)
         :ugen/filter
         (* amp :ugen/env)
-        :ugen/pan ;; FIXME investigate break
+        :ugen/pan
         :ugen/outs)
    {:reset? true})
   #_(cristal-liquidizado-2 {:buf buf
                             :dur 10}))
+
 (comment
   (-> cristal-liquidizado-2)
   (o/stop)
@@ -418,7 +419,6 @@ lfo-kr
   "Plays a synth. The `:synth` key should be a keyword."
   [{:as data
     :keys [synth params]}]
-  #_(println "===============")
   (a/go
     (try
       (let [;; filter (get-filter data)

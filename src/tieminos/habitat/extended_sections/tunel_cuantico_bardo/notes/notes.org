@@ -21,10 +21,13 @@ CLOSED: [2026-03-26 Thu 12:34] DEADLINE: <2026-03-31 Tue>
 CLOSED: [2026-04-29 Wed 10:22] DEADLINE: <2026-04-20 Mon>
 ** DONE [#A] agregar compresor al sub y bajar un poco el volumen default
 CLOSED: [2026-05-14 Thu 10:53] DEADLINE: <2026-05-11 Mon>
-** TODO bajar clean de milo en template
-DEADLINE: <2026-06-22 Mon>
-** TODO agregar slider para seleccionar punto de convergencia
-DEADLINE: <2026-06-22 Mon>
+** TODO revisar volúmenes de la guitarra en reaper, en particular la automatización
+parece que no están coordinados el volumen automatizado y el del fader.
+*** TODO revisar también el volumen de la grabación
+** DONE bajar clean de milo en template
+CLOSED: [2026-06-23 Tue 11:05] DEADLINE: <2026-06-22 Mon>
+** DONE agregar slider para seleccionar punto de convergencia
+CLOSED: [2026-06-23 Tue 14:20] DEADLINE: <2026-06-22 Mon>
 ** DONE [#A] stop longs todavía tiene bug
 CLOSED: [2026-06-15 Mon 21:31]
 ** TODO evitar que el lor 0.1-2 toque samples muy largos en duraciones breves

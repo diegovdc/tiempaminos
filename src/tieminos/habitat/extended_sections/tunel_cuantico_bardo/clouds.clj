@@ -8,7 +8,7 @@
    [tieminos.habitat.scratch.sample-rec2 :refer [rand-latest-buf]]
    [tieminos.habitat.synths.granular :refer [amanecer*guitar-clouds]]
    [tieminos.utils :refer [rrange wrap-at]]
-   [time-time.dynacan.players.gen-poly :as gp :refer [on-event ref-rain]]))
+   [time-time.dynacan.players.refrain.v2 :as rain.v2 :refer [on-event ref-rain]]))
 
 (defn ^:deprecated clouds-refrain
   "This version can handle rate chords (as a vector of rates)"
@@ -75,20 +75,21 @@
                                                          :amp (* amp* (rrange 0 0.7) (norm-amp buf)))))))))))))
 
 (defn clouds-refrain2
-  [{:keys [id durs-fn on-event]
+  [{:keys [id durs-fn on-event on-stop]
     :or {id :clouds-refrain}}]
   (ref-rain
    :id id
    :durs durs-fn
-   :on-event on-event))
+   :on-event on-event
+   :on-stop on-stop))
 
 (comment
-  (gp/stop)
-  (clouds-refrain2
-   {:id :my-clouds
-    :durs-fn (fn [_] (rand-nth [1 2 3]))
-    :get-params (fn [data] (println (keys data)))
-    :on-play println})
+  (rain.v2/stop)
+  #_(clouds-refrain2
+     {:id :my-clouds
+      :durs-fn (fn [_] (rand-nth [1 2 3]))
+      :get-params (fn [data] (println (keys data)))
+      :on-event println})
   (clouds-refrain
    {:id :my-clouds
     :durs-fn (fn [_] (rand-nth [1 2 3]))
