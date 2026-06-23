@@ -25,7 +25,6 @@
    [tieminos.math.bezier-samples :as bzs]
    [tieminos.math.utils :refer [linlin]]
    [tieminos.utils :refer [rrange wrap-at]]
-   [time-time.dynacan.players.gen-poly :as gp] ;; FIXME: used for stoping recording, refactor to move the stop call to the rec ns
    [time-time.dynacan.players.refrain.v2 :as rain.v2]))
 
 ;;;;;;;;;;;;;;
@@ -75,8 +74,8 @@
 
 (defn stop-recording
   [{:keys [input-k]}]
-  (timbre/info "stopping rec on" input-k)
-  (gp/stop (make-rec-id input-k)))
+  (timbre/info "Stopping rec on:" input-k)
+  (bardo.rec/stop-rec-loop! (make-rec-id input-k)))
 
 ;;;;;;;;;;;;;;;;;;
 ;; Clouds
