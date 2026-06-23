@@ -1,7 +1,9 @@
 (ns tieminos.habitat.extended-sections.tunel-cuantico-bardo.main
   "The code from the recorded versions of `2.3.x`, `2.2.9.x`"
   (:require
+   [clojure.string :as str]
    [overtone.core :as o]
+   [taoensso.timbre :as timbre]
    [tieminos.attractors.lorentz :as lorentz]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.init :as bardo.init]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.live-state :as bardo.live-state]
@@ -42,7 +44,10 @@
   (bardo.live-state/init-state!)
   ;; TODO: perhaps here the default-touch-osc state is duplicated and the state of the :selected-synth should be used instead?
   (doseq [[path args] bardo.live-state/default-touch-osc-state]
-    (bardo.osc/osc-responder {:path path :args args})))
+    (when-not (or (some #(str/ends-with? path %) ["-visible" "-label" "-group"])
+                  (str/includes? path "toggle-bank"))
+      (bardo.osc/osc-responder {:path path :args args})))
+  (timbre/info "State has been reset"))
 
 ;; TODO: figure out if this is still useful
 (defonce saved-synth-params (atom []))
