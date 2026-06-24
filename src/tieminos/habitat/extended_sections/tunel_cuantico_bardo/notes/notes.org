@@ -9,6 +9,48 @@ Código tomado de las grabaciones de 2.2.9, por lo que en el directorio de reape
 
 
 * PROJ V 2.3
+** TODO [#A] revisar volúmenes de la guitarra en reaper, en particular la automatización
+parece que no están coordinados el volumen automatizado y el del fader.
+*** TODO revisar también el volumen de la grabación
+** TODO Sintes [0%]
+*** TODO Híbrido gusano/crystal
+*** TODO con pitch shift
+*** TODO con RM o FM en guitarra?
+para hacerla más inarmónica y que funcionen mejor las afinaciones... pienso que hay un problema de "uncanny valley" donde la transposición cambia un poco las formantes y además se percive la guitarra fuera de 12EDO
+el problema en realidad es que las transposiciones en cristal son mucho más efectivas para las campanas que para la guitarra
+*** TODO Procesador para guitarra
+**** TODO Pitch shift
+**** TODO Waveshapers
+*** TODO Agregar más filtos
+**** TODO BPF
+**** TODO ???
+*** TODO Panner clean
+**** TODO velocidades de los panners
+**** TODO split freq panner graves/agudos en distintas posiciones
+**** TODO split amp panner graves/agudos en distintas posiciones
+*** TODO Reverb clean
+** TODO UI [0%]
+*** TODO Mostrar cantidad de sintes
+*** TODO Mostrar cuando esta grabando y cuenta regresiva
+*** TODO Mostrar % del CPU 
+*** TODO =max-dur= mostrar cuántos segundos en label
+** TODO evitar que el lor 0.1-2 toque samples muy largos en duraciones breves
+pensar cuál es la mejor solución
+Es un poco difícil, porque se comporta de manera distinta si el sinte es granular o cristal.
+Hay que pensar mejor como debe funcionar este parámetro y cómo homogeneizarlo.
+** TODO mejorar Lorentz de ritmo-secuenciado
+cómo debe funcionar? todos son sincrónicos? (i.e. usan el mismo índice y dimensión)
+** TODO [#A] Terminar de integrar gusano
+Hay varias cosas que aún no funcionan y no que están en la interfaz pero aún no hace nada
+** TODO documentar =template-synth=
+** TODO Move ~make-voice-params~ to =synths.clj=
+** TODO Mejorar debuggeo en =template-synth=
+Loggear los params de llamado de las funciones relevantes y registrarlos en un event-log o algo así
+** STRT Agregar =group= en =template-synth=
+*** TODO investigar si hay manera de mejorar la implementación actual
+el uso de ~(flatten (seq params))~
+** NOPE [#A] Crear formato en REAPER 8-ch
+CLOSED: [2026-04-11 Sat 14:07] DEADLINE: <2026-03-30 Mon>
 ** DONE Gusano parece estar roto en este momento
 CLOSED: [2026-02-11 Wed 14:08] DEADLINE: <2026-02-09 Mon>
 ** DONE Agregar control de volumen de =clean= para Milo
@@ -21,36 +63,14 @@ CLOSED: [2026-03-26 Thu 12:34] DEADLINE: <2026-03-31 Tue>
 CLOSED: [2026-04-29 Wed 10:22] DEADLINE: <2026-04-20 Mon>
 ** DONE [#A] agregar compresor al sub y bajar un poco el volumen default
 CLOSED: [2026-05-14 Thu 10:53] DEADLINE: <2026-05-11 Mon>
-** TODO revisar volúmenes de la guitarra en reaper, en particular la automatización
-parece que no están coordinados el volumen automatizado y el del fader.
-*** TODO revisar también el volumen de la grabación
 ** DONE bajar clean de milo en template
 CLOSED: [2026-06-23 Tue 11:05] DEADLINE: <2026-06-22 Mon>
 ** DONE agregar slider para seleccionar punto de convergencia
 CLOSED: [2026-06-23 Tue 14:20] DEADLINE: <2026-06-22 Mon>
 ** DONE [#A] stop longs todavía tiene bug
 CLOSED: [2026-06-15 Mon 21:31]
-** TODO evitar que el lor 0.1-2 toque samples muy largos en duraciones breves
-pensar cuál es la mejor solución
-** IDEA max dur mostrar duracion en UI
-Es un poco difícil, porque se comporta de manera distinta si el sinte es granular o cristal.
-Hay que pensar mejor como debe funcionar este parámetro y cómo homogeneizarlo.
-** NOPE [#A] Crear formato en REAPER 8-ch
-CLOSED: [2026-04-11 Sat 14:07] DEADLINE: <2026-03-30 Mon>
-** TODO mejorar Lorentz de ritmo-secuenciado
-cómo debe funcionar? todos son sincrónicos? (i.e. usan el mismo índice y dimensión)
-** TODO [#A] Terminar de integrar gusano
-Hay varias cosas que aún no funcionan y no que están en la interfaz pero aún no hace nada
-** TODO documentar =template-synth=
-** TODO Move ~make-voice-params~ to =synths.clj=
-** TODO Mejorar debuggeo en =template-synth=
-Loggear los params de llamado de las funciones relevantes y registrarlos en un event-log o algo así
-** TODO =max-dur= mostrar cuántos segundos en label
 ** DONE [#A] revisar niveles de guitarra en reaper y entre gusano y cristal
 CLOSED: [2026-02-11 Wed 14:21] DEADLINE: <2026-02-02 Mon>
-** STRT Agregar =group= en =template-synth=
-*** TODO investigar si hay manera de mejorar la implementación actual
-el uso de ~(flatten (seq params))~
 ** DONE Label default de sinte activo es =g=, pero debería de actualizarse inmediatamente al encenderse el sinte
 CLOSED: [2026-02-11 Wed 12:52] DEADLINE: <2026-02-09 Mon>
 ** DONE =Sec. Ind.= debe ser el valor default
