@@ -290,32 +290,17 @@
 
     ;; touch osc params
     (set-touchosc-params synth-data)))
-(comment
-  (init-synth-data :milo 0))
 
 (defn osc-bool [bool] (int (if bool 1 0)))
 
 (comment
   (get-in @live-state (synth-bank-path :milo 0)))
 
-(defn init-synth-data
-  [player bank]
-  (let [path-base (case player
-                    :milo "/Milo"
-                    :diego "/Diego")
-        paths (map #(str path-base %) synth-ui-params)]
-    (swap! live-state
-           assoc-in
-           (synth-bank-path player bank :touch-osc-data)
-           (select-keys default-touch-osc-state paths))))
-
 (defn set-selected-bank-synth
   [player bank]
   (let [path (synth-bank-path player :selected-bank)
         state (swap! live-state assoc-in path bank)
         synth-data (get-in state (synth-bank-path player bank))]
-    (when (nil? synth-data)
-      (init-synth-data player bank))
     (set-touchosc-synth-ui player bank synth-data)))
 
 (defn show-active-bank-label [player show?]
