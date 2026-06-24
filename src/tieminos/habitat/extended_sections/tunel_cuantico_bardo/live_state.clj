@@ -1022,7 +1022,7 @@
                          "/%s/toggle-harmonic-voice/1" '("on" 1 "index" 1),
                          "/%s/filter-hpf-fader-visible" [0],
                          "/%s/toggle-harmonic-voice/0" '("on" 1 "index" 0),
-                         "/%s/clouds-rhythm-radio" '(0),
+                         "/%s/clouds-rhythm-radio" '(1),
                          "/%s/toggle-harmonic-voice/2" '("on" 1 "index" 2),
                          "/%s/harmonic-highest-note" '(0.5190911),
                          "/%s/clouds-sample-lib-size-radio" '(0),
