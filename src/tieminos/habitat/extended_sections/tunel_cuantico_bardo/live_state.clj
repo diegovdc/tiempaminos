@@ -372,7 +372,6 @@
          max-dur))
 
 (comment
-  (reset-default-state!)
   (-> (get-player-data :milo) (#(apply dissoc % (range 8))))
   (set-clouds-amp :diego 1))
 
@@ -983,6 +982,81 @@
   {:harmony-index 0
    :harmony :fib})
 
+(defn add-player-to-osc-msg-map [player m]
+  (map (fn [[k v]] [(format k player) v]) m))
+
+(def synth-osc-defaults
+  {"/%s/clouds-active-btn" '(0.0),
+   "/%s/clouds-amp" '(0.0),
+   "/%s/clouds-env-radio" '(0),
+   "/%s/clouds-rhythm-radio" '(1),
+   "/%s/clouds-sample-lib-size-radio" '(0),
+   "/%s/filter-hpf-fader-visible" [0],
+   "/%s/filter-label" ["none"],
+   "/%s/filter-q-fader-visible" [0],
+   "/%s/filter-reso-fader-visible" [0],
+   "/%s/harmonic-voice-cp" '(0),
+   "/%s/harmonic-highest-note" '(0.5190911),
+   "/%s/harmonic-lowest-note" '(0.48726025),
+   "/%s/harmonic-speed" '(0.20449468),
+   "/%s/independent-sequencer-btn" [1.0]
+   "/%s/max-dur-fader" [1.0]
+   "/%s/panner-arrows-group" [0],
+   "/%s/panner-label" ["random"],
+   "/%s/panner-lissajous-group" [0],
+   "/%s/panner-manual-group" [0],
+   "/%s/panner-rand-vel-fader" '(0.1),
+   "/%s/panner-random-group" [1],
+   "/%s/synth-label" ["crystal"],
+   "/%s/toggle-harmonic-voice/0" '("on" 1 "index" 0),
+   "/%s/toggle-harmonic-voice/1" '("on" 1 "index" 1),
+   "/%s/toggle-harmonic-voice/2" '("on" 1 "index" 2),
+   "/%s/filter-lpf-fader-visible" [0]})
+
+(def shared-general-ui-osc-defaults
+  {"/%s/independent-sequencer-btn" '(1.0)
+   "/%s/bank1-active-label-visible" '(0),
+   "/%s/bank2-active-label-visible" '(0),
+   "/%s/bank3-active-label-visible" '(0),
+   "/%s/bank4-active-label-visible" '(0),
+   "/%s/bank5-active-label-visible" '(0),
+   "/%s/bank6-active-label-visible" '(0),
+   "/%s/bank7-active-label-visible" '(0),
+   "/%s/bank8-active-label-visible" '(0),
+   "/%s/bank-rec-radio" '(0),
+   "/%s/harmony-radio" '(0),
+   "/%s/clean-master" '(0.0),
+   "/%s/processed-master" '(0.0),
+   "/%s/rec-durs-radio" '(0),
+   "/%s/rec-pulse-radio" '(0),
+   "/%s/rev-send-clean" '(0.0),
+   "/%s/rev-send-process" '(0.0),
+   "/%s/selected-synth-radio" '(0),
+   "/%s/toggle-bank/1" '("on" 0.0 "index" 1)})
+
+(def general-ui-osc-defaults
+  (merge
+   (->> ["Diego" "Milo"]
+        (mapcat #(add-player-to-osc-msg-map
+                  % shared-general-ui-osc-defaults))
+        (into {}))
+   {"/EQ/bell-radio" '(0),
+    "/EQ/durs-radio" '(0),
+    "/EQ/flat-eq" '(0.0),
+    "/EQ/hishelf-radio" '(0),
+    "/EQ/loshelf-radio" '(0),
+    "/EQ/notch-radio" '(0),
+    "/gusano/amp" '(0.0),
+    "/gusano/durs" '(0),
+    "/gusano/grain-durs" '(0.0),
+    "/gusano/grain-trig" '(0.0),
+    "/gusano/harmony-label" [(-> gusano-defaults :harmony name)]
+    "/gusano/period" '(0),
+    "/gusano/rates" '(0),
+    "/Milo/processes-amp-boost" '(3),
+    "/Diego/input-amp-boost" '(0),
+    "/System/voces-master" [reaper/zero-db]}))
+
 (defn make-synth-defaults
   [player]
   {:active-filter :none,
@@ -997,32 +1071,8 @@
    :harmonic-speed 1,
    :rhythm :lor-2_6,
    :synth-index 1,
-   :touch-osc-data (->> {"/%s/filter-lpf-fader-visible" [0],
-                         "/%s/harmonic-speed" '(0.20449468),
-                         "/%s/panner-random-group" [1],
-                         "/%s/panner-manual-group" [0],
-                         "/%s/panner-lissajous-group" [0],
-                         "/%s/panner-arrows-group" [0],
-                         "/%s/panner-label" ["random"],
-                         "/%s/toggle-harmonic-voice/1" '("on" 1 "index" 1),
-                         "/%s/filter-hpf-fader-visible" [0],
-                         "/%s/toggle-harmonic-voice/0" '("on" 1 "index" 0),
-                         "/%s/clouds-rhythm-radio" '(1),
-                         "/%s/toggle-harmonic-voice/2" '("on" 1 "index" 2),
-                         "/%s/harmonic-highest-note" '(0.5190911),
-                         "/%s/clouds-sample-lib-size-radio" '(0),
-                         "/%s/clouds-active-btn" '(0.0),
-                         "/%s/synth-label" ["crystal"],
-                         "/%s/clouds-amp" '(0.0),
-                         "/%s/harmonic-lowest-note" '(0.48726025),
-                         "/%s/panner-rand-vel-fader" '(0.1),
-                         "/%s/filter-reso-fader-visible" [0],
-                         "/%s/filter-q-fader-visible" [0],
-                         "/%s/clouds-env-radio" '(0),
-                         "/%s/filter-label" ["none"],
-                         "/%s/independent-sequencer-btn" [1.0]
-                         "/%s/max-dur-fader" [1.0]}
-                        (map (fn [[k v]] [(format k player) v]))
+   :touch-osc-data (->> synth-osc-defaults
+                        (add-player-to-osc-msg-map player)
                         cast-osc-data
                         (into {})),
    :harmonic-active-voices #{0 1 2},
@@ -1032,84 +1082,7 @@
    :harmonic-range {:low -1, :high -1}})
 
 (def default-touch-osc-state
-  ;; TODO: most of this can be moved to the function above (all the path relative to a synth configuration)
-  (->> {"/Milo/bank1-active-label-visible" '(0),
-        "/Milo/bank2-active-label-visible" '(0),
-        "/Milo/bank3-active-label-visible" '(0),
-        "/Milo/bank4-active-label-visible" '(0),
-        "/Milo/bank5-active-label-visible" '(0),
-        "/Milo/bank6-active-label-visible" '(0),
-        "/Milo/bank7-active-label-visible" '(0),
-        "/Milo/bank8-active-label-visible" '(0)
-        "/Milo/independent-sequencer-btn" '(1.0)
-        "/Diego/independent-sequencer-btn" '(1.0)
-        "/Diego/bank1-active-label-visible" '(0),
-        "/Diego/bank2-active-label-visible" '(0),
-        "/Diego/bank3-active-label-visible" '(0),
-        "/Diego/bank4-active-label-visible" '(0),
-        "/Diego/bank5-active-label-visible" '(0),
-        "/Diego/bank6-active-label-visible" '(0),
-        "/Diego/bank7-active-label-visible" '(0),
-        "/Diego/bank8-active-label-visible" '(0),
-        "/Diego/bank-rec-radio" '(0),
-        "/Diego/clouds-active-btn" '(0.0), ;; NOTE: will cause log "Could not find refrain with id: :bardo.clouds/diego"
-        "/Diego/clouds-amp" '(0.0),
-        "/Diego/clouds-env-radio" '(0),
-        "/Diego/clouds-rhythm-radio" '(1),
-        "/Diego/clouds-sample-lib-size-radio" '(0),
-        "/Diego/harmonic-voice-cp" '(0),
-        "/Diego/harmonic-highest-note" '(0.5),
-        "/Diego/harmonic-lowest-note" '(0.5),
-        "/Diego/harmonic-speed" '(0.2),
-        "/Diego/harmony-radio" '(0),
-        "/Diego/input-amp-boost" '(0),
-        "/Diego/clean-master" '(0.0),
-        "/Diego/processed-master" '(0.0),
-        "/Diego/rec-durs-radio" '(0),
-        "/Diego/rec-pulse-radio" '(0),
-        "/Diego/rev-send-clean" '(0.0),
-        "/Diego/rev-send-process" '(0.0),
-        "/Diego/selected-synth-radio" '(0),
-        "/Diego/toggle-bank/1" '("on" 0.0 "index" 1),
-        "/Diego/toggle-harmonic-voice/0" '("on" 1 "index" 0),
-        "/Diego/toggle-harmonic-voice/1" '("on" 1 "index" 1),
-        "/Diego/toggle-harmonic-voice/2" '("on" 1 "index" 2),
-        "/EQ/bell-radio" '(0),
-        "/EQ/durs-radio" '(0),
-        "/EQ/flat-eq" '(0.0),
-        "/EQ/hishelf-radio" '(0),
-        "/EQ/loshelf-radio" '(0),
-        "/EQ/notch-radio" '(0),
-        "/gusano/amp" '(0.0),
-        "/gusano/durs" '(0),
-        "/gusano/grain-durs" '(0.0),
-        "/gusano/grain-trig" '(0.0),
-        "/gusano/period" '(0),
-        "/gusano/rates" '(0),
-        "/Milo/bank-rec-radio" '(0),
-        "/Milo/clouds-active-btn" '(0.0), ;; NOTE: will cause log "Could not find refrain with id: :bardo.clouds/milo"
-        "/Milo/clouds-amp" '(0.0),
-        "/Milo/clouds-env-radio" '(0),
-        "/Milo/clouds-rhythm-radio" '(1),
-        "/Milo/clouds-sample-lib-size-radio" '(0),
-        "/Milo/harmonic-highest-note" '(0.5),
-        "/Milo/harmonic-lowest-note" '(0.5),
-        "/Milo/harmonic-speed" '(0.2),
-        "/Milo/harmony-radio" '(0),
-        "/Milo/clean-master" '(0.0),
-        "/Milo/processed-master" '(0.0),
-        "/Milo/processes-amp-boost" '(3),
-        "/Milo/rec-durs-radio" '(0),
-        "/Milo/rec-pulse-radio" '(0),
-        "/Milo/rev-send-clean" '(0.0),
-        "/Milo/rev-send-process" '(0.0),
-        "/Milo/selected-synth-radio" '(0),
-        "/Milo/toggle-bank/1" '("on" 0.0 "index" 1)
-        "/Milo/toggle-harmonic-voice/0" '("on" 1 "index" 0),
-        "/Milo/toggle-harmonic-voice/1" '("on" 1 "index" 1),
-        "/Milo/toggle-harmonic-voice/2" '("on" 1 "index" 2)
-        "/gusano/harmony-label" [(-> gusano-defaults :harmony name)]
-        "/System/voces-master" [reaper/zero-db]}
+  (->> general-ui-osc-defaults
        cast-osc-data
        (#(merge %
                 (:touch-osc-data (make-synth-defaults "Milo"))
