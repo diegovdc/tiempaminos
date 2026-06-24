@@ -1111,6 +1111,7 @@
         "/Milo/harmonic-lowest-note" '(0.5),
         "/Milo/harmonic-speed" '(0.2),
         "/Milo/harmony-radio" '(0),
+        "/Milo/clean-master" '(0.0),
         "/Milo/processed-master" '(0.0),
         "/Milo/processes-amp-boost" '(3),
         "/Milo/rec-durs-radio" '(0),
