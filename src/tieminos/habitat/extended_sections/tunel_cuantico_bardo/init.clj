@@ -23,9 +23,9 @@
   (hunu.4ch/open-inputs-with-rand-pan*
    {:inputs habitat.route/inputs
     :preouts habitat.route/preouts}
-   {:mic-1 {:width 3}
-    :mic-2 {:width 3}
-    :guitar {:width 3}}))
+   {:mic-1 {:width 3 :amp 1}
+    :mic-2 {:width 3 :amp 1}
+    :guitar {:width 3 :amp 1}}))
 
 (defn all!
   []
