@@ -207,20 +207,6 @@
   ;; we don't restart the recorder, but the recorder should receive a durs function instead that will deref the live-state somehow
   )
 
-(def default-cloud-config
-  {:sample-lib-size 1
-   :env :lor-1_4
-   :rhythm :lor-2_6
-   :amp 0.7
-   :reaper.send/reverb {:clean 0 :processes 0}
-   :active-banks #{}
-   :harmonic-speed 30
-   :harmony :m-slendro
-   :harmonic-range {:low -18 :high 18}})
-
-(comment
-  (toggle-clouds :milo true))
-
 (declare default-touch-osc-state)
 (comment
   (bardo.osc-helpers/update-clients @habitat-osc/receiver-clients
