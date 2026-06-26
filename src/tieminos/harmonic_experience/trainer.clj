@@ -36,10 +36,13 @@
            scale
            degrees
            lattice?
+           amp
            out]
     :or {root (midi->cps 60)
          lattice? true
+         amp 1
          out 0}}]
+
   (timbre/info "Starting trainer")
   (let [last-interval (atom '(1 1))]
     (ref-rain
@@ -80,7 +83,7 @@
          :a a
          :r r
          :pan (rrange -0.5 0.5)
-         :amp (rrange 0.4 0.8)
+         :amp (* amp (rrange 0.4 0.8))
          :out out))))))
 
 (defn stop []

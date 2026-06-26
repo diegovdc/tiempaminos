@@ -6,6 +6,7 @@
    [tieminos.harmonic-experience.lattice :as hexp.lattice]
    [tieminos.harmonic-experience.trainer :as hexp.trainer]
    [tieminos.harmonic-experience.utils :as hexp.utils]
+   [tieminos.harmonic-experience.drone-box :as hexp.drone-box]
    [tieminos.midi.core :refer [get-exquis!]]
    [tieminos.scales.core :as scales]))
 
@@ -19,20 +20,24 @@
 
 (comment
   (o/stop)
+  (hexp.utils/set-output-mode! :reaper)
+
   (hexp.lattice/setup-kb {:ref-note 60
                           :root root
                           :scale scale
                           :midi-kb (get-exquis!)
-                          :out 0})
+                          :out (hexp.utils/out 7)})
 
   (hexp.trainer/trainer {:scale scale
                          :root (midi->cps 60)
-                         :degrees [0 4 9 10]
-                         :out 0})
+                         :degrees [0 2 4 9 10]
+                         :amp 0.9
+                         :out (hexp.utils/out 3)})
   (hexp.trainer/stop)
-  (hexp.utils/drone-box {:root root
+
+  (hexp.drone-box/start {:root root
                          :scale scale
-                         :degrees [0 7]
+                         :degrees (map #(- % 12) [0 -12 #_7])
                          :amps [0.5]
-                         :out 0})
-  (hexp.utils/stop-drone-box))
+                         :out (hexp.utils/out 5)})
+  (hexp.drone-box/stop))

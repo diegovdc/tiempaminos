@@ -1,12 +1,8 @@
 (ns tieminos.harmonic-experience.utils
   (:require
    [erv.scale.core :as scale :refer [interval->ratio]]
-   [erv.utils.conversions :refer [midi->cps]]
    [erv.utils.core :refer [interval]]
-   [taoensso.timbre :as timbre]
-   [tieminos.harmonic-experience.drones.sounds :refer [drone]]
-   [tieminos.harmonic-experience.sustainer :as legato]
-   [tieminos.utils :refer [wrap-at]]))
+   [tieminos.blackhole :as bh]))
 
 (defn ratios->deg->ratio-map
   [sorted-ratios]
@@ -47,26 +43,20 @@
 
 (def midi->ratio&freq #'midi->ratio&freq*)
 
-(defn drone-box
-  ([{:keys [root scale degrees amps out]
-     :or {root (midi->cps 60)
-          amps [0.7]
-          out 0}}]
-   (let [config (->> degrees
-                     (map-indexed (fn [i deg] (let [ratio (:bounded-ratio (wrap-at deg scale))]
-                                                {deg {:inst drone
-                                                      ::ratio ratio
-                                                      :params {:freq (* root ratio)
-                                                               :amp (wrap-at i amps)
-                                                               :out out}}})))
-                     (apply merge))]
-     (timbre/info "Drone Box ratios:" (sort (map ::ratio (vals config))))
-     (legato/multi :drone-box config))))
+(defonce
+  ^{:doc "Should be nil or :reaper"}
+  output-mode (atom nil))
 
-(defn stop-drone-box
-  []
-  (timbre/info "Stopping Drone Box")
-  (legato/multi-stop :drone-box))
+(defn set-output-mode!
+  "Should be nil or :reaper"
+  [mode]
+  (reset! output-mode (if (= mode :reaper) :reaper nil)))
+
+(defn out
+  [bh-out]
+  (if (= :reaper @output-mode)
+    (bh/bus bh-out)
+    0))
 
 (comment
   (require '[erv.utils.ratios :refer [ratios->scale]])
