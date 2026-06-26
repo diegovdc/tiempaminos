@@ -3,11 +3,9 @@
   (:require
    [clojure.string :as str]
    [taoensso.timbre :as timbre]
-
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.init :as bardo.init]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.live-state :as bardo.live-state]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.osc :as bardo.osc]
-
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.scratch.main]))
 
 (comment

@@ -1093,24 +1093,6 @@
                           (init-player :milo)
                           (init-player :diego))})))
 
-(comment
-  (init-state!)
-  (-> default-touch-osc-state))
 
-(comment
-  (send-osc-msg "/Milo/selected-synth-radio" (int 0))
-  (send-osc-msg "/Milo/bank2-active-label-visible" "true")
-  (send-osc-msg "/Milo/panner-manual-group" (osc-bool 1)))
 
-(comment
 
-  (->> @live-state)
-  (get-selected-synth-data :milo)
-
-  (reset! live-state {})
-  (add-watch live-state ::post-live-state
-             (fn [_key _ref _old-value new-value]
-               (throttled-post (dissoc new-value :lorentz))))
-  (add-watch live-state ::post-live-state
-             (fn [_key _ref _old-value new-value]
-               (println new-value))))
