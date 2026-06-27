@@ -23,8 +23,11 @@
   (midi-in-event
    :midi-input (get-exquis!)
    :note-on (fn [{:keys [note velocity]}]
-              (demo-sine :freq (conv/midi->cps note)
+              (demo-sine :freq (conv/midi->cps
+                                (+ (exquis-cc 41) ;; will produce a brief glissando on the attack
+                                   note))
                          :amp (linlin* 0 127 0.4 0.9 velocity)))
+   :keep-cc-state? {:log? true}
    :cc (fn [{:keys [note velocity]}]
           ;; for some reason javax.sound.midi misses some note-off messages so...
          (when (and (= note 21) ;; knob 1 click
@@ -73,9 +76,21 @@
   []
   (if @exquis*
     @exquis*
-    (try (reset! exquis* (midi/midi-in "Exquis"))
-         (catch Exception e
-           (timbre/warn (str "Could not connect to Exquis: " (.getMessage e)))))))
+    (let [ctlr (-> (midi/midi-in "Exquis")
+                   (assoc ::state (atom {})))]
+      (try (reset! exquis* ctlr)
+           (catch Exception e
+             (timbre/warn (str "Could not connect to Exquis: " (.getMessage e))))))))
+
+(defn get-cc
+  ([midi-input-state-data cc] (get-cc midi-input-state-data cc 0))
+  ([midi-input-state-data cc chan] (get-in midi-input-state-data [chan cc] 0)))
+
+(defn exquis-cc
+  "chans 21-23 (press) and 41-44 (rotate)"
+  ([cc] (exquis-cc cc 0))
+  ([cc chan]
+   (get-cc (deref (::state @exquis*)) cc chan)))
 
 (defonce pacer* (atom nil))
 
@@ -286,6 +301,7 @@
        (let [synths (get-chan-synths channel)]
          (doseq [sy synths]
            (f sy (if z? note velocity))))))))
+(def ^:private y-cc 74)
 
 (defn- wrap-mpe
   [{:keys [x y z] :as _mpe}
@@ -296,16 +312,31 @@
                (let [y* (mpe-fn y)
                      cc* (or cc (fn [_] nil))]
                  (fn [{:keys [note] :as ev}]
-                   (if (= 74 note)
+                   (if (= y-cc note)
                      (y* ev)
                      (cc* ev)))))})
+
+(defn- wrap-cc-to-keep-state
+  [cc-fn midi-input log? mpe-y?]
+  (let [state (::state midi-input)]
+    (if-not state
+      (do
+        (timbre/warn "`midi-input` has no `::state`")
+        cc-fn)
+      (fn [{:keys [note channel velocity] :as ev}]
+        (when-not (and mpe-y? (= y-cc note))
+          (when log?
+            (println (format "cc%s@%s: %s" note channel velocity)))
+          (swap! state assoc-in [channel note] velocity))
+        (cc-fn ev)))))
 
 (defn midi-in-event
   "`note` events receive a map with the following keys
    `'(:data2 :command :channel :msg :note :status :data1 :device :timestamp :velocity)`"
   [& {:keys [midi-input note-on note-off pitch-bend cc channel-pressure auto-ctl?
              mpe
-             before-gate-0]
+             before-gate-0
+             keep-cc-state?]
       :or   {auto-ctl?  true
              note-off   (fn [_] nil)
              pitch-bend (fn [_] nil)
@@ -315,7 +346,12 @@
              mpe {:x nil :y nil :z nil}}}]
   (clear-synths-on-overtone-stop!) ;; handle o/stop event
   ;; if mpe config, wrap the other handelers with the functions from that config
-  (let [handlers (wrap-mpe mpe pitch-bend channel-pressure cc)
+  (let [handlers (cond-> (wrap-mpe mpe pitch-bend channel-pressure cc)
+                   keep-cc-state? (update :cc
+                                          wrap-cc-to-keep-state
+                                          midi-input
+                                          (:log? keep-cc-state?)
+                                          (:y mpe)))
         handlers* (merge {:before-gate-0 before-gate-0
                           :note-on    note-on
                           :note-off   note-off

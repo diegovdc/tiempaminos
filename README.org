@@ -15,7 +15,7 @@
 #+end_src
 ** MPE Controller (Exquis)
 #+begin_src clojure
-(require '[tieminos.midi.core :refer [midi-in-event get-exquis! clear-all-synths!]])
+(require '[tieminos.midi.core :refer [midi-in-event get-exquis! exquis-cc clear-all-synths!]])
 
 (require
   '[overtone.core :as o]
@@ -27,8 +27,12 @@
   (midi-in-event
    :midi-input (get-exquis!)
    :note-on (fn [{:keys [note velocity]}]
-              (demo-sine :freq (conv/midi->cps note)
+              (demo-sine :freq (conv/midi->cps
+                                 ;; `exquis-cc` will get the current cc value from the exquis input state
+                                (+ (exquis-cc 41) ;; Will produce a brief glissando on the attack
+                                   note))
                          :amp (linlin* 0 127 0.4 0.9 velocity)))
+   :keep-cc-state? {:log? true} ;; can be nil, true or {:log? boolean}. Logging will post cc changes to the repl. If MPE is used cc 74 (y-axis) will not be logged nor kept in the state
    :cc (fn [{:keys [note velocity]}]
           ;; for some reason javax.sound.midi misses some note-off messages so...
          (when (and (= note 21) ;; knob 1 click
