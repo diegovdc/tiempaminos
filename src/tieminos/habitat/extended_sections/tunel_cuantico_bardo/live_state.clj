@@ -511,6 +511,15 @@
 
 (def ^:private filter-keys (map first filter-data*))
 
+(defn- save-filter-touch-osc-data
+  [live-state player osc-msgs]
+  (swap! live-state
+         (fn [state]
+           (-> state
+               (update-in (selected-synth-bank-path player :touch-osc-data)
+                          merge
+                          osc-msgs)))))
+
 (defn set-filter-config
   "Sets the appropriate filter configuration and updates UI"
   [player]
@@ -533,6 +542,7 @@
                                 (str path* "-visible") [(osc-bool visible?)]})))
                       (apply merge))]
 
+    (save-filter-touch-osc-data live-state player osc-msgs)
     (doseq [[path v] osc-msgs]
       (apply bardo.osc-helpers/send-osc-msg path v)
       ;; set params values via `osc-responder`
