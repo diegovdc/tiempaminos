@@ -5,12 +5,14 @@
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.async-events :as bardo.comms :refer [dispatch]]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.live-state :as bardo.live-state]
    [tieminos.habitat.recording :refer [bufs]]
+   [tieminos.math.utils :refer [linlin*]]
    [time-time.dynacan.players.gen-poly :as gp]))
 ;;;;;;;;;;;;;;;;;;
 ;; Controls
 ;;;;;;;;;;;;;;;;;;
 (comment
   ;; osc
+  (osc/osc-debug true)
   (osc/osc-debug false)
   ;; rec
   (dispatch {:type :start-recording :data {:input-k :mic-1}})
@@ -36,6 +38,33 @@
   (bardo.live-state/get-selected-synth-data :diego)
   (bardo.live-state/get-player-data :diego :refrains))
 
+;;;;;;;;;;;;;;;;;;
+;; State
+;;;;;;;;;;;;;;;;;;
+
+(comment
+  (-> @bardo.live-state/live-state
+      :algo-2.2.9-clouds
+      :diego
+      (get 0)
+      :panner-configs
+      :lissajous)
+  (remove-watch bardo.live-state/live-state ::state)
+  (add-watch bardo.live-state/live-state ::state
+             (fn [_ _ _ new-state]
+               (let [{:keys [x y]} (-> new-state
+                                       :algo-2.2.9-clouds
+                                       :diego
+                                       (get 0)
+                                       :panner-configs
+                                       :lissajous)
+                     ratio (/ x y)]
+
+                 (println ratio)))))
+
+;;;;;;;;;;;;;;;;;;
+;; Buffers
+;;;;;;;;;;;;;;;;;;
 (comment
   (-> @bufs first second keys)
   (-> @bufs first second :rec/meta)

@@ -31,11 +31,11 @@
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.synth-management
     :refer [stop-long-running-synths!]]
    [tieminos.habitat.osc :as habitat-osc]
-   [tieminos.math.utils :refer [linexp*]]
+   [tieminos.math.utils :refer [linexp* linlin*]]
    [tieminos.osc.reaper :as reaper :refer [reaeq-freq->lin]]
    [tieminos.utils
     :refer
-    [cb-interpolate stop-all-interpolators! throttle]]))
+    [cb-interpolate stop-all-interpolators!]]))
 
 (comment
   (require '[tieminos.network-utils :refer [get-local-host]])
@@ -377,8 +377,8 @@
       "/Milo/panner-arrows-pos-fader" (set-panner-param :milo :pos (first args))
       "/Milo/panner-arrows-range-fader" (set-panner-param :milo :range (first args))
       "/Milo/panner-arrows-vel-fader" (set-panner-param :milo :vel (first args))
-      "/Milo/panner-lissajous-x-fader" (set-panner-param :milo :x (first args))
-      "/Milo/panner-lissajous-y-fader" (set-panner-param :milo :y (first args))
+      "/Milo/panner-lissajous-x-fader" (set-panner-param :milo :x (first args) :value-fn #(linlin* 0 1 1 13 %))
+      "/Milo/panner-lissajous-y-fader" (set-panner-param :milo :y (first args) :value-fn #(linlin* 0 1 1 13 %))
       "/Milo/panner-lissajous-radius-fader" (set-panner-param :milo :radius (first args))
       "/Milo/panner-lissajous-vel-fader" (set-panner-param :milo :vel (first args))
       "/Milo/panner-lissajous-direction-btn" (set-panner-param :milo :direction (first args))
@@ -442,8 +442,8 @@
       "/Diego/panner-arrows-pos-fader" (set-panner-param :diego :pos (first args))
       "/Diego/panner-arrows-range-fader" (set-panner-param :diego :range (first args))
       "/Diego/panner-arrows-vel-fader" (set-panner-param :diego :vel (first args))
-      "/Diego/panner-lissajous-x-fader" (set-panner-param :diego :x (first args))
-      "/Diego/panner-lissajous-y-fader" (set-panner-param :diego :y (first args))
+      "/Diego/panner-lissajous-x-fader" (set-panner-param :diego :x (first args) :value-fn #(linlin* 0 1 1 13 %))
+      "/Diego/panner-lissajous-y-fader" (set-panner-param :diego :y (first args) :value-fn #(linlin* 0 1 1 13 %))
       "/Diego/panner-lissajous-radius-fader" (set-panner-param :diego :radius (first args))
       "/Diego/panner-lissajous-vel-fader" (set-panner-param :diego :vel (first args))
       "/Diego/panner-lissajous-direction-btn" (set-panner-param :diego :direction (first args))

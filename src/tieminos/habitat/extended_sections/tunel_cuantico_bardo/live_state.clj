@@ -696,7 +696,9 @@
     (update&save-synth-label player :panner panner-key)))
 
 (defn set-panner-param
-  [player param-k value]
+  [player param-k value
+   & {:keys [value-fn]
+      :or {value-fn identity}}]
   (let [active-panner (:active-panner (get-selected-synth-data player))]
     (swap! live-state
            #(-> %
@@ -705,7 +707,7 @@
                            :panner-configs
                            active-panner
                            param-k)
-                          value)
+                          (value-fn value))
                 (assoc-in (selected-synth-bank-path
                            player
                            :touch-osc-data
