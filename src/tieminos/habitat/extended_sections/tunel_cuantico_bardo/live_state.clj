@@ -1051,7 +1051,8 @@
     "/gusano/rates" '(0),
     "/Milo/processes-amp-boost" '(3),
     "/Diego/input-amp-boost" '(0),
-    "/System/voces-master" [reaper/zero-db]}))
+    "/System/voces-master" [reaper/zero-db]
+    "/System/subwoofer-master" [(reaper/from-db -6)]}))
 
 (defn make-synth-defaults
   [player]

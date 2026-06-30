@@ -303,7 +303,7 @@
                         :amp-fx-position 2}))
 
 (comment
-
+  (stop-all-interpolators!)
   (set-track-volume2 :percussion-processes-track 1))
 
 ;;;;;;;;;;;;;;;
@@ -316,7 +316,8 @@
          :guitar-processes-track
          :percussion-processes-track
          :mixes-processes-2-track
-         :eq-track]))
+         :eq-track
+         :subwoofer-track]))
 
 (defn reaper-rec!
   []
@@ -507,6 +508,7 @@
       "/System/rec-stop" (when press? (reaper-stop!))
       "/System/init" (when press? (bardo.init/all!))
       "/System/voces-master" (set-track-volume2 :mixes-processes-2-track (first args) reaper/zero-db)
+      "/System/subwoofer-master" (set-track-volume2 :subwoofer-track (first args) reaper/zero-db)
       (timbre/warn "Unknown path for message: " HACKED-path msg args-map))
 
     ;; Save last update to touch-osc-state
