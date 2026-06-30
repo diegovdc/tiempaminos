@@ -232,7 +232,7 @@
     :as interpolator-config
     :or {init-val 0 tick-ms 100
          on-end (fn [_data])}}]
-  (let [in-chan  (a/chan)
+  (let [in-chan  (a/chan (a/sliding-buffer 1))
         stop-chan (a/chan)
         {:keys [ticks delta]} (get-interpolation-data interpolator-config)]
     (a/go-loop [delta delta
@@ -280,15 +280,16 @@
                    :target-val 10
                    :cb println
                    :on-end (fn [_] (println "interpolation end"))})
-  (cb-interpolate {:id :hola
-                   :dur-ms 5000
-                   :tick-ms 500
-                   :init-val 0
-                   :target-val 10
-                   :cb (fn [data]
-                         #_(when (= 10 (:val data))
-                             (throw (ex-info "ups" {})))
-                         (println "new cb" data))})
+  (doseq [_ (range 100)] ;; test that the sliding-buffer doesn't throttles correctly
+    (cb-interpolate {:id :hola
+                     :dur-ms 5000
+                     :tick-ms 500
+                     :init-val 0
+                     :target-val 0
+                     :cb (fn [data]
+                           #_(when (= 10 (:val data))
+                               (throw (ex-info "ups" {})))
+                           (println "new cb" data))}))
 
   (stop-all-interpolators!)
   (stop-interpolator! :hola)

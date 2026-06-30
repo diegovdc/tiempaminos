@@ -293,8 +293,7 @@
      :cb (fn [{:keys [val]}]
            (set-track-volume (reaper-tracks reaper-track-kw) val))})))
 
-(def ^:private set-track-volume2
-  (throttle #'interpolate-track-volume 200))
+(def ^:private set-track-volume2 #'interpolate-track-volume)
 
 (def ^:private perc-processes-amp-boost
   (make-volume-booster {:interpolator-id ::percussion-processes-boost
