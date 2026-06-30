@@ -394,6 +394,8 @@
                                        (save-touchosc-synth-param :milo path args))
       "/Milo/harmonic-highest-note" (do (set-harmonic-range {:player :milo :low?  false :value (first args)})
                                         (save-touchosc-synth-param :milo path args))
+      "/Milo/harmonic-voice-cp" (do (set-harmonic-voice-convergence-point {:player :milo :value (first args)})
+                                    (save-touchosc-synth-param :milo path args))
       "/Milo/toggle-harmonic-voice" (do (set-active-harmonic-voice {:player :milo :voice-index (:index args-map) :on? (== 1 (:on args-map))})
                                         (save-touchosc-synth-param :milo path args))
       "/Milo/rev-send-clean" (set-rev-send {:player :milo :clean? true :value (first args)})
