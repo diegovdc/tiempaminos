@@ -123,11 +123,10 @@
       [3 3 2])))
 
 (defn lorentz-chord
-  [index lorentz lor-speed lowest-note highest-note]
-  (let [index* (* lor-speed index)]
-    [(round (lorentz/bound (lorentz index*) :x lowest-note highest-note))
-     (round (lorentz/bound (lorentz index*) :y lowest-note highest-note))
-     (round (lorentz/bound (lorentz index*) :z lowest-note highest-note))]))
+  [index lorentz lowest-note highest-note]
+  [(round (lorentz/bound (lorentz index) :x lowest-note highest-note))
+   (round (lorentz/bound (lorentz index) :y lowest-note highest-note))
+   (round (lorentz/bound (lorentz index) :z lowest-note highest-note))])
 
 (defn- get-rates-subset
   [rate-indexes rates]
@@ -238,16 +237,23 @@
       (timbre/warn "No buffer for bank" bank))
     buf))
 
+(defonce ^:private lorentz-chord-indexes (atom {}))
+
+(defn- get-next-lorentz-chord-index!
+  [refrain-id harmonic-speed]
+  (-> (swap! lorentz-chord-indexes update refrain-id (fnil + 0)  harmonic-speed)
+      (get refrain-id)))
+
 (defn- clouds-voice-config
-  [player index bank]
+  [player refrain-id bank]
   (let [{:keys [harmony harmonic-speed harmonic-range
                 harmonic-active-voices ;; defines the number of voices to play, lorentz has 3 indexes so indexes can be a `set` of numbers 0 - 2
                 harmonic-convergence-point]
          :or {harmonic-active-voices #{0 1 2}
               harmonic-convergence-point 0}} (bardo.live-state/get-harmonic-data! player bank)
+        index (get-next-lorentz-chord-index! refrain-id harmonic-speed)
         rates (->> (lorentz-chord index
                                   (:lorentz @live-state)
-                                  harmonic-speed
                                   (:low harmonic-range)
                                   (:high harmonic-range))
                    (#(rate-chord-seq (get-harmony harmony) [%]))
@@ -381,7 +387,8 @@
 (comment
   (bardo.live-state/get-active-independent-banks :milo))
 (defn get-synth-data-vectors
-  [player independent-bank {:keys [index]}]
+  [player independent-bank
+   {:keys [index id] :as _refrain-config}]
   (let [active-banks (if independent-bank
                        #{independent-bank}
                        (bardo.live-state/get-active-group-banks player))
@@ -392,7 +399,7 @@
     (cond
       (not bank) (timbre/error "No bank selected, can't play cloud")
       (not buf) nil
-      :else (let [voice-config (clouds-voice-config player index bank)
+      :else (let [voice-config (clouds-voice-config player id bank)
                   synth-config (merge
                                 (clouds-pan player bank)
                                 (clouds-filter player bank)
