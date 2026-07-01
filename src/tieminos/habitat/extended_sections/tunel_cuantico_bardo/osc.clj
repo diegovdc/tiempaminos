@@ -17,13 +17,14 @@
             set-clouds-env set-clouds-rhythm set-clouds-sample-lib-size
             set-filter-index set-filter-param set-gusano-2nd-voice
             set-gusano-amp set-gusano-durs set-gusano-grain-dur
-            set-gusano-grain-trig set-gusano-period set-gusano-rates
+            set-gusano-grain-trig set-gusano-period
             set-gusano-rates-seq-speed set-harmonic-range set-harmonic-speed
             set-harmonic-voice-convergence-point set-harmony
-            set-independent-refrain set-next-gusano-harmony set-panner-index
-            set-panner-param set-rev-send set-selected-bank-synth
-            set-synth-index switch-rec-durs switch-rec-pulse toggle-clouds
-            toggle-gusano toogle-rec]]
+            set-independent-refrain set-next-gusano-harmonic-seq
+            set-next-gusano-harmony set-panner-index set-panner-param
+            set-rev-send set-selected-bank-synth set-synth-index
+            switch-rec-durs switch-rec-pulse toggle-clouds toggle-gusano
+            toogle-rec]]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.osc-helpers
     :refer [update-clients]]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.presets
@@ -473,8 +474,6 @@
       "/stop-long-running-synths" (when press? (stop-long-running-synths! 20))
       ;; gusano
       "/gusano/gusano-active-btn" (toggle-gusano press?)
-      "/gusano/rates" (set-gusano-rates (first args))
-      "/gusano/rates-seq-speed" (set-gusano-rates-seq-speed (first args))
       "/gusano/amp" (set-gusano-amp (first args))
       "/gusano/period" (set-gusano-period (first args))
       "/gusano/durs" (set-gusano-durs (first args))
@@ -482,6 +481,8 @@
       "/gusano/grain-durs" (set-gusano-grain-dur (first args))
       "/gusano/2nd-voice" (set-gusano-2nd-voice (first args))
       "/gusano/harmony-up-btn" (when press? (set-next-gusano-harmony))
+      "/gusano/harmonic-seq-up-btn" (when press? (set-next-gusano-harmonic-seq))
+      "/gusano/harmonic-seq-speed" (set-gusano-rates-seq-speed (first args))
       ;; presets
       "/save-preset" (when press? (bardo.presets/save-preset!))
       ;; "/presets/load" (bardo.presets/load-preset! internal-client @habitat-osc/receiver-clients (first args))

@@ -135,5 +135,6 @@
     :meta-pelog-7 meta-pelog-7
     :meta-pelog-11 meta-pelog-11
     :meta-pelog-20 meta-pelog-20
-    (do (timbre/warn "Resorting to default harmony. Something may be wrong...")
+    (do (timbre/warn "Resorting to default harmony. Something may be wrong... Got: "
+                     {:harmony-k harmony-k})
         meta-slendro1)))

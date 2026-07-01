@@ -12,11 +12,11 @@
     :as bardo.comms]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.config
     :as bardo.config]
+   [tieminos.habitat.extended-sections.tunel-cuantico-bardo.gusanos.harmony
+    :refer [gusano-harmonic-seqs gusano-harmonies]]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.osc-helpers
-    :as bardo.osc-helpers
-    :refer [send-osc-msg]]
+    :as bardo.osc-helpers]
    [tieminos.habitat.osc :as habitat-osc]
-   [tieminos.habitat.routing :refer [inputs]]
    [tieminos.math.utils :refer [linexp* linlin]]
    [tieminos.osc.reaper :as reaper]
    [tieminos.utils :refer [throttle wrap-at]]))
@@ -587,7 +587,6 @@
 (defn save-touchosc-filter-param
   "A variation of `save-touchosc-synth-param` to save the different filter configs"
   [player path args]
-  (println player path args)
   (let [active-filter (:active-filter (get-selected-synth-data player))]
     (swap! live-state
            #(-> %
@@ -887,9 +886,10 @@
   (reset! live-state {}))
 
 ;; TODO: set the resulting values of gusano in the live-state just as with the other values
-(defn set-gusano-rates
-  [i]
-  (swap! live-state assoc-in [:gusano :rates] i))
+
+(defn get-gusano-data
+  []
+  (:gusano @live-state))
 
 (defn set-gusano-rates-seq-speed
   [i]
@@ -897,7 +897,7 @@
 
 (defn set-gusano-amp
   [amp]
-  (swap! live-state assoc-in [:gusano :amp] (first (linlin 0 1 0 1.5 [amp]))))
+  (swap! live-state assoc-in [:gusano :amp] (first (linlin 0 1 0.01 1.5 [amp]))))
 
 (defn set-gusano-period
   [i]
@@ -919,17 +919,50 @@
   [x]
   (swap! live-state assoc-in [:gusano :second-voice-index] x))
 
-(def ^:private gusano-harmonies [:fib :meta-slendro-22 :meta-pelog-20])
+(defn- get-gusano-harmonic-seq
+  [harmony index]
+  (let [harmonic-seqs (get gusano-harmonic-seqs harmony)]
+    (->> harmonic-seqs
+         (wrap-at index))))
+
+(defn- update-gusano-harmonic-index-label!
+  [harmonic-seq harmonic-seq-index]
+  (bardo.osc-helpers/update-label
+   :gusano :harmonic-seq
+   (if-let [name* (-> harmonic-seq meta :name)]
+     (format "#%s %s"
+             (mod harmonic-seq-index (count harmonic-seq))
+             name*)
+     (format "#%s (acordes: %s)"
+             (mod harmonic-seq-index (count harmonic-seq))
+             (count harmonic-seq)))))
 
 (defn set-next-gusano-harmony
   []
-  (let [{:keys [harmony-index]
-         :or {harmony-index 0}} (:gusano @live-state)
+  (let [{:keys [harmony-index harmonic-seq-index]
+         :or {harmony-index 0
+              harmonic-seq-index 0}} (:gusano @live-state)
         i (inc harmony-index)
-        harmony (wrap-at i gusano-harmonies)]
+        harmony (wrap-at i gusano-harmonies)
+        harmonic-seq  (get-gusano-harmonic-seq harmony harmonic-seq-index)]
     (swap! live-state update :gusano merge {:harmony-index i
-                                            :harmony harmony})
-    (bardo.osc-helpers/update-label :gusano :harmony (name harmony))))
+                                            :harmony harmony
+                                            :harmonic-seq harmonic-seq})
+    (bardo.osc-helpers/update-label :gusano :harmony (name harmony))
+    (update-gusano-harmonic-index-label! harmonic-seq harmonic-seq-index)))
+
+(defn set-next-gusano-harmonic-seq
+  []
+  (let [{:keys [harmony harmonic-seq-index]
+         :or {harmonic-seq-index 0}} (:gusano @live-state)
+        harmonic-seqs (get gusano-harmonic-seqs harmony)
+        i (-> harmonic-seq-index
+              inc
+              (mod (count harmonic-seqs)))
+        harmonic-seq (get-gusano-harmonic-seq harmony i)]
+    (swap! live-state update :gusano merge {:harmonic-seq-index i
+                                            :harmonic-seq harmonic-seq})
+    (update-gusano-harmonic-index-label! harmonic-seq i)))
 
 (comment
   (set-next-gusano-harmony)
@@ -938,6 +971,10 @@
 (defn get-gusano-harmony!
   []
   (get-in @live-state [:gusano :harmony]))
+
+(defn get-gusano-harmonic-seq!
+  []
+  (get-in @live-state [:gusano :harmonic-seq]))
 
 (defn get-harmonic-data!
   [player-k bank]
@@ -978,7 +1015,8 @@
 
 (def ^:private gusano-defaults
   {:harmony-index 0
-   :harmony :fib})
+   :harmony :fib
+   :harmonic-seq-index -1})
 
 (defn add-player-to-osc-msg-map [player m]
   (map (fn [[k v]] [(format k player) v]) m))
@@ -1050,7 +1088,9 @@
     "/gusano/grain-trig" '(0.0),
     "/gusano/harmony-label" [(-> gusano-defaults :harmony name)]
     "/gusano/period" '(0),
-    "/gusano/rates" '(0),
+    "/gusano/harmony-up-btn" '(1.0)
+    "/gusano/harmonic-seq-speed" '(1.0)
+    "/gusano/harmonic-seq-up-btn" '(1.0)
     "/Milo/processes-amp-boost" '(3),
     "/Diego/input-amp-boost" '(0),
     "/System/voces-master" [reaper/zero-db]

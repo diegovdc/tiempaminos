@@ -9,9 +9,9 @@
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.scratch.main]))
 
 (comment
-  ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-  ;; NOTE main initialization section
-  ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  ;;* main initialization section
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   ;; init OSC communication
   (bardo.osc/init!
@@ -33,7 +33,13 @@
   (doseq [[path args] bardo.live-state/default-touch-osc-state]
     (when-not (or (some #(str/ends-with? path %) ["-visible" "-label" "-group"])
                   (str/includes? path "toggle-bank"))
-      (bardo.osc/osc-responder {:path path :args args})))
+      (bardo.osc/osc-responder {:path path :args args})
+      ;; if a some buttons get activated, deactivate them
+      (when (#{"/gusano/harmonic-seq-up-btn"
+               "/gusano/harmony-up-btn"}
+             path)
+        (Thread/sleep 100)
+        (bardo.osc/osc-responder {:path path :args [(float 0)]}))))
   (timbre/info "State has been reset"))
 
 
