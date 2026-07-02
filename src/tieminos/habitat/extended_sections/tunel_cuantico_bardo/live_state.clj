@@ -1,6 +1,6 @@
 (ns tieminos.habitat.extended-sections.tunel-cuantico-bardo.live-state
   (:require
-   [clojure.math :refer [round]]
+   [clojure.math :refer [floor round]]
    [clojure.set :as set]
    [clojure.string :as str]
    [erv.utils.core :refer [round2]]
@@ -885,11 +885,59 @@
   (-> @live-state)
   (reset! live-state {}))
 
+;;;;;;;;;;;;;;;;;;
+;; * Gusano
+;;;;;;;;;;;;;;;;;;
+
 ;; TODO: set the resulting values of gusano in the live-state just as with the other values
+
+(declare set-gusano-chord-index)
 
 (defn get-gusano-data
   []
   (:gusano @live-state))
+
+(defn- get-gusano-harmonic-seq*
+  [{:keys [harmony harmonic-seq-index]
+    :as _gusano-data}]
+  (let [harmonic-seqs (get gusano-harmonic-seqs harmony)]
+    (->> harmonic-seqs
+         (wrap-at harmonic-seq-index))))
+
+#_(defn get-gusano-harmony!
+    []
+    (get-in @live-state [:gusano :harmony]))
+
+(defn get-cached-gusano-harmonic-seq!
+  []
+  (get-in @live-state [:gusano :harmonic-seq]))
+
+(defn get-harmonic-data!
+  [player-k bank]
+  (let [data (get-player-data player-k)
+        bank-data (get data bank)]
+    (assoc bank-data :harmony (:harmony data))))
+
+(let [prev-index (atom 0)]
+  (defn- gusano-next-rate-index! [speed]
+    (let [prev-i @prev-index]
+      (int (floor (reset! prev-index (+ prev-i speed)))))))
+
+(defn- get-gusano-rates-seq-speed!
+  []
+  (-> @live-state :gusano (:rates-seq-speed 1)))
+
+(defn get-gusano-chord* [rates-seq]
+  (let [i (gusano-next-rate-index! (get-gusano-rates-seq-speed!))]
+    (set-gusano-chord-index i)
+    (wrap-at i rates-seq)))
+
+(defn get-gusano-chord! []
+  (get-gusano-chord* (get-cached-gusano-harmonic-seq!)))
+
+(defn inc-gusano-rate-index! []
+  (let [i (gusano-next-rate-index! 1)]
+    (set-gusano-chord-index i)))
 
 (defn set-gusano-rates-seq-speed
   [i]
@@ -919,23 +967,26 @@
   [x]
   (swap! live-state assoc-in [:gusano :second-voice-index] x))
 
-(defn- get-gusano-harmonic-seq
-  [harmony index]
-  (let [harmonic-seqs (get gusano-harmonic-seqs harmony)]
-    (->> harmonic-seqs
-         (wrap-at index))))
-
 (defn- update-gusano-harmonic-index-label!
-  [harmonic-seq harmonic-seq-index]
+  [{:keys [harmony harmonic-seq harmonic-seq-index harmonic-seq-item-index]}]
   (bardo.osc-helpers/update-label
    :gusano :harmonic-seq
-   (if-let [name* (-> harmonic-seq meta :name)]
-     (format "#%s %s"
-             (mod harmonic-seq-index (count harmonic-seq))
-             name*)
-     (format "#%s (acordes: %s)"
-             (mod harmonic-seq-index (count harmonic-seq))
-             (count harmonic-seq)))))
+   (try
+     (let [name* (-> harmonic-seq meta :name)
+           len (count harmonic-seq)]
+       (if name*
+         (format "#%s %s - %s"
+                 (if-let [harmonic-seq (-> gusano-harmonic-seqs harmony)]
+                   (mod harmonic-seq-index (count harmonic-seq))
+                   "?")
+                 (if harmonic-seq-item-index (str (inc harmonic-seq-item-index) "/" len) "")
+                 name*)
+         (format "#%s (acordes: %s)"
+                 (mod harmonic-seq-index len)
+                 (count harmonic-seq))))
+     (catch Exception e (do
+                          (timbre/error e)
+                          "Error with label")))))
 
 (defn set-next-gusano-harmony
   []
@@ -943,13 +994,14 @@
          :or {harmony-index 0
               harmonic-seq-index 0}} (:gusano @live-state)
         i (inc harmony-index)
-        harmony (wrap-at i gusano-harmonies)
-        harmonic-seq  (get-gusano-harmonic-seq harmony harmonic-seq-index)]
+        next-harmony (wrap-at i gusano-harmonies)
+        next-harmonic-seq  (get-gusano-harmonic-seq* {:harmony next-harmony
+                                                      :harmonic-seq-index harmonic-seq-index})]
     (swap! live-state update :gusano merge {:harmony-index i
-                                            :harmony harmony
-                                            :harmonic-seq harmonic-seq})
-    (bardo.osc-helpers/update-label :gusano :harmony (name harmony))
-    (update-gusano-harmonic-index-label! harmonic-seq harmonic-seq-index)))
+                                            :harmony next-harmony
+                                            :harmonic-seq next-harmonic-seq})
+    (bardo.osc-helpers/update-label :gusano :harmony (name next-harmony))
+    (update-gusano-harmonic-index-label! (get-gusano-data))))
 
 (defn set-next-gusano-harmonic-seq
   []
@@ -959,31 +1011,35 @@
         i (-> harmonic-seq-index
               inc
               (mod (count harmonic-seqs)))
-        harmonic-seq (get-gusano-harmonic-seq harmony i)]
+        harmonic-seq (get-gusano-harmonic-seq* {:harmony harmony
+                                                :harmonic-seq-index i})]
     (swap! live-state update :gusano merge {:harmonic-seq-index i
                                             :harmonic-seq harmonic-seq})
-    (update-gusano-harmonic-index-label! harmonic-seq i)))
+    (update-gusano-harmonic-index-label! (get-gusano-data))))
+
+(defn set-gusano-chord-index
+  "For the label"
+  [index]
+  (let [i (mod index (count (get-cached-gusano-harmonic-seq!)))]
+    (swap! live-state assoc-in [:gusano :harmonic-seq-item-index] i)
+    (update-gusano-harmonic-index-label! (get-gusano-data))))
+
+(defn set-gusano-chord-as-harmonic-seq
+  [chord]
+  (swap! live-state update :gusano
+         merge
+         {:harmonic-seq-index 0
+          :harmonic-seq (with-meta [chord]
+                          {:name (str "Custom chord: " chord)})})
+  (update-gusano-harmonic-index-label! (get-gusano-data)))
 
 (comment
-  (set-next-gusano-harmony)
-  (-> live-state deref :gusano))
+  (get-harmonic-data! :milo 0)
+  (set-gusano-chord-as-harmonic-seq [1 2 7/2]))
 
-(defn get-gusano-harmony!
-  []
-  (get-in @live-state [:gusano :harmony]))
-
-(defn get-gusano-harmonic-seq!
-  []
-  (get-in @live-state [:gusano :harmonic-seq]))
-
-(defn get-harmonic-data!
-  [player-k bank]
-  (let [data (get-player-data player-k)
-        bank-data (get data bank)]
-    (assoc bank-data :harmony (:harmony data))))
-
-(comment
-  (get-harmonic-data! :milo 0))
+;;;;;;;;;;;;;;;;;;
+;; * Network
+;;;;;;;;;;;;;;;;;;
 
 (defn post [endpoint body & {:keys [debug?]}]
   (http/post (str "http://localhost:5000" endpoint)
@@ -1004,6 +1060,10 @@
                (if print-instead?
                  (timbre/info new-value)
                  (throttled-post (dissoc new-value :lorentz))))))
+
+;;;;;;;;;;;;;;;;;;
+;; * Defaults
+;;;;;;;;;;;;;;;;;;
 
 (defn cast-osc-data [data]
   (map (fn [[k v]] [k (map #(cond
@@ -1084,7 +1144,7 @@
     "/EQ/notch-radio" '(0),
     "/gusano/amp" '(0.0),
     "/gusano/durs" '(0),
-    "/gusano/grain-durs" '(0.0),
+    "/gusano/grain-dur" '(0.0),
     "/gusano/grain-trig" '(0.0),
     "/gusano/harmony-label" [(-> gusano-defaults :harmony name)]
     "/gusano/period" '(0),
@@ -1128,6 +1188,10 @@
                 (:touch-osc-data (make-synth-defaults "Diego"))))
        (into {})))
 
+;;;;;;;;;;;;;;;;;;;;;;
+;; * Initialization
+;;;;;;;;;;;;;;;;;;;;;;
+
 (defn init-state!
   []
   (init!
@@ -1141,11 +1205,9 @@
                                                      str/capitalize))})
                                            (range 8)))})]
      {:gusano gusano-defaults
-      ;; TODO: is this key seems unnecessary? At least it is misnamed.
+       ;; TODO: is this key seems unnecessary? At least it is misnamed.
       :algo-2.2.9-clouds (merge
                           (init-player :milo)
                           (init-player :diego))})))
-
-
 
 

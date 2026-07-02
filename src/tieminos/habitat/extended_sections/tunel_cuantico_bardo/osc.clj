@@ -11,14 +11,14 @@
     :as bardo.init]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.live-state
     :as bardo.live-state
-    :refer [delete-all-banks delete-bank live-state mute-input
-            save-touchosc-synth-param set-active-bank
+    :refer [delete-all-banks delete-bank inc-gusano-rate-index! live-state
+            mute-input save-touchosc-synth-param set-active-bank
             set-active-harmonic-voice set-active-recorded-bank set-clouds-amp
             set-clouds-env set-clouds-rhythm set-clouds-sample-lib-size
             set-filter-index set-filter-param set-gusano-2nd-voice
             set-gusano-amp set-gusano-durs set-gusano-grain-dur
-            set-gusano-grain-trig set-gusano-period
-            set-gusano-rates-seq-speed set-harmonic-range set-harmonic-speed
+            set-gusano-grain-trig set-gusano-period set-gusano-rates-seq-speed
+            set-harmonic-range set-harmonic-speed
             set-harmonic-voice-convergence-point set-harmony
             set-independent-refrain set-next-gusano-harmonic-seq
             set-next-gusano-harmony set-panner-index set-panner-param
@@ -478,11 +478,12 @@
       "/gusano/period" (set-gusano-period (first args))
       "/gusano/durs" (set-gusano-durs (first args))
       "/gusano/grain-trig" (set-gusano-grain-trig (first args))
-      "/gusano/grain-durs" (set-gusano-grain-dur (first args))
+      "/gusano/grain-dur" (set-gusano-grain-dur (first args))
       "/gusano/2nd-voice" (set-gusano-2nd-voice (first args))
       "/gusano/harmony-up-btn" (when press? (set-next-gusano-harmony))
       "/gusano/harmonic-seq-up-btn" (when press? (set-next-gusano-harmonic-seq))
       "/gusano/harmonic-seq-speed" (set-gusano-rates-seq-speed (first args))
+      "/gusano/harmonic-chord-inc-btn" (when press? (inc-gusano-rate-index!))
       ;; presets
       "/save-preset" (when press? (bardo.presets/save-preset!))
       ;; "/presets/load" (bardo.presets/load-preset! internal-client @habitat-osc/receiver-clients (first args))

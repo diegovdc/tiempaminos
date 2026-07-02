@@ -1,13 +1,12 @@
 (ns tieminos.habitat.extended-sections.tunel-cuantico-bardo.gusanos.core
   (:require
    [clojure.data.generators :refer [weighted]]
-   [clojure.math :refer [floor]]
    [erv.scale.core :refer [deg->freq]]
    [erv.utils.core :refer [interval period-reduce]]
    [overtone.core :as o]
    [taoensso.timbre :as timbre]
    [tieminos.habitat.extended-sections.harmonies.chords
-    :refer [fib-21 fib-chord-seq  transpose-chord]]
+    :refer [fib-21 fib-chord-seq transpose-chord]]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.live-state
     :as bardo.live-state]
    [tieminos.habitat.groups :as groups]
@@ -17,19 +16,10 @@
     :refer [periodize-durs rand-latest-buf]]
    [tieminos.habitat.synths.granular :refer [amanecer*guitar-clouds]]
    [tieminos.math.bezier-samples :as bzs]
-   [tieminos.math.utils :refer [linlin]]
+   [tieminos.math.utils :refer [linlin linlin*]]
    [tieminos.utils :refer [rrange wrap-at]]
    [time-time.dynacan.players.gen-poly :as gp :refer [on-event ref-rain]]
    [time-time.standard :refer [rrand]]))
-
-(let [prev-index (atom 0)]
-  (defn- next-rate-index! [speed]
-    (let [prev-i @prev-index]
-      (int (floor (reset! prev-index (+ prev-i speed)))))))
-
-(defn- get-rates-seq-speed!
-  []
-  (-> @bardo.live-state/live-state :gusano (:rates-seq-speed 1)))
 
 (def ^:private amp-multiplier (o/db->amp 6))
 
@@ -64,8 +54,7 @@
   (-> @bardo.live-state/live-state :gusano (:grain-trig-rate 0.5) map-trig-rate))
 
 (def ^:private map-grain-dur
-  (memoize (fn [grain-dur]
-             (first (linlin 0 1 10 110 [grain-dur])))))
+  (memoize (fn [grain-dur] (linlin* 0 1 10 110 grain-dur))))
 
 (defn- get-grain-dur!
   []
@@ -162,7 +151,6 @@
 
 (defn get-second-voice!
   [index ratio]
-
   (let [second-voice-index (-> @bardo.live-state/live-state :gusano (:second-voice-index 0))
         f (wrap-at second-voice-index second-voice-fn)]
     (f index ratio)))
@@ -210,11 +198,10 @@
    :on-event (on-event
               (when-let [buf (buf-fn {:index index})]
                 (when-not (silence? silence-thresh buf) ;; allow us to control silences by not playing
-                  (let [rates (bardo.live-state/get-gusano-harmonic-seq!)
-                        rates* (map (fn [r] (if (sequential? r) r [r])) rates)
-                        rate (wrap-at (next-rate-index! (get-rates-seq-speed!)) rates*)
+                  (let [chord (bardo.live-state/get-gusano-chord!)
                         amp* (get-amp!)]
-                    (doseq [r rate]
+                    (timbre/debug " Gusano rates" chord)
+                    (doseq [r chord]
                       (let [start (rrange (rrange 0 0.1) 0.3)
                             end (min 1 (+ start (rrange 0.05 1)))
                             a (weighted a-weights)
@@ -241,9 +228,7 @@
                                     :out out-bus
                                     :pan (rrange -1 1)}]
 
-                        (timbre/debug "Playing Gusano" (:out config))
                         (when on-play
-                          (timbre/debug "Gusano on-play" (:out config))
                           (on-play (assoc config
                                           :amp amp*
                                           :rate (float r))))
@@ -252,13 +237,14 @@
                                                        :interp (rand-nth [1 2 4])
                                                        :amp (* amp* (rrange 0.2 1) (norm-amp buf))))
                         (when-let [rate* (get-second-voice! index r)]
+                          (timbre/debug "Gusano second voice" (:out config))
                           (amanecer*guitar-clouds (assoc config
                                                          :rate rate*
                                                          :interp 4
                                                          :amp (* amp* (rrange 0 0.7) (norm-amp buf)))))))))))))
 
 (def default-config
-  {:on-play (fn [& _] (timbre/debug "Playing gusano"))
+  {:on-play (fn [config] (timbre/debug "Gusano on-play:" config))
    :id ::gusano
    :out-bus (main-returns :mixed)
    :silence-thresh 0.0

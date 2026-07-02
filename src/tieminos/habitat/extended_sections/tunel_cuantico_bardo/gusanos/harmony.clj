@@ -51,9 +51,9 @@
          {:name (str chord " range: 0," size)}))
      ;; fib: calido con un poco de disonancia
      (let [chord [0 4 8 12 16 20 24 28]
-           chords (chord-fn (transpose-chord chord [0 1]))]
-       (with-meta (interleave chords (reverse chords))
-         {:name (str chord " range: 0,1")}))]))
+           chords (chord-fn (transpose-chord chord [0 0 1 1]))]
+       (with-meta chords
+         {:name (str chord " steps: 0,0,1,1 ")}))]))
 
 (def gusano-harmonic-seqs
   {:fib (make-rates :fib)
