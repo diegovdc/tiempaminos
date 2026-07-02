@@ -8,13 +8,12 @@
    [tieminos.attractors.lorentz :as lorentz]
    [tieminos.habitat.extended-sections.harmonies.chords
     :refer [get-harmony rate-chord-seq]]
-   [tieminos.habitat.extended-sections.tunel-cuantico-bardo.clouds
-    :refer [clouds-refrain2]]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.gusanos.core
     :as bardo.gusano]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.live-state
     :as bardo.live-state
     :refer [live-state]]
+   [tieminos.habitat.extended-sections.tunel-cuantico-bardo.osc-helpers :as bardo.osc-helpers]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.rec
     :as bardo.rec]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.synths
@@ -45,6 +44,21 @@
   (-> @live-state :rec :mic-1 :dur)
   (def input-k :mic-2))
 
+(defn send-tick
+  [input-k val]
+  (bardo.osc-helpers/send-osc-msg (format "/Rec/%s-tick" (name input-k))
+                                  (str val)))
+
+(defn tick-countdown
+  [rec-dur input-k]
+  (let [tick 0.5]
+    (rain.v2/ref-rain
+     :id (make-rec-id (str (name input-k) "-countdown"))
+     :durs (repeat (/ rec-dur tick) tick)
+     :loop? false
+     :on-event (rain.v2/on-event
+                (send-tick input-k (- rec-dur (* i tick)))))))
+
 (defn start-recording
   [{:keys [input-k]}]
   (timbre/info "starting rec on" input-k)
@@ -53,15 +67,17 @@
      {:id (make-rec-id input-k)
       :input-k input-k
       :input-bus input-bus
-      :rec-dur-fn (fn [_]
-                    (-> @live-state :rec input-k :dur))
+      :rec-dur-fn (fn [_] (-> @live-state :rec input-k :dur))
       :rec-pulse (fn [_] (-> @live-state :rec input-k get-rec-pulse))
        ;; :print-info? true
-      :on-rec-start (fn [_]
+      :on-rec-start (fn [_rec-config]
                       (swap! live-state
                              assoc-in
                              [:rec input-k :last-rec-timestamp]
-                             (o/now)))})
+                             (o/now))
+                      (tick-countdown (-> @live-state :rec input-k :dur)
+                                      input-k))
+      :on-rec-end (fn [_] (send-tick input-k ""))})
     (timbre/error "No input bus for key:" input-k)))
 
 (comment

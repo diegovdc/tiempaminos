@@ -17,12 +17,14 @@
            rec-dur-fn
            rec-pulse
            countdown
-           on-rec-start]
+           on-rec-start
+           on-rec-end]
     :or {id :rec-loop3
          rec-dur-fn (fn [_] 0.5)
          rec-pulse [0.5]
          countdown 0
-         on-rec-start (fn [_])}}]
+         on-rec-start (fn [_])
+         on-rec-end (fn [_])}}]
   (ref-rain
    :id id
    :durs rec-pulse
@@ -39,7 +41,7 @@
                             :input-name (:name input-bus)
                             :input-bus input-bus
                             :dur-s dur-s
-                            :on-end (fn [_])
+                            :on-end on-rec-end
                             :print-info? false
                             :countdown countdown
                             :on-rec-start on-rec-start})))))
