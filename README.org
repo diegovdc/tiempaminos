@@ -1,5 +1,12 @@
 #+title: Tieminos
 
+
+
+* Introduction
+My current music workshop, all my clojure code-music creation since mid-2021 lives here.
+
+Mainly uses ~Supercollider~ via ~Overtone~, my microtonality library [[https://github.com/diegovdc/erv][erv]] and my sequencing library [[https://github.com/diegovdc/time-tiem][time-tiem]].
+
 * MIDI
 ** MIDI controller template
 #+begin_src clojure
@@ -199,9 +206,6 @@ When writting macros this ~ns~ gives access to the ugen operators
 [overtone.sc.ugen-collide-list :as oc]
 #+END_SRC
 
-My current music workshop, all my clojure code-music creation since mid-2021 lives here.
-
-Mainly uses ~Supercollider~ via ~Overtone~, my microtonality library [[https://github.com/diegovdc/erv][erv]] and my sequencing library [[https://github.com/diegovdc/time-tiem][time-tiem]].
 
 * License
 
