@@ -59,10 +59,15 @@
                                   (* :ugen/env))))))
 
 (def freq 5432)
+
+(def ^:private SC-IDABLES
+  #{overtone.sc.sample.Sample
+    overtone.sc.buffer.Buffer
+    overtone.sc.bus.AudioBus})
+
 (defn sc-idable?
   [x]
-  (or (= (type x) overtone.sc.sample.Sample)
-      (= (type x) overtone.sc.buffer.Buffer)))
+  (SC-IDABLES (type x)))
 
 (do
   (defn modify-params

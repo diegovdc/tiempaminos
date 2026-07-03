@@ -2,15 +2,18 @@
   (:require
    [clojure.core.async :as a]
    [overtone.core :as o]
-   [overtone.sc.ugen-collide-list :as oc]
    [taoensso.timbre :as timbre]
-   [tieminos.habitat.extended-sections.tunel-cuantico-bardo.rec :as bardo.rec]
-   [tieminos.habitat.extended-sections.tunel-cuantico-bardo.synth-management :as bardo.synth-management]
+   [tieminos.habitat.extended-sections.tunel-cuantico-bardo.rec
+    :as bardo.rec]
+   [tieminos.habitat.extended-sections.tunel-cuantico-bardo.synth-management
+    :as bardo.synth-management]
+   [tieminos.habitat.extended-sections.tunel-cuantico-bardo.synths.utils
+    :refer [map-outs]]
    [tieminos.math.bezier :as bz]
    [tieminos.math.utils :refer [linlin linlin*]]
    [tieminos.overtone-extensions :as oe]
-   [tieminos.sc-utils.synths.template-synth.v0 :refer [defplug make-synth-fn
-                                                       plug*]]
+   [tieminos.sc-utils.synths.template-synth.v0
+    :refer [defplug make-synth-fn plug*]]
    [tieminos.sc-utils.synths.v1 :refer [lfo-kr]]
    [tieminos.utils :refer [rrange]]
    [time-time.standard :refer [rrand]]))
@@ -192,17 +195,7 @@
    :q 0.5
    :ugen/filter '((fn [sig] (o/b-moog sig (o/clip lpf 60 20000) q 2)))})
 
-(defn map-outs
-  "Given a sequence of outs, map a signal array to each out."
-  [out-offset outs-seq sig]
-  (if (and (sequential? outs-seq)
-           (sequential? sig))
-    (map (fn [out sig]
-           (o/out:ar (oc/+ out out-offset) sig))
-         outs-seq
-         sig)
-    (do (timbre/warn "[map-outs] `outs-seq` & `sig` are not both vectors. Resorting to default output method for current synth variation.")
-        (o/out outs-seq sig))))
+(comment map-outs)
 
 (defn +outs1
   [params]
