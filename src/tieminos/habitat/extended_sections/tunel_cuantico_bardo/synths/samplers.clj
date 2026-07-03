@@ -1,4 +1,4 @@
-(ns tieminos.habitat.extended-sections.tunel-cuantico-bardo.synths
+(ns tieminos.habitat.extended-sections.tunel-cuantico-bardo.synths.samplers
   (:require
    [clojure.core.async :as a]
    [overtone.core :as o]

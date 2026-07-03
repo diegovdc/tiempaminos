@@ -13,11 +13,13 @@
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.live-state
     :as bardo.live-state
     :refer [live-state]]
-   [tieminos.habitat.extended-sections.tunel-cuantico-bardo.osc :as bardo.osc]
-   [tieminos.habitat.extended-sections.tunel-cuantico-bardo.osc-helpers :as bardo.osc-helpers]
+   [tieminos.habitat.extended-sections.tunel-cuantico-bardo.osc
+    :as bardo.osc]
+   [tieminos.habitat.extended-sections.tunel-cuantico-bardo.osc-helpers
+    :as bardo.osc-helpers]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.rec
     :as bardo.rec]
-   [tieminos.habitat.extended-sections.tunel-cuantico-bardo.synths
+   [tieminos.habitat.extended-sections.tunel-cuantico-bardo.synths.samplers
     :refer [play-synth]]
    [tieminos.habitat.groups :as groups]
    [tieminos.habitat.recording :as rec]
