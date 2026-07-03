@@ -4,6 +4,7 @@
    [clojure.string :as str]
    [overtone.core :as o]
    [taoensso.timbre :as timbre]
+   [tieminos.habitat.extended-sections.tunel-cuantico-bardo.async-events :refer [dispatch]]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.live-state :refer [live-state]]
    [tieminos.habitat.recording :refer [bufs rec-input]]
    [time-time.dynacan.players.gen-poly :as gp :refer [on-event ref-rain]]))
@@ -73,7 +74,7 @@
 
 (defonce currently-playing-bufs (atom {}))
 
-(defonce ^:private buffer-freeing-chan (a/chan))
+(defonce ^:private buffer-freeing-chan (a/chan (a/sliding-buffer 1024)))
 
 (defonce ^:private buffer-freeing-loop-running? (atom false))
 
@@ -140,22 +141,36 @@
           (timbre/info "Stopping currently-playing-bufs-cleaning-loop"))))))
 
 (defn delete-bank-bufs
-  [input-k bank]
-  (let [bank-bufs (->> @bufs
+  [{:keys [input-ks banks]}]
+  (let [input-ks* (->> input-ks
+                       (mapv #(format "%s-bus" (name %)))
+                       set)
+        banks* (set banks)
+        bank-bufs (->> @bufs
                        (filter
                         (fn [[_k {:keys [rec/meta]}]]
                           (and (= (:section meta) section-name)
-                               (= (:subsection meta) bank)
-                               (= (:input-name meta) (format "%s-bus" (name input-k)))))))]
+                               (banks* (:subsection meta))
+                               (input-ks* (:input-name meta)))))
+                       (take 1024))]
 
-    (timbre/info (format "Freeing %s buffers from bank %s of %s"
+    (timbre/info (format "Freeing %s buffers from banks %s of %s"
                          (count bank-bufs)
-                         bank
-                         input-k))
+                         banks
+                         input-ks))
     (when-not @buffer-freeing-loop-running? (start-buffer-freeing-loop!))
     (when-not @currently-playing-bufs-cleaning-loop-running? (start-currently-playing-bufs-cleaning-loop!))
     (doseq [[_k buf] bank-bufs] (async-free-buffer buf))
     (swap! bufs (fn [bufs-map] (apply dissoc bufs-map (keys bank-bufs))))))
+
+(comment
+  (doseq [_ (range 10)]
+    (swap! bufs
+           assoc (random-uuid)
+           (assoc (o/buffer 1024)
+                  :rec/meta {:input-name "guitar-bus"
+                             :section section-name
+                             :subsection 1}))))
 
 (defn init-rec-buffers-manager!
   []
@@ -166,3 +181,25 @@
   []
   (reset! buffer-freeing-loop-running? false)
   (reset! currently-playing-bufs-cleaning-loop-running? false))
+
+(defn count-bufs-per-bank
+  [bufs-data]
+  (->> bufs-data
+       (reduce
+        (fn [acc [_ {:keys [rec/meta] :as _buf}]]
+          (update-in acc
+                     [(keyword (:input-name meta))
+                      (:subsection meta)]
+                     (fnil inc 0)))
+        {})))
+
+(defn on-bufs-change
+  [_ _ _ new-bufs]
+  (dispatch {:type :bardo.event/bufs-counted
+             :data (count-bufs-per-bank new-bufs)}))
+
+(defn init-bufs-watch!
+  []
+  (add-watch bufs ::bufs #'on-bufs-change))
+(comment
+  (init-bufs-watch!))

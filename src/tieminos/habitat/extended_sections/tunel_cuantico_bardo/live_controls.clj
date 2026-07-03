@@ -13,6 +13,7 @@
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.live-state
     :as bardo.live-state
     :refer [live-state]]
+   [tieminos.habitat.extended-sections.tunel-cuantico-bardo.osc :as bardo.osc]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.osc-helpers :as bardo.osc-helpers]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.rec
     :as bardo.rec]
@@ -568,7 +569,8 @@
     :stop-gusano (stop-gusano)
     :start-recording (start-recording data)
     :stop-recording (stop-recording data)
-    :delete-bank-bufs (bardo.rec/delete-bank-bufs (:input-k data) (:active-bank data))
+    :bardo.event/delete-bank-bufs (bardo.rec/delete-bank-bufs data)
+    :bardo.event/bufs-counted (bardo.osc/update-bufs-count data)
     ;; event for dev purpuses
     :dev/trigger-clouds-event (do ;; data {:bank int}
                                 (bardo.live-state/toggle-active-bank! :milo (:bank data) true)

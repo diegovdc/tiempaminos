@@ -23,14 +23,14 @@
 
 (defonce touch-osc-state (atom {}))
 
-(defonce live-state (atom {:lorentz (lorentz/init-system :x (+ 0.3 (rand 0.01))
-                                                         :y (+ 0.02 (rand 0.01))
-                                                         :z (+ 0.012 (rand 0.01)))}))
+(defonce live-state (atom {}))
+
 (defn init! [data]
   (reset! live-state
           (merge {:lorentz (lorentz/init-system :x (+ 0.3 (rand 0.01))
                                                 :y (+ 0.02 (rand 0.01))
-                                                :z (+ 0.012 (rand 0.01)))}
+                                                :z (+ 0.012 (rand 0.01)))
+                  :system/recording? false}
                  data)))
 
 (comment
@@ -38,6 +38,22 @@
   (def lorentz (->> @live-state :lorentz))
   (lorentz 2)
   (nth [1 2 3 4] 2))
+
+;;;;;;;;;;;;;;;;;;
+;; * Recording
+;;;;;;;;;;;;;;;;;;
+
+(defn start-recording
+  []
+  (swap! live-state :system/recording? true))
+
+(defn stop-recording
+  []
+  (swap! live-state :system/recording? false))
+
+;;;;;;;;;;;;;;;;;;
+;; * Synth
+;;;;;;;;;;;;;;;;;;
 
 (defn synth-bank-path
   [player & keys]
@@ -718,9 +734,6 @@
 
 (comment
   (reset! live-state {})
-  (add-watch live-state :debug
-             (fn [_ _ _ _]
-               #_(clojure.pprint/pprint (get-selected-synth-data :milo))))
   (get-in panner-data [:random :vel :path])
   (get-selected-synth-bank :milo)
   (get-selected-synth-data :milo)
@@ -854,15 +867,13 @@
   [inputs]
   (doseq [input-k inputs]
     (let [active-bank (-> @live-state :rec input-k (:active-bank 0))]
-      (bardo.comms/dispatch {:type :delete-bank-bufs
-                             :data {:input-k input-k :active-bank active-bank}}))))
+      (bardo.comms/dispatch {:type :bardo.event/delete-bank-bufs
+                             :data {:input-ks [input-k] :banks [active-bank]}}))))
 
 (defn delete-all-banks
   [inputs]
-  (doseq [bank (range 8)
-          input-k inputs]
-    (bardo.comms/dispatch {:type :delete-bank-bufs
-                           :data {:input-k input-k :active-bank bank}})))
+  (bardo.comms/dispatch {:type :bardo.event/delete-bank-bufs
+                         :data {:input-ks inputs :banks (range 8)}}))
 
 (def default-gusano-config
   {:section 0

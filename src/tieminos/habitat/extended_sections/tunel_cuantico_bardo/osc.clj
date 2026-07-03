@@ -1,5 +1,6 @@
 (ns tieminos.habitat.extended-sections.tunel-cuantico-bardo.osc
   (:require
+   [clojure.pprint :as pprint]
    [clojure.set :as set]
    [clojure.string :as str]
    [erv.utils.core :refer [round2]]
@@ -7,8 +8,6 @@
    [taoensso.timbre :as timbre]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.config
     :as bardo.config]
-   [tieminos.habitat.extended-sections.tunel-cuantico-bardo.init
-    :as bardo.init]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.live-state
     :as bardo.live-state
     :refer [delete-all-banks delete-bank inc-gusano-rate-index! live-state
@@ -27,6 +26,7 @@
             toogle-rec]]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.osc-helpers
     :refer [update-clients]]
+   [tieminos.habitat.extended-sections.tunel-cuantico-bardo.osc-helpers :as bardo.osc-helpers]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.presets
     :as bardo.presets]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.synth-management
@@ -323,14 +323,18 @@
   []
   (doseq [track automated-tracks]
     (reaper/set-autowrite track))
-  (reaper/rec))
+  (reaper/rec)
+  (bardo.live-state/start-recording)
+  (bardo.osc-helpers/send-osc-msg "/System/not-recording-label" ""))
 
 (defn reaper-stop!
   []
-  ;; set OSC EQ envelope to write
   (reaper/stop)
+  ;; set OSC EQ envelope to write
   (doseq [track automated-tracks]
-    (reaper/set-autoread track)))
+    (reaper/set-autoread track))
+  (bardo.live-state/stop-recording)
+  (bardo.osc-helpers/send-osc-msg "/System/not-recording-label" "NOT REC"))
 
 (comment
   (update-clients @habitat-osc/receiver-clients "/Milo/harmonic-speed-label" [(str (round2 2 0.3455))]))
@@ -507,7 +511,6 @@
       ;; main controls
       "/System/rec-start" (when press? (reaper-rec!))
       "/System/rec-stop" (when press? (reaper-stop!))
-      "/System/init" (when press? (bardo.init/all!))
       "/System/voces-master" (set-track-volume2 :mixes-processes-2-track (first args) reaper/zero-db)
       "/System/subwoofer-master" (set-track-volume2 :subwoofer-track (first args) reaper/zero-db)
       (timbre/warn "Unknown path for message: " HACKED-path msg args-map))
@@ -530,3 +533,22 @@
 
 (comment
   (remove-watch bardo.live-state/live-state ::post-live-state))
+
+;;;;;;;;;;;;;;;;;;;;;;;;
+;; * UI
+;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defn update-bufs-count
+  [bufs-count-data]
+  (let [val
+        (with-out-str
+          (-> bufs-count-data
+              (dissoc nil) ;; TODO: figure out why there is `nil` value here
+
+              (->> (map (fn [[k v]]
+                          (assoc
+                           (into {} (map (fn [[k v]] [(inc k) v]) v))
+                           :input k)))
+                   (pprint/print-table (concat [:input] (range 1 9))))))]
+    (bardo.osc-helpers/send-osc-msg "/Rec/buffer-data-label" val)))
+
