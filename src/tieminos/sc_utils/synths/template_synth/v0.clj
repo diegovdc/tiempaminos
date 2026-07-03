@@ -16,6 +16,12 @@
     (var-get x)
     x))
 
+(defn safe-get-ugen-param
+  "Prevent a param from being `nil`, if that value is in the map."
+  [params x]
+  (let [v (params x)]
+    (or v identity)))
+
 (defn modify-body [params synth-body]
   #_(println "MB" params synth-body)
   (let [params-map (->> params
@@ -32,9 +38,9 @@
                       mapping
                       (resolve-frag
                        (cond
-                         (ns-kw? "fx" x) (params x identity)
-                         (ns-kw? "ugen" x) (params x identity)
-                         (ns-kw? "dyn" x) (list 'as-> 'sig (params x identity))
+                         (ns-kw? "fx" x) (safe-get-ugen-param params x)
+                         (ns-kw? "ugen" x) (safe-get-ugen-param params x)
+                         (ns-kw? "dyn" x) (list 'as-> 'sig (safe-get-ugen-param params x))
                          :else x))))
                   synth-body)))
 (comment
@@ -45,18 +51,19 @@
                 :env-durs [1 1 1]
                 :ugen/env '(o/env-gen (o/envelope levels env-durs))
                 :shaper-limit 0.5
-                :ugen/pan #'panny
+                ;; :ugen/pan #'panny
                 :ugen/rev '(o/sine-shaper shaper-limit)
                 :ugen/fx1 '(o/dist)
                 :out 0}]
     (modify-body
      params
      (qualify-body params '(o/out 0
-                                  (o/sin-osc freq)
-                                  :ugen/pan
-                                  :ugen/rev
-                                  :ugen/fx1
-                                  (* :ugen/env))))))
+                                  (-> (o/sin-osc freq)
+                                      :ugen/pan
+                                      :ugen/rev
+                                      :ugen/fx1
+                                      :ugen/nilly
+                                      (* :ugen/env)))))))
 
 (def freq 5432)
 
@@ -529,7 +536,7 @@
     :ugen/mix '((fn [sig] (if (> (count freq) 1)
                             (o/mix sig)
                             sig)))
-    :outs [0]}
+    :outs [0 1 2 3]}
     ;; synth
    '(map-to-outs-seq
      outs
@@ -541,6 +548,8 @@
          (* :ugen/env)))
    {:reset? true})
 
+  (sinpan {:ugen/pan '((fn [sig] (o/pan2 sig (o/lf-noise1 2))))
+           :outs [0 1]})
   ;; synth call
   (def ^:fragment panny '((fn [%] (do
                                     (println "com")
