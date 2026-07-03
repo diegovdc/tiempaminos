@@ -67,7 +67,132 @@ Sustain a note or notes until they change. Useful within a loop (refrain) to pre
   (legato/multi :my-chord {1 {:inst drone :params {:freq (* root 2)}}})
   (legato/multi :my-chord {})
 #+end_src
+
 * Synthdefs
+** Template Synth
+=tieminos.sc-utils.synths.template-synth.v0= is an experimental feature that provides a way to generate variations of a synth based on user defined templates. It supports usage of vectors of variable sizes as args (e.g. for chords) as well as having =ugens= as arguments (e.g. for a passing in different filters to a synth).
+
+#+begin_src clojure
+(require '[overtone.core :as o]
+         '[tieminos.sc-utils.synths.template-synth.v0 :refer [make-synth-fn]])
+
+(make-synth-fn
+  ;; synth name: a quoted symbol
+  'sawy
+  ;; default args
+  {:freq [500 900]
+   :env-levels [0 1 0.1 1 0]
+   :env-durs [1 3 1 1]
+   :amp 1
+   ;; template-able ugens, they are "passed in" dynamically to the synth (new synth versions are cached). They can access other arguments in the synth.
+   :ugen/env '(o/env-gen (o/envelope env-levels env-durs) :action o/FREE)
+   :ugen/fx1 '(o/distort)
+   :ugen/mix '((fn [sig]
+                 ;; if sig is a single sin-osc (not a vector) then don't call `o/mix`.
+                 ;; NOTE: even if a single freq is passed in a vector, the sig will still come in not in a vector.
+                 (if (vector? freq)
+                   (o/mix sig)
+                   sig)))
+   ;; a default can be just a number
+   :ugen/pan-pos 0}
+  ;; ugen graph template: a quoted list containing a graph of ugens or keywords with the `ugen` namespace. They are subtituted by the passed in ugens. Otherwise the syntax is the same as the body of a `defsynth`.
+  '(o/out 0
+          (-> (o/sin-osc freq)
+              :ugen/mix
+              :ugen/fx1
+              (o/pan2 :ugen/pan-pos)
+              (o/free-verb)
+              (* amp :ugen/env)))
+  ;; remove all variations of the synth when `make-synth-fn` is called.
+  {:reset? true})
+
+
+(sawy)
+
+;; use a single freq (see the default `freq` param).
+(sawy {:freq 200})
+
+;; Pass a chord of a different size. NOTE: the `:ugen/mix` logic works with lists too
+(sawy {:freq '(200 400 500)})
+
+;; Of course env params can also be modified.
+(sawy {:env-levels [0 1 0]
+       :env-durs [0.001 1]})
+
+;; remove the distortion
+(sawy {:ugen/fx1 nil})
+
+;; use a filter and increase the amp
+(sawy {:amp 5
+       ;; NOTE: using the double parenthesis syntax as the function is passed to a `->` macro. So except for the `'` the syntax is the same. 
+       :ugen/fx1 '((fn [sig] (o/moog-ladder sig 900 0.2)))})
+
+(sawy {:amp 5
+       ;; As per the NOTE above we can use this syntax too.
+       :ugen/fx1 '(o/moog-ladder 900 0.2)})
+
+;; pass an ugen argument to another ugen
+(sawy {:ugen/pan-pos '(o/lf-noise2 10)})
+
+#+end_src
+
+** Plugin syntax: =defplug=.
+Notice that in the example above the =env-levels= and =env-durs= parameters are tied to =:ugen/env=. This makes it a problem for reusing these ugens contrary, to e.g. ~:ugen/fx1 '((fn [sig] (o/moog-ladder sig 900 0.2)))~ which is mostly autonomous. To facilitate the reuse of the =ugen= namespaced params. One can use =defplug=. 
+
+#+begin_src clojure
+(require '[overtone.core :as o]
+         '[tieminos.sc-utils.synths.template-synth.v0 :refer [make-synth-fn defplug]])
+
+(defplug env1
+  ;; a map with the ugen params we want to access and their defaults
+  {:env-levels [0 1 0.1 1 0]
+   :env-durs [1 3 1 1]
+   :ugen/env '(o/env-gen (o/envelope env-levels env-durs) :action o/FREE)})
+
+(defplug env2
+  {:attack 0.01
+   :release 1
+   :ugen/env '(o/env-gen (o/env-perc attack release) :action o/FREE)})
+
+;; When a plugin expects an external param to be present (e.g. `freq`) then,
+;; the 2-arity version takes as a first parameter a set of keys that should correspond to names of parameters.
+;; Nevertheless they should be present on the synth. And it not they will fail.
+(defplug freq-mixer
+  #{:freq}
+  {:ugen/freq-mixer  '((fn [sig]
+                         ;; if sig is a single sin-osc (not a vector) then don't call `o/mix`.
+                         ;; NOTE: even if a single freq is passed in a vector, the sig will still come in not in a vector.
+                         (if (vector? freq)
+                           (o/mix sig)
+                           sig)))})
+
+(make-synth-fn
+  'siny
+  (-> {:freq [500 900]
+       :amp 1}
+      (env1)
+      (freq-mixer))
+  '(o/out 0
+          (-> (o/sin-osc freq)
+              :ugen/freq-mixer 
+              (o/pan2 0)
+              (* amp :ugen/env)))
+  {:reset? true})
+
+
+
+(siny)
+
+;; dynamically switch env1 for env2
+(siny (-> {:freq 200} (env2)))
+
+;; pass in a param for env2.
+;; NOTE: it will not work if passed to the map that gets threaded in.
+(siny (-> {:freq 200}
+          (env2 {:attack 1})))
+#+end_src
+
+
 ** Tips
 When writting macros this ~ns~ gives access to the ugen operators
 #+BEGIN_SRC clojure
