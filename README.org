@@ -81,15 +81,21 @@ Sustain a note or notes until they change. Useful within a loop (refrain) to pre
 
 #+begin_src clojure
 (require '[overtone.core :as o]
-         '[tieminos.sc-utils.synths.template-synth.v0 :refer [make-synth-fn]])
+         '[tieminos.sc-utils.synths.template-synth.v0 :refer [make-synth-fn
+                                                              get-synth-variant
+                                                              get-variant-data
+                                                              modify-params2
+                                                              describe-synth
+                                                              variant-id]])
 
 (make-synth-fn
-  ;; synth name: a quoted symbol
+  ;; synth (caller) name: a quoted symbol.
+  ;; NOTE: This symbol will be defined in the namespace.
   'sawy
   ;; default args
   {:freq [500 900]
    :env-levels [0 1 0.1 1 0]
-   :env-durs [1 3 1 1]
+   :env-durs [1 3 1 2]
    :amp 1
    ;; template-able ugens, they are "passed in" dynamically to the synth (new synth versions are cached). They can access other arguments in the synth.
    :ugen/env '(o/env-gen (o/envelope env-levels env-durs) :action o/FREE)
@@ -110,10 +116,10 @@ Sustain a note or notes until they change. Useful within a loop (refrain) to pre
               (o/pan2 :ugen/pan-pos)
               (o/free-verb)
               (* amp :ugen/env)))
-  ;; remove all variations of the synth when `make-synth-fn` is called.
+  ;; remove all variations of the synth when `make-synth-fn` is called. `true` is the default value.
   {:reset? true})
 
-
+;; This a synth can be called.
 (sawy)
 
 ;; use a single freq (see the default `freq` param).
@@ -143,6 +149,45 @@ Sustain a note or notes until they change. Useful within a loop (refrain) to pre
 
 #+end_src
 
+*** Advanced
+**** Single synth variants and variant data
+
+~get-variant-data~, ~get-synth-variant~, ~describe-synth~ and ~variant-id~.
+
+#+begin_src clojure
+;; NOTE: following the code block above.
+
+;; Get all the relevant data related to a variant. 
+(get-variant-data sawy {:ugen/pan-pos '(o/lf-noise2 10)})
+(keys (get-variant-data sawy {:ugen/pan-pos '(o/lf-noise2 10)}))
+
+;; Get a specific variant synth (an `Overtone` synth) given some sample params. NOTE: The namespace where the synth was defined should be provided.
+(def sawy-pan-noise (get-synth-variant sawy {:ugen/pan-pos '(o/lf-noise2 10)}))
+
+;; This is just an Overtone synth
+(sawy-pan-noise :freq0 100
+                :freq1 10000)
+
+;; modify-params2 can be used if the params vector is too large.
+(sawy-pan-noise (modify-params2 {:freq [100 300]}))
+
+;; But of course the third frequency will never sound as the synth has not been generated to deal with that. In that case create another instance or use `sawy`.
+(sawy-pan-noise (modify-params2 {:freq [100 300 10000]}))
+
+;; The only difference is that the instance contains metadata describing it.
+(meta sawy-pan-noise)
+
+;; See the params and the ugen-form that is being used by this (`Overtone`) synth
+(describe-synth sawy-pan-noise)
+
+
+;; Get the id of a particular instance
+(variant-id sawy {})
+(variant-id sawy {:freq [100 300]})    ;; this should be the same instance, as the vector size because `:freq` is the same as the original
+(variant-id sawy {:freq [100 300 500]}) ;; but this one is different
+(variant-id sawy {:ugen/pan-pos '(o/lf-noise2 10)}) ;; and this one too
+
+#+end_src
 ** Plugin syntax: =defplug=.
 Notice that in the example above the =env-levels= and =env-durs= parameters are tied to =:ugen/env=. This makes it a problem for reusing these ugens contrary, to e.g. ~:ugen/fx1 '((fn [sig] (o/moog-ladder sig 900 0.2)))~ which is mostly autonomous. To facilitate the reuse of the =ugen= namespaced params. One can use =defplug=. 
 
