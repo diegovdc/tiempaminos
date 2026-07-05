@@ -1,5 +1,5 @@
 #+title: Tieminos
-
+#+startup: overview
 
 
 * Introduction
@@ -250,7 +250,6 @@ When writting macros this ~ns~ gives access to the ugen operators
 #+BEGIN_SRC clojure
 [overtone.sc.ugen-collide-list :as oc]
 #+END_SRC
-
 
 * License
 
