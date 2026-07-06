@@ -446,8 +446,8 @@
   [ns synth-symbol params-map]
   (let [group (:group params-map)
         params-map (dissoc params-map :group)
-        {:keys [overtone/synth default-params]} (get-variant-data* ns (symbol synth-symbol) params-map)
-        params (modify-params2 default-params)]
+        {:keys [overtone/synth]} (get-variant-data* ns (symbol synth-symbol) params-map)
+        params (modify-params2 params-map)]
     (if group
       (apply synth group (flatten (seq params)))
       (synth params))))
@@ -505,6 +505,7 @@
 (comment
   (sawy)
   (def t (get-synth-variant (find-ns 'user) 'sawy {:freq [400 500 600]}))
+  (get-variant-data sawy {})
   (meta t)
   (type t)
   (describe-synth t)
