@@ -6,6 +6,7 @@
         potemkin/potemkin {:mvn/version "0.4.5"}
         instaparse/instaparse {:mvn/version "1.5.0"}
         org.clojure/data.generators {:mvn/version "1.0.0"}
+        metosin/reitit {:mvn/version "0.10.1"}
         io.github.diegovdc/overtone {:git/url "https://github.com/diegovdc/overtone.git"
                                      :sha "a9395fdea0acf4574bb2a94ff39b59d4212117a3"} #_{:local/root "../overtone" :deps/manifest :deps}
         ;; videco/piratidal {:local/root "../../../code/piratidal" :deps/manifest :deps}
@@ -24,7 +25,7 @@
         org.bouncycastle/bctsp-jdk14 {:mvn/version "1.38"}
         ;; working with intervals
         io.helins/interval {:mvn/version "1.0.0-beta0"}
-        clj-kondo/clj-kondo {:mvn/version "2023.05.18"}
+        clj-kondo/clj-kondo {:mvn/version "2026.05.25"}
         thi.ng/color {:mvn/version "1.4.0"}
         ;; another interesting possibility, may offer other options
         ;; com.dean/interval-tree {:mvn/version  "0.1.2"}
