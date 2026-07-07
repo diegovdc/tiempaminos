@@ -119,7 +119,7 @@
                  (o/pan4 sig
                          (* liss-radius (o/sin-osc:kr liss-freq liss-phase-1))
                          (* liss-radius (o/sin-osc:kr (* liss-freq liss-ratio) liss-phase-2))
-                         radius)))})
+                         liss-radius)))})
 (defplug manual-pan4
   {:pan-x 0
    :pan-y 0

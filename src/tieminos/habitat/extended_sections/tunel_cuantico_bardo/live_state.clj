@@ -45,11 +45,11 @@
 
 (defn start-recording
   []
-  (swap! live-state :system/recording? true))
+  (swap! live-state assoc :system/recording? true))
 
 (defn stop-recording
   []
-  (swap! live-state :system/recording? false))
+  (swap! live-state assoc :system/recording? false))
 
 ;;;;;;;;;;;;;;;;;;
 ;; * Synth

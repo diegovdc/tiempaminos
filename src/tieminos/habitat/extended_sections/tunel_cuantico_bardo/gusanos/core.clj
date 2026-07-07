@@ -21,7 +21,7 @@
    [time-time.dynacan.players.gen-poly :as gp :refer [on-event ref-rain]]
    [time-time.standard :refer [rrand]]))
 
-(def ^:private amp-multiplier (o/db->amp 6))
+(def ^:private amp-multiplier (o/db->amp 24))
 
 (defn- get-amp!
   []
