@@ -1,6 +1,7 @@
 (ns tieminos.utils
   (:require
    [clojure.core.async :as a]
+   [clojure.edn :as edn]
    [erv.cps.core :as cps]
    [erv.scale.core :as scale]
    [erv.utils.conversions :as conv]
@@ -8,6 +9,10 @@
    [taoensso.timbre :as timbre]))
 
 (def tieminos-path (System/getProperty "user.dir"))
+
+(defn str->int
+  [str]
+  (int (edn/read-string str)))
 
 (defn now []
   (System/currentTimeMillis))

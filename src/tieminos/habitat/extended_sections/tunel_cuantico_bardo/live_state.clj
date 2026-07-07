@@ -1115,9 +1115,9 @@
    "/%s/panner-rand-vel-fader" '(0.1),
    "/%s/panner-random-group" [1],
    "/%s/synth-label" ["crystal"],
-   "/%s/toggle-harmonic-voice/0" '("on" 1 "index" 0),
-   "/%s/toggle-harmonic-voice/1" '("on" 1 "index" 1),
-   "/%s/toggle-harmonic-voice/2" '("on" 1 "index" 2),
+   "/%s/toggle-harmonic-voice/0" '(1),
+   "/%s/toggle-harmonic-voice/1" '(1),
+   "/%s/toggle-harmonic-voice/2" '(1),
    "/%s/filter-lpf-fader-visible" [0]})
 
 (def shared-general-ui-osc-defaults

@@ -8,7 +8,7 @@
              (tieminos.compositions.garden-earth.base/on-event
               [at-index index dur dur-s at-i i])
              (tieminos.habitat.extended-sections.tunel-cuantico-bardo.osc-router/osc-router
-              [path path-params player args])]}
+              [path path-params player-k args])]}
   :unresolved-var [overtone.core]
   :refer-all {:exclude [overtone.core]}}
  ;; :lint-as {overtone.core/defsynth clojure.core/def}
