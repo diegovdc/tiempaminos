@@ -22,7 +22,6 @@
 (log-level! :info)
 
 (defn lli [] (log-level! :info))
-
 (defn lld [] (log-level! :debug))
 
 (comment
