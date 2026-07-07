@@ -121,11 +121,11 @@
                   timestamp_ ?line]} data
           ;; Define colors
           level-color (case level
-                        "ERROR"   :red
-                        "WARN"    :yellow
-                        "INFO"    :cyan
-                        "DEBUG"   :blue
-                        "TRACE"   :magenta
+                        :error    :red
+                        :warn     :yellow
+                        :info     :white
+                        :debug    :blue
+                        :trace    :magenta
                         :white)]
       (when (print-debug? (name level) ?ns-str)
         (str

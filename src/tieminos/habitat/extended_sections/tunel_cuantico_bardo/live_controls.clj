@@ -499,10 +499,12 @@
 ;; FIXME: simplify workflow, the generation of params inside clouds-refrain2 seems somewhat redundant (as related to :get-param-data, probably merge both into on-play and exctract taht function so that i can be called via dispatch - for debugging purposes-)
 (defn start-clouds
   [{:keys [player bank independent?]}]
+  (timbre/info "Starting cloud:" player bank)
   (rain.v2/ref-rain
    {:id  (if independent?
            (make-clouds-id player bank)
            (make-clouds-id player))
+    :cycle-len 1
     :durs (partial clouds-durs player bank)
     :on-event (partial clouds-on-event player bank)
     :on-stop (fn [{:keys [id]}] (stop-delay-refrains id))}))
@@ -537,6 +539,7 @@
 
 (defn stop-clouds
   [{:keys [player bank independent?]}]
+  (timbre/info "Stopping cloud:" player bank)
   (if independent?
     (rain.v2/stop (make-clouds-id player bank))
     (when-not (seq (bardo.live-state/get-active-group-banks player))

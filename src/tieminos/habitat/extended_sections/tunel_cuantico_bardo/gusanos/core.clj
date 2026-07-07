@@ -18,7 +18,7 @@
    [tieminos.math.bezier-samples :as bzs]
    [tieminos.math.utils :refer [linlin linlin*]]
    [tieminos.utils :refer [rrange wrap-at]]
-   [time-time.dynacan.players.gen-poly :as gp :refer [on-event ref-rain]]
+   [time-time.dynacan.players.refrain.v2 :as refrain.v2 :refer [on-event ref-rain]]
    [time-time.standard :refer [rrand]]))
 
 (def ^:private amp-multiplier (o/db->amp 24))
@@ -167,7 +167,7 @@
    :durs (fn [{:keys [index]}] (wrap-at index (periodize-durs* (get-period!) (get-durs!))))
    :on-event (on-event
               (println dur-s)))
-  (gp/stop :x))
+  (refrain.v2/stop :x))
 
 (defn gusano
   "Based on `tieminos.habitat.scratch.sample-rec2/hacia-un-nuevo-universo-perc-refrain-v1p2`
@@ -195,6 +195,7 @@
   (ref-rain
    :id id
    :durs (fn [{:keys [index]}] (wrap-at index (periodize-durs* (get-period!) (get-durs!))))
+   :cycle-len 1
    :on-event (on-event
               (when-let [buf (buf-fn {:index index})]
                 (when-not (silence? silence-thresh buf) ;; allow us to control silences by not playing
@@ -270,6 +271,7 @@
 
 (defn start
   []
+  (timbre/info "Starting gusano")
   (gusano default-config))
 
 (comment
@@ -283,9 +285,10 @@
   (def test-sini (sini :out (main-returns :mixed)))
   (o/kill test-sini)
 
-  (-> @gp/refrains)
+  (-> @refrain.v2/refrains)
   (start))
 
 (defn stop
   []
-  (gp/stop ::gusano))
+  (timbre/info "Stopping gusano")
+  (refrain.v2/stop ::gusano))
