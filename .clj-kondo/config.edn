@@ -13,4 +13,5 @@
   :refer-all {:exclude [overtone.core]}}
  ;; :lint-as {overtone.core/defsynth clojure.core/def}
  :hooks {:analyze-call {;; overtone.core/defsynth hooks.defsynth/defsynth
-                        tieminos.overtone-extensions/defsynth hooks.defsynth/defsynth}}}
+                        tieminos.overtone-extensions/defsynth hooks.defsynth/defsynth
+                        tieminos.sc-utils.synths.template-synth.v0/defplug hooks.defplug/defplug}}}
