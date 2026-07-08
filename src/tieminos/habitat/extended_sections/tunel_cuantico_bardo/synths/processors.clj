@@ -14,33 +14,32 @@
 (defplug rand-panaz
   {:pan-rate 0.1
    :pan-width 2
-   :ugen/pan '((fn [sig]
-                 (oe/circle-az :num-channels 4
-                               :in sig
-                               :pos (o/lf-noise1 pan-rate)
-                               :width pan-width
-                               :orientation 0)))})
-
+   :ugen/pan (fn [sig]
+               (oe/circle-az :num-channels 4
+                             :in sig
+                             :pos (o/lf-noise1 pan-rate)
+                             :width pan-width
+                             :orientation 0))})
 (defplug hilo-rand-panaz
   {:pan-rate 0.1
    :pan-width 2
    :pan-hilo-cutoff 600
-   :ugen/pan '((fn [sig]
-                 (->> [(o/hpf sig pan-hilo-cutoff)
-                       (o/lpf sig pan-hilo-cutoff)]
-                      (map #(oe/circle-az :num-channels 4
-                                          :in %
-                                          :pos (o/lf-noise1 pan-rate)
-                                          :width pan-width
-                                          :orientation 0))
-                      (o/mix))))})
+   :ugen/pan (fn [sig]
+               (->> [(o/hpf sig pan-hilo-cutoff)
+                     (o/lpf sig pan-hilo-cutoff)]
+                    (map #(oe/circle-az :num-channels 4
+                                        :in %
+                                        :pos (o/lf-noise1 pan-rate)
+                                        :width pan-width
+                                        :orientation 0))
+                    (o/mix)))})
 
 (comment oc/+ map-outs)
 
 (defplug outs
   {:out-offset 0
    :outs [0 1 2 3]
-   :ugen/outs '((fn [sig] (map-outs out-offset outs sig)))})
+   :ugen/outs (fn [sig] (map-outs out-offset outs sig))})
 
 (make-synth-fn
  'processor
@@ -53,13 +52,13 @@
      (rand-panaz)
      (outs))
  '(-> (o/in in 1)
-      :ugen/filter
-      :ugen/pan
-      :ugen/rev
+      (:ugen/filter)
+      (:ugen/pan)
+      (:ugen/rev)
       (* amp (o/env-gen (o/env-adsr a 1 1 r :curve -0.5)
                         gate
                         :action o/FREE))
-      :ugen/outs)
+      (:ugen/outs))
  {:reset? true})
 
 (comment

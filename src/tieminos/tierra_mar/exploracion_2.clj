@@ -27,17 +27,9 @@
     (do (timbre/warn "[map-outs] `outs-seq` & `sig` are not both vectors. Resorting to default output method for current synth variation.")
         (o/out outs-seq sig))))
 
-(defn +outs1
-  [params]
-  (assoc params
-         :out-offset 0
-         :ugen/outs (plug* [:out-offset :outs]
-                           '((fn [sig] (map-outs out-offset outs sig))))
-         :outs [0 1 2 3]))
-
 (defplug outs1
   {:out-offset 0
-   :ugen/outs '((fn [sig] (map-outs out-offset outs sig)))
+   :ugen/outs (fn [sig] (map-outs out-offset outs sig))
    :outs [0 1]})
 
 (defplug panner
@@ -45,21 +37,21 @@
   {:width 1.5
    :orientation 0
    :pan-dur-ratio 1
-   :ugen/pan '((fn [sig]
-                 (let [dur (+ a r)]
-                   (o/pan-az (count outs)
-                             sig
-                             (o/line 0
-                                     (* 2 (/ (dec (count outs))
-                                             (count outs)))
-                                     (* pan-dur-ratio dur)
-                                     :action o/NO-ACTION)
-                             :width (o/env-gen (o/envelope [width width 1 0.5]
-                                                           [(* 0.8 dur)
-                                                            (* 0.1 dur)
-                                                            (* 0.1 dur)])
-                                               :action o/NO-ACTION)
-                             :orientation orientation))))})
+   :ugen/pan (fn [sig]
+               (let [dur (+ a r)]
+                 (o/pan-az (count outs)
+                           sig
+                           (o/line 0
+                                   (* 2 (/ (dec (count outs))
+                                           (count outs)))
+                                   (* pan-dur-ratio dur)
+                                   :action o/NO-ACTION)
+                           :width (o/env-gen (o/envelope [width width 1 0.5]
+                                                         [(* 0.8 dur)
+                                                          (* 0.1 dur)
+                                                          (* 0.1 dur)])
+                                             :action o/NO-ACTION)
+                           :orientation orientation)))})
 
 (make-synth-fn
  'plucky
@@ -76,8 +68,8 @@
             inp   (* amp (o/lf-clip-noise 2000) (o/env-gen env))]
         (-> (o/dwg-plucked freq amp 1 pluck-pos c1 c3 inp)
             (* (o/env-gen (o/env-perc a r) :action o/FREE))))
-      :ugen/pan
-      :ugen/outs)
+      (:ugen/pan)
+      (:ugen/outs))
  {:reset? true})
 
 (make-synth-fn
@@ -99,8 +91,8 @@
  '(-> (o/dwg-bowed freq velb force 1 bow-pos r c1 c3 impz inharm)
       (* amp (o/env-gen (o/env-perc a r) :action o/FREE))
       (o/lpf 1200)
-      :ugen/pan
-      :ugen/outs)
+      (:ugen/pan)
+      (:ugen/outs))
  {:reset? true})
 
 (def scale (:scale (cps/make 2 [1 3 7 9])))
@@ -262,7 +254,7 @@
       :pan-dur-amp 1
       :orientation 0
       :width 3}
-     +outs1)
+     (outs1))
  '(-> freq
 
       o/saw
@@ -287,7 +279,7 @@
           (o/envelope [0 1 0.7 0]
                       [0.1 (* 0.3 dur) (- (* 0.7 dur) 0.1)])
                     :action o/FREE))
-      :ugen/outs)
+      (:ugen/outs))
  {:reset? true})
 
 (comment
@@ -364,9 +356,8 @@
         :pan-dur-amp 1
         :orientation 0
         :width 3}
-       +outs1)
+       (outs1))
    '(-> freq
-
         o/saw
         (o/moog-ladder (* 3/4 freq) 0.7)
         #_(* (o/sin-osc (* (/ freq (*  64 4 8)) dur)))
@@ -389,7 +380,7 @@
             (o/envelope [0 1 0.7 0]
                         [0.1 (* 0.3 dur) (- (* 0.7 dur) 0.1)])
                       :action o/FREE))
-        :ugen/outs)
+        (:ugen/outs))
    {:reset? true})
   (o/stop)
   (comment

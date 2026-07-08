@@ -94,26 +94,29 @@
                                    (#'overtone.core/envelope env-levels env-durs)
                                    :action
                                    2),
-                       :ugen/freq-mixer '((#'clojure.core/fn [sig] sig))}]
+                       :ugen/freq-mixer '((#'clojure.core/fn [sig] sig))}
+        result (modify-params2 merged-params)]
 
-    (let [result (modify-params2 merged-params)]
-      (testing "Removes `ugen` keys, and converts vectors into a 'serial' keys"
-        (is (= {:amp 1,
-                :env-durs0 1,
-                :env-durs1 3,
-                :env-durs2 1,
-                :env-durs3 1,
-                :env-levels0 0,
-                :env-levels1 1,
-                :env-levels2 0.1,
-                :env-levels3 1,
-                :env-levels4 0,
-                :freq0 500,
-                :freq1 900
-                :in 1}
-               result)))
-      (testing "Will convert object like `audio-bus`, `buffer` and `sample` to their ids. So that they can be passed into a synth."
-        (is (int? (result :in)))))))
+    (testing "Removes `ugen` keys, and converts vectors into a 'serial' keys"
+      (is (= {:amp 1,
+              :env-durs0 1,
+              :env-durs1 3,
+              :env-durs2 1,
+              :env-durs3 1,
+              :env-levels0 0,
+              :env-levels1 1,
+              :env-levels2 0.1,
+              :env-levels3 1,
+              :env-levels4 0,
+              :freq0 500,
+              :freq1 900
+              :in 1}
+             result)))
+    (testing "Will convert object like `audio-bus`, `buffer` and `sample` to their ids. So that they can be passed into a synth."
+      (is (int? (result :in))))
+    (testing "If the input is nil or an empty map, return an empty map"
+      (is (= {} (modify-params2 {})))
+      (is (= {} (modify-params2 nil))))))
 
 (deftest analyze-args-test
   (is (= ["synth-symbol"

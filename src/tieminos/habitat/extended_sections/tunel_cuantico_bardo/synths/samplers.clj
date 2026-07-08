@@ -65,25 +65,25 @@
                                    :pos (o/lf-saw 1/2))))))
   (sini-o))
 
-(def random-panaz-plug
-  (plug* #{:outs :pan-vel :pan-width}
-         '((fn [sig] (o/pan-az:ar (count outs) sig
-                                  (lfo-kr pan-vel -1 1) ;; LFNoise1
-                                  :width pan-width)))))
-(defn random-panaz
-  [& {:keys [vel width]
-      :or {vel 0.5, width 1.4}}]
-  {:pan-vel vel
-   :pan-width width ;; TODO: control lfo width
-   :ugen/pan random-panaz-plug})
+#_(def random-panaz-plug
+    (plug* #{:outs :pan-vel :pan-width}
+           '((fn [sig] (o/pan-az:ar (count outs) sig
+                                    (lfo-kr pan-vel -1 1) ;; LFNoise1
+                                    :width pan-width)))))
+#_(defn random-panaz
+    [& {:keys [vel width]
+        :or {vel 0.5, width 1.4}}]
+    {:pan-vel vel
+     :pan-width width ;; TODO: control lfo width
+     :ugen/pan random-panaz-plug})
 
 (defplug random-panaz
   #{:outs}
   {:pan-vel 0.5
    :pan-width 1.4 ;; TODO: control lfo width
-   :ugen/pan '((fn [sig] (o/pan-az:ar (count outs) sig
-                                      (lfo-kr pan-vel -1 1) ;; LFNoise1
-                                      :width pan-width)))})
+   :ugen/pan (fn [sig] (o/pan-az:ar (count outs) sig
+                                    (lfo-kr pan-vel -1 1) ;; LFNoise1
+                                    :width pan-width))})
 
 (macroexpand-1
  '(defplug random-panaz
@@ -115,15 +115,15 @@
    :liss-ratio 1
    :liss-phase-1 0
    :liss-phase-2 (/ Math/PI 2)
-   :ugen/pan '((fn [sig]
-                 (o/pan4 sig
-                         (* liss-radius (o/sin-osc:kr liss-freq liss-phase-1))
-                         (* liss-radius (o/sin-osc:kr (* liss-freq liss-ratio) liss-phase-2))
-                         liss-radius)))})
+   :ugen/pan (fn [sig]
+               (o/pan4 sig
+                       (* liss-radius (o/sin-osc:kr liss-freq liss-phase-1))
+                       (* liss-radius (o/sin-osc:kr (* liss-freq liss-ratio) liss-phase-2))
+                       liss-radius))})
 (defplug manual-pan4
   {:pan-x 0
    :pan-y 0
-   :ugen/pan '((fn [sig] (o/pan4 sig pan-x pan-y)))})
+   :ugen/pan (fn [sig] (o/pan4 sig pan-x pan-y))})
 
 #_(defn directional-panaz
     [& {:keys [levels width time-scale]
@@ -149,51 +149,51 @@
    :pan-orientation 0
    :pan-width 1.3
    :ugen/pan
-   '((fn [sig]
-       (o/pan-az (count outs)
-                 sig
-                 (o/env-gen (o/envelope pan-env-levels
-                                        (let [env-parts (dec (count pan-env-levels))]
-                                          (repeat env-parts (/ 1 env-parts))))
-                            :time-scale pan-env-time-scale)
-                 :width pan-width
-                 :orientation pan-orientation)))})
+   (fn [sig]
+     (o/pan-az (count outs)
+               sig
+               (o/env-gen (o/envelope pan-env-levels
+                                      (let [env-parts (dec (count pan-env-levels))]
+                                        (repeat env-parts (/ 1 env-parts))))
+                          :time-scale pan-env-time-scale)
+               :width pan-width
+               :orientation pan-orientation))})
 
 (defplug lpf
   {:lpf 20000
    :reso 0.1
-   :ugen/filter '((fn [sig] (o/rlpf sig (o/clip lpf 30 20000) reso)))})
+   :ugen/filter (fn [sig] (o/rlpf sig (o/clip lpf 30 20000) reso))})
 
 (defplug hpf
   {:hpf 30
    :reso 0.1
-   :ugen/filter '((fn [sig] (o/rhpf sig (o/clip hpf 30 20000) reso)))})
+   :ugen/filter (fn [sig] (o/rhpf sig (o/clip hpf 30 20000) reso))})
 
 (defplug moog-ladder
   {:lpf 20000
    :reso 0.1
-   :ugen/filter '((fn [sig] (o/moog-ladder sig (o/clip lpf 30 20000) reso)))})
+   :ugen/filter (fn [sig] (o/moog-ladder sig (o/clip lpf 30 20000) reso))})
 
 (defplug moog-ladhp
   {:lpf 20000
    :hpf 40
    :reso 0.5
    :q 0.5
-   :ugen/filter '((fn [sig] (-> sig
-                                (o/moog-ladder (o/clip lpf 30 20000) reso)
-                                (o/b-moog (o/clip hpf 60 20000) q 1))))})
+   :ugen/filter (fn [sig] (-> sig
+                              (o/moog-ladder (o/clip lpf 30 20000) reso)
+                              (o/b-moog (o/clip hpf 60 20000) q 1)))})
 (defplug moog-hplad
   {:lpf 20000
    :hpf 40
    :reso 0.5
    :q 0.5
-   :ugen/filter '((fn [sig] (-> sig
-                                (o/moog-ladder (o/clip lpf 30 20000) reso)
-                                (o/b-moog (o/clip hpf 60 20000) q 1))))})
+   :ugen/filter (fn [sig] (-> sig
+                              (o/moog-ladder (o/clip lpf 30 20000) reso)
+                              (o/b-moog (o/clip hpf 60 20000) q 1)))})
 (defplug moog-bp
   {:lpf 400
    :q 0.5
-   :ugen/filter '((fn [sig] (o/b-moog sig (o/clip lpf 60 20000) q 2)))})
+   :ugen/filter (fn [sig] (o/b-moog sig (o/clip lpf 60 20000) q 2))})
 
 (comment map-outs)
 
@@ -204,6 +204,11 @@
          :ugen/outs (plug* [:out-offset :outs]
                            '((fn [sig] (map-outs out-offset outs sig))))
          :outs [0 1 2 3]))
+
+(defplug +outs1
+  {:out-offset 0
+   :outs [0 1 2 3]
+   :ugen/outs (fn [sig] (map-outs out-offset outs sig))})
 #_(+outs {})
 (do
   (ns-unmap *ns* 'cristal-liquidizado-2)
@@ -227,10 +232,10 @@
        (random-panaz))
 
    '(-> (o/play-buf 1 buf rate :start-pos buf-pos)
-        :ugen/filter
+        (:ugen/filter)
         (* amp :ugen/env)
-        :ugen/pan
-        :ugen/outs)
+        (:ugen/pan)
+        (:ugen/outs))
    {:reset? true})
   #_(cristal-liquidizado-2 {:buf buf
                             :dur 10}))
@@ -277,8 +282,8 @@
               :pos  (o/line start end (apply + amp-env-durations))
               :interp interp
               :pan 0)
-             :ugen/filter
-             :ugen/pan
+             (:ugen/filter)
+             (:ugen/pan)
              (o/free-verb rev-mix rev-room)
              (* amp
                 #_(lfo amp-lfo amp-lfo-min 1)
@@ -287,7 +292,7 @@
                                        [-1 -5])
                            :gate gate
                            :action o/FREE))
-             :ugen/outs))
+             (:ugen/outs)))
  {:reset? true})
 
 (comment

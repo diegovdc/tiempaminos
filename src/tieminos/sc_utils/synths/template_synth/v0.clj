@@ -103,20 +103,23 @@
 (defn modify-params2
   "When calling a synth, processes the params map coming into the synth into params that an overtone synth understands."
   [params]
-  (->> params
-       (mapv (fn [[k v]]
-               (cond
-                 (number? v) {k v}
-                 (sc-idable? v) {k (:id v)}
-                 (or (vector? v)
-                     (coll-of-numbers? v)) (map-indexed (fn [i v*]
-                                                          {(keyword (str (name k) i)) v*})
-                                                        v))))
-       flatten
-       (apply merge)))
+  (if-not (seq params)
+    {}
+    (->> params
+         (mapv (fn [[k v]]
+                 (cond
+                   (number? v) {k v}
+                   (sc-idable? v) {k (:id v)}
+                   (or (vector? v)
+                       (coll-of-numbers? v)) (map-indexed (fn [i v*]
+                                                            {(keyword (str (name k) i)) v*})
+                                                          v))))
+         flatten
+         (apply merge))))
 
 (comment
   (modify-params2 (select-keys merged-params [:buf])))
+(modify-params2 {})
 #_(defmacro make-synth [params-map synth-body]
     (let [[s-name# params ugen-form]
           (let [body (eval (modify-body params-map synth-body))]
@@ -240,8 +243,7 @@
     (mapcat (fn [[k v]]
               [k (if (not= PLUG_NS (namespace k))
                    (symbol k)
-                   v)])
-
+                   (list 'quote v))])
             qualified-plug-map)))
 #_(plug-map->assoc-args #{} plug-map)
 #_(qualify-plug-map  #{:outs} plug-map)
@@ -255,11 +257,10 @@
 (comment
 
   (macroexpand-1
-   (macroexpand-1
-    '(defplug +outs
-       {:out 0
-        :ugen/out '((fn [sig] (o/out (map-outs out) (o/sin-osc 1))))}
-       #{:outs}))))
+   '(defplug +outs
+      #{:outs}
+      {:out 0
+       :ugen/out '((fn [sig] (o/out (map-outs out) (o/sin-osc 1))))})))
 
 (comment
   ;; Here freq shouldn't overwrite the symbol in the qualified body
