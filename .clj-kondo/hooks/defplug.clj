@@ -17,7 +17,7 @@
   (->> set*
        :children
        (mapcat (fn [t]
-                 [t (api/token-node nil)]))))
+                 [(api/token-node (symbol (:k t))) (api/token-node nil)]))))
 (defn bindings-map->body
   [m]
 
@@ -61,7 +61,7 @@
        (api/parse-string
         "
 (defplug moog-ladder
-#{outs}
+#{:outs}
   {:lpf 20000
    :reso 0.1
    :ugen/filter (fn [sig] (o/moog-ladder sig (o/clip lpf 30 20000) reso))})")}
