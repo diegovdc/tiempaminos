@@ -25,8 +25,8 @@
                 (if-let [ch (:children x)]
                   (let [ch* (->> ch
                                  (mapv (fn [c]
-                                         (if (some-> c :k (namespace) (= PLUG_NS))
-                                           (vary-meta c assoc :clj-kondo/ignore [:type-mismatch])
+                                         (if (some-> c :children  first :k (namespace) (= PLUG_NS))
+                                           (vary-meta c assoc :clj-kondo/ignore [:type-mismatch :invalid-arity])
                                            c))))]
                     (assoc x :children ch*))
 
@@ -36,9 +36,7 @@
 (defn make-synth-fn [{:keys [node]}]
   (let [[_ synth-name params-map body _opts] (:children node)
         body* [params-map
-               (-> body :children first
-                   ;; FIXME: make this more granular (i.e on this function: ignore-ugen-kw-errors)
-                   (vary-meta assoc :clj-kondo/ignore [:type-mismatch]))]
+               (-> body :children first ignore-ugen-kw-errors)]
         binding-vec (->> params-map
                          :children
                          (filter #(= :map (:tag %)))

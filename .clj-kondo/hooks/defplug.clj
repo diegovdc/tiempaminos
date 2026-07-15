@@ -17,7 +17,10 @@
   (->> set*
        :children
        (mapcat (fn [t]
-                 [(api/token-node (symbol (:k t))) (api/token-node nil)]))))
+                 [(api/token-node (symbol (:k t)))
+                  (vary-meta (api/token-node nil)
+                             assoc :clj-kondo/ignore [:type-mismatch])]))))
+
 (defn bindings-map->body
   [m]
 
