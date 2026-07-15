@@ -6,33 +6,42 @@
    [tieminos.harmonic-experience.lattice :as hexp.lattice]
    [tieminos.harmonic-experience.trainer :as hexp.trainer]
    [tieminos.harmonic-experience.utils :as hexp.utils]
+   [tieminos.harmonic-experience.drone-box :as hexp.drone-box]
    [tieminos.midi.core :refer [get-exquis!]]
    [tieminos.scales.core :as scales]))
 
 (def root (midi->cps 60))
 (def scale
-  "Scale modes of in the white keys:
-  deg 0 - 1 - 5-limit major ji
-  deg 3 - 7/6 - archytas ionian on white keys (starting in C) - major sounding, but with a touch of sadness/nostalgia"
+  "Scale modes in the white keys:
+  | degree | root | description 
+  |  0     | 1    | 5-limit major ji
+  |  3     | 7/6  | archytas ionian on white keys (starting in C) - major sounding, but with a touch of sadness/nostalgia
+                  | D F# G B C - slendric pentatonic
+                  | D Eb F# G Ab B C - Chromatic heptatonic
+  "
   (-> (scales/get :grady :centaur)
-      (rotate-scale 0)))
+      (rotate-scale 3)))
 
 (comment
   (o/stop)
+  (hexp.utils/set-output-mode! :reaper)
+
   (hexp.lattice/setup-kb {:ref-note 60
                           :root root
                           :scale scale
                           :midi-kb (get-exquis!)
-                          :out 0})
+                          :out (hexp.utils/out 7)})
 
   (hexp.trainer/trainer {:scale scale
                          :root (midi->cps 60)
-                         :degrees [0 4 9 10]
-                         :out 0})
+                         :degrees [0 2 4 5 9 11]
+                         :amp 0.4
+                         :out (hexp.utils/out 3)})
   (hexp.trainer/stop)
-  (hexp.utils/drone-box {:root root
+
+  (hexp.drone-box/start {:root root
                          :scale scale
-                         :degrees [0 7]
+                         :degrees (map #(- % 12) [0  7])
                          :amps [0.5]
-                         :out 0})
-  (hexp.utils/stop-drone-box))
+                         :out (hexp.utils/out 5)})
+  (hexp.drone-box/stop))

@@ -16,8 +16,19 @@
     (var-get x)
     x))
 
-(defn modify-body [params synth-body]
-  #_(println "MB" params synth-body)
+(defn identity*
+  [& args]
+  (first args))
+
+(defn safe-get-ugen-param
+  "Prevent a param from being `nil`, if that value is in the map."
+  [params x]
+  (let [v (params x)]
+    (or v identity*)))
+
+(defn modify-body
+  "Modifies the body of a template to insert the ugens and return a `ugen-form`. If an ugen is missing in the params and has no default (like `:ugen/pan`) or if it is `nil` (like :ugen/nilly`) it it will be substituted by `identity`. Also if the parameters come in a vector they will use serial keys as that is what Overtone expects."
+  [params synth-body]
   (let [params-map (->> params
                         (map (fn [[k v]]
                                (cond
@@ -32,9 +43,9 @@
                       mapping
                       (resolve-frag
                        (cond
-                         (ns-kw? "fx" x) (params x identity)
-                         (ns-kw? "ugen" x) (params x identity)
-                         (ns-kw? "dyn" x) (list 'as-> 'sig (params x identity))
+                         (ns-kw? "fx" x) (safe-get-ugen-param params x)
+                         (ns-kw? "ugen" x) (safe-get-ugen-param params x)
+                         (ns-kw? "dyn" x) (list 'as-> 'sig (safe-get-ugen-param params x))
                          :else x))))
                   synth-body)))
 (comment
@@ -45,52 +56,48 @@
                 :env-durs [1 1 1]
                 :ugen/env '(o/env-gen (o/envelope levels env-durs))
                 :shaper-limit 0.5
-                :ugen/pan #'panny
+                ;; :ugen/pan #'panny
                 :ugen/rev '(o/sine-shaper shaper-limit)
                 :ugen/fx1 '(o/dist)
                 :out 0}]
     (modify-body
      params
      (qualify-body params '(o/out 0
-                                  (o/sin-osc freq)
-                                  :ugen/pan
-                                  :ugen/rev
-                                  :ugen/fx1
-                                  (* :ugen/env))))))
+                                  (-> (o/sin-osc freq)
+                                      :ugen/pan
+                                      :ugen/rev
+                                      :ugen/fx1
+                                      :ugen/nilly
+                                      (* :ugen/env)))))))
 
 (def freq 5432)
+
+(def ^:private SC-IDABLES
+  #{overtone.sc.sample.Sample
+    overtone.sc.buffer.Buffer
+    overtone.sc.bus.AudioBus})
+
 (defn sc-idable?
   [x]
-  (or (= (type x) overtone.sc.sample.Sample)
-      (= (type x) overtone.sc.buffer.Buffer)))
+  (SC-IDABLES (type x)))
 
-(do
-  (defn modify-params
-    "Used when creating the synth's params vector"
-    [params]
-    #_(println "MP" params)
-    (->> params
-         (keep (fn [[k v]]
-                 (cond
-                   (or (ns-kw? "fx" k)
-                       (ns-kw? "dyn" k)
-                       (ns-kw? "ugen" k)) nil
-                   (number? v) [(symbol (name k)) v]
-                   (sc-idable? v) [(symbol (name k)) (:id v)]
-                   (sequential? v) (map-indexed (fn [i v*]
-                                                  [(symbol (str (name k) i)) v*])
-                                                v))))
-         flatten
-         (into [])))
-
-  (modify-params {:freq [1 2]
-                  :levels [0 1 1 0]
-                  :env-durs [1 1 1]
-                  :ugen/env '(o/env-gen (o/envelope levels env-durs))
-                  :shaper-limit 0.5
-                  :ugen/rev '(o/sine-shaper shaper-limit)
-                  :ugen/fx1 '(o/dist)
-                  :out 0}))
+(defn modify-params
+  "Creates the params vector with the defaults of an Overtone synth. It takes a map of params which may contain a vector of values. Such vectors will produced serially named symbols with the corresponding values as their defaults.
+  Used when creating the synth's params vector"
+  [params]
+  (->> params
+       (keep (fn [[k v]]
+               (cond
+                 (or (ns-kw? "fx" k)
+                     (ns-kw? "dyn" k)
+                     (ns-kw? "ugen" k)) nil
+                 (number? v) [(symbol (name k)) v]
+                 (sc-idable? v) [(symbol (name k)) (:id v)]
+                 (sequential? v) (map-indexed (fn [i v*]
+                                                [(symbol (str (name k) i)) v*])
+                                              v))))
+       flatten
+       (into [])))
 
 (defn coll-of-numbers? [coll]
   (and (sequential? coll)
@@ -98,22 +105,25 @@
 
 ;; TODO optimize to not use merge
 (defn modify-params2
-  "Used when calling the synth"
+  "When calling a synth, processes the params map coming into the synth into params that an overtone synth understands."
   [params]
-  #_(println "MP2" params)
-  (->> params
-       (mapv (fn [[k v]]
-               (cond
-                 (number? v) {k v}
-                 (sc-idable? v) {k (:id v)}
-                 (or (vector? v)
-                     (coll-of-numbers? v)) (map-indexed (fn [i v*]
-                                                          {(keyword (str (name k) i)) v*})
-                                                        v))))
-       flatten
-       (apply merge)))
+  (if-not (seq params)
+    {}
+    (->> params
+         (mapv (fn [[k v]]
+                 (cond
+                   (number? v) {k v}
+                   (sc-idable? v) {k (:id v)}
+                   (or (vector? v)
+                       (coll-of-numbers? v)) (map-indexed (fn [i v*]
+                                                            {(keyword (str (name k) i)) v*})
+                                                          v))))
+         flatten
+         (apply merge))))
+
 (comment
   (modify-params2 (select-keys merged-params [:buf])))
+(modify-params2 {})
 #_(defmacro make-synth [params-map synth-body]
     (let [[s-name# params ugen-form]
           (let [body (eval (modify-body params-map synth-body))]
@@ -131,58 +141,31 @@
     :else (throw (ex-info "Don't know how to analyze arg:" {:key k
                                                             :arg arg}))))
 
-(defn analyze-ds-args [synth-symbol m]
+(defn analyze-args
+  "Analyze the arguments in a params map so that the output serves to index the cache for a synth variation."
+  [synth-symbol m]
   (->> m
        (mapv (fn [[k arg]]
                [k (analyze-arg k arg)]))
        (into [(str synth-symbol)])))
 
-(comment
-
-  (analyze-ds-args
-   'hola
-   {:freq [500]
-    :rev-mix 0.2
-    :rev-room 0.5
-    :width 1.5
-    :outs [0]
-    :ugen/pan #'panny
-    :ugen/mix '((fn [%] (if (> (count freq) 1)
-                          (o/mix %)
-                          %)))
-    :levels [0 1 1 1 0]
-    :env-durs [1 5 5 1]}
-   #_{:freq [500 900]
-      :levels [0 1 0.1 1 0]
-      :env-durs [1 3 1 1]
-      :ugen/env '(o/env-gen (o/envelope levels env-durs) :action o/FREE)
-      :shaper-limit 0.1
-      :rev-mix 0
-      :rev-room 2
-      :ugen/rev '(o/free-verb rev-mix rev-room 0.3) ;; '(o/sine-shaper shaper-limit)
-      :ugen/pan '((fn [sig] (o/pan-az 4 sig (o/lf-saw 0.3))))
-      :ugen/fx1 '(o/distort)
-      :ugen/mix '((fn [sig] (if (> (count freq) 1)
-                              (o/mix sig)
-                              sig)))
-      :outs [0]}))
-
 (defn make-synth-form
+  "Creates and Overtone synth form."
   [synth-symbol params-map synth-body]
   (let [body (modify-body params-map synth-body)]
     (timbre/debug :make-synth-form/body body)
     (o/synth-form synth-symbol [(modify-params params-map) body])))
 
 (defonce variations-data (atom {}))
+
 (defonce synths-cache (atom {}))
 
-(defn instance-symbol [namespaced-synth-string synth-symbol]
-  (let [sym (symbol (str synth-symbol (inc (get-in @variations-data [namespaced-synth-string :count] -1))))]
+(defn instance-symbol
+  [namespaced-synth-string synth-symbol]
+  (let [sym (symbol (str synth-symbol (get-in @variations-data [namespaced-synth-string :count] 0)))]
     (timbre/info "Synth symbol created: "  sym "for" synth-symbol)
     sym))
 
-(comment
-  (-> @variations-data))
 (defn qualify-body
   [params-map synth-body]
   (let [collides (ns-interns 'overtone.sc.ugen-collide-list)]
@@ -264,8 +247,7 @@
     (mapcat (fn [[k v]]
               [k (if (not= PLUG_NS (namespace k))
                    (symbol k)
-                   v)])
-
+                   (list 'quote v))])
             qualified-plug-map)))
 #_(plug-map->assoc-args #{} plug-map)
 #_(qualify-plug-map  #{:outs} plug-map)
@@ -279,11 +261,10 @@
 (comment
 
   (macroexpand-1
-   (macroexpand-1
-    '(defplug +outs
-       {:out 0
-        :ugen/out '((fn [sig] (o/out (map-outs out) (o/sin-osc 1))))}
-       #{:outs}))))
+   '(defplug +outs
+      #{:outs}
+      {:out 0
+       :ugen/out '((fn [sig] (o/out (map-outs out) (o/sin-osc 1))))})))
 
 (comment
   ;; Here freq shouldn't overwrite the symbol in the qualified body
@@ -308,15 +289,14 @@
   ([ns synth-symbol]
    (str/replace (ns-resolve ns synth-symbol)
                 #"#'" "")))
-(comment
-  (with-meta 'hola {:ns "my-ns"})
-  (namespace 'hola))
-#_(get-synth-ns-string synth-symbol)
+
 (defn add-variation-data!
   [namespaced-synth-string
    synth-body
    params-map
-   analyzed-args]
+   analyzed-args
+   synth-symbol
+   ugen-form]
   (swap! variations-data
          (fn [data]
            (let [synth-data (get data namespaced-synth-string
@@ -326,27 +306,50 @@
                     namespaced-synth-string
                     (-> synth-data
                         (update :count (fnil inc 0))
-                        (assoc-in [:variants analyzed-args] {:default-params params-map
-                                                             :synth-body synth-body})))))))
-(comment (-> @variations-data))
-
-(defn get-variations
+                        (assoc-in [:variants analyzed-args] {:synth-symbol synth-symbol
+                                                             :default-params params-map
+                                                             :synth-body synth-body
+                                                             :ugen-form ugen-form})))))))
+(defn get-variants*
   [synth-var-str]
   (-> (get @variations-data synth-var-str)
       :variants
       keys))
 
+(defn get-variants-dispatcher
+  [synth-caller-or-namespaced-synth-string]
+  (cond
+    (= ::synth-caller (-> synth-caller-or-namespaced-synth-string meta :type))
+    :synth-caller
+    (string? synth-caller-or-namespaced-synth-string)
+    :namespaced-synth-string))
+
+(defmulti get-variants
+  "args:
+   - [synth-caller-or-namespaced-synth-string]
+  Returns the variants give a `synth-caller` or a `namespaced-synth-string`"
+  #'get-variants-dispatcher)
+
+(defmethod get-variants :synth-caller
+  [synth-caller]
+  (let [{:keys [ns synth-symbol]} (meta synth-caller)]
+    (get-variants* (get-synth-ns-string ns synth-symbol))))
+
+(defmethod get-variants :namespaced-synth-string
+  [namespaced-synth-string]
+  (get-variants* namespaced-synth-string))
+
 (defn remove-synth
   [synth-var-str]
-  (when-let [variations (get-variations synth-var-str)]
+  (when-let [variations (get-variants synth-var-str)]
     (swap! variations-data dissoc synth-var-str)
     (swap! synths-cache #(apply dissoc % variations))))
 
-;; NOTE IMPORTANT ths is promising, no macros!
 (defn make-synth-fn
-  [synth-symbol params-map synth-body & {:keys [reset? ns]
-                                         :or {ns *ns*}}]
-  ;; TODO should analyze args and memoize synths
+  [synth-symbol params-map synth-body
+   & {:keys [reset? ns]
+      :or {reset? true
+           ns *ns*}}]
 
   (when-not (ns-resolve ns synth-symbol)
     ;; TODO add getter
@@ -354,7 +357,7 @@
 
   (let [namespaced-synth-string (get-synth-ns-string ns synth-symbol)
         _ (when reset? (remove-synth namespaced-synth-string))
-        analyzed-args (analyze-ds-args namespaced-synth-string params-map)
+        analyzed-args (analyze-args namespaced-synth-string params-map)
         cached-synth (get-in @synths-cache [analyzed-args])]
     (if cached-synth
       cached-synth
@@ -367,200 +370,197 @@
                                         params-map
                                         synth-body*)
             _ (timbre/debug "[make-synth] params" params)
+            synth-symbol (instance-symbol namespaced-synth-string synth-symbol)
             synth (eval (list 'overtone.core/synth
-                              (instance-symbol namespaced-synth-string synth-symbol)
+                              synth-symbol
                               params
                               ugen-form))]
         (swap! synths-cache assoc analyzed-args synth)
         ;; TODO prevent overwritting a synth from another namespace (i.e. namespace the symbol)
-        (add-variation-data!
-         namespaced-synth-string
-         synth-body*
-         params-map
-         analyzed-args)
+        (add-variation-data! namespaced-synth-string
+                             synth-body*
+                             params-map
+                             analyzed-args
+                             synth-symbol
+                             ugen-form)
         synth))))
 
-(defn get-instance-data
+(defn get-variant-data-dispatcher
+  ([_ns _synth-symbol _params-map] :ns+synth-sym+params-map)
+  ([synth-caller _params-map]
+   (if  (= ::synth-caller
+           (-> synth-caller meta :type))
+     :synth-caller+params-map
+     (throw (ex-info "Can't process this:" {:synth-caller synth-caller})))))
+
+(defn- synth-id
+  [overtone-synth]
+  (-> overtone-synth :sdef :name))
+
+(defn get-variant-data*
   [ns synth-symbol params-map]
-  (def synth-symbol synth-symbol)
-  (timbre/debug :get-instance-data/synth-symbol synth-symbol)
+  (timbre/debug :get-variant-data/synth-symbol synth-symbol)
   (let [namespaced-synth-string (get-synth-ns-string ns synth-symbol)
         {:keys [default-params synth-body]} (get @variations-data namespaced-synth-string)
         merged-params (merge default-params params-map)
-        analyzed-args (analyze-ds-args namespaced-synth-string merged-params)
-        _ (timbre/debug :get-instance-data/analyzed-args analyzed-args)
-        _ (def analyzed-args analyzed-args)
+        analyzed-args (analyze-args namespaced-synth-string merged-params)
+        _ (timbre/debug :get-variant-data/analyzed-args analyzed-args)
         synth (or (get-in @synths-cache [analyzed-args])
-                  (make-synth-fn synth-symbol merged-params synth-body {:ns ns}))]
-    {:synth synth
-     :analyzed-args analyzed-args
-     :merged-params merged-params
-     :synth-body synth-body}))
+                  (make-synth-fn synth-symbol
+                                 merged-params
+                                 synth-body
+                                 {:reset? false :ns ns}))
+        variant-data (get-in @variations-data [namespaced-synth-string :variants analyzed-args])]
+    (-> {:variant-id (synth-id synth)
+         :template/namespaced-synth-string namespaced-synth-string
+         :analyzed-args analyzed-args}
+        (merge variant-data)
+        (assoc :overtone/synth synth))))
 
-(comment
-  (def buf (o/load-sample "samples/habitat_samples/take-1-gusano-cuantico-2.2.9.2-algo-2-2-9-mic-2-bus-43.wav"))
-  ((:synth (get-instance-data (:ns csp)
-                              (symbol (:synth-symbol csp))
-                              (dissoc (:params-map csp)
-                                      :group)))
-   :buf buf))
+(defmulti get-variant-data
+  "args:
+    - [ns synth-symbol params-map]
+    - [synth-caller params-map]
+  
+  Get data describing the variant (including an Overtone synth on the `:synth` key.
+  Includes the following keys:
+  :variant-id 
+  :template/namespaced-synth-string
+  :analyzed-args
+  :synth-symbol
+  :default-params
+  :synth-body
+  :ugen-form
+  :overtone/synth
 
-(comment
-  (-> @variations-data)
-  (get @variations-data namespaced-synth-string)
-  (-> @synths-cache)
-  (get-in @synths-cache [analyzed-args]))
-#_(get-instance-data 'sini {})
+  `synth-caller` is the var generated by `make-synth-fn` 
+  
+  The `params-map` defines the variant returned. Passing an empty map returns the original (default) variant."
+  #'get-variant-data-dispatcher)
+
+(defmethod get-variant-data :ns+synth-sym+params-map
+  [ns synth-symbol params-map]
+  (get-variant-data* ns synth-symbol params-map))
+
+(defmethod get-variant-data :synth-caller+params-map
+  [synth-caller params-map]
+  (let [{:keys [ns synth-symbol]} (meta synth-caller)]
+    (get-variant-data* ns synth-symbol params-map)))
 
 (defn call-synth
   [ns synth-symbol params-map]
-  (def csp {:ns ns :synth-symbol synth-symbol :params-map params-map})
-  (timbre/debug "call synth" synth-symbol)
   (let [group (:group params-map)
         params-map (dissoc params-map :group)
-        {:keys [synth merged-params]} (get-instance-data ns (symbol synth-symbol) params-map)
-        params (modify-params2 merged-params)]
-    (timbre/debug "[call-synth] synth" synth)
-    (timbre/debug "[call-synth] params" params)
-    (timbre/debug "[call-synth] group" group)
-    (def merged-params merged-params)
-    (def synth synth)
-    (def  group group)
-    (def  params params)
+        {:keys [overtone/synth]} (get-variant-data* ns (symbol synth-symbol) params-map)
+        params (modify-params2 params-map)]
     (if group
       (apply synth group (flatten (seq params)))
       (synth params))))
 
+(defn params->synth-variant*
+  "Returns a synth variant that works for the given a sample params-map (it can contain ugens).
+  NOTE: current ns is `*ns*` other ns can be retrived by (find-ns 'my.ns)"
+  [ns synth-symbol params-map]
+  (let [params-map (dissoc params-map :group)
+        {:keys [overtone/synth] :as variant-data} (get-variant-data* ns (symbol synth-symbol) params-map)
+        data (-> variant-data
+                 (dissoc :overtone/synth)
+                 (assoc :params (->> variant-data :overtone/synth :params (sort-by first))))]
+    (with-meta synth data)))
+
+(defmulti get-synth-variant
+  "Returns a synth variant that works for the given a sample params-map (it can contain ugens)."
+  #'get-variant-data-dispatcher)
+
+(defmethod get-synth-variant :ns+synth-sym+params-map
+  [ns synth-symbol params-map]
+  (params->synth-variant* ns synth-symbol params-map))
+
+(defmethod get-synth-variant :synth-caller+params-map
+  [synth-caller params-map]
+  (let [{:keys [ns synth-symbol]} (meta synth-caller)]
+    (params->synth-variant* ns synth-symbol params-map)))
+
+(defn variant-id*
+  [ns synth-symbol params-map]
+  (-> (params->synth-variant* ns synth-symbol params-map)
+      meta
+      :variant-id))
+
+(defmulti variant-id #'get-variant-data-dispatcher)
+
+(defmethod variant-id :ns+synth-sym+params-map
+  [ns synth-symbol params-map]
+  (variant-id* ns synth-symbol params-map))
+
+(defmethod variant-id :synth-caller+params-map
+  [synth-caller params-map]
+  (let [{:keys [ns synth-symbol]} (meta synth-caller)]
+    (variant-id* ns synth-symbol params-map)))
+
+(defn describe-synth
+  "Takes an synth-variant as generated by `get-synth-variant` and shows a summary of it's params and other data"
+  [synth-variant]
+  (let [{:keys [variant-id template/namespaced-synth-string params ugen-form]} (meta synth-variant)]
+    {:variant-id variant-id
+     :template namespaced-synth-string
+     :params (map (juxt (comp keyword :name) :default) params)
+     :ugen-form ugen-form}))
+
 (comment
-  (-> @variations-data)
-  (-> csp)
-  (:ns csp)
-  (symbol (:synth-symbol csp))
-  (dissoc (:params-map csp) :group)
-  (:synth-body (get-instance-data (:ns csp)
-                                  (symbol (:synth-symbol csp))
-                                  (dissoc (:params-map csp)
-                                          :group)))
-  ((:synth (get-instance-data (:ns csp)
-                              (symbol (:synth-symbol csp))
-                              (dissoc (:params-map csp)
-                                      :group)))
-   :rate 2)
-  (-> merged-params)
-  (-> params)
-  (-> group)
-  (-> synth)
-  (synth params)
-  (apply synth group (flatten (seq (assoc params :rate 2))))
-  (apply synth2  (flatten {:freq 100}))
-  (o/stop)
-  (resolve 'sini)
-  (get @variations-data 'sini)
-  (call-synth 'sini {:freq [500]})
-  (sini))
+  (sawy)
+  (def t (get-synth-variant (find-ns 'user) 'sawy {:freq [400 500 600]}))
+  (get-variant-data sawy {})
+  (meta t)
+  (type t)
+  (describe-synth t)
+  (def t (get-synth-variant sawy {:freq [400 500 900 600]}))
+  (def t (get-synth-variant sawy {:freq [900 600]}))
+  (get-variant-data sawy {:freq [400 500 900 600]})
+  (keys (get-variant-data sawy {:freq [400 500 900 600]}))
+  (-> sawy meta)
+  (variant-id sawy {}))
+
+(comment
+  (make-synth-fn
+  ;; synth name: a quoted symbol
+   'sawy
+  ;; default args
+   {:freq [500 900]
+    :env-levels [0 1 0.1 1 0]
+    :env-durs [1 3 1 1]
+    :amp 1
+   ;; template-able ugens, they are "passed in" dynamically to the synth (new synth versions are cached). They can access other arguments in the synth.
+    :ugen/env '(o/env-gen (o/envelope env-levels env-durs) :action o/FREE)
+    :ugen/fx1 '(o/distort)
+    :ugen/mix '((fn [sig]
+                 ;; if sig is a single sin-osc (not a vector) then don't call `o/mix`.
+                 ;; NOTE: even if a single freq is passed in a vector, the sig will still come in not in a vector.
+                  (if (vector? freq)
+                    (o/mix sig)
+                    sig)))
+   ;; a default can be just a number
+    :ugen/pan-pos 0}
+  ;; ugen graph template: a quoted list containing a graph of ugens or keywords with the `ugen` namespace. They are subtituted by the passed in ugens. Otherwise the syntax is the same as the body of a `defsynth`.
+   '(o/out 0
+           (-> (o/sin-osc freq)
+               :ugen/mix
+               :ugen/fx1
+               (o/pan2 :ugen/pan-pos)
+               (o/free-verb)
+               (* amp :ugen/env)))
+  ;; remove all variations of the synth when `make-synth-fn` is called.
+   {:reset? true}))
 
 (defn define-synth
-  "Returns a synth calling funciton"
+  "Returns a synth calling function"
   [ns synth-symbol]
-  (timbre/info "defining synth" ns synth-symbol)
+  (timbre/info (format "Defining synth: %s/%s" ns synth-symbol))
   (intern ns synth-symbol
-          (fn
-            ([] (#'call-synth ns synth-symbol {}))
-            ([params-map] (#'call-synth ns synth-symbol params-map)))))
+          (with-meta (fn
+                       ([] (#'call-synth ns synth-symbol {}))
+                       ([params-map] (#'call-synth ns synth-symbol params-map)))
+            {:type ::synth-caller
+             :ns ns
+             :synth-symbol synth-symbol})))
 
-#_(comment
-    (ns-unmap  *ns* 'sini)
-
-    (intern *ns* 'hola 6)
-    (def hola "hola")
-    (-> hola))
-
-#_(comment
-    ((make-synth-fn
-      'sin2i
-      {:freq [1 2]
-       :levels [0 1 1 0]
-       :env-durs [1 1 1]
-       :ugen/env '(o/env-gen (o/envelope levels env-durs))
-       :shaper-limit 0.5
-       :ugen/rev '(o/sine-shaper shaper-limit)
-       :ugen/fx1 '(o/dist)
-       :out 0}
-      '(o/out 0
-              (o/sin-osc freq)
-              :ugen/rev
-              :ugen/fx1
-              (* :ugen/env)))))
-
-(comment
-  (reset! variations-data {})
-  (reset! synths-cache {})
-  (-> @variations-data)
-  (-> @variations-data
-      (get "tieminos.habitat.extended-sections.tunel-cuantico-bardo.synths/cristal-liquidizado-2")
-      :synth-body)
-  (-> @synths-cache keys)
-  (get-variations "tieminos.habitat.extended-sections.tunel-cuantico-bardo.synths/cristal-liquidizado-2")
-  (o/stop)
-  (defn map-to-outs-seq
-    [outs-seq sig]
-    (map (fn [i sig] (o/out i sig))
-         outs-seq
-         sig))
-  (make-synth-fn
-    ;; synth name
-   'sinpan
-    ;; default args
-   {:freq [500 900]
-    :levels [0 1 0.1 1 0]
-    :env-durs [1 3 1 1]
-    :ugen/env '(o/env-gen (o/envelope levels env-durs) :action o/FREE)
-    :shaper-limit 0.1
-    :rev-mix 0
-    :rev-room 2
-    :ugen/rev '(o/free-verb rev-mix rev-room 0.3) ;; '(o/sine-shaper shaper-limit)
-    :ugen/pan '((fn [sig] (o/pan-az 4 sig (o/lf-saw 0.3))))
-    :ugen/fx1 '(o/distort)
-    :ugen/mix '((fn [sig] (if (> (count freq) 1)
-                            (o/mix sig)
-                            sig)))
-    :outs [0]}
-    ;; synth
-   '(map-to-outs-seq
-     outs
-     (-> (o/sin-osc freq)
-         :ugen/mix
-         :ugen/fx1
-         :ugen/pan
-         :ugen/rev
-         (* :ugen/env)))
-   {:reset? true})
-
-  ;; synth call
-  (def ^:fragment panny '((fn [%] (do
-                                    (println "com")
-                                    (o/pan-az (count (set outs))
-                                              %
-                                              (o/line:kr -0.4  4 (apply + env-durs))
-                                              :width width)))))
-  (meta #'panny)
-  (let [outs [0 1 3 2]]
-    (sinpan {:freq [500]
-             :rev-mix 0.2
-             :rev-room 0.5
-             :width 1.5
-             :outs outs
-             :ugen/pan #'panny
-             :ugen/mix '((fn [%] (if (> (count freq) 1)
-                                   (o/mix %)
-                                   %)))
-             :levels [0 1 1 1 0]
-             :env-durs [1 5 5 1]}))
-  #_((make-synth-fn
-      'sini
-      (merge {:freq [200 500] :out 0} {:amp 1})
-      '(o/out out (* (o/env-gen (o/env-perc)
-                                :action o/FREE) (o/sin-osc freq)))))
-  #_(println "res:")
-  #_(println @variations-data)
-  #_(println @synths-cache))

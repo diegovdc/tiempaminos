@@ -118,7 +118,7 @@
   (save-samples :description "test"))
 
 ;;;;;;;;;;;;;;;;;;;
-;; Signal Analysis
+;; * Signal Analysis
 ;;;;;;;;;;;;;;;;;;;
 
 (defonce analysis-history (atom {}))

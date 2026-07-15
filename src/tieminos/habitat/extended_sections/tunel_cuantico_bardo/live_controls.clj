@@ -8,24 +8,26 @@
    [tieminos.attractors.lorentz :as lorentz]
    [tieminos.habitat.extended-sections.harmonies.chords
     :refer [get-harmony rate-chord-seq]]
-   [tieminos.habitat.extended-sections.tunel-cuantico-bardo.clouds
-    :refer [clouds-refrain2]]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.gusanos.core
     :as bardo.gusano]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.live-state
     :as bardo.live-state
     :refer [live-state]]
+   [tieminos.habitat.extended-sections.tunel-cuantico-bardo.osc
+    :as bardo.osc]
+   [tieminos.habitat.extended-sections.tunel-cuantico-bardo.osc-helpers
+    :as bardo.osc-helpers]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.rec
     :as bardo.rec]
-   [tieminos.habitat.extended-sections.tunel-cuantico-bardo.synths
+   [tieminos.habitat.extended-sections.tunel-cuantico-bardo.synths.samplers
     :refer [play-synth]]
    [tieminos.habitat.groups :as groups]
    [tieminos.habitat.recording :as rec]
    [tieminos.habitat.routing :refer [inputs main-returns]]
    [tieminos.math.bezier-samples :as bzs]
-   [tieminos.math.utils :refer [linexp* linlin]]
+   [tieminos.math.utils :refer [linlin]]
    [tieminos.utils :refer [rrange wrap-at]]
-   [time-time.dynacan.players.gen-poly :as gp]))
+   [time-time.dynacan.players.refrain.v2 :as rain.v2]))
 
 ;;;;;;;;;;;;;;
 ;; Recording
@@ -45,6 +47,21 @@
   (-> @live-state :rec :mic-1 :dur)
   (def input-k :mic-2))
 
+(defn send-tick
+  [input-k val]
+  (bardo.osc-helpers/send-osc-msg (format "/Rec/%s-tick" (name input-k))
+                                  (str val)))
+
+(defn tick-countdown
+  [rec-dur input-k]
+  (let [tick 0.5]
+    (rain.v2/ref-rain
+     :id (make-rec-id (str (name input-k) "-countdown"))
+     :durs (repeat (/ rec-dur tick) tick)
+     :loop? false
+     :on-event (rain.v2/on-event
+                (send-tick input-k (- rec-dur (* i tick)))))))
+
 (defn start-recording
   [{:keys [input-k]}]
   (timbre/info "starting rec on" input-k)
@@ -53,19 +70,20 @@
      {:id (make-rec-id input-k)
       :input-k input-k
       :input-bus input-bus
-      :rec-dur-fn (fn [_]
-                    (-> @live-state :rec input-k :dur))
+      :rec-dur-fn (fn [_] (-> @live-state :rec input-k :dur))
       :rec-pulse (fn [_] (-> @live-state :rec input-k get-rec-pulse))
        ;; :print-info? true
-      :on-rec-start (fn [_]
+      :on-rec-start (fn [_rec-config]
                       (swap! live-state
                              assoc-in
                              [:rec input-k :last-rec-timestamp]
-                             (o/now)))})
+                             (o/now))
+                      (tick-countdown (-> @live-state :rec input-k :dur)
+                                      input-k))
+      :on-rec-end (fn [_] (send-tick input-k ""))})
     (timbre/error "No input bus for key:" input-k)))
 
 (comment
-  (gp/stop)
   (reset! rec/recording? {})
   (start-recording {:input-k :mic-1})
   (->> @rec/bufs
@@ -75,8 +93,8 @@
 
 (defn stop-recording
   [{:keys [input-k]}]
-  (timbre/info "stopping rec on" input-k)
-  (gp/stop (make-rec-id input-k)))
+  (timbre/info "Stopping rec on:" input-k)
+  (bardo.rec/stop-rec-loop! (make-rec-id input-k)))
 
 ;;;;;;;;;;;;;;;;;;
 ;; Clouds
@@ -124,11 +142,10 @@
       [3 3 2])))
 
 (defn lorentz-chord
-  [index lorentz lor-speed lowest-note highest-note]
-  (let [index* (* lor-speed index)]
-    [(round (lorentz/bound (lorentz index*) :x lowest-note highest-note))
-     (round (lorentz/bound (lorentz index*) :y lowest-note highest-note))
-     (round (lorentz/bound (lorentz index*) :z lowest-note highest-note))]))
+  [index lorentz lowest-note highest-note]
+  [(round (lorentz/bound (lorentz index) :x lowest-note highest-note))
+   (round (lorentz/bound (lorentz index) :y lowest-note highest-note))
+   (round (lorentz/bound (lorentz index) :z lowest-note highest-note))])
 
 (defn- get-rates-subset
   [rate-indexes rates]
@@ -239,21 +256,30 @@
       (timbre/warn "No buffer for bank" bank))
     buf))
 
-(defn- clouds-rates
-  [player index bank]
+(defonce ^:private lorentz-chord-indexes (atom {}))
+
+(defn- get-next-lorentz-chord-index!
+  [refrain-id harmonic-speed]
+  (-> (swap! lorentz-chord-indexes update refrain-id (fnil + 0)  harmonic-speed)
+      (get refrain-id)))
+
+(defn- clouds-voice-config
+  [player refrain-id bank]
   (let [{:keys [harmony harmonic-speed harmonic-range
                 harmonic-active-voices ;; defines the number of voices to play, lorentz has 3 indexes so indexes can be a `set` of numbers 0 - 2
-                ]
-         :or {harmonic-active-voices #{0 1 2}}} (bardo.live-state/get-harmonic-data! player bank)
+                harmonic-convergence-point]
+         :or {harmonic-active-voices #{0 1 2}
+              harmonic-convergence-point 0}} (bardo.live-state/get-harmonic-data! player bank)
+        index (get-next-lorentz-chord-index! refrain-id harmonic-speed)
         rates (->> (lorentz-chord index
                                   (:lorentz @live-state)
-                                  harmonic-speed
                                   (:low harmonic-range)
                                   (:high harmonic-range))
                    (#(rate-chord-seq (get-harmony harmony) [%]))
                    first
                    (get-rates-subset harmonic-active-voices))]
-    rates))
+    {:rates rates
+     :convergence-point harmonic-convergence-point}))
 
 (defn- clouds-amp
   [player bank]
@@ -324,44 +350,64 @@
                 0
                 (rand-int n-samples))))
 
+(defn- clouds-start-delays
+  [convergence-point-% buf rates]
+  (let [original-dur (:duration buf)
+        rate-durs-pair (->> rates
+                            (mapv #(vector % (/ original-dur %))))
+        max-dur (->> rate-durs-pair (mapv second) sort last)]
+    (->> rate-durs-pair
+         (mapv (fn [[rate dur]]
+                 (let [max-delay (- max-dur dur)]
+                   [rate (* max-delay convergence-point-%)])))
+         (into {}))))
+
+#_(clouds-start-delays 0.5 {:duration 0.45} [3/16 7/32 3/8])
+
 (defn make-voice-params
   [{:as synth-config :keys [synth player index bank params]}
-   rates]
+   {:as voice-config :keys [rates convergence-point]}]
+  (let [buf (:buf params)
+        rate->start-delay (clouds-start-delays convergence-point buf rates)]
+    (->> rates
+         (mapv (fn [rate]
+                 (let [d-level-weights {0.3 1}
+                       room-weights {0.2 2, 2 1/2 4 1/2}
+                       trig-rate (+ 90 (rand-int 20))
 
-  (->> rates
-       (mapv (fn [rate]
-               (let [d-level-weights {0.3 1}
-                     room-weights {0.2 2, 2 1/2 4 1/2}
-                     trig-rate (+ 90 (rand-int 20))
-                     buf (:buf params)
-                     dur (clouds-synth-dur player bank synth buf rate)
-                     start-pos (clouds-start-pos dur buf)
-                     params* (-> synth-config
-                                 :params
-                                 (assoc :dur dur
-                                        :start-pos start-pos
-                                        :rate rate)
-                                 (cond->
-                                  (= :granular synth)
-
-                                   (assoc
-                                    :grain-dur (/ 1 (/ trig-rate 2))
-                                    :trig-rate 100
-                                    :interp (rand-nth [1 2 4])
-                                    :amp (adjust-amp 9 (:amp params))
-                                    :amp-lfo (rrange 0.1 0.4)
-                                    :amp-lfo-min 0.95
-                                    :lpf-max (rrange 2000 10000)
-                                    :amp-env-durations (get-envelope
-                                                        index
-                                                        (bardo.live-state/get-player-data player bank :env)
-                                                        (:lorentz @bardo.live-state/live-state))
-                                    :rev-room (weighted room-weights))))]
-                 (assoc synth-config :params params*))))))
+                       dur (clouds-synth-dur player bank synth buf rate)
+                       start-pos (clouds-start-pos dur buf)
+                       granular? (= :granular synth)
+                       params* (-> synth-config
+                                   :params
+                                   (assoc :dur dur
+                                          :start-pos start-pos
+                                          :rate rate)
+                                   (cond->
+                                    granular?
+                                     (assoc
+                                      :grain-dur (/ 1 (/ trig-rate 2))
+                                      :trig-rate 100
+                                      :interp (rand-nth [1 2 4])
+                                      :amp (adjust-amp 9 (:amp params))
+                                      :amp-lfo (rrange 0.1 0.4)
+                                      :amp-lfo-min 0.95
+                                      :lpf-max (rrange 2000 10000)
+                                      :amp-env-durations (get-envelope
+                                                          index
+                                                          (bardo.live-state/get-player-data player bank :env)
+                                                          (:lorentz @bardo.live-state/live-state))
+                                      :rev-room (weighted room-weights))))]
+                   (assoc synth-config
+                          :params params*
+                          :event/start-delay (if granular?
+                                               0
+                                               (get rate->start-delay rate 0)))))))))
 (comment
   (bardo.live-state/get-active-independent-banks :milo))
 (defn get-synth-data-vectors
-  [player independent-bank {:keys [index]}]
+  [player independent-bank
+   {:keys [index id] :as _refrain-config}]
   (let [active-banks (if independent-bank
                        #{independent-bank}
                        (bardo.live-state/get-active-group-banks player))
@@ -372,7 +418,7 @@
     (cond
       (not bank) (timbre/error "No bank selected, can't play cloud")
       (not buf) nil
-      :else (let [rates (clouds-rates player index bank)
+      :else (let [voice-config (clouds-voice-config player id bank)
                   synth-config (merge
                                 (clouds-pan player bank)
                                 (clouds-filter player bank)
@@ -386,16 +432,64 @@
                                           :end 1
                                           :amp (clouds-amp player bank)
                                           :out-offset (clouds-out player)}})]
-              (make-voice-params synth-config rates)))))
+              (make-voice-params synth-config voice-config)))))
 
 (comment
   (bardo.live-state/toggle-active-bank! :milo 0 true)
   (bardo.live-state/get-player-data :milo)
   (get-synth-data-vectors :milo {:index 0}))
+
+(defonce delay-refrains (atom {}))
+
+(defn- assoc-delay-refrain
+  [path]
+  (swap! delay-refrains assoc-in path true))
+
+(defn- dissoc-delay-refrain
+  [path]
+  (let [[parent id] path]
+    (swap! delay-refrains update parent dissoc id)))
+
+(defn- stop-delay-refrains
+  [parent-id]
+  (let [delays (get parent-id @delay-refrains)]
+    (doseq [[id] delays] (rain.v2/stop id))
+    (swap! delay-refrains dissoc parent-id)))
+
+(defn- clouds-delay-refrain
+  [refrain-event-data start-delay f]
+  (let [refrain-parent-id (-> refrain-event-data :refrain/config :id)
+        id (str (random-uuid))
+        path [refrain-parent-id id]]
+    (assoc-delay-refrain path)
+    (rain.v2/ref-rain
+     :id id
+     :durs [start-delay 1]
+     :loop? false
+     :on-event (rain.v2/on-event
+                (when (= 1 i)
+                  (f)
+                  (dissoc-delay-refrain path))))))
+
+(comment
+  (require '[time-time.dynacan.players.refrain.v2 :as rain.v2])
+  (rain.v2/ref-rain
+   :id :test
+   :durs [5 1]
+   :on-event (rain.v2/on-event
+              (println i)))
+  (rain.v2/stop))
+
 (defn clouds-on-event
-  [player independent-bank {refrain-event-data :data}]
-  (doseq [data* (get-synth-data-vectors player independent-bank refrain-event-data)]
-    (play-synth  data*)))
+  [player independent-bank {refrain-event-data :voice}]
+  (doseq [{:keys [event/start-delay] :as data} (get-synth-data-vectors
+                                                player
+                                                independent-bank
+                                                refrain-event-data)]
+    (let [f #(play-synth data)]
+      (if (> start-delay 0)
+        (clouds-delay-refrain refrain-event-data start-delay f)
+        (f)))))
 
 (comment
   (do ;; trigger clouds event on bank 0
@@ -405,17 +499,17 @@
 ;; FIXME: simplify workflow, the generation of params inside clouds-refrain2 seems somewhat redundant (as related to :get-param-data, probably merge both into on-play and exctract taht function so that i can be called via dispatch - for debugging purposes-)
 (defn start-clouds
   [{:keys [player bank independent?]}]
-  (clouds-refrain2
+  (timbre/info "Starting cloud:" player bank)
+  (rain.v2/ref-rain
    {:id  (if independent?
            (make-clouds-id player bank)
            (make-clouds-id player))
-    :durs-fn (partial clouds-durs player bank)
-    :on-event (partial clouds-on-event player bank)}))
+    :cycle-len 1
+    :durs (partial clouds-durs player bank)
+    :on-event (partial clouds-on-event player bank)
+    :on-stop (fn [{:keys [id]}] (stop-delay-refrains id))}))
 
 (comment
-  (-> @gp/refrains keys)
-  (-> @gp/refrains :bardo.clouds/milo)
-  (gp/stop)
   (-> @live-state :algo-2.2.9-clouds :milo)
   (swap! live-state assoc-in [:algo-2.2.9-clouds :milo :rhythm] :lor-0.1_2)
   (o/amp->db 0.0015420217847956035)
@@ -445,10 +539,11 @@
 
 (defn stop-clouds
   [{:keys [player bank independent?]}]
+  (timbre/info "Stopping cloud:" player bank)
   (if independent?
-    (gp/stop (make-clouds-id player bank))
+    (rain.v2/stop (make-clouds-id player bank))
     (when-not (seq (bardo.live-state/get-active-group-banks player))
-      (gp/stop (make-clouds-id player)))))
+      (rain.v2/stop (make-clouds-id player)))))
 
 (defn start-gusano
   []
@@ -479,7 +574,8 @@
     :stop-gusano (stop-gusano)
     :start-recording (start-recording data)
     :stop-recording (stop-recording data)
-    :delete-bank-bufs (bardo.rec/delete-bank-bufs (:input-k data) (:active-bank data))
+    :bardo.event/delete-bank-bufs (bardo.rec/delete-bank-bufs data)
+    :bardo.event/bufs-counted (bardo.osc/update-bufs-count data)
     ;; event for dev purpuses
     :dev/trigger-clouds-event (do ;; data {:bank int}
                                 (bardo.live-state/toggle-active-bank! :milo (:bank data) true)

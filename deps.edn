@@ -6,14 +6,15 @@
         potemkin/potemkin {:mvn/version "0.4.5"}
         instaparse/instaparse {:mvn/version "1.5.0"}
         org.clojure/data.generators {:mvn/version "1.0.0"}
+        metosin/reitit {:mvn/version "0.10.1"}
         io.github.diegovdc/overtone {:git/url "https://github.com/diegovdc/overtone.git"
                                      :sha "a9395fdea0acf4574bb2a94ff39b59d4212117a3"} #_{:local/root "../overtone" :deps/manifest :deps}
         ;; videco/piratidal {:local/root "../../../code/piratidal" :deps/manifest :deps}
         io.github.diegovdc/time-time {:git/url "https://github.com/diegovdc/time-time.git"
-                                      :sha "035a1accd4b3ac955aec246d68334aec133ad230"}
+                                      :sha "65115f7812605c4a655dd2961f8efe075b91dedd"}
         #_{:local/root "../time-tiem" :deps/manifest :deps}
         io.github.diegovdc/erv {:git/url "https://github.com/diegovdc/erv.git"
-                                :sha "1e0f13026addc4b78b3529dacfc83726857094be"
+                                :sha "f4a08e5ca0ed04752156a8e51d8c5e069f6821f5"
                                 ;; :tag "0.0.7"
                                 }#_{:local/root "../erv" :deps/manifest :deps}
         com.taoensso/timbre {:mvn/version "4.10.0"}
@@ -24,7 +25,7 @@
         org.bouncycastle/bctsp-jdk14 {:mvn/version "1.38"}
         ;; working with intervals
         io.helins/interval {:mvn/version "1.0.0-beta0"}
-        clj-kondo/clj-kondo {:mvn/version "2023.05.18"}
+        clj-kondo/clj-kondo {:mvn/version "2026.05.25"}
         thi.ng/color {:mvn/version "1.4.0"}
         ;; another interesting possibility, may offer other options
         ;; com.dean/interval-tree {:mvn/version  "0.1.2"}

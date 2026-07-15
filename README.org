@@ -1,4 +1,11 @@
 #+title: Tieminos
+#+startup: overview
+
+
+* Introduction
+My current music workshop, all my clojure code-music creation since mid-2021 lives here.
+
+Mainly uses ~Supercollider~ via ~Overtone~, my microtonality library [[https://github.com/diegovdc/erv][erv]] and my sequencing library [[https://github.com/diegovdc/time-tiem][time-tiem]].
 
 * MIDI
 ** MIDI controller template
@@ -15,7 +22,7 @@
 #+end_src
 ** MPE Controller (Exquis)
 #+begin_src clojure
-(require '[tieminos.midi.core :refer [midi-in-event get-exquis! clear-all-synths!]])
+(require '[tieminos.midi.core :refer [midi-in-event get-exquis! exquis-cc clear-all-synths!]])
 
 (require
   '[overtone.core :as o]
@@ -27,8 +34,12 @@
   (midi-in-event
    :midi-input (get-exquis!)
    :note-on (fn [{:keys [note velocity]}]
-              (demo-sine :freq (conv/midi->cps note)
+              (demo-sine :freq (conv/midi->cps
+                                 ;; `exquis-cc` will get the current cc value from the exquis input state
+                                (+ (exquis-cc 41) ;; Will produce a brief glissando on the attack
+                                   note))
                          :amp (linlin* 0 127 0.4 0.9 velocity)))
+   :keep-cc-state? {:log? true} ;; can be nil, true or {:log? boolean}. Logging will post cc changes to the repl. If MPE is used cc 74 (y-axis) will not be logged nor kept in the state
    :cc (fn [{:keys [note velocity]}]
           ;; for some reason javax.sound.midi misses some note-off messages so...
          (when (and (= note 21) ;; knob 1 click
@@ -46,6 +57,106 @@
               (o/ctl synth :amp (linexp* 0 127 0.1 1 val)))})
   
 #+end_src
+* =seq-utils=
+** =mseq= and associated functions
+A sequence generator API.
+
+#+begin_src clojure
+(require '[tieminos.seq-utils.core :refer [mseq gen-seq lin choose ret ++ ** mirror mirror2 rev rev2 graph]])
+
+;; simply accesses values in the seq given the index. Values are wrapped at the length of the sequence.
+(let [index 3
+      seq* [1 2 3]]
+  (mseq index seq*))
+
+;; generate a sequence of a given length
+(gen-seq 4 [1])
+
+;; Nesting
+;; 3 and 4 will alternate 
+(gen-seq 20
+         [1 2 [3 4]])
+
+;; this alternation is isorhythmic (according to the index), so the following will only return 5 (as it is the only value corresponding to the index mod-3 at the third position)
+(gen-seq 20
+         [1 2 [3 4 5]])
+
+;; to ensure alternation `lin` can be used
+(gen-seq 20
+         [1 2 (lin 3 4 5)])
+
+;; arbitrary nesting is also possible
+(gen-seq 20
+         [1 2 (lin 3 [4 7] 5)])
+
+;; choosing random values
+(gen-seq 20
+         (choose 1 2 3))
+
+;; weighted choice (a map of value-weight)
+(gen-seq 20
+         {1 10, 2 1, 3 5})
+
+;; of course this can be sequenced
+(gen-seq 20
+         {(lin 1 11) 10, 2 1, 3 5})
+
+;; returning several values at once
+(gen-seq 20
+         [1 (ret 4 5) 2 3])
+
+;; reversing
+(gen-seq 20
+         (rev [1 2 3]))
+;; but the internal seqs will not be reversed
+(gen-seq 20
+         (rev [1 (lin 2 20 200) 3]))
+;; rev2 solves this
+(gen-seq 20
+         (rev2 [1 (lin 2 20 200) 3]))
+
+;; palindromic mirroring
+(gen-seq 20
+         (mirror [1 2 3]))
+;; but the internal seqs will not be mirrored
+(gen-seq 20
+         (mirror [1 (lin 2 20 200) 3]))
+;; mirror2 solves this
+(gen-seq 20
+         (mirror2 [1 (lin 2 20 200) 3]))
+
+;; graph traversal
+(gen-seq 20
+         (graph {1 [2 3], 2 [3], 3 [1]}))
+
+;; math operations `++` and `**`
+(gen-seq 20
+         (++ 1 [1 2 3]))
+(gen-seq 20
+         (++ [1 10] [1 2 3]))
+(gen-seq 20
+         (** 2 [1 2 3]))
+(gen-seq 20
+         (** [1 2] [1 2 3]))
+
+#+end_src
+** =rainseq=
+For usage within a ~ref-rain~ this macro provides a better interface (omitting the explicit ~index~ argument) and memoization of the underlying sequences used by ~mseq~ for improved performance.
+
+#+begin_src clojure
+(require '[tieminos.seq-utils.core :refer [rainseq lin choose ret ++ ** mirror mirror2 rev rev2 graph]]
+         '[time-time.dynacan.players.refrain.v2 :as rain2])
+
+(rain2/ref-rain
+  :id ::rainseq-example
+  :durs [1]
+  :on-event
+  (rain2/on-event
+    (println (rainseq [1 2 [3 4]]))))
+
+(rain2/stop ::rainseq-example)
+#+end_src
+
 
 * Legato sustainer
 Sustain a note or notes until they change. Useful within a loop (refrain) to prevent a note from being retriggered every time.
@@ -63,16 +174,273 @@ Sustain a note or notes until they change. Useful within a loop (refrain) to pre
   (legato/multi :my-chord {1 {:inst drone :params {:freq (* root 2)}}})
   (legato/multi :my-chord {})
 #+end_src
+
 * Synthdefs
+** Template Synth
+=tieminos.sc-utils.synths.template-synth.v0= is an experimental feature that provides a way to generate variations of a synth based on user defined templates. It supports usage of vectors of variable sizes as args (e.g. for chords) as well as having =ugens= as arguments (e.g. for a passing in different filters to a synth).
+
+#+begin_src clojure
+(require '[overtone.core :as o]
+         '[tieminos.sc-utils.synths.template-synth.v0 :refer [make-synth-fn
+                                                              get-synth-variant
+                                                              get-variant-data
+                                                              modify-params2
+                                                              describe-synth
+                                                              variant-id]])
+
+(make-synth-fn
+  ;; synth (caller) name: a quoted symbol.
+  ;; NOTE: This symbol will be defined in the namespace.
+  'sawy
+  ;; default args
+  {:freq [500 900]
+   :env-levels [0 1 0.1 1 0]
+   :env-durs [1 3 1 2]
+   :amp 1
+   ;; template-able ugens, they are "passed in" dynamically to the synth (new synth versions are cached). They can access other arguments in the synth.
+   :ugen/env '(o/env-gen (o/envelope env-levels env-durs) :action o/FREE)
+   :ugen/fx1 '(o/distort)
+   :ugen/mix '((fn [sig]
+                 ;; if sig is a single sin-osc (not a vector) then don't call `o/mix`.
+                 ;; NOTE: even if a single freq is passed in a vector, the sig will still come in not in a vector.
+                 (if (vector? freq)
+                   (o/mix sig)
+                   sig)))
+   ;; a default can be just a number
+   :ugen/pan-pos 0}
+  ;; ugen graph template: a quoted list containing a graph of ugens or keywords with the `ugen` namespace. They are subtituted by the passed in ugens. Otherwise the syntax is the same as the body of a `defsynth`.
+  '(o/out 0
+          (-> (o/sin-osc freq)
+              :ugen/mix
+              :ugen/fx1
+              (o/pan2 :ugen/pan-pos)
+              (o/free-verb)
+              (* amp :ugen/env)))
+  ;; remove all variations of the synth when `make-synth-fn` is called. `true` is the default value.
+  {:reset? true})
+
+;; This a synth can be called.
+(sawy)
+
+;; use a single freq (see the default `freq` param).
+(sawy {:freq 200})
+
+;; Pass a chord of a different size. NOTE: the `:ugen/mix` logic works with lists too
+(sawy {:freq '(200 400 500)})
+
+;; Of course env params can also be modified.
+(sawy {:env-levels [0 1 0]
+       :env-durs [0.001 1]})
+
+;; remove the distortion
+(sawy {:ugen/fx1 nil})
+
+;; use a filter and increase the amp
+(sawy {:amp 5
+       ;; NOTE: using the double parenthesis syntax as the function is passed to a `->` macro. So except for the `'` the syntax is the same. 
+       :ugen/fx1 '((fn [sig] (o/moog-ladder sig 900 0.2)))})
+
+(sawy {:amp 5
+       ;; As per the NOTE above we can use this syntax too.
+       :ugen/fx1 '(o/moog-ladder 900 0.2)})
+
+;; pass an ugen argument to another ugen
+(sawy {:ugen/pan-pos '(o/lf-noise2 10)})
+
+#+end_src
+
+*** Advanced
+**** Single synth variants and variant data
+
+~get-variant-data~, ~get-synth-variant~, ~describe-synth~ and ~variant-id~.
+
+#+begin_src clojure
+;; NOTE: following the code block above.
+
+;; Get all the relevant data related to a variant. 
+(get-variant-data sawy {:ugen/pan-pos '(o/lf-noise2 10)})
+(keys (get-variant-data sawy {:ugen/pan-pos '(o/lf-noise2 10)}))
+
+;; Get a specific variant synth (an `Overtone` synth) given some sample params. NOTE: The namespace where the synth was defined should be provided.
+(def sawy-pan-noise (get-synth-variant sawy {:ugen/pan-pos '(o/lf-noise2 10)}))
+
+;; This is just an Overtone synth
+(sawy-pan-noise :freq0 100
+                :freq1 10000)
+
+;; modify-params2 can be used if the params vector is too large.
+(sawy-pan-noise (modify-params2 {:freq [100 300]}))
+
+;; But of course the third frequency will never sound as the synth has not been generated to deal with that. In that case create another instance or use `sawy`.
+(sawy-pan-noise (modify-params2 {:freq [100 300 10000]}))
+
+;; The only difference is that the instance contains metadata describing it.
+(meta sawy-pan-noise)
+
+;; See the params and the ugen-form that is being used by this (`Overtone`) synth
+(describe-synth sawy-pan-noise)
+
+
+;; Get the id of a particular instance
+(variant-id sawy {})
+(variant-id sawy {:freq [100 300]})    ;; this should be the same instance, as the vector size because `:freq` is the same as the original
+(variant-id sawy {:freq [100 300 500]}) ;; but this one is different
+(variant-id sawy {:ugen/pan-pos '(o/lf-noise2 10)}) ;; and this one too
+
+#+end_src
+** Plugin syntax: =defplug=.
+Notice that in the example above the =env-levels= and =env-durs= parameters are tied to =:ugen/env=. This makes it a problem for reusing these ugens contrary, to e.g. ~:ugen/fx1 '((fn [sig] (o/moog-ladder sig 900 0.2)))~ which is mostly autonomous. To facilitate the reuse of the =ugen= namespaced params. One can use =defplug=. 
+
+#+begin_src clojure
+(require '[overtone.core :as o]
+         '[tieminos.sc-utils.synths.template-synth.v0 :refer [make-synth-fn defplug]])
+
+(defplug env1
+  ;; a map with the ugen params we want to access and their defaults
+  {:env-levels [0 1 0.1 1 0]
+   :env-durs [1 3 1 1]
+   :ugen/env (o/env-gen (o/envelope env-levels env-durs) :action o/FREE)})
+
+(defplug env2
+  {:attack 0.01
+   :release 1
+   :ugen/env (o/env-gen (o/env-perc attack release) :action o/FREE)})
+
+;; When a plugin expects an external param to be present (e.g. `freq`) then,
+;; the 2-arity version takes as a first parameter a set of keys that should correspond to names of parameters.
+;; Nevertheless they should be present on the synth. And it not they will fail.
+(defplug freq-mixer
+  #{:freq}
+  {:ugen/freq-mixer (fn [sig]
+                      ;; if sig is a single sin-osc (not a vector) then don't call `o/mix`.
+                      ;; NOTE: even if a single freq is passed in a vector, the sig will still come in not in a vector.
+                      (if (vector? freq)
+                        (o/mix sig)
+                        sig))})
+
+(make-synth-fn
+  'siny
+  (-> {:freq [500 900]
+       :amp 1}
+      (env1)
+      (freq-mixer))
+  '(o/out 0
+          (-> (o/sin-osc freq)
+              (:ugen/freq-mixer) 
+              (o/pan2 0)
+              (* amp :ugen/env)))
+  {:reset? true})
+
+
+
+(siny)
+
+
+;; dynamically switch env1 for env2
+(siny (-> {:freq 200} (env2)))
+
+;; pass in a param for env2.
+;; NOTE: it will not work if passed to the map that gets threaded in.
+(siny (-> {:freq 200}
+          (env2 {:attack 1})))
+#+end_src
+
+
 ** Tips
 When writting macros this ~ns~ gives access to the ugen operators
 #+BEGIN_SRC clojure
 [overtone.sc.ugen-collide-list :as oc]
 #+END_SRC
+* Harmonic Experience
+A tool for singing inspired by W. A. Mathieu's /The Harmonic Experience/.
+** Basic usage
+#+begin_src clojure 
+(require
+  '[erv.utils.conversions :refer [midi->cps]]
+  '[tieminos.harmonic-experience.lattice :as hexp.lattice]
+  '[tieminos.harmonic-experience.trainer :as hexp.trainer]
+  '[tieminos.harmonic-experience.utils :as hexp.utils]
+  '[tieminos.harmonic-experience.drone-box :as hexp.drone-box]
+  '[tieminos.midi.core :refer [get-exquis!]]
+  '[tieminos.scales.core :as scales]
+  '[tieminos.seq-utils.core :refer [choose]] )
 
-My current music workshop, all my clojure code-music creation since mid-2021 lives here.
+(def root (midi->cps 60))
+(def scale (scales/get :grady :centaur))
 
-Mainly uses ~Supercollider~ via ~Overtone~, my microtonality library [[https://github.com/diegovdc/erv][erv]] and my sequencing library [[https://github.com/diegovdc/time-tiem][time-tiem]].
+(hexp.utils/set-output-mode! :reaper) ;; send sound to BH using the  output mapping in `hexp.utils/out`. Else `hexp.utils/out` will always return 0.
+(hexp.utils/set-output-mode! nil) ;; use 0 as the main out
+
+;; create a lattice and setup a keyboard
+
+(hexp.lattice/setup-kb {:ref-note 60
+                        :root root
+                        :scale scale
+                        :midi-kb (get-exquis!) ;; can be ommited if no keyboard is present/desired, then only a lattice will be generated, but it can be used by `hexp.trainer/trainer` to highlight the active notes.
+                        :out (hexp.utils/out 7)})
+
+  ;; random sine sounds at the given degrees
+
+(hexp.trainer/trainer {:scale scale
+                       :root (midi->cps 60)
+                       ;; uses `mseq`` underneath, so `choose` is a good option
+                       :degrees (choose 0 2 4 5 9 11)
+                       :periods (choose 1/2 1 2)
+                       :amp 0.4
+                       :out (hexp.utils/out 3)})
+(hexp.trainer/stop)
+
+  ;; start a drone at the given `:degrees`
+
+(hexp.drone-box/start {:root (/ root 2)
+                       :scale scale
+                       :degrees [0 7] 
+                       :amps [0.5 0.3] ;; maps the sine of the degree to the corresponding amp 
+                       :out (hexp.utils/out 5)})
+(hexp.drone-box/stop)
+#+end_src
+** Custom lattice
+The default lattice goes to the 23-limit. It doesn't have coordinates higher than that but they can be mapped.
+
+#+begin_src clojure
+(require '[clojure.set :as set]
+         '[erv.lattice.v2 :refer [base-coords gen-coords]])
+
+(def scale (scales/get :grady :metaslendro-12))
+
+(comment
+  ;;  the default coords
+  (-> base-coords)
+  
+  ;; analyze the scale to know the coordinates that need to be provided
+
+  (->> scale (map :ratio) analyze-ratios :subgroup))
+
+;; replace the unused coords (or add your own)
+(def coords (-> base-coords
+                (set/rename-keys
+                  {23 151
+                   17 43
+                   11 37 })))
+
+;; or generate the coords algorithmically (this may or may not work)
+(def coords-v2
+  (gen-coords
+    2
+    40
+    (->> scale (map :ratio) analyze-ratios :subgroup)))
+
+;; Configure the lattice coords
+;; NOTE: If a lattice is already running close it and create another one. Otherwise an error will be thrown.
+(hexp.lattice/setup-kb {:ref-note 60
+                        :root root
+                        :scale scale
+                        :midi-kb (get-exquis!)
+                        :lattice-config {:coords coords }
+                        :out (hexp.utils/out 7)})
+#+end_src
+
+
 
 * License
 

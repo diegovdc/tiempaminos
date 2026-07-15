@@ -1,6 +1,6 @@
 (ns tieminos.habitat.extended-sections.tunel-cuantico-bardo.live-state
   (:require
-   [clojure.math :refer [round]]
+   [clojure.math :refer [floor round]]
    [clojure.set :as set]
    [clojure.string :as str]
    [erv.utils.core :refer [round2]]
@@ -12,25 +12,25 @@
     :as bardo.comms]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.config
     :as bardo.config]
+   [tieminos.habitat.extended-sections.tunel-cuantico-bardo.gusanos.harmony
+    :refer [gusano-harmonic-seqs gusano-harmonies]]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.osc-helpers
-    :as bardo.osc-helpers
-    :refer [send-osc-msg]]
+    :as bardo.osc-helpers]
    [tieminos.habitat.osc :as habitat-osc]
-   [tieminos.habitat.routing :refer [inputs]]
    [tieminos.math.utils :refer [linexp* linlin]]
    [tieminos.osc.reaper :as reaper]
    [tieminos.utils :refer [throttle wrap-at]]))
 
 (defonce touch-osc-state (atom {}))
 
-(defonce live-state (atom {:lorentz (lorentz/init-system :x (+ 0.3 (rand 0.01))
-                                                         :y (+ 0.02 (rand 0.01))
-                                                         :z (+ 0.012 (rand 0.01)))}))
+(defonce live-state (atom {}))
+
 (defn init! [data]
   (reset! live-state
           (merge {:lorentz (lorentz/init-system :x (+ 0.3 (rand 0.01))
                                                 :y (+ 0.02 (rand 0.01))
-                                                :z (+ 0.012 (rand 0.01)))}
+                                                :z (+ 0.012 (rand 0.01)))
+                  :system/recording? false}
                  data)))
 
 (comment
@@ -38,6 +38,22 @@
   (def lorentz (->> @live-state :lorentz))
   (lorentz 2)
   (nth [1 2 3 4] 2))
+
+;;;;;;;;;;;;;;;;;;
+;; * Recording
+;;;;;;;;;;;;;;;;;;
+
+(defn start-recording
+  []
+  (swap! live-state assoc :system/recording? true))
+
+(defn stop-recording
+  []
+  (swap! live-state assoc :system/recording? false))
+
+;;;;;;;;;;;;;;;;;;
+;; * Synth
+;;;;;;;;;;;;;;;;;;
 
 (defn synth-bank-path
   [player & keys]
@@ -207,20 +223,6 @@
   ;; we don't restart the recorder, but the recorder should receive a durs function instead that will deref the live-state somehow
   )
 
-(def default-cloud-config
-  {:sample-lib-size 1
-   :env :lor-1_4
-   :rhythm :lor-2_6
-   :amp 0.7
-   :reaper.send/reverb {:clean 0 :processes 0}
-   :active-banks #{}
-   :harmonic-speed 30
-   :harmony :m-slendro
-   :harmonic-range {:low -18 :high 18}})
-
-(comment
-  (toggle-clouds :milo true))
-
 (declare default-touch-osc-state)
 (comment
   (bardo.osc-helpers/update-clients @habitat-osc/receiver-clients
@@ -290,32 +292,17 @@
 
     ;; touch osc params
     (set-touchosc-params synth-data)))
-(comment
-  (init-synth-data :milo 0))
 
 (defn osc-bool [bool] (int (if bool 1 0)))
 
 (comment
   (get-in @live-state (synth-bank-path :milo 0)))
 
-(defn init-synth-data
-  [player bank]
-  (let [path-base (case player
-                    :milo "/Milo"
-                    :diego "/Diego")
-        paths (map #(str path-base %) synth-ui-params)]
-    (swap! live-state
-           assoc-in
-           (synth-bank-path player bank :touch-osc-data)
-           (select-keys default-touch-osc-state paths))))
-
 (defn set-selected-bank-synth
   [player bank]
   (let [path (synth-bank-path player :selected-bank)
         state (swap! live-state assoc-in path bank)
         synth-data (get-in state (synth-bank-path player bank))]
-    (when (nil? synth-data)
-      (init-synth-data player bank))
     (set-touchosc-synth-ui player bank synth-data)))
 
 (defn show-active-bank-label [player show?]
@@ -387,7 +374,6 @@
          max-dur))
 
 (comment
-  (reset-default-state!)
   (-> (get-player-data :milo) (#(apply dissoc % (range 8))))
   (set-clouds-amp :diego 1))
 
@@ -541,6 +527,15 @@
 
 (def ^:private filter-keys (map first filter-data*))
 
+(defn- save-filter-touch-osc-data
+  [live-state player osc-msgs]
+  (swap! live-state
+         (fn [state]
+           (-> state
+               (update-in (selected-synth-bank-path player :touch-osc-data)
+                          merge
+                          osc-msgs)))))
+
 (defn set-filter-config
   "Sets the appropriate filter configuration and updates UI"
   [player]
@@ -563,16 +558,12 @@
                                 (str path* "-visible") [(osc-bool visible?)]})))
                       (apply merge))]
 
-    (doseq [[path v] osc-msgs] (apply bardo.osc-helpers/send-osc-msg path v))
-
-    (swap! live-state
-           (fn [state]
-             (-> state
-                 (assoc-in (selected-synth-bank-path player :filter-configs active-filter)
-                           current-config)
-                 (update-in (selected-synth-bank-path player :touch-osc-data)
-                            merge
-                            osc-msgs))))
+    (save-filter-touch-osc-data live-state player osc-msgs)
+    (doseq [[path v] osc-msgs]
+      (apply bardo.osc-helpers/send-osc-msg path v)
+      ;; set params values via `osc-responder`
+      (when-not (str/ends-with? path "-visible")
+        (apply bardo.osc-helpers/send-osc-msg-to-self path v)))
     nil))
 
 (defn set-active-filter
@@ -612,7 +603,6 @@
 (defn save-touchosc-filter-param
   "A variation of `save-touchosc-synth-param` to save the different filter configs"
   [player path args]
-  (println player path args)
   (let [active-filter (:active-filter (get-selected-synth-data player))]
     (swap! live-state
            #(-> %
@@ -721,7 +711,9 @@
     (update&save-synth-label player :panner panner-key)))
 
 (defn set-panner-param
-  [player param-k value]
+  [player param-k value
+   & {:keys [value-fn]
+      :or {value-fn identity}}]
   (let [active-panner (:active-panner (get-selected-synth-data player))]
     (swap! live-state
            #(-> %
@@ -730,7 +722,7 @@
                            :panner-configs
                            active-panner
                            param-k)
-                          value)
+                          (value-fn value))
                 (assoc-in (selected-synth-bank-path
                            player
                            :touch-osc-data
@@ -742,9 +734,6 @@
 
 (comment
   (reset! live-state {})
-  (add-watch live-state :debug
-             (fn [_ _ _ _]
-               #_(clojure.pprint/pprint (get-selected-synth-data :milo))))
   (get-in panner-data [:random :vel :path])
   (get-selected-synth-bank :milo)
   (get-selected-synth-data :milo)
@@ -841,6 +830,11 @@
      (if low? :harmonic-lowest-note :harmonic-highest-note)
      (get-in state-data (conj path (if low? :low :high))))))
 
+(defn set-harmonic-voice-convergence-point
+  [{:keys [player value]}]
+  (let [path (selected-synth-bank-path player :harmonic-convergence-point)]
+    (swap! live-state assoc-in path value)))
+
 (defn set-active-harmonic-voice
   [{:keys [player voice-index on?]}]
   (swap! live-state update-in
@@ -873,15 +867,13 @@
   [inputs]
   (doseq [input-k inputs]
     (let [active-bank (-> @live-state :rec input-k (:active-bank 0))]
-      (bardo.comms/dispatch {:type :delete-bank-bufs
-                             :data {:input-k input-k :active-bank active-bank}}))))
+      (bardo.comms/dispatch {:type :bardo.event/delete-bank-bufs
+                             :data {:input-ks [input-k] :banks [active-bank]}}))))
 
 (defn delete-all-banks
   [inputs]
-  (doseq [bank (range 8)
-          input-k inputs]
-    (bardo.comms/dispatch {:type :delete-bank-bufs
-                           :data {:input-k input-k :active-bank bank}})))
+  (bardo.comms/dispatch {:type :bardo.event/delete-bank-bufs
+                         :data {:input-ks inputs :banks (range 8)}}))
 
 (def default-gusano-config
   {:section 0
@@ -904,10 +896,59 @@
   (-> @live-state)
   (reset! live-state {}))
 
+;;;;;;;;;;;;;;;;;;
+;; * Gusano
+;;;;;;;;;;;;;;;;;;
+
 ;; TODO: set the resulting values of gusano in the live-state just as with the other values
-(defn set-gusano-rates
-  [i]
-  (swap! live-state assoc-in [:gusano :rates] i))
+
+(declare set-gusano-chord-index)
+
+(defn get-gusano-data
+  []
+  (:gusano @live-state))
+
+(defn- get-gusano-harmonic-seq*
+  [{:keys [harmony harmonic-seq-index]
+    :as _gusano-data}]
+  (let [harmonic-seqs (get gusano-harmonic-seqs harmony)]
+    (->> harmonic-seqs
+         (wrap-at harmonic-seq-index))))
+
+#_(defn get-gusano-harmony!
+    []
+    (get-in @live-state [:gusano :harmony]))
+
+(defn get-cached-gusano-harmonic-seq!
+  []
+  (get-in @live-state [:gusano :harmonic-seq]))
+
+(defn get-harmonic-data!
+  [player-k bank]
+  (let [data (get-player-data player-k)
+        bank-data (get data bank)]
+    (assoc bank-data :harmony (:harmony data))))
+
+(let [prev-index (atom 0)]
+  (defn- gusano-next-rate-index! [speed]
+    (let [prev-i @prev-index]
+      (int (floor (reset! prev-index (+ prev-i speed)))))))
+
+(defn- get-gusano-rates-seq-speed!
+  []
+  (-> @live-state :gusano (:rates-seq-speed 1)))
+
+(defn get-gusano-chord* [rates-seq]
+  (let [i (gusano-next-rate-index! (get-gusano-rates-seq-speed!))]
+    (set-gusano-chord-index i)
+    (wrap-at i rates-seq)))
+
+(defn get-gusano-chord! []
+  (get-gusano-chord* (get-cached-gusano-harmonic-seq!)))
+
+(defn inc-gusano-rate-index! []
+  (let [i (gusano-next-rate-index! 1)]
+    (set-gusano-chord-index i)))
 
 (defn set-gusano-rates-seq-speed
   [i]
@@ -915,7 +956,7 @@
 
 (defn set-gusano-amp
   [amp]
-  (swap! live-state assoc-in [:gusano :amp] (first (linlin 0 1 0 1.5 [amp]))))
+  (swap! live-state assoc-in [:gusano :amp] (first (linlin 0 1 0.01 1.5 [amp]))))
 
 (defn set-gusano-period
   [i]
@@ -937,34 +978,79 @@
   [x]
   (swap! live-state assoc-in [:gusano :second-voice-index] x))
 
-(def ^:private gusano-harmonies [:fib :meta-slendro-22 :meta-pelog-20])
+(defn- update-gusano-harmonic-index-label!
+  [{:keys [harmony harmonic-seq harmonic-seq-index harmonic-seq-item-index]}]
+  (bardo.osc-helpers/update-label
+   :gusano :harmonic-seq
+   (try
+     (let [name* (-> harmonic-seq meta :name)
+           len (count harmonic-seq)]
+       (if name*
+         (format "#%s %s - %s"
+                 (if-let [harmonic-seq (-> gusano-harmonic-seqs harmony)]
+                   (mod harmonic-seq-index (count harmonic-seq))
+                   "?")
+                 (if harmonic-seq-item-index (str (inc harmonic-seq-item-index) "/" len) "")
+                 name*)
+         (format "#%s (acordes: %s)"
+                 (mod harmonic-seq-index len)
+                 (count harmonic-seq))))
+     (catch Exception e (do
+                          (timbre/error e)
+                          "Error with label")))))
 
 (defn set-next-gusano-harmony
   []
-  (let [{:keys [harmony-index]
-         :or {harmony-index 0}} (:gusano @live-state)
+  (let [{:keys [harmony-index harmonic-seq-index]
+         :or {harmony-index 0
+              harmonic-seq-index 0}} (:gusano @live-state)
         i (inc harmony-index)
-        harmony (wrap-at i gusano-harmonies)]
+        next-harmony (wrap-at i gusano-harmonies)
+        next-harmonic-seq  (get-gusano-harmonic-seq* {:harmony next-harmony
+                                                      :harmonic-seq-index harmonic-seq-index})]
     (swap! live-state update :gusano merge {:harmony-index i
-                                            :harmony harmony})
-    (bardo.osc-helpers/update-label :gusano :harmony (name harmony))))
+                                            :harmony next-harmony
+                                            :harmonic-seq next-harmonic-seq})
+    (bardo.osc-helpers/update-label :gusano :harmony (name next-harmony))
+    (update-gusano-harmonic-index-label! (get-gusano-data))))
 
-(comment
-  (set-next-gusano-harmony)
-  (-> live-state deref :gusano))
-
-(defn get-gusano-harmony!
+(defn set-next-gusano-harmonic-seq
   []
-  (get-in @live-state [:gusano :harmony]))
+  (let [{:keys [harmony harmonic-seq-index]
+         :or {harmonic-seq-index 0}} (:gusano @live-state)
+        harmonic-seqs (get gusano-harmonic-seqs harmony)
+        i (-> harmonic-seq-index
+              inc
+              (mod (count harmonic-seqs)))
+        harmonic-seq (get-gusano-harmonic-seq* {:harmony harmony
+                                                :harmonic-seq-index i})]
+    (swap! live-state update :gusano merge {:harmonic-seq-index i
+                                            :harmonic-seq harmonic-seq})
+    (update-gusano-harmonic-index-label! (get-gusano-data))))
 
-(defn get-harmonic-data!
-  [player-k bank]
-  (let [data (get-player-data player-k)
-        bank-data (get data bank)]
-    (assoc bank-data :harmony (:harmony data))))
+(defn set-gusano-chord-index
+  "For the label"
+  [index]
+  (let [i (mod index (count (get-cached-gusano-harmonic-seq!)))]
+    (swap! live-state assoc-in [:gusano :harmonic-seq-item-index] i)
+    (update-gusano-harmonic-index-label! (get-gusano-data))))
+
+(defn set-gusano-chord-as-harmonic-seq
+  [chord]
+  (swap! live-state update :gusano
+         merge
+         {:harmonic-seq-index 0
+          :harmonic-seq (with-meta [chord]
+                          {:name (str "Custom chord: " chord)})})
+  (update-gusano-harmonic-index-label! (get-gusano-data)))
 
 (comment
-  (get-harmonic-data! :milo 0))
+  (get-harmonic-data! :milo 0)
+  (set-gusano-chord-as-harmonic-seq [1 2 7/2]))
+
+;;;;;;;;;;;;;;;;;;
+;; * Network
+;;;;;;;;;;;;;;;;;;
 
 (defn post [endpoint body & {:keys [debug?]}]
   (http/post (str "http://localhost:5000" endpoint)
@@ -986,6 +1072,10 @@
                  (timbre/info new-value)
                  (throttled-post (dissoc new-value :lorentz))))))
 
+;;;;;;;;;;;;;;;;;;
+;; * Defaults
+;;;;;;;;;;;;;;;;;;
+
 (defn cast-osc-data [data]
   (map (fn [[k v]] [k (map #(cond
                               (symbol? %) (eval %) ;; NOTE this may cause trouble
@@ -996,7 +1086,86 @@
 
 (def ^:private gusano-defaults
   {:harmony-index 0
-   :harmony :fib})
+   :harmony :fib
+   :harmonic-seq-index -1})
+
+(defn add-player-to-osc-msg-map [player m]
+  (map (fn [[k v]] [(format k player) v]) m))
+
+(def synth-osc-defaults
+  {"/%s/clouds-active-btn" '(0.0),
+   "/%s/clouds-amp" '(0.0),
+   "/%s/clouds-env-radio" '(0),
+   "/%s/clouds-rhythm-radio" '(1),
+   "/%s/clouds-sample-lib-size-radio" '(0),
+   "/%s/filter-hpf-fader-visible" [0],
+   "/%s/filter-label" ["none"],
+   "/%s/filter-q-fader-visible" [0],
+   "/%s/filter-reso-fader-visible" [0],
+   "/%s/harmonic-voice-cp" '(0),
+   "/%s/harmonic-highest-note" '(0.5190911),
+   "/%s/harmonic-lowest-note" '(0.48726025),
+   "/%s/harmonic-speed" '(0.20449468),
+   "/%s/independent-sequencer-btn" [1.0]
+   "/%s/max-dur-fader" [1.0]
+   "/%s/panner-arrows-group" [0],
+   "/%s/panner-label" ["random"],
+   "/%s/panner-lissajous-group" [0],
+   "/%s/panner-manual-group" [0],
+   "/%s/panner-rand-vel-fader" '(0.1),
+   "/%s/panner-random-group" [1],
+   "/%s/synth-label" ["crystal"],
+   "/%s/toggle-harmonic-voice/0" '(1),
+   "/%s/toggle-harmonic-voice/1" '(1),
+   "/%s/toggle-harmonic-voice/2" '(1),
+   "/%s/filter-lpf-fader-visible" [0]})
+
+(def shared-general-ui-osc-defaults
+  {"/%s/independent-sequencer-btn" '(1.0)
+   "/%s/bank1-active-label-visible" '(0),
+   "/%s/bank2-active-label-visible" '(0),
+   "/%s/bank3-active-label-visible" '(0),
+   "/%s/bank4-active-label-visible" '(0),
+   "/%s/bank5-active-label-visible" '(0),
+   "/%s/bank6-active-label-visible" '(0),
+   "/%s/bank7-active-label-visible" '(0),
+   "/%s/bank8-active-label-visible" '(0),
+   "/%s/bank-rec-radio" '(0),
+   "/%s/harmony-radio" '(0),
+   "/%s/clean-master" '(0.0),
+   "/%s/processed-master" '(0.0),
+   "/%s/rec-durs-radio" '(0),
+   "/%s/rec-pulse-radio" '(0),
+   "/%s/rev-send-clean" '(0.0),
+   "/%s/rev-send-process" '(0.0),
+   "/%s/selected-synth-radio" '(0),
+   "/%s/toggle-bank/1" '("on" 0.0 "index" 1)})
+
+(def general-ui-osc-defaults
+  (merge
+   (->> ["Diego" "Milo"]
+        (mapcat #(add-player-to-osc-msg-map
+                  % shared-general-ui-osc-defaults))
+        (into {}))
+   {"/EQ/bell-radio" '(0),
+    "/EQ/durs-radio" '(0),
+    "/EQ/flat-eq" '(0.0),
+    "/EQ/hishelf-radio" '(0),
+    "/EQ/loshelf-radio" '(0),
+    "/EQ/notch-radio" '(0),
+    "/gusano/amp" '(0.0),
+    "/gusano/durs" '(0),
+    "/gusano/grain-dur" '(0.0),
+    "/gusano/grain-trig" '(0.0),
+    "/gusano/harmony-label" [(-> gusano-defaults :harmony name)]
+    "/gusano/period" '(0),
+    "/gusano/harmony-up-btn" '(1.0)
+    "/gusano/harmonic-seq-speed" '(1.0)
+    "/gusano/harmonic-seq-up-btn" '(1.0)
+    "/Milo/processes-amp-boost" '(3),
+    "/Diego/input-amp-boost" '(0),
+    "/System/voces-master" [reaper/zero-db]
+    "/System/subwoofer-master" [(reaper/from-db -6)]}))
 
 (defn make-synth-defaults
   [player]
@@ -1012,124 +1181,27 @@
    :harmonic-speed 1,
    :rhythm :lor-2_6,
    :synth-index 1,
-   :touch-osc-data (->> {"/%s/filter-lpf-fader-visible" [0],
-                         "/%s/harmonic-speed" '(0.20449468),
-                         "/%s/panner-random-group" [1],
-                         "/%s/panner-manual-group" [0],
-                         "/%s/panner-lissajous-group" [0],
-                         "/%s/panner-arrows-group" [0],
-                         "/%s/filter-q-fader" [0.0],
-                         "/%s/panner-label" ["random"],
-                         "/%s/filter-lpf-fader" [1.0],
-                         "/%s/toggle-harmonic-voice/1" '("on" 1 "index" 1),
-                         "/%s/filter-hpf-fader-visible" [0],
-                         "/%s/toggle-harmonic-voice/0" '("on" 1 "index" 0),
-                         "/%s/clouds-rhythm-radio" '(0),
-                         "/%s/toggle-harmonic-voice/2" '("on" 1 "index" 2),
-                         "/%s/filter-hpf-fader" [1.0],
-                         "/%s/harmonic-highest-note" '(0.5190911),
-                         "/%s/clouds-sample-lib-size-radio" '(0),
-                         "/%s/clouds-active-btn" '(0.0),
-                         "/%s/synth-label" ["crystal"],
-                         "/%s/clouds-amp" '(0.0),
-                         "/%s/harmonic-lowest-note" '(0.48726025),
-                         "/%s/panner-rand-vel-fader" '(0.1),
-                         "/%s/filter-reso-fader-visible" [0],
-                         "/%s/filter-q-fader-visible" [0],
-                         "/%s/clouds-env-radio" '(0),
-                         "/%s/filter-label" ["none"],
-                         "/%s/filter-reso-fader" [0.0]
-                         "/%s/independent-sequencer-btn" [1.0]
-                         "/%s/max-dur-fader" [1.0]}
-                        (map (fn [[k v]] [(format k player) v]))
+   :touch-osc-data (->> synth-osc-defaults
+                        (add-player-to-osc-msg-map player)
                         cast-osc-data
                         (into {})),
    :harmonic-active-voices #{0 1 2},
+   :harmonic-convergence-point 0
    :panner-index -4,
    :filter-index 3,
    :harmonic-range {:low -1, :high -1}})
 
 (def default-touch-osc-state
-  (->> {"/Milo/bank1-active-label-visible" '(0),
-        "/Milo/bank2-active-label-visible" '(0),
-        "/Milo/bank3-active-label-visible" '(0),
-        "/Milo/bank4-active-label-visible" '(0),
-        "/Milo/bank5-active-label-visible" '(0),
-        "/Milo/bank6-active-label-visible" '(0),
-        "/Milo/bank7-active-label-visible" '(0),
-        "/Milo/bank8-active-label-visible" '(0)
-        "/Milo/independent-sequencer-btn" '(1.0)
-        "/Diego/independent-sequencer-btn" '(1.0)
-        "/Diego/bank1-active-label-visible" '(0),
-        "/Diego/bank2-active-label-visible" '(0),
-        "/Diego/bank3-active-label-visible" '(0),
-        "/Diego/bank4-active-label-visible" '(0),
-        "/Diego/bank5-active-label-visible" '(0),
-        "/Diego/bank6-active-label-visible" '(0),
-        "/Diego/bank7-active-label-visible" '(0),
-        "/Diego/bank8-active-label-visible" '(0),
-        "/Diego/bank-rec-radio" '(0),
-        "/Diego/clouds-active-btn" '(0.0), ;; NOTE: will cause log "Could not find refrain with id: :bardo.clouds/diego"
-        "/Diego/clouds-amp" '(0.0),
-        "/Diego/clouds-env-radio" '(0),
-        "/Diego/clouds-rhythm-radio" '(1),
-        "/Diego/clouds-sample-lib-size-radio" '(0),
-        "/Diego/harmonic-highest-note" '(0.5),
-        "/Diego/harmonic-lowest-note" '(0.5),
-        "/Diego/harmonic-speed" '(0.2),
-        "/Diego/harmony-radio" '(0),
-        "/Diego/input-amp-boost" '(0),
-        "/Diego/clean-master" '(0.0),
-        "/Diego/processed-master" '(0.0),
-        "/Diego/rec-durs-radio" '(0),
-        "/Diego/rec-pulse-radio" '(0),
-        "/Diego/rev-send-clean" '(0.0),
-        "/Diego/rev-send-process" '(0.0),
-        "/Diego/selected-synth-radio" '(0),
-        "/Diego/toggle-bank/1" '("on" 0.0 "index" 1),
-        "/Diego/toggle-harmonic-voice/0" '("on" 1 "index" 0),
-        "/Diego/toggle-harmonic-voice/1" '("on" 1 "index" 1),
-        "/Diego/toggle-harmonic-voice/2" '("on" 1 "index" 2),
-        "/EQ/bell-radio" '(0),
-        "/EQ/durs-radio" '(0),
-        "/EQ/flat-eq" '(0.0),
-        "/EQ/hishelf-radio" '(0),
-        "/EQ/loshelf-radio" '(0),
-        "/EQ/notch-radio" '(0),
-        "/gusano/amp" '(0.0),
-        "/gusano/durs" '(0),
-        "/gusano/grain-durs" '(0.0),
-        "/gusano/grain-trig" '(0.0),
-        "/gusano/period" '(0),
-        "/gusano/rates" '(0),
-        "/Milo/bank-rec-radio" '(0),
-        "/Milo/clouds-active-btn" '(0.0), ;; NOTE: will cause log "Could not find refrain with id: :bardo.clouds/milo"
-        "/Milo/clouds-amp" '(0.0),
-        "/Milo/clouds-env-radio" '(0),
-        "/Milo/clouds-rhythm-radio" '(1),
-        "/Milo/clouds-sample-lib-size-radio" '(0),
-        "/Milo/harmonic-highest-note" '(0.5),
-        "/Milo/harmonic-lowest-note" '(0.5),
-        "/Milo/harmonic-speed" '(0.2),
-        "/Milo/harmony-radio" '(0),
-        "/Milo/processed-master" '(0.0),
-        "/Milo/processes-amp-boost" '(3),
-        "/Milo/rec-durs-radio" '(0),
-        "/Milo/rec-pulse-radio" '(0),
-        "/Milo/rev-send-clean" '(0.0),
-        "/Milo/rev-send-process" '(0.0),
-        "/Milo/selected-synth-radio" '(0),
-        "/Milo/toggle-bank/1" '("on" 0.0 "index" 1)
-        "/Milo/toggle-harmonic-voice/0" '("on" 1 "index" 0),
-        "/Milo/toggle-harmonic-voice/1" '("on" 1 "index" 1),
-        "/Milo/toggle-harmonic-voice/2" '("on" 1 "index" 2)
-        "/gusano/harmony-label" [(-> gusano-defaults :harmony name)]
-        "/System/voces-master" [reaper/zero-db]}
+  (->> general-ui-osc-defaults
        cast-osc-data
        (#(merge %
                 (:touch-osc-data (make-synth-defaults "Milo"))
                 (:touch-osc-data (make-synth-defaults "Diego"))))
        (into {})))
+
+;;;;;;;;;;;;;;;;;;;;;;
+;; * Initialization
+;;;;;;;;;;;;;;;;;;;;;;
 
 (defn init-state!
   []
@@ -1144,29 +1216,9 @@
                                                      str/capitalize))})
                                            (range 8)))})]
      {:gusano gusano-defaults
-      ;; TODO: is this key seems unnecessary? At least it is misnamed.
+       ;; TODO: is this key seems unnecessary? At least it is misnamed.
       :algo-2.2.9-clouds (merge
                           (init-player :milo)
                           (init-player :diego))})))
 
-(comment
-  (init-state!)
-  (-> default-touch-osc-state))
 
-(comment
-  (send-osc-msg "/Milo/selected-synth-radio" (int 0))
-  (send-osc-msg "/Milo/bank2-active-label-visible" "true")
-  (send-osc-msg "/Milo/panner-manual-group" (osc-bool 1)))
-
-(comment
-
-  (->> @live-state)
-  (get-selected-synth-data :milo)
-
-  (reset! live-state {})
-  (add-watch live-state ::post-live-state
-             (fn [_key _ref _old-value new-value]
-               (throttled-post (dissoc new-value :lorentz))))
-  (add-watch live-state ::post-live-state
-             (fn [_key _ref _old-value new-value]
-               (println new-value))))

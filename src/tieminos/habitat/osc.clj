@@ -87,9 +87,15 @@
                            "127.0.0.1" ;; this one seems to work for now
                            65432))))
 
+(defonce internal-client (atom nil))
+
 (defn make-internal-osc-client
   []
-  (osc/osc-client (get-local-host) 16180))
+  (if @internal-client
+    @internal-client
+    (reset! internal-client (osc/osc-client
+                             (get-local-host)
+                             16180))))
 
 (defonce receiver-clients (atom {}))
 

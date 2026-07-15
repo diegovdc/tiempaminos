@@ -1,12 +1,18 @@
 {;; :skip-comments true ;; may have the sideeffect of removing requires of things only used in comments
- :linters {:unresolved-symbol {:exclude [(time-time.dynacan.players.refrain.v2/on-event
-                                          [at-index index dur dur-s at-i i data dur-ms])
-                                         (time-time.dynacan.players.gen-poly/on-event
-                                          [at-index index dur dur-s at-i i data dur-ms])
-                                         (tieminos.compositions.garden-earth.base/on-event
-                                          [at-index index dur dur-s at-i i])]}
-           :unresolved-var [overtone.core]
-           :refer-all {:exclude [overtone.core]}}
+ :linters
+ {:unresolved-symbol
+  {:exclude [(time-time.dynacan.players.refrain.v2/on-event
+              [at-index index dur dur-s at-i i data dur-ms])
+             (time-time.dynacan.players.gen-poly/on-event
+              [at-index index dur dur-s at-i i data dur-ms])
+             (tieminos.compositions.garden-earth.base/on-event
+              [at-index index dur dur-s at-i i])
+             (tieminos.habitat.extended-sections.tunel-cuantico-bardo.osc-router/osc-router
+              [path path-params player-k args])]}
+  :unresolved-var [overtone.core]
+  :refer-all {:exclude [overtone.core]}}
  ;; :lint-as {overtone.core/defsynth clojure.core/def}
  :hooks {:analyze-call {;; overtone.core/defsynth hooks.defsynth/defsynth
-                        tieminos.overtone-extensions/defsynth hooks.defsynth/defsynth}}}
+                        tieminos.overtone-extensions/defsynth hooks.defsynth/defsynth
+                        tieminos.sc-utils.synths.template-synth.v0/defplug hooks.defplug/defplug
+                        tieminos.sc-utils.synths.template-synth.v0/make-synth-fn hooks.make-synth-fn/make-synth-fn}}}

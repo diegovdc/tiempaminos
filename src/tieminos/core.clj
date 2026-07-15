@@ -93,10 +93,17 @@
        (map str/join)
        (str/join "-")))
 
+(defn- reduce-ns-element
+  [ns-element]
+  (->> ns-element
+       (take 5)
+       str/join))
+
 (defn- short-ns [ns-str]
   (let [ns-path (str/split ns-str #"\.")
         head (->> (drop-last 1 ns-path)
-                  (map take-ns-element-initials)
+                  (take-last 2)
+                  (map reduce-ns-element)
                   (str/join "."))]
     (format "%s.%s" head (last ns-path))))
 
@@ -111,12 +118,22 @@
   #_timbre/default-output-fn
   (fn [data]
     (let [{:keys [level ?err #_vargs msg_ ?ns-str ?file #_hostname_
-                  timestamp_ ?line]} data]
+                  timestamp_ ?line]} data
+          ;; Define colors
+          level-color (case level
+                        :error    :red
+                        :warn     :yellow
+                        :info     :white
+                        :debug    :blue
+                        :trace    :magenta
+                        :white)]
       (when (print-debug? (name level) ?ns-str)
         (str
-         (-> (force timestamp_) (str/split #" ") second) " "
-         (str/upper-case (first (name level)))  " "
-         "[" (cond-> (or ?ns-str ?file "?") short-ns? short-ns) ":" (or ?line "?") "] - "
+         (timbre/color-str level-color
+                           (str
+                            (-> (force timestamp_) (str/split #" ") second) " "
+                            (str/upper-case (first (name level)))  " "
+                            "[" (cond-> (or ?ns-str ?file "?") short-ns? short-ns) ":" (or ?line "?") "] \n     "))
          (force msg_)
          (when-let [err ?err]
            (str "\n" (timbre/stacktrace err)))))))})
