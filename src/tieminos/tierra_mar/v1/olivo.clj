@@ -110,14 +110,14 @@
  '(-> (o/sound-in in)
       (#(+ (* unfiltered-amp  %)
            (* filtered-amp  (o/moog-ladder % filter-freq filter-q))))
-      :ugen/panner
+      (:ugen/panner)
       (o/free-verb rev-mix rev-room rev-damp)
       (* amp
          (o/env-gen #_(o/env-perc 0.5 0.5)
           (o/envelope [0 1 1 0] asr curve)
                     :time-scale dur
                     :action o/FREE))
-      :ugen/outs
+      (:ugen/outs)
       #_(#(o/out 0 %)))
  {:reset? true})
 

@@ -29,7 +29,7 @@
 
 (defplug +outs1
   {:out-offset 0
-   :ugen/outs '((fn [sig] (map-outs out-offset outs sig)))
+   :ugen/outs (fn [sig] (map-outs out-offset outs sig))
    :outs [0 1 2 3]})
 
 (defplug panaz-line
@@ -39,40 +39,39 @@
    :orientation 0
    :pan-dur-till-last 0.8
    :width-durs [0.3 0.4 0.2 0.1]
-   :ugen/panner #_'((fn [sig] (map-outs out-offset outs sig)))
-   '((fn [sig]
-       (when (sequential? sig)
-         (timbre/warn "panaz-lin expects a mono signal, received multichannel"))
-       (o/pan-az (count outs)
-                 sig
-                 (o/env-gen
-                  (let [last-az-point (/ (dec (count outs))
-                                         (count outs))]
-                    (o/envelope [0 (* 0.9 last-az-point) last-az-point]
-                                [(* pan-dur-till-last dur) (* (- 1 pan-dur-till-last) dur)]))
-                  :level-scale 2
-                  :action o/NO-ACTION)
-                 #_(o/line 0
-                           (* 2 (/ (dec (count outs))
-                                   (count outs)))
-                           (* 0.8 #_0.2 dur)
-                           :action o/NO-ACTION)
-                 :width (o/env-gen (o/envelope [min-width
-                                                max-width max-width
-                                                min-width min-width]
-                                               width-durs
-                                               -2)
-                                   :time-scale dur
-                                   :action o/NO-ACTION)
-                 :orientation orientation)))})
+   :ugen/panner (fn [sig]
+                  (when (sequential? sig)
+                    (timbre/warn "panaz-lin expects a mono signal, received multichannel"))
+                  (o/pan-az (count outs)
+                            sig
+                            (o/env-gen
+                             (let [last-az-point (/ (dec (count outs))
+                                                    (count outs))]
+                               (o/envelope [0 (* 0.9 last-az-point) last-az-point]
+                                           [(* pan-dur-till-last dur) (* (- 1 pan-dur-till-last) dur)]))
+                             :level-scale 2
+                             :action o/NO-ACTION)
+                            #_(o/line 0
+                                      (* 2 (/ (dec (count outs))
+                                              (count outs)))
+                                      (* 0.8 #_0.2 dur)
+                                      :action o/NO-ACTION)
+                            :width (o/env-gen (o/envelope [min-width
+                                                           max-width max-width
+                                                           min-width min-width]
+                                                          width-durs
+                                                          -2)
+                                              :time-scale dur
+                                              :action o/NO-ACTION)
+                            :orientation orientation))})
 
 (defplug env
   #{:dur}
   {:env-levels [0 1 1 0]
    :env-durs [0.1 0.6 0.4]
-   :ugen/env '(o/env-gen (o/envelope env-levels env-durs)
-                         :time-scale dur
-                         :action o/FREE)})
+   :ugen/env (o/env-gen (o/envelope env-levels env-durs)
+                        :time-scale dur
+                        :action o/FREE)})
 
 (make-synth-fn
  'rama
@@ -87,13 +86,13 @@
       #_(o/moog-ladder (* 3/2 freq) 0.9)
       #_(o/free-verb 0.5 2)
 
-      :ugen/panner
+      (:ugen/panner)
       (* amp
          (o/env-gen #_(o/env-perc 0.5 0.5)
           (o/envelope [0 1 1 0] asr curve)
                     :time-scale dur
                     :action o/FREE))
-      :ugen/outs
+      (:ugen/outs)
       #_(#(o/out 0 %)))
  {:reset? true})
 
@@ -112,14 +111,14 @@
         o/saw
         (o/moog-ladder (* 3/2 freq) 0.9)
         #_(o/free-verb 0.5 2)
-        :ugen/panner
+        (:ugen/panner)
         (* amp
            (o/amp-comp freq)
            (o/env-gen #_(o/env-perc 0.5 0.5)
             (o/envelope [0 1 1 0] asr curve)
                       :time-scale dur
                       :action o/FREE))
-        :ugen/outs)
+        (:ugen/outs))
    {:reset? true})
   (o/stop)
   (panny
@@ -149,8 +148,8 @@
      panaz-line
      +outs1)
  '(-> (o/play-buf 1 buf rate :start-pos buf-pos)
-      :ugen/filter
-      :ugen/panner
+      (:ugen/filter)
+      (:ugen/panner)
       (#(+ % (-> %
                  (o/comb-l delay-time delay-time delay-dcy)
                  (o/moog-ladder 1000 0.7)
@@ -159,7 +158,7 @@
                       :time-scale (* 2/3 dur)))
       (o/free-verb rev-mix rev-room)
       (* amp :ugen/env)
-      :ugen/outs)
+      (:ugen/outs))
  {:reset? true})
 
 
