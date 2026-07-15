@@ -439,7 +439,11 @@ The default lattice goes to the 23-limit. It doesn't have coordinates higher tha
                         :lattice-config {:coords coords }
                         :out (hexp.utils/out 7)})
 #+end_src
-
+* Linter
+To a file:
+#+begin_src bash
+ clojure -M:kondo --lint /path/to/file.clj
+#+end_src
 
 
 * License

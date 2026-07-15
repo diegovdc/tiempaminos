@@ -40,4 +40,5 @@
                    :exec-fn docs/run-codox-with-timeout
                    :exec-args {:timeout-ms 30000
                                :codox-args {:output-path "docs"
-                                            :source-paths ["src"]}}}}}
+                                            :source-paths ["src"]}}}
+           :kondo {:main-opts ["-m" "clj-kondo.main"]}}}
