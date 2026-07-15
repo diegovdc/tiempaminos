@@ -1,8 +1,19 @@
 //https://doc.sccode.org/Reference/EmacsEditor.html
+
 (
+var ioDevice = ServerOptions.inDevices.asSet.findMatch("18i20+BH64");
+
+// if I wanted to configure this in the future via the command line I can get the argv from thisProcess.argv
+
+if(ioDevice.notNil,{
+	Server.default.options.inDevice_(ioDevice);
+	Server.default.options.outDevice_(ioDevice);
+}, {
+	"ioDevice not found, using system selected ioDevice".postln;
+});
+
 Can.init;
-// Server.default.options.inDevice_("Scarlett 18i20 USB");
-// Server.default.options.outDevice_("Scarlett 18i20 USB");
+
 o = Server.default.options;
 o.memSize = 512000*20;
 o.maxNodes = 128*1024;
@@ -18,4 +29,5 @@ s.waitForBoot({
     // TODO figure out a way to mix in all outs for the spectrogram... or something
 //    {In.ar(0)}.spectrogram;
 });
+
 )
