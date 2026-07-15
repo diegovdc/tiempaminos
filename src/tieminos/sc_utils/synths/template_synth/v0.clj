@@ -16,11 +16,15 @@
     (var-get x)
     x))
 
+(defn identity*
+  [& args]
+  (first args))
+
 (defn safe-get-ugen-param
   "Prevent a param from being `nil`, if that value is in the map."
   [params x]
   (let [v (params x)]
-    (or v identity)))
+    (or v identity*)))
 
 (defn modify-body
   "Modifies the body of a template to insert the ugens and return a `ugen-form`. If an ugen is missing in the params and has no default (like `:ugen/pan`) or if it is `nil` (like :ugen/nilly`) it it will be substituted by `identity`. Also if the parameters come in a vector they will use serial keys as that is what Overtone expects."

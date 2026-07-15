@@ -44,10 +44,10 @@
             0
             [#'clojure.core/->
              [#'overtone.core/sin-osc '[freq0 freq1]]
-             clojure.core/identity
+             tieminos.sc-utils.synths.template-synth.v0/identity*
              '(o/sine-shaper shaper-limit)
              '(o/dist)
-             clojure.core/identity
+             tieminos.sc-utils.synths.template-synth.v0/identity*
              [#'oc/*
               '(o/env-gen
                 (o/envelope
