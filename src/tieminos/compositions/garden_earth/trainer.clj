@@ -7,9 +7,12 @@
    [overtone.core :as o]
    [tieminos.compositions.7d-percusion-ensamble.base :refer [bh]]
    [tieminos.compositions.garden-earth.base
-    :refer [base-freq on-event pitch-class->pr-fingering ref-rain subcps]]
+    :refer [base-freq eik eik-ratios on-event pitch-class->pr-fingering
+            ref-rain subcps]]
    [tieminos.compositions.garden-earth.synths.general
     :refer [tuning-monitor]]
+   [tieminos.harmonic-experience.lattice :as hexp.lattice]
+   [tieminos.harmonic-experience.trainer :as hexp.trainer]
    [tieminos.utils :refer [rrange]]
    [time-time.dynacan.players.gen-poly :as gp]))
 
@@ -86,6 +89,29 @@
 
          (sort-by :unknown-pitches-count >))))
 
+(defn make-subcps
+  [subcps-str]
+  (let [subcps* (+names base-freq (subcps subcps-str))]
+    (map
+     (fn [{:keys [bounded-ratio] :as cps}]
+       (assoc cps
+              :degree (-> bounded-ratio
+                          eik-ratios
+                          :degree)))
+     subcps*)))
+
+(comment
+
+  (def root 440)
+  (hexp.lattice/setup-kb
+   {:root root
+    :scale (:scale eik)})
+  (hexp.trainer/trainer
+   {:root root
+    :scale (:scale eik)
+    :degrees (->> (make-subcps "1)4 of 3)6 5.9-1.3.7.11")
+                  (map :degrees))}))
+
 (comment
   (count known-pitches)
   (unknown-pitches-chords
@@ -96,7 +122,7 @@
 
   (def cps "1)4 of 3)6 5.9-1.3.7.11")
   #_(def cps "3)4 of 3)6 1.3.7.11")
-  (+names base-freq (subcps cps))
+
   (scale/print-scale-intervals! (subcps cps)
                                 :unit :ratios)
   (scale/print-scale-intervals! (subcps cps)

@@ -12,7 +12,7 @@
    [tieminos.harmonic-experience.utils :refer [intervals midi->ratio&freq]]
    [tieminos.lattice.v1.lattice :as lattice.v1 :refer [add-played-ratio
                                                        remove-played-ratio]]
-   [tieminos.math.utils :refer [linexp*]]
+   [tieminos.math.utils :refer [linexp* linlin*]]
    [tieminos.midi.core :refer [midi-in-event]]))
 
 (defn draw [text-type width height lattice-data]
@@ -198,7 +198,7 @@
     (add-watch played-ratios ::print-intervals
                (fn [_ _ _ new-val]
                  (let [intervals* (intervals new-val)]
-                   (println "Intervals:" intervals* (map conv/ratio->cents intervals*)))))
+                   (println "Intervals:" intervals* (map (comp #(round2 1 %) conv/ratio->cents) intervals*)))))
 
     (when midi-kb
       (midi-in-event
@@ -210,12 +210,11 @@
                                                                    :stroke-weight stroke-width
                                                                    :color note-color}))
 
-                    (println (:note ev) ratio (round2 2 (conv/ratio->cents ratio)))
                     (add-played-absolute-ratio absolute-ratio)
                     (when on-note-on (on-note-on {:ratio ratio :absolute-ratio absolute-ratio}))
                     (when sound? (play-sound ev freq out))))
        :mpe {:z (fn [synth val]
-                  (o/ctl synth :amp (linexp* 0 127 0.1 1 val)))}
+                  (o/ctl synth :amp (min 1 (linexp* 20 127 0.1 1 val))))}
        :note-off (fn [ev]
                    (let [{:keys [ratio absolute-ratio]} (get-note-data ev)]
                      (when lattice? (remove-played-ratio lattice-atom {:ratio ratio, :group-id ::note}))

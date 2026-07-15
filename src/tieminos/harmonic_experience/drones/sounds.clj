@@ -44,7 +44,7 @@
              (o/pan2 #_(lfo 0.4 -0.5 0.5))
              #_(o/hpf 700)
              #_(#(+ % (o/bpf % (lfo 0.5 (* 2 freq) 800) 0.3)))
-             (* amp (o/env-gen (o/env-asr a s r curve) :gate gate :action o/FREE)))))
+             (* (o/lag amp 1) (o/env-gen (o/env-asr a s r curve) :gate gate :action o/FREE)))))
 
 (o/defsynth sine
   [freq 130
