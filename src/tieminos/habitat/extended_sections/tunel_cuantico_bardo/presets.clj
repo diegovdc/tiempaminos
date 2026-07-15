@@ -62,7 +62,7 @@
    "/gusano/period" int
    "/gusano/durs" int
    "/gusano/grain-trig" float
-   "/gusano/grain-durs" float
+   "/gusano/grain-dur" float
    "/gusano/2nd-voice" int})
 
 (defn load-preset!

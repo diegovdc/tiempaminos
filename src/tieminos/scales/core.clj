@@ -1,17 +1,32 @@
 (ns tieminos.scales.core
   "Namespace for exporting the whole scale directory"
+  (:refer-clojure :exclude [get list])
   (:require
    [clojure.string :as str]
    [erv.scale.scl :as scl]
    [taoensso.timbre :as timbre]
    [tieminos.scales.17o7.core :as *17o7]
-   [tieminos.scales.diffractions.meta-slendro :as diffracted-meta-slendro]))
+   [tieminos.scales.diffractions.meta-slendro :as diffracted-meta-slendro]
+   [tieminos.scales.grady :as grady]))
 
 (def scales
   {:17o7 *17o7/scales
-   :diffracted/meta-slendro diffracted-meta-slendro/scales})
+   :diffracted/meta-slendro diffracted-meta-slendro/scales
+   :grady grady/scales})
 
 (def ^:private default-scl-dir "/Users/diego/Music/tunings/")
+
+(defn get* [& path]
+  (get-in scales path))
+
+(defn get [& path]
+  (:scale (apply get* path)))
+
+(defn list
+  ([& dir-exclusions]
+   (->> (apply dissoc scales dir-exclusions)
+        (map (fn [[dir ms]] [dir (keys ms)]))
+        (sort-by first))))
 
 (defn- spit-scl
   [paths-atom dir {:keys [meta] :as scale-data}]

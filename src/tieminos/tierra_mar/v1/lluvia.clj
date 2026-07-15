@@ -207,7 +207,7 @@
         (* 1.5 #_(o/env-gen:kr (o/envelope [2 8 8 2] asr)
                                :time-scale filter-time-scale))
         (+ (* 0.6 sig))
-        :ugen/panner
+        (:ugen/panner)
         (o/free-verb rev-mix rev-room 0.3)
         (#(+ % (-> %
                    (o/comb-l delay delay delay-dcy)
@@ -218,7 +218,7 @@
             (o/envelope [0 1 1 0] asr curve)
             :time-scale dur
             :action o/FREE))
-        :ugen/outs))
+        (:ugen/outs)))
  {:reset? true})
 
 (defn trigger-flowering!

@@ -1,75 +1,27 @@
 (ns tieminos.habitat.extended-sections.tunel-cuantico-bardo.gusanos.core
   (:require
    [clojure.data.generators :refer [weighted]]
-   [clojure.math :refer [floor]]
    [erv.scale.core :refer [deg->freq]]
    [erv.utils.core :refer [interval period-reduce]]
    [overtone.core :as o]
    [taoensso.timbre :as timbre]
-   [tieminos.habitat.extended-sections.harmonies.chords :refer [fib-21
-                                                                fib-chord-seq
-                                                                get-harmony
-                                                                rate-chord-seq
-                                                                transpose-chord]]
-   [tieminos.habitat.extended-sections.tunel-cuantico-bardo.gusanos.gusano-2-2-4 :as g-2.2.4]
-   [tieminos.habitat.extended-sections.tunel-cuantico-bardo.gusanos.gusano-2-2-6 :as g-2.2.6]
-   [tieminos.habitat.extended-sections.tunel-cuantico-bardo.live-state :as bardo.live-state]
+   [tieminos.habitat.extended-sections.harmonies.chords
+    :refer [fib-21 fib-chord-seq transpose-chord]]
+   [tieminos.habitat.extended-sections.tunel-cuantico-bardo.live-state
+    :as bardo.live-state]
    [tieminos.habitat.groups :as groups]
    [tieminos.habitat.recording :as rec :refer [norm-amp silence?]]
-   [tieminos.habitat.routing :refer [main-returns]]
-   [tieminos.habitat.routing :as habitat.route]
-   [tieminos.habitat.scratch.sample-rec2 :refer [periodize-durs
-                                                 rand-latest-buf]]
+   [tieminos.habitat.routing :as habitat.route :refer [main-returns]]
+   [tieminos.habitat.scratch.sample-rec2
+    :refer [periodize-durs rand-latest-buf]]
    [tieminos.habitat.synths.granular :refer [amanecer*guitar-clouds]]
    [tieminos.math.bezier-samples :as bzs]
-   [tieminos.math.utils :refer [linlin]]
+   [tieminos.math.utils :refer [linlin linlin*]]
    [tieminos.utils :refer [rrange wrap-at]]
-   [time-time.dynacan.players.gen-poly :as gp :refer [on-event ref-rain]]
+   [time-time.dynacan.players.refrain.v2 :as refrain.v2 :refer [on-event ref-rain]]
    [time-time.standard :refer [rrand]]))
 
-(comment
-  (fib-chord-seq (transpose-chord [0 6 12 18] (range 21))) ;; acorde bonito, muy liso
-  (fib-chord-seq (transpose-chord [0 4 8 12 16 20 24 28] [0 1])) ;; calido con un poco de disonancia
-  (fib-chord-seq (transpose-chord [11 15 19] (range 21))) ;; estable claro (segmento de arriba: 4-4)
-  (fib-chord-seq (transpose-chord [10 15 20] (range 21))) ;; nocturno (5-5)
-  )
-;; TODO: add the rates above
-(def ^:private rates
-  [(:rates g-2.2.6/s1)
-   (:rates g-2.2.6/s2)
-   (:rates g-2.2.6/s3)
-   (:rates g-2.2.6/s4)
-   (:fib-0.5.13.21-range0.6-5step-interleaved+reverse g-2.2.4/chords)
-   (:fib-0.5.13.21-range-3.6-5step-interleaved+reverse g-2.2.4/chords)
-   (:fib-multiple-interleaved g-2.2.4/chords)])
-
-(comment
-  (count (get-harmony :meta-pelog-20)))
-
-(def make-rates
-  (memoize
-   (fn [k harmony-k]
-     (let [harmony (get-harmony harmony-k)
-           chord-fn  (partial rate-chord-seq harmony)]
-       (case k
-         :s1 (let [chords (chord-fn (transpose-chord [0 5 13 21] (range 0 (* 21 6) 5)))]
-               (interleave  chords (reverse chords))))))))
-
-(defn get-rates!
-  []
-  (let [harmony-k (bardo.live-state/get-gusano-harmony!)]
-    (make-rates :s1 harmony-k)))
-
-(let [prev-index (atom 0)]
-  (defn- next-rate-index! [speed]
-    (let [prev-i @prev-index]
-      (int (floor (reset! prev-index (+ prev-i speed)))))))
-
-(defn- get-rates-seq-speed!
-  []
-  (-> @bardo.live-state/live-state :gusano (:rates-seq-speed 1)))
-
-(def ^:private amp-multiplier (o/db->amp 6))
+(def ^:private amp-multiplier (o/db->amp 24))
 
 (defn- get-amp!
   []
@@ -102,8 +54,7 @@
   (-> @bardo.live-state/live-state :gusano (:grain-trig-rate 0.5) map-trig-rate))
 
 (def ^:private map-grain-dur
-  (memoize (fn [grain-dur]
-             (first (linlin 0 1 10 110 [grain-dur])))))
+  (memoize (fn [grain-dur] (linlin* 0 1 10 110 grain-dur))))
 
 (defn- get-grain-dur!
   []
@@ -200,7 +151,6 @@
 
 (defn get-second-voice!
   [index ratio]
-
   (let [second-voice-index (-> @bardo.live-state/live-state :gusano (:second-voice-index 0))
         f (wrap-at second-voice-index second-voice-fn)]
     (f index ratio)))
@@ -217,7 +167,7 @@
    :durs (fn [{:keys [index]}] (wrap-at index (periodize-durs* (get-period!) (get-durs!))))
    :on-event (on-event
               (println dur-s)))
-  (gp/stop :x))
+  (refrain.v2/stop :x))
 
 (defn gusano
   "Based on `tieminos.habitat.scratch.sample-rec2/hacia-un-nuevo-universo-perc-refrain-v1p2`
@@ -245,15 +195,14 @@
   (ref-rain
    :id id
    :durs (fn [{:keys [index]}] (wrap-at index (periodize-durs* (get-period!) (get-durs!))))
+   :cycle-len 1
    :on-event (on-event
-
               (when-let [buf (buf-fn {:index index})]
                 (when-not (silence? silence-thresh buf) ;; allow us to control silences by not playing
-                  (let [rates (get-rates!)
-                        rates* (map (fn [r] (if (sequential? r) r [r])) rates)
-                        rate (wrap-at (next-rate-index! (get-rates-seq-speed!)) rates*)
+                  (let [chord (bardo.live-state/get-gusano-chord!)
                         amp* (get-amp!)]
-                    (doseq [r rate]
+                    (timbre/debug " Gusano rates" chord)
+                    (doseq [r chord]
                       (let [start (rrange (rrange 0 0.1) 0.3)
                             end (min 1 (+ start (rrange 0.05 1)))
                             a (weighted a-weights)
@@ -280,9 +229,7 @@
                                     :out out-bus
                                     :pan (rrange -1 1)}]
 
-                        (timbre/debug "Playing Gusano" (:out config))
                         (when on-play
-                          (timbre/debug "Gusano on-play" (:out config))
                           (on-play (assoc config
                                           :amp amp*
                                           :rate (float r))))
@@ -291,13 +238,14 @@
                                                        :interp (rand-nth [1 2 4])
                                                        :amp (* amp* (rrange 0.2 1) (norm-amp buf))))
                         (when-let [rate* (get-second-voice! index r)]
+                          (timbre/debug "Gusano second voice" (:out config))
                           (amanecer*guitar-clouds (assoc config
                                                          :rate rate*
                                                          :interp 4
                                                          :amp (* amp* (rrange 0 0.7) (norm-amp buf)))))))))))))
 
 (def default-config
-  {:on-play (fn [& _] (timbre/debug "Playing gusano"))
+  {:on-play (fn [config] (timbre/debug "Gusano on-play:" config))
    :id ::gusano
    :out-bus (main-returns :mixed)
    :silence-thresh 0.0
@@ -323,6 +271,7 @@
 
 (defn start
   []
+  (timbre/info "Starting gusano")
   (gusano default-config))
 
 (comment
@@ -336,9 +285,10 @@
   (def test-sini (sini :out (main-returns :mixed)))
   (o/kill test-sini)
 
-  (-> @gp/refrains)
+  (-> @refrain.v2/refrains)
   (start))
 
 (defn stop
   []
-  (gp/stop ::gusano))
+  (timbre/info "Stopping gusano")
+  (refrain.v2/stop ::gusano))

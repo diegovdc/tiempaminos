@@ -1,18 +1,22 @@
-(ns tieminos.habitat.extended-sections.tunel-cuantico-bardo.synths
+(ns tieminos.habitat.extended-sections.tunel-cuantico-bardo.synths.samplers
   (:require
    [clojure.core.async :as a]
    [overtone.core :as o]
-   [overtone.sc.ugen-collide-list :as oc]
    [taoensso.timbre :as timbre]
-   [tieminos.habitat.extended-sections.tunel-cuantico-bardo.rec :as bardo.rec]
-   [tieminos.habitat.extended-sections.tunel-cuantico-bardo.synth-management :as bardo.synth-management]
+   [tieminos.habitat.extended-sections.tunel-cuantico-bardo.rec
+    :as bardo.rec]
+   [tieminos.habitat.extended-sections.tunel-cuantico-bardo.synth-management
+    :as bardo.synth-management]
+   [tieminos.habitat.extended-sections.tunel-cuantico-bardo.synths.utils
+    :refer [map-outs]]
    [tieminos.math.bezier :as bz]
-   [tieminos.math.utils :refer [linlin]]
+   [tieminos.math.utils :refer [linlin linlin*]]
    [tieminos.overtone-extensions :as oe]
-   [tieminos.sc-utils.synths.template-synth.v0 :refer [defplug make-synth-fn
-                                                       plug*]]
+   [tieminos.sc-utils.synths.template-synth.v0
+    :refer [defplug make-synth-fn plug*]]
    [tieminos.sc-utils.synths.v1 :refer [lfo-kr]]
-   [tieminos.utils :refer [rrange]]))
+   [tieminos.utils :refer [rrange]]
+   [time-time.standard :refer [rrand]]))
 
 (oe/defsynth
   cristal-liquidizado
@@ -61,25 +65,25 @@
                                    :pos (o/lf-saw 1/2))))))
   (sini-o))
 
-(def random-panaz-plug
-  (plug* #{:outs :pan-vel :pan-width}
-         '((fn [sig] (o/pan-az:ar (count outs) sig
-                                  (lfo-kr pan-vel -1 1) ;; LFNoise1
-                                  :width pan-width)))))
-(defn random-panaz
-  [& {:keys [vel width]
-      :or {vel 0.5, width 1.4}}]
-  {:pan-vel vel
-   :pan-width width ;; TODO: control lfo width
-   :ugen/pan random-panaz-plug})
+#_(def random-panaz-plug
+    (plug* #{:outs :pan-vel :pan-width}
+           '((fn [sig] (o/pan-az:ar (count outs) sig
+                                    (lfo-kr pan-vel -1 1) ;; LFNoise1
+                                    :width pan-width)))))
+#_(defn random-panaz
+    [& {:keys [vel width]
+        :or {vel 0.5, width 1.4}}]
+    {:pan-vel vel
+     :pan-width width ;; TODO: control lfo width
+     :ugen/pan random-panaz-plug})
 
 (defplug random-panaz
   #{:outs}
   {:pan-vel 0.5
    :pan-width 1.4 ;; TODO: control lfo width
-   :ugen/pan '((fn [sig] (o/pan-az:ar (count outs) sig
-                                      (lfo-kr pan-vel -1 1) ;; LFNoise1
-                                      :width pan-width)))})
+   :ugen/pan (fn [sig] (o/pan-az:ar (count outs) sig
+                                    (lfo-kr pan-vel -1 1) ;; LFNoise1
+                                    :width pan-width))})
 
 (macroexpand-1
  '(defplug random-panaz
@@ -89,8 +93,7 @@
      :ugen/pan '((fn [sig] (o/pan-az:ar (count outs) sig
                                         (lfo-kr pan-vel -1 1) ;; LFNoise1
                                         :width pan-width)))}))
-
-lfo-kr
+(comment lfo-kr)
 #_(defn lissajous-pan4
     [& {:keys [vel radius ratio phase]
         :or {vel 1
@@ -110,15 +113,17 @@ lfo-kr
   {:liss-freq 1
    :liss-radius 1
    :liss-ratio 1
-   :liss-phase Math/PI
-   :ugen/pan '((fn [sig]
-                 (o/pan4 sig
-                         (* liss-radius (o/sin-osc:kr liss-freq 0))
-                         (* liss-radius (o/sin-osc:kr (* liss-freq liss-ratio) liss-phase)))))})
+   :liss-phase-1 0
+   :liss-phase-2 (/ Math/PI 2)
+   :ugen/pan (fn [sig]
+               (o/pan4 sig
+                       (* liss-radius (o/sin-osc:kr liss-freq liss-phase-1))
+                       (* liss-radius (o/sin-osc:kr (* liss-freq liss-ratio) liss-phase-2))
+                       liss-radius))})
 (defplug manual-pan4
   {:pan-x 0
    :pan-y 0
-   :ugen/pan '((fn [sig] (o/pan4 sig pan-x pan-y)))})
+   :ugen/pan (fn [sig] (o/pan4 sig pan-x pan-y))})
 
 #_(defn directional-panaz
     [& {:keys [levels width time-scale]
@@ -144,63 +149,53 @@ lfo-kr
    :pan-orientation 0
    :pan-width 1.3
    :ugen/pan
-   '((fn [sig]
-       (o/pan-az (count outs)
-                 sig
-                 (o/env-gen (o/envelope pan-env-levels
-                                        (let [env-parts (dec (count pan-env-levels))]
-                                          (repeat env-parts (/ 1 env-parts))))
-                            :time-scale pan-env-time-scale)
-                 :width pan-width
-                 :orientation pan-orientation)))})
+   (fn [sig]
+     (o/pan-az (count outs)
+               sig
+               (o/env-gen (o/envelope pan-env-levels
+                                      (let [env-parts (dec (count pan-env-levels))]
+                                        (repeat env-parts (/ 1 env-parts))))
+                          :time-scale pan-env-time-scale)
+               :width pan-width
+               :orientation pan-orientation))})
 
 (defplug lpf
   {:lpf 20000
    :reso 0.1
-   :ugen/filter '((fn [sig] (o/rlpf sig (o/clip lpf 30 20000) reso)))})
+   :ugen/filter (fn [sig] (o/rlpf sig (o/clip lpf 30 20000) reso))})
 
 (defplug hpf
   {:hpf 30
    :reso 0.1
-   :ugen/filter '((fn [sig] (o/rhpf sig (o/clip hpf 30 20000) reso)))})
+   :ugen/filter (fn [sig] (o/rhpf sig (o/clip hpf 30 20000) reso))})
 
 (defplug moog-ladder
   {:lpf 20000
    :reso 0.1
-   :ugen/filter '((fn [sig] (o/moog-ladder sig (o/clip lpf 30 20000) reso)))})
+   :ugen/filter (fn [sig] (o/moog-ladder sig (o/clip lpf 30 20000) reso))})
 
 (defplug moog-ladhp
   {:lpf 20000
    :hpf 40
    :reso 0.5
    :q 0.5
-   :ugen/filter '((fn [sig] (-> sig
-                                (o/moog-ladder (o/clip lpf 30 20000) reso)
-                                (o/b-moog (o/clip hpf 60 20000) q 1))))})
+   :ugen/filter (fn [sig] (-> sig
+                              (o/moog-ladder (o/clip lpf 30 20000) reso)
+                              (o/b-moog (o/clip hpf 60 20000) q 1)))})
 (defplug moog-hplad
   {:lpf 20000
    :hpf 40
    :reso 0.5
    :q 0.5
-   :ugen/filter '((fn [sig] (-> sig
-                                (o/moog-ladder (o/clip lpf 30 20000) reso)
-                                (o/b-moog (o/clip hpf 60 20000) q 1))))})
+   :ugen/filter (fn [sig] (-> sig
+                              (o/moog-ladder (o/clip lpf 30 20000) reso)
+                              (o/b-moog (o/clip hpf 60 20000) q 1)))})
 (defplug moog-bp
   {:lpf 400
    :q 0.5
-   :ugen/filter '((fn [sig] (o/b-moog sig (o/clip lpf 60 20000) q 2)))})
+   :ugen/filter (fn [sig] (o/b-moog sig (o/clip lpf 60 20000) q 2))})
 
-(defn map-outs
-  "Given a sequence of outs, map a signal array to each out."
-  [out-offset outs-seq sig]
-  (if (and (sequential? outs-seq)
-           (sequential? sig))
-    (map (fn [out sig]
-           (o/out:ar (oc/+ out out-offset) sig))
-         outs-seq
-         sig)
-    (do (timbre/warn "[map-outs] `outs-seq` & `sig` are not both vectors. Resorting to default output method for current synth variation.")
-        (o/out outs-seq sig))))
+(comment map-outs)
 
 (defn +outs1
   [params]
@@ -209,6 +204,11 @@ lfo-kr
          :ugen/outs (plug* [:out-offset :outs]
                            '((fn [sig] (map-outs out-offset outs sig))))
          :outs [0 1 2 3]))
+
+(defplug +outs1
+  {:out-offset 0
+   :outs [0 1 2 3]
+   :ugen/outs (fn [sig] (map-outs out-offset outs sig))})
 #_(+outs {})
 (do
   (ns-unmap *ns* 'cristal-liquidizado-2)
@@ -232,13 +232,14 @@ lfo-kr
        (random-panaz))
 
    '(-> (o/play-buf 1 buf rate :start-pos buf-pos)
-        :ugen/filter
+        (:ugen/filter)
         (* amp :ugen/env)
-        :ugen/pan ;; FIXME investigate break
-        :ugen/outs)
+        (:ugen/pan)
+        (:ugen/outs))
    {:reset? true})
   #_(cristal-liquidizado-2 {:buf buf
                             :dur 10}))
+
 (comment
   (-> cristal-liquidizado-2)
   (o/stop)
@@ -281,8 +282,8 @@ lfo-kr
               :pos  (o/line start end (apply + amp-env-durations))
               :interp interp
               :pan 0)
-             :ugen/filter
-             :ugen/pan
+             (:ugen/filter)
+             (:ugen/pan)
              (o/free-verb rev-mix rev-room)
              (* amp
                 #_(lfo amp-lfo amp-lfo-min 1)
@@ -291,7 +292,7 @@ lfo-kr
                                        [-1 -5])
                            :gate gate
                            :action o/FREE))
-             :ugen/outs))
+             (:ugen/outs)))
  {:reset? true})
 
 (comment
@@ -365,39 +366,48 @@ lfo-kr
                  (* amp (o/env-gen (o/env-perc) :action o/FREE)))))
 
 (defn- add-panner
-  [params {:keys [active-panner panner-config]}]
+  [{:as params
+    :keys [dur]} {:keys [active-panner panner-config]}]
+
   (let [{:keys [vel x y xy radius vel direction pos range]} panner-config]
     (timbre/spy :debug :panner-config [panner-config params])
     (case active-panner
       :random (random-panaz params {:pan-vel vel})
       :manual (manual-pan4 params {:pan-x (-> (first xy) (* 2) (+ -1))
                                    :pan-y (-> (second xy) (* 2) (+ -1))})
-      :lissajous (do
-                   (timbre/warn "TODO: lissajous-pan4 still needs work")
-                   (lissajous-pan4 params
+      :lissajous (lissajous-pan4 params
+                                 (let [twopi (* 2 Math/PI)
+                                       offset (rrand 0 twopi)]
                                    {:liss-freq vel
                                     :liss-radius radius
-                                    :liss-ratio (max 0.1 (/ (* 11 x)
-                                                            (max 0.001 (* 11 y))))
-                                    :liss-phase Math/PI}))
-      :arrows (do
-                (timbre/warn "TODO: directional-panaz (arrows) panner still needs work")
-                (directional-panaz params
-                                   (timbre/spy
-                                    :debug "ARROWS"
-                                    {:panner-env-time-scale vel
-                                     :pan-env-levels (let [curve* (bz/curve 8 [0 (rrange -3 3)
-                                                                               (rrange -3 3)
-                                                                               (rrange -3 3)
-                                                                               2 4 2 4])]
-                                                       (linlin (apply min curve*)
-                                                               (apply max curve*)
-                                                               0
-                                                                ;; End in the last channel of the `outs` array. This doesn't correspond to the PanAZ documentation (for pos) but it seems to work
-                                                               (* 2 (/ (dec 4) 4))
-                                                               curve*))
-                                     :pan-orientation (* 2 pos)
-                                     :panner-width range})))
+                                    :liss-ratio (/ x y)
+                                    :liss-phase-1 offset
+                                    :liss-phase-2 (-> (+ offset
+                                                         (/ Math/PI 2)
+                                                         (* direction Math/PI))
+                                                      (mod twopi))}))
+      ;; NOTE: maybe not that great
+      :arrows  (directional-panaz params
+                                  {:panner-env-time-scale (max 0.1 (* dur (- 1 vel)))
+                                   :pan-env-levels (let [curve* (bz/curve 8
+                                                                          (sort
+                                                                           (rand-nth [< >])
+                                                                           [0 (rrange -3 3)
+                                                                            (rrange -3 3)
+                                                                            (rrange -3 3)
+                                                                            2 4 2 4]))
+                                                         max-range (* 2 (/ (dec 4) 4))]
+                                                     #_[0 0.5 1 1.5]
+                                                     (->> (linlin (apply min curve*)
+                                                                  (apply max curve*)
+                                                                  0
+                                                                 ;; End in the last channel of the `outs` array. This doesn't correspond to the PanAZ documentation (for pos) but it seems to work
+                                                                  max-range
+                                                                  curve*)
+                                                          (mapv #(* range max-range %))))
+                                   :pan-orientation (+ (rrange -0.5 0.5)
+                                                       (linlin* 0 1 -2 2 pos))
+                                   :panner-width 1.5})
       (do (timbre/warn (format "No panner %s selected, will use default."
                                active-panner))
           params))))
@@ -418,7 +428,6 @@ lfo-kr
   "Plays a synth. The `:synth` key should be a keyword."
   [{:as data
     :keys [synth params]}]
-  #_(println "===============")
   (a/go
     (try
       (let [;; filter (get-filter data)
