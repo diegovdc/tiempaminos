@@ -114,20 +114,22 @@
              result)))
     (testing "Will convert object like `audio-bus`, `buffer` and `sample` to their ids. So that they can be passed into a synth."
       (is (int? (result :in))))
-    (testing "If the input is nil or an empty map, return an empty map"
+    (testing "If the input is nil or an empty map or a map with only :ugen keys with nil values, return an empty map"
       (is (= {} (modify-params2 {})))
-      (is (= {} (modify-params2 nil))))))
+      (is (= {} (modify-params2 nil)))
+      (is (= {} (modify-params2 {:ugen/fx1 nil}))))))
 
 (deftest analyze-args-test
   (is (= ["synth-symbol"
-          [:freq [:seq 1]]
-          [:rev-mix [:number]]
-          [:rev-room [:number]]
-          [:width [:number]]
-          [:outs [:seq 1]]
-          [:ugen/mix [:ugen '((fn [%] (if (> (count freq) 1) (o/mix %) %)))]]
-          [:levels [:seq 5]]
-          [:env-durs [:seq 4]]]
+          {:freq [:seq 1],
+           :rev-mix [:number],
+           :width [:number],
+           :levels [:seq 5],
+           :static/num-chans [:static 1],
+           :ugen/mix [:ugen '((fn [%] (if (> (count freq) 1) (o/mix %) %)))],
+           :outs [:seq 1],
+           :rev-room [:number],
+           :env-durs [:seq 4]}]
          (analyze-args
           'synth-symbol
           {:freq [500]
@@ -135,6 +137,7 @@
            :rev-room 0.5
            :width 1.5
            :outs [0]
+           :static/num-chans 1
            :ugen/mix '((fn [%] (if (> (count freq) 1) (o/mix %) %)))
            :levels [0 1 1 1 0]
            :env-durs [1 5 5 1]}))))

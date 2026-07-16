@@ -107,19 +107,18 @@
 (defn modify-params2
   "When calling a synth, processes the params map coming into the synth into params that an overtone synth understands."
   [params]
-  (if-not (seq params)
-    {}
-    (->> params
-         (mapv (fn [[k v]]
-                 (cond
-                   (number? v) {k v}
-                   (sc-idable? v) {k (:id v)}
-                   (or (vector? v)
-                       (coll-of-numbers? v)) (map-indexed (fn [i v*]
-                                                            {(keyword (str (name k) i)) v*})
-                                                          v))))
-         flatten
-         (apply merge))))
+  (or (->> params
+           (mapv (fn [[k v]]
+                   (cond
+                     (number? v) {k v}
+                     (sc-idable? v) {k (:id v)}
+                     (or (vector? v)
+                         (coll-of-numbers? v)) (map-indexed (fn [i v*]
+                                                              {(keyword (str (name k) i)) v*})
+                                                            v))))
+           flatten
+           (apply merge))
+      {}))
 
 (comment
   (modify-params2 (select-keys merged-params [:buf])))
@@ -134,6 +133,7 @@
 (defn analyze-arg
   [k arg]
   (cond
+    (ns-kw? "static" k) [:static arg]
     (or (number? arg) (sc-idable? arg)) [:number]
     (-> arg meta :fragment) [:ugen (resolve-frag arg)]
     (ns-kw? "ugen" k) [:ugen arg]
@@ -144,10 +144,12 @@
 (defn analyze-args
   "Analyze the arguments in a params map so that the output serves to index the cache for a synth variation."
   [synth-symbol m]
-  (->> m
-       (mapv (fn [[k arg]]
-               [k (analyze-arg k arg)]))
-       (into [(str synth-symbol)])))
+  [(str synth-symbol)
+   (reduce-kv (fn [acc k arg]
+
+                (assoc acc k (analyze-arg k arg)))
+              {}
+              m)])
 
 (defn make-synth-form
   "Creates and Overtone synth form."
