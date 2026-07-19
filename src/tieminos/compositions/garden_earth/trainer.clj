@@ -110,7 +110,19 @@
    {:root root
     :scale (:scale eik)
     :degrees (->> (make-subcps "1)4 of 3)6 5.9-1.3.7.11")
-                  (map :degrees))}))
+                  (map :degree))
+    :print-info? false
+    :on-note-play
+    (fn [{:keys [_last-interval note interval _freq]}]
+      (println :interval
+               interval
+               (int (conv/ratio->cents interval))
+               "\n")
+      (println (pitch-class->pr-fingering
+                (-> note :pitch :class))
+               "\n\n"))})
+
+  (hexp.trainer/stop))
 
 (comment
   (count known-pitches)
