@@ -25,7 +25,7 @@
         org.bouncycastle/bctsp-jdk14 {:mvn/version "1.38"}
         ;; working with intervals
         io.helins/interval {:mvn/version "1.0.0-beta0"}
-        clj-kondo/clj-kondo {:mvn/version "2026.05.25"}
+        clj-kondo/clj-kondo {:mvn/version  "LATEST"}
         thi.ng/color {:mvn/version "1.4.0"}
         ;; another interesting possibility, may offer other options
         ;; com.dean/interval-tree {:mvn/version  "0.1.2"}
