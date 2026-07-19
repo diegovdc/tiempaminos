@@ -20,10 +20,10 @@
   []
   (timbre/info "Initializing default `early` group for input. Pass a group to init input to avoid this call.")
   (let [groups @groups/groups]
-    (when-not groups (groups/init-groups!))
+    (when-not (seq groups) (groups/init-groups!))
     (groups/early)))
 
-(defn init-input
+(defn init-input!
   [{:keys [id in n-chans group] :as args
     :or {n-chans 1}}]
 
@@ -51,13 +51,14 @@
   (-> id get-input :bus))
 
 (comment
+  (-> @inputs)
   (o/stop)
   (input {:group (groups/early)
           :in 0})
 
-  (init-input {:id :guitar
-               :group (groups/early)
-               :in 0})
+  (init-input! {:id :guitar
+                :group (groups/early)
+                :in 0})
 
   (direct-out {:group (groups/late)
                :bus (get-bus :guitar)}))

@@ -362,7 +362,7 @@ This API ensures that ~o/in~ can be used on other synths without needing to thin
 
 ;; Initialize input.
 ;; NOTE: the input will die if `o/stop` is called.
-(sci/init-input {:id :guitar ;; used to refer to this value by `sci/get-bus`
+(sci/init-input! {:id :guitar ;; used to refer to this value by `sci/get-bus`
                  :group (groups/early) ;; optional but recommended, otherwise `init-input` will call `groups/init-groups!` on it's own. Although the early groups are probably the only option we want.
                  :in 0 ;; the actual input. See the server meters to find the actual number.
                  })
