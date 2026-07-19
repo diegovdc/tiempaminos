@@ -8,6 +8,7 @@
    [tieminos.attractors.lorentz :as lorentz]
    [tieminos.habitat.extended-sections.harmonies.chords
     :refer [get-harmony rate-chord-seq]]
+   [tieminos.habitat.extended-sections.tunel-cuantico-bardo.async-events :as bardo.comms]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.gusanos.core
     :as bardo.gusano]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.live-state
@@ -19,6 +20,7 @@
     :as bardo.osc-helpers]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.rec
     :as bardo.rec]
+   [tieminos.habitat.extended-sections.tunel-cuantico-bardo.synths.processors :as bardo.signal-processor]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.synths.samplers
     :refer [play-synth]]
    [tieminos.habitat.groups :as groups]
@@ -553,6 +555,34 @@
   []
   (bardo.gusano/stop))
 
+;;;;;;;;;;;;;;;;;;
+;; * Processors
+;; (Live input)
+;;;;;;;;;;;;;;;;;;
+
+(defn update-processor-preset-label-info!
+  [{:keys [label-index active-preset]}]
+  (let [labels (mapv :name bardo.signal-processor/presets-config)
+        label (wrap-at label-index labels)]
+    (bardo.osc-helpers/send-osc-msg "/presets/guitar/preset-label" label)
+    (bardo.osc-helpers/send-osc-msg "/presets/guitar/activate-button-group-visible"
+                                    (str (not= label (:name active-preset))))))
+
+(defn activate-processor-preset!
+  [{:keys [preset-index]}]
+  (let [preset (wrap-at preset-index bardo.signal-processor/presets-config)
+        config (bardo.live-state/processor-get-previous-config! preset)
+        active-preset* (bardo.live-state/get-processor-active-preset!)
+        new-synth (bardo.signal-processor/start-synth! preset config)]
+    (when active-preset*
+      (bardo.signal-processor/stop-synth! (:synth active-preset*)))
+    (bardo.live-state/set-processor-active-preset! preset new-synth)
+
+    (bardo.live-state/set-processor-preset-config! preset config) ;; FIXME: this seems like it does nothing
+    (update-processor-preset-label-info! {:label-index preset-index
+                                          :active-preset preset})
+    (bardo.live-state/processor-update-ui! preset config)))
+
 ;;;;;;;;;;;;;;;;;
 ;; Event Handlers
 ;;;;;;;;;;;;;;;;;
@@ -576,8 +606,10 @@
     :stop-recording (stop-recording data)
     :bardo.event/delete-bank-bufs (bardo.rec/delete-bank-bufs data)
     :bardo.event/bufs-counted (bardo.osc/update-bufs-count data)
+    :processor/activate-preset (activate-processor-preset! data)
+    :processor/on-preset-label-index-change (update-processor-preset-label-info! data)
     ;; event for dev purpuses
-    :dev/trigger-clouds-event (do ;; data {:bank int}
+    :dev/trigger-clouds-event (do
                                 (bardo.live-state/toggle-active-bank! :milo (:bank data) true)
-                                (clouds-on-event :milo {:data {:index 0}}))
+                                (clouds-on-event :milo false {:data {:index 0}}))
     (timbre/error "[event-handler] No matching clause for `:type`:" type)))

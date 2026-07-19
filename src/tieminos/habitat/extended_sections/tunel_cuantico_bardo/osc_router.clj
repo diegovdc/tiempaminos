@@ -47,7 +47,7 @@
         (f router-data args)
         (timbre/warn "No handler-fn:" {:path path  :router-data router-data})))
     (catch Exception e
-      (timbre/warn "Unknown path:" {:path path :args args :ex-message (.getMessage e)}))))
+      (timbre/warn {:path path :args args :ex-message (.getMessage e)}))))
 
 (comment
   (let [router (osc-router

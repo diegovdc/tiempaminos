@@ -8,7 +8,7 @@
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.synth-management
     :as bardo.synth-management]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.synths.utils
-    :refer [map-outs]]
+    :refer [map-outs outs]]
    [tieminos.math.bezier :as bz]
    [tieminos.math.utils :refer [linlin linlin*]]
    [tieminos.overtone-extensions :as oe]
@@ -195,21 +195,6 @@
    :q 0.5
    :ugen/filter (fn [sig] (o/b-moog sig (o/clip lpf 60 20000) q 2))})
 
-(comment map-outs)
-
-(defn +outs1
-  [params]
-  (assoc params
-         :out-offset 0
-         :ugen/outs (plug* [:out-offset :outs]
-                           '((fn [sig] (map-outs out-offset outs sig))))
-         :outs [0 1 2 3]))
-
-(defplug +outs1
-  {:out-offset 0
-   :outs [0 1 2 3]
-   :ugen/outs (fn [sig] (map-outs out-offset outs sig))})
-#_(+outs {})
 (do
   (ns-unmap *ns* 'cristal-liquidizado-2)
   (make-synth-fn
@@ -228,7 +213,7 @@
                                      :action o/FREE))
         :levels [0 1 1 0]
         :env-durs [0.1 0.6 0.4]}
-       +outs1
+       outs
        (random-panaz))
 
    '(-> (o/play-buf 1 buf rate :start-pos buf-pos)
@@ -270,7 +255,7 @@
       :interp 1
       :a-level 1
       :gate 1}
-     +outs1
+     outs
      (random-panaz))
  '(o/out out
          (-> (o/grain-buf

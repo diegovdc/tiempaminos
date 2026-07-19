@@ -9,8 +9,9 @@
     :as bardo.config]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.live-state
     :as bardo.live-state
-    :refer [delete-all-banks delete-bank inc-gusano-rate-index! live-state
-            mute-input save-touchosc-synth-param set-active-bank
+    :refer [activate-processor-preset! delete-all-banks delete-bank
+            inc-gusano-rate-index! live-state mute-input
+            save-touchosc-synth-param set-active-bank
             set-active-harmonic-voice set-active-recorded-bank set-clouds-amp
             set-clouds-env set-clouds-rhythm set-clouds-sample-lib-size
             set-filter-index set-filter-param set-gusano-2nd-voice
@@ -20,9 +21,9 @@
             set-harmonic-voice-convergence-point set-harmony
             set-independent-refrain set-next-gusano-harmonic-seq
             set-next-gusano-harmony set-panner-index set-panner-param
-            set-rev-send set-selected-bank-synth set-synth-index
-            switch-rec-durs switch-rec-pulse toggle-clouds toggle-gusano
-            toogle-rec]]
+            set-processor-preset-label-index! set-rev-send set-selected-bank-synth
+            set-synth-index switch-rec-durs switch-rec-pulse toggle-clouds
+            toggle-gusano toogle-rec]]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.osc-helpers
     :refer [update-clients]]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.osc-helpers :as bardo.osc-helpers]
@@ -475,7 +476,13 @@
    "/:player/toggle-harmonic-voice/:index" (set-active-harmonic-voice
                                             {:player player-k
                                              :voice-index (-> path-params :index str->int)
-                                             :on? (== 1 (first args))})))
+                                             :on? (== 1 (first args))})
+   "/presets/guitar/next-label-btn" (when (press? args) (set-processor-preset-label-index! true))
+   "/presets/guitar/prev-label-btn" (when (press? args) (set-processor-preset-label-index! false))
+   "/presets/guitar/activate-preset-btn" (when (press? args) (activate-processor-preset!))))
+
+(comment
+  (osc-router/match-by-path router "/presets/guitar/next-label-btn" '(1)))
 
 (defn osc-responder
   [{:keys [path args] :as msg}]

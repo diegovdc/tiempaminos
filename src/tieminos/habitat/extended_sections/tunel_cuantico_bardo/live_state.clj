@@ -16,6 +16,8 @@
     :refer [gusano-harmonic-seqs gusano-harmonies]]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.osc-helpers
     :as bardo.osc-helpers]
+   #_[tieminos.habitat.extended-sections.tunel-cuantico-bardo.synths.processors :as bardo.signal-processor]
+   [tieminos.habitat.extended-sections.tunel-cuantico-bardo.synths.processors-utils :refer [input->in&outs&group]]
    [tieminos.habitat.osc :as habitat-osc]
    [tieminos.math.utils :refer [linexp* linlin]]
    [tieminos.osc.reaper :as reaper]
@@ -51,8 +53,66 @@
   []
   (swap! live-state assoc :system/recording? false))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; * Processors
+;; Live input processors
+;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; NOTE this code assumes only the guitar input.
+
+(defn get-processor-preset-config!
+  [preset]
+  (get-in @live-state [:processors :guitar :preset-configs preset]))
+
+(defn set-processor-preset-config!
+  [preset config]
+  (swap! live-state assoc-in [:processors :guitar :preset-configs preset] config))
+
+(defn get-processor-active-preset!
+  []
+  (-> @live-state :processors :guitar :active-preset))
+
+(defn set-processor-active-preset!
+  [preset synth]
+  (swap! live-state assoc-in [:processors :guitar :active-preset] {:preset preset :synth synth}))
+
+(def ^:private processor-preset-index-path
+  [:processors :guitar :preset-label-index])
+
+(defn set-processor-preset-label-index!
+  [next?]
+  (let [index (-> (swap! live-state update-in processor-preset-index-path (fnil (if next? inc dec) -1))
+                  (get-in processor-preset-index-path))
+        {:keys [preset]} (get-processor-active-preset!)]
+    (bardo.comms/dispatch {:type :processor/on-preset-label-index-change
+                           :data {:active-preset preset
+                                  :label-index index}})))
+
+(defn processor-get-previous-config! [preset]
+  (let [config (get-processor-preset-config! preset)]
+    (if config
+      config
+      (let [{:keys [input default-config]} preset
+            io-config (input->in&outs&group input)]
+        (merge default-config io-config)))))
+
+(defn activate-processor-preset!
+  []
+  (let [index (get-in @live-state processor-preset-index-path)]
+    (bardo.comms/dispatch {:type :processor/activate-preset
+                           :data {:preset-index index}})))
+
+(defn processor-update-ui!
+  [preset config]
+  (timbre/warn "TODO: implement preset UI"))
+
+(comment
+  (bardo.osc-helpers/send-osc-msg "/presets/guitar/activate-button-group-visible"
+                                  (str false)))
+
 ;;;;;;;;;;;;;;;;;;
 ;; * Synth
+;; Sample synths
 ;;;;;;;;;;;;;;;;;;
 
 (defn synth-bank-path

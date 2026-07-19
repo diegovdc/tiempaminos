@@ -1,4 +1,4 @@
-(ns tieminos.habitat.extended-sections.tunel-cuantico-bardo.scratch.guitar-processes
+(ns tieminos.habitat.extended-sections.tunel-cuantico-bardo.synths.guitar-processes
   (:require
    [overtone.core :as o]
    [overtone.sc.ugen-collide-list :as oc]
@@ -249,7 +249,7 @@
   (list 'quote body))
 
 (make-synth-fn
- 'cosillos
+ 'mod-multifx
  (-> {:in 0
       :hpf 600
       :lpf 20000
@@ -273,11 +273,11 @@
 
         ;; :exec-freq can be useful for rhtymic/glitchy stuff... in fact almost certainly there will be glitches... condsider using `latch` to control the pitch changes in some of the synth variations, as a freeze.
         ;; :median controls the amount of variation/glitchyness so also very useful, 1 will work well for the original exploration with sided-fm + comb + hpf
-        [freq has-freq?] (o/pitch
-                          sig
-                          :min-freq pitch-follower-freq
-                          :exec-freq pitch-follower-freq
-                          :median pitch-follower-median)
+        [freq _has-freq?] (o/pitch
+                           sig
+                           :min-freq pitch-follower-freq
+                           :exec-freq pitch-follower-freq
+                           :median pitch-follower-median)
 
         ;; this is useful most of the time, but for the original variation, if this is not used it will work very nicely
         ;; NOTE: this should not be `nil` as it will return the signal as the amp tracker value
@@ -299,24 +299,24 @@
                           :action o/FREE))
         (:ugen/outs))))
 
-#_(get-variant-data cosillos {})
+#_(get-variant-data mod-multifx {})
 
 (comment
   (sci/init-input! {:id :guitar
                     :in 0})
 
-  (cosillos (-> {:group (groups/late)
-                 :in (:bus (sci/init-input! {:id :guitar
-                                             :in 20}))
-                 :fm-ratio 4
-                 :fm-dry-sig-amp 8
-                 :pitch-follower-freq 10
-                 :ugen/pitch-shifter nil
-                 :amp 4
-                 :out-offset (bh/bus 14)
-                 :outs [0 1]}
-                (pan2)
-                (sound-in {:in 20})))
+  (mod-multifx (-> {:group (groups/late)
+                    :in (:bus (sci/init-input! {:id :guitar
+                                                :in 20}))
+                    :fm-ratio 4
+                    :fm-dry-sig-amp 8
+                    :pitch-follower-freq 10
+                    :ugen/pitch-shifter nil
+                    :amp 4
+                    :out-offset (bh/bus 14)
+                    :outs [0 1]}
+                   (pan2)
+                   (sound-in {:in 20})))
   (o/stop)
   (def t (sci/direct-out {:bus (sci/get-bus :guitar)}))
   (o/kill t))
@@ -331,7 +331,7 @@
     {:ugen/amp-follower (fn [sig] (o/amplitude sig))})
 
   (make-synth-fn
-   'cosillos
+   'mod-multifx
    {:in 0
     :pitch-follower-freq 1
     :fm-ratio 10

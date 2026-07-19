@@ -1,11 +1,12 @@
 (ns tieminos.habitat.extended-sections.tunel-cuantico-bardo.synths.processors
-  #_{:clj-kondo/ignore [:unused-namespace :unused-referred-var]}
   (:require
    [overtone.core :as o]
-   [overtone.sc.ugen-collide-list :as oc]
    [taoensso.timbre :as timbre]
+   [tieminos.habitat.extended-sections.tunel-cuantico-bardo.async-events :as bardo.comms]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.config :as bardo.config]
-   [tieminos.habitat.extended-sections.tunel-cuantico-bardo.synths.utils :refer [map-outs]]
+   [tieminos.habitat.extended-sections.tunel-cuantico-bardo.synths.guitar-processes :refer [mod-multifx
+                                                                                            mono-in]]
+   [tieminos.habitat.extended-sections.tunel-cuantico-bardo.synths.utils :refer [outs]]
    [tieminos.habitat.routing :refer [get-input-bus]]
    [tieminos.math.utils :refer [linexp* linlin*]]
    [tieminos.overtone-extensions :as oe]
@@ -34,17 +35,9 @@
                                         :orientation 0))
                     (o/mix)))})
 
-(comment oc/+ map-outs)
-
-(defplug outs
-  {:out-offset 0
-   :outs [0 1 2 3]
-   :ugen/outs (fn [sig] (map-outs out-offset outs sig))})
-
 (make-synth-fn
  'processor
  (-> {:in   0
-      :freq 200
       :amp  1
       :a    2
       :r    2
@@ -112,48 +105,46 @@
 (def presets-config
   [{:name "RandPanaz"
     :input :guitar-clean
+    :synth processor
     :default-config (-> {:amp 1}
+                        (outs {:out-offset (bardo.config/get-bh-bus :guitar-clean)})
+                        (rand-panaz {:pan-width 3
+                                     :pan-rate 1}))
+    :controls [{:param :amp :name "Amp" :mapping #(linlin* 0 1 0 2 %)}
+               {:param :pan-width :name "PanWi" :mapping #(linlin* 0 1 1.2 4 %)}
+               {:param :pan-rate :name "PanRt" :mapping #(linexp* 0 1 0.1 5 %)}]}
+   {:name "DirtyComb"
+    :input :guitar-clean
+    :synth mod-multifx
+    :default-config (-> {:fm-ratio 4
+                         :fm-dry-sig-amp 8
+                         :pitch-follower-freq 10
+                         :ugen/pitch-shifter nil
+                         :amp 4}
+                        (mono-in {:in 20})
+                        (outs {:out-offset (bardo.config/get-bh-bus :guitar-clean)})
                         (rand-panaz {:pan-width 3
                                      :pan-rate 1}))
     :controls [{:param :amp :name "Amp" :mapping #(linlin* 0 1 0 2 %)}
                {:param :pan-width :name "PanWi" :mapping #(linlin* 0 1 1.2 4 %)}
                {:param :pan-rate :name "PanRt" :mapping #(linexp* 0 1 0.1 5 %)}]}])
 
-(def presets-by-input
-  (group-by :input presets-config))
+(defn start-synth!
+  "Starts a synth and returns the instance."
+  [{:keys [synth] :as _preset} config]
+  (synth config))
 
-;; TODO: maybe move state to bardo.live-state, but do strongly consider using the live-state atom
-(defonce ^:private modified-preset-configs (atom {}))
-(defonce ^:private active-preset (atom nil))
+(defn stop-synth!
+  [synth]
+  (when (and (o/node? synth) (o/node-active? synth))
+    (o/ctl synth :gate 0)))
 
-(defn input->in&outs&group [input]
-  (case input
-    :guitar-clean (-> {:in (get-input-bus :guitar)}
-                      (outs {:out-offset (bardo.config/get-bh-bus :guitar-clean)}))))
+(defn- init-preset-manager!
+  []
+  (bardo.comms/dispatch {:type :processor/activate-preset
+                         :data {:preset-index 0}}))
 
-(defn get-previous-config! [modified-preset-configs-data preset]
-  (if-let [config (get modified-preset-configs-data preset)]
-    config
-    (let [{:keys [input default-config]} preset
-          io-config (input->in&outs&group input)]
-      (merge default-config io-config))))
-
-(defn update-ui!
-  [preset config]
-  (timbre/warn "TODO: Implement `update-ui!`"))
-
-(defn run-preset!
-  [preset]
-  (let [config (get-previous-config! @modified-preset-configs preset)
-        active-preset* @active-preset]
-    (when active-preset* (o/ctl active-preset* :gate 0))
-    (reset! active-preset (processor config))
-    (swap! modified-preset-configs assoc preset config)
-    (update-ui! preset config)))
-(-> presets-by-input)
-
-(defn- init-preset-manager! []
-  (run-preset! (-> presets-by-input :guitar-clean first)))
+(comment)
 
 ;;;;;;;;;;;;;;;;;;
 ;; * Init
