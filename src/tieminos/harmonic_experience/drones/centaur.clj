@@ -3,12 +3,13 @@
    [erv.utils.conversions :refer [midi->cps]]
    [erv.utils.scale :refer [rotate-scale]]
    [overtone.core :as o]
+   [tieminos.harmonic-experience.drone-box :as hexp.drone-box]
    [tieminos.harmonic-experience.lattice :as hexp.lattice]
    [tieminos.harmonic-experience.trainer :as hexp.trainer]
    [tieminos.harmonic-experience.utils :as hexp.utils]
-   [tieminos.harmonic-experience.drone-box :as hexp.drone-box]
    [tieminos.midi.core :refer [get-exquis!]]
-   [tieminos.scales.core :as scales]))
+   [tieminos.scales.core :as scales]
+   [tieminos.seq-utils.core :refer [choose]]))
 
 (def root (midi->cps 60))
 (def scale
@@ -34,7 +35,7 @@
 
   (hexp.trainer/trainer {:scale scale
                          :root (midi->cps 60)
-                         :degrees [0 2 4 5 9 11]
+                         :degrees (choose 0 2 4 5 9 11)
                          :amp 0.4
                          :out (hexp.utils/out 3)})
   (hexp.trainer/stop)

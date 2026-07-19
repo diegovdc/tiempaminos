@@ -55,9 +55,9 @@
     {:node new-node}))
 
 (comment
-  (-> {:node
-       (api/parse-string
-        "
+  (-> body*)
+  (do
+    (def test-str "
 (make-synth-fn
          'siny
          (-> {:freq [500 900]
@@ -67,12 +67,34 @@
              (freq-mixer))
          '(o/out 0
                  (-> (o/sin-osc freq)
-                     (:ugen/freq-mixer) 
+                     (:ugen/freq-mixer freq amp) 
                      (o/pan2 0)
                      (* amp :ugen/env)))
-         {:reset? true})")}
+         {:reset? true})")
+    (make-synth-fn {:node (api/parse-string test-str)}))
 
-      make-synth-fn))
+  (def code
+    (str "(require '[clj-kondo.impl.utils :as u])
+(let [something (fn [])
+        env1 (fn [_] _)
+        freq-mixer (fn [_] _)]
+    (u/make-synth-fn
+      'siny
+      (-> {:freq [500 900]
+           :amp 1
+           :ugen/pan (something)}
+          (env1)
+          (freq-mixer))
+      '(o/out 0
+              (-> (o/sin-osc freq)
+                  (:ugen/freq-mixer freq amp) 
+                  (o/pan2 0)
+                  (* amp :ugen/env)))
+      {:reset? true}))"))
+
+  (require '[clj-kondo.core :as clj-kondo])
+  (:findings (with-in-str code (clj-kondo/run! {:lint ["-"]}))))
+
 
 
 
