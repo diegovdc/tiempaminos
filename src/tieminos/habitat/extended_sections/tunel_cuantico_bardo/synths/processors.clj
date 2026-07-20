@@ -1,11 +1,13 @@
 (ns tieminos.habitat.extended-sections.tunel-cuantico-bardo.synths.processors
   (:require
    [overtone.core :as o]
-   [taoensso.timbre :as timbre]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.async-events :as bardo.comms]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.config :as bardo.config]
-   [tieminos.habitat.extended-sections.tunel-cuantico-bardo.synths.guitar-processes :refer [mod-multifx
-                                                                                            mono-in]]
+   [tieminos.habitat.extended-sections.tunel-cuantico-bardo.synths.guitar-processes :refer [amp-follower
+                                                                                            comb
+                                                                                            mod-multifx
+                                                                                            mono-in
+                                                                                            sided-fm]]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.synths.utils :refer [outs]]
    [tieminos.habitat.routing :refer [get-input-bus]]
    [tieminos.math.utils :refer [linexp* linlin*]]
@@ -106,25 +108,55 @@
   [{:name "RandPanaz"
     :input :guitar-clean
     :synth processor
-    :default-config (-> {:amp 1}
+    :default-config (-> {:a 5
+                         :r 5
+                         :amp 1}
                         (outs {:out-offset (bardo.config/get-bh-bus :guitar-clean)})
                         (rand-panaz {:pan-width 3
                                      :pan-rate 1}))
     :controls [{:param :amp :name "Amp" :mapping #(linlin* 0 1 0 2 %)}
                {:param :pan-width :name "PanWi" :mapping #(linlin* 0 1 1.2 4 %)}
                {:param :pan-rate :name "PanRt" :mapping #(linexp* 0 1 0.1 5 %)}]}
-   {:name "DirtyComb"
+   {:name "DirtyCb"
     :input :guitar-clean
     :synth mod-multifx
-    :default-config (-> {:fm-ratio 4
+    :default-config (-> {:a 5
+                         :r 5
+                         :fm-ratio 4
                          :fm-dry-sig-amp 8
                          :pitch-follower-freq 10
                          :ugen/pitch-shifter nil
                          :amp 4}
                         (mono-in {:in 20})
                         (outs {:out-offset (bardo.config/get-bh-bus :guitar-clean)})
-                        (rand-panaz {:pan-width 3
-                                     :pan-rate 1}))
+                        (rand-panaz {:pan-width 4
+                                     :pan-rate 0.5}))
+    :controls [{:param :amp :name "Amp" :mapping #(linlin* 0 1 0 2 %)}
+               {:param :pan-width :name "PanWi" :mapping #(linlin* 0 1 1.2 4 %)}
+               {:param :pan-rate :name "PanRt" :mapping #(linexp* 0 1 0.1 5 %)}]}
+   {:name "Sided1/5 Cb1/4"
+    :input :guitar-clean
+    :synth mod-multifx
+    :default-config (-> {:pitch-follower-freq 1
+                         :pitch-follower-median 1
+                         :a 5
+                         :r 5
+                         :lpf 2000
+                         :amp 16
+                         :hpf 300}
+                        (amp-follower)
+                        (sided-fm {:fm-ratio 1/5
+                                   :fm-dry-wet 0.4
+                                   :fm-dry-sig-amp 2})
+                        (comb {:comb-dry-wet 1
+                               :comb-ratio 1/4
+                               :comb-dcy 0.1
+                               :comb-freq-lag 2})
+                        (mono-in {:in 20})
+                        (outs {:out-offset (bardo.config/get-bh-bus :guitar-clean)})
+                        (rand-panaz {:pan-width 4
+                                     :pan-rate 0.5}))
+
     :controls [{:param :amp :name "Amp" :mapping #(linlin* 0 1 0 2 %)}
                {:param :pan-width :name "PanWi" :mapping #(linlin* 0 1 1.2 4 %)}
                {:param :pan-rate :name "PanRt" :mapping #(linexp* 0 1 0.1 5 %)}]}])
