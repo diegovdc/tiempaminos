@@ -55,7 +55,7 @@
     {:node new-node}))
 
 (comment
-  (-> body*)
+
   (do
     (def test-str "
 (make-synth-fn
@@ -69,7 +69,8 @@
                  (-> (o/sin-osc freq)
                      (:ugen/freq-mixer freq amp) 
                      (o/pan2 0)
-                     (* amp :ugen/env)))
+                     (* amp :ugen/env)
+                     (:ugen/outs)))
          {:reset? true})")
     (make-synth-fn {:node (api/parse-string test-str)}))
 
