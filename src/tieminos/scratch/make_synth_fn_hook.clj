@@ -4,7 +4,6 @@
    [tieminos.sc-utils.synths.template-synth.v0 :refer [make-synth-fn]]))
 
 (comment
-
   (make-synth-fn
    'siny
    (-> {:freq [500 900]
@@ -16,8 +15,9 @@
 
   (make-synth-fn
    'siny
-   (-> {:freq [500 900]
-        :amp 1})
+   {:freq [500 900]
+    :holi 1
+    :amp 1}
    '(let [sig (o/sin-osc freq)]
       (-> sig
           (:ugen/outs)
