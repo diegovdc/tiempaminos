@@ -24,7 +24,7 @@
    "1)4 of 3)6 9.11-1.3.5.7"
    "1)4 of 3)6 1.9-3.5.7.11" ;; difícil
    "1)4 of 3)6 3.9-1.5.7.11" ;; clara
-   "1)4 of 3)6 5.9-1.3.7.11" ;; disonante (tonos relativamente cercanos) pero muy hermosa, mística, intensa, sobre todo cuando satura ;; en una segunda exploración también me gustó, pero me pareció más sencilla, menos disonante, pero porque la xperimente desde el especto 7:8:11:12
+   "1)4 of 3)6 5.9-1.3.7.11" ;; disonante (tonos relativamente cercanos) pero muy hermosa, mística, intensa, sobre todo cuando satura ;; en una segunda exploración también me gustó, pero me pareció más sencilla, menos disonante, pero porque la experimenté desde el especto 7:8:11:12
    "1)4 of 3)6 7.9-1.3.5.11"
    "1)4 of 3)6 1.7-3.5.9.11"
    "1)4 of 3)6 3.7-1.5.9.11"
@@ -105,13 +105,24 @@
   (def root 440)
   (hexp.lattice/setup-kb
    {:root root
-    :scale (:scale eik)})
+    :scale (:scale eik)
+    :lattice-config {:width 1440
+                     :height 900
+                     :ratio->node-name (->> eik
+                                            :scale
+                                            (reduce
+                                             (fn [m {:keys [bounded-ratio pitch]}]
+                                               (assoc m bounded-ratio (:class pitch)))
+                                             {}))}})
   (hexp.trainer/trainer
    {:root root
     :scale (:scale eik)
     :degrees (->> (make-subcps "1)4 of 3)6 5.9-1.3.7.11")
                   (map :degree))
     :print-info? false
+    :a {6 3, 10 1}
+    :r {6 3, 10 1}
+    :periods [2]
     :on-note-play
     (fn [{:keys [_last-interval note interval _freq]}]
       (println :interval

@@ -126,7 +126,7 @@
                      (get ["A+53" :sample-arp 5])))))
 
 (defn arp
-  "NOTE `in` should be an `o/audio-bus`"
+  "Will record what comes through `in` (an `o/audio-bus`) and will immediately play it back using the `play-fn`."
   [{:keys [bufs-atom dur index ;; these 3 are required
            in play-fn]
     :or {in 0
@@ -218,25 +218,37 @@
   (map #(interval-from-pitch-class2 scale pitch-class %)
        pattern))
 (do
+  (defn arp-durs-fn
+    [len min-dur max-dur]
+    ((rand-val bz) len min-dur max-dur))
+  (let [intervals (range 5)
+        len (count intervals)]
+    (arp-durs-fn len
+                 (rand-nth [#_0.01 0.1 0.3])
+                 (rand-nth [0.17 0.5 0.8]))))
+
+(do
   (defn arp-reponse-2
     [{:keys [scale out interval-seq-fn
              env-min-dur env-max-dur
              amp-min amp-max
-             group]
+             group
+             durs-fn]
       :or {out 0
            interval-seq-fn default-interval-seq-fn
            env-min-dur 3
            env-max-dur 5
            amp-min 1
-           amp-max 1.5}
+           amp-max 1.5
+           durs-fn (fn [len]
+                     (arp-durs-fn len
+                                  (rand-nth [#_0.01 0.1 0.3])
+                                  (rand-nth [0.17 0.5 0.8])))}
       :as _config-data}
      {:as arp-data :keys [pitch-class]}]
     (when pitch-class
       (let [intervals (interval-seq-fn pitch-class scale)
-            durs ((rand-val bz)
-                  (count intervals)
-                  (rand-nth [#_0.01 0.1 0.3])
-                  (rand-nth [0.17 0.5 0.8]))
+            durs (durs-fn (count intervals))
             env-durs ((rand-val bz) (count intervals) env-min-dur env-max-dur)
             env (rand-val envs)
             amps (fsf (count intervals) amp-min amp-max)
