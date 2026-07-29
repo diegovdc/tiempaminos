@@ -135,6 +135,7 @@
                             (str/upper-case (first (name level)))  " "
                             "[" (cond-> (or ?ns-str ?file "?") short-ns? short-ns) ":" (or ?line "?") "] \n     "))
          (force msg_)
+         "\n"
          (when-let [err ?err]
            (str "\n" (timbre/stacktrace err)))))))})
 

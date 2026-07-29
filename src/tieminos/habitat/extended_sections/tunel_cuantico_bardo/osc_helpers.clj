@@ -37,3 +37,5 @@
   [path & values]
   (update-clients {:internal @habitat-osc/internal-client} path values)
   {:path path :value values})
+
+(defn osc-bool [bool] (int (if bool 1 0)))

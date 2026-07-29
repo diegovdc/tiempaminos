@@ -60,6 +60,49 @@
   ([in-min in-max out-min out-max nums]
    (map (partial linexp* in-min in-max out-min out-max) nums)))
 
+(defn explin*
+  "Inverse of linexp* with ranges swapped.
+   Given an output value y (which lies in [in-min, in-max]), returns the
+   corresponding input in [out-min, out-max] such that:
+     (linexp* out-min out-max in-min in-max (explin* ...)) = y"
+  [in-min in-max out-min out-max y]
+  (cond
+    ;; Both in-min and in-max must be positive and distinct for log domain
+    (or (<= in-min 0) (<= in-max 0))
+    (throw (ex-info "in-min and in-max must be positive"
+                    {:in-min in-min :in-max in-max :out-min out-min :out-max out-max :y y}))
+
+    (= in-min in-max)
+    (throw (ex-info "in-min and in-max cannot be equal"
+                    {:in-min in-min :in-max in-max :out-min out-min :out-max out-max :y y}))
+
+    ;; y must be positive and within the logarithmic domain
+    (<= y 0)
+    (throw (ex-info "y must be positive" {:in-min in-min :in-max in-max :out-min out-min :out-max out-max :y y}))
+
+    ;; If out-min == out-max, the swapped function is constant; we return out-min
+    (= out-min out-max)
+    out-min
+
+    :else
+    (let [ratio-in   (/ in-max in-min)
+          log-ratio  (Math/log ratio-in)]
+      (+ out-min
+         (* (- out-max out-min)
+            (/ (Math/log (/ y in-min))
+               log-ratio))))))
+#_(let [x 1
+        res (explin* 1 4 0.1 1 x)]
+    (== x
+        (linexp* 0.1 1 1 4 res)))
+
+(defn explin
+  ([out-min out-max nums]
+   (explin (apply min nums) (apply max nums) out-min out-max nums))
+
+  ([in-min in-max out-min out-max nums]
+   (map (partial explin in-min in-max out-min out-max) nums)))
+
 (defn log2 [n]
   (/ (Math/log n) (Math/log 2)))
 

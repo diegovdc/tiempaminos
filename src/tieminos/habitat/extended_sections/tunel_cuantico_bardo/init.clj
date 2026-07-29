@@ -6,6 +6,7 @@
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.rec :as bardo.rec]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.synth-management :as bardo.synth-management]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.synths.processors :as bardo.signal-processor]
+   [tieminos.habitat.extended-sections.tunel-cuantico-bardo.touch-osc :as bardo.touch-osc]
    [tieminos.habitat.init :as habitat]
    [tieminos.habitat.main :as main]
    [tieminos.habitat.main-sequencer :as hseq]
@@ -35,4 +36,5 @@
   (bardo.signal-processor/init!)
   (bardo.synth-management/periodically-clear-currently-playing-synths! (* 60 1000))
   (bardo.comms/init-async-coms! #'bardo.live-ctl/event-handler)
-  (bardo.rec/init-bufs-watch!))
+  (bardo.rec/init-bufs-watch!)
+  (bardo.touch-osc/init!))

@@ -10,9 +10,10 @@
                                                                                             sided-fm]]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.synths.utils :refer [outs]]
    [tieminos.habitat.routing :refer [get-input-bus]]
-   [tieminos.math.utils :refer [linexp* linlin*]]
+   [tieminos.math.utils :refer [explin* linexp* linlin*]]
    [tieminos.overtone-extensions :as oe]
-   [tieminos.sc-utils.synths.template-synth.v0 :refer [defplug make-synth-fn]]))
+   [tieminos.sc-utils.synths.template-synth.v0 :refer [defplug make-synth-fn]]
+   [tieminos.utils :refer [cb-interpolate]]))
 
 (defplug rand-panaz
   {:pan-rate 0.1
@@ -104,6 +105,17 @@
 ;;    the will be dynamically filled in.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defn mapping
+  [type in-min in-max out-min out-max]
+  (case type
+    :linlin {:mapping #(linlin* in-min in-max out-min out-max %)
+             :inv-mapping #(linlin* out-min out-max in-min in-max %)}
+    :linexp {:mapping #(linexp* in-min in-max out-min out-max %)
+             :inv-mapping #(explin* out-min out-max in-min in-max %)}))
+
+((:mapping (mapping :linlin 0 1 1 2)) 0)
+((:inv-mapping (mapping :linlin 0 1 1 2)) 1)
+
 (def presets-config
   [{:name "RandPanaz"
     :input :guitar-clean
@@ -114,9 +126,9 @@
                         (outs {:out-offset (bardo.config/get-bh-bus :guitar-clean)})
                         (rand-panaz {:pan-width 3
                                      :pan-rate 1}))
-    :controls [{:param :amp :name "Amp" :mapping #(linlin* 0 1 0 2 %)}
-               {:param :pan-width :name "PanWi" :mapping #(linlin* 0 1 1.2 4 %)}
-               {:param :pan-rate :name "PanRt" :mapping #(linexp* 0 1 0.1 5 %)}]}
+    :controls [(merge {:param :amp :name "Amp"} (mapping :linlin 0 1, 0 2))
+               (merge {:param :pan-width :name "PanWi"} (mapping :linlin 0 1, 1.2 4))
+               (merge {:param :pan-rate :name "PanRt"} (mapping :linexp 0 1, 0.1 5))]}
    {:name "DirtyCb"
     :input :guitar-clean
     :synth mod-multifx
@@ -131,9 +143,9 @@
                         (outs {:out-offset (bardo.config/get-bh-bus :guitar-clean)})
                         (rand-panaz {:pan-width 4
                                      :pan-rate 0.5}))
-    :controls [{:param :amp :name "Amp" :mapping #(linlin* 0 1 0 2 %)}
-               {:param :pan-width :name "PanWi" :mapping #(linlin* 0 1 1.2 4 %)}
-               {:param :pan-rate :name "PanRt" :mapping #(linexp* 0 1 0.1 5 %)}]}
+    :controls [(merge {:param :amp :name "Amp"} (mapping :linlin 0 1, 0 4))
+               (merge {:param :pan-width :name "PanWi"} (mapping :linlin 0 1, 1.2 4))
+               (merge {:param :pan-rate :name "PanRt"} (mapping :linexp 0 1, 0.1 5))]}
    {:name "Sided1/5 Cb1/4"
     :input :guitar-clean
     :synth mod-multifx
@@ -157,9 +169,9 @@
                         (rand-panaz {:pan-width 4
                                      :pan-rate 0.5}))
 
-    :controls [{:param :amp :name "Amp" :mapping #(linlin* 0 1 0 2 %)}
-               {:param :pan-width :name "PanWi" :mapping #(linlin* 0 1 1.2 4 %)}
-               {:param :pan-rate :name "PanRt" :mapping #(linexp* 0 1 0.1 5 %)}]}])
+    :controls [(merge {:param :amp :name "Amp"} (mapping :linlin 0 1, 0 16))
+               (merge {:param :pan-width :name "PanWi"} (mapping :linlin 0 1, 1.2 4))
+               (merge {:param :pan-rate :name "PanRt"} (mapping :linexp 0 1, 0.1 5))]}])
 
 (defn start-synth!
   "Starts a synth and returns the instance."
@@ -171,12 +183,28 @@
   (when (and (o/node? synth) (o/node-active? synth))
     (o/ctl synth :gate 0)))
 
+(defn ctl-synth!
+  [{:keys [synth] :as preset} param value]
+  (let [id (-> synth :synth (str "." (name param)))
+        init-val (or (-> preset :preset :default-config param)
+                     (-> synth :args (get (name param))))]
+    (when-not init-val
+      (throw (ex-info "Unknown init-val" {:preset (-> preset :preset :name)
+                                          :param param
+                                          :value value})))
+    (cb-interpolate
+     {:id id
+      :dur-ms 5000
+      :tick-ms 100
+      :init-val init-val
+      :target-val value
+      :cb (fn [{:keys [val]}]
+            (o/ctl synth param val))})))
+
 (defn- init-preset-manager!
   []
-  (bardo.comms/dispatch {:type :processor/activate-preset
+  (bardo.comms/dispatch {:type :bardo.processor/activate-preset
                          :data {:preset-index 0}}))
-
-(comment)
 
 ;;;;;;;;;;;;;;;;;;
 ;; * Init
