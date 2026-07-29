@@ -4,9 +4,23 @@
    [erv.lattice.v2 :refer [base-coords ratios->lattice-data]]
    [quil.core :as q]))
 
+(defn node-name
+  [text-type period
+   ratio->node-name
+   {:keys [denom-factors numer-factors ratio]
+    :as _node-data}]
+  (let [denom-factors* (str/join "*" (remove #(= period %) denom-factors))]
+    (cond
+      (ratio->node-name ratio) (ratio->node-name ratio)
+      (= :factors @text-type) (str (str/join "*" (let [ns (remove #(= period %) numer-factors)]
+                                                   (if (seq ns) ns [1])))
+                                   (when (seq denom-factors*)
+                                     (str "/" denom-factors*)))
+      :else (str ratio))))
+
 (defn draw* [text-type width height lattice-data]
   (let [lattice-data* @lattice-data
-        {:keys [data edges min-x max-x min-y max-y period played-notes]} lattice-data*
+        {:keys [data edges min-x max-x min-y max-y period played-notes ratio->node-name]} lattice-data*
         x-length (->> [min-x max-x]
                       (map #(Math/abs %))
                       (apply + 1)) ;; prevent div by zero below
@@ -52,14 +66,8 @@
     (q/text-font (q/create-font "Monospace" 5) 5)
     (q/stroke-weight 0)
     #_(q/fill 255 0 0)
-    (doseq [{:keys [ratio coords numer-factors denom-factors]} data]
-      (q/text (let [denom-factors* (str/join "*" (remove #(= period %) denom-factors))]
-                (if (= :factors @text-type)
-                  (str (str/join "*" (let [ns (remove #(= period %) numer-factors)]
-                                       (if (seq ns) ns [1])))
-                       (when (seq denom-factors*)
-                         (str "/" denom-factors*)))
-                  (str ratio)))
+    (doseq [{:keys [_ratio coords _numer-factors _denom-factors] :as node-data} data]
+      (q/text (node-name text-type period ratio->node-name node-data)
               (+ (:x coords) 2) (- (:y coords) 0.4)))))
 
 (defn draw [text-type width height lattice-data]
@@ -76,6 +84,7 @@
            width
            height
            text-type
+           ratio->node-name ;; a map of ratios to string
            custom-edges ;; a set of ratios that should also be connected, i.e. #{17/7}
            on-close
            frame-rate]
@@ -102,6 +111,7 @@
                              :custom-edges custom-edges
                              :period period
                              :played-notes {}
+                             :ratio->node-name ratio->node-name
                              :text-type text-type)
         lattice-data (if existing-lattice
                        (do (reset! (:data-atom existing-lattice) lattice-data*)
