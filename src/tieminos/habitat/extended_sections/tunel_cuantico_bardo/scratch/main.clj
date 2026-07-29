@@ -1,5 +1,6 @@
 (ns tieminos.habitat.extended-sections.tunel-cuantico-bardo.scratch.main
-  "Stuff that has been moved out of main. Only WIP stuff, some of it may be useful, most, probably not."
+  ;; "Stuff that has been moved out of main. Only WIP stuff, some of it may be useful, most, probably not."
+  {:clj-kondo/ignore true}
   (:require
    [overtone.core :as o]
    [tieminos.attractors.lorentz :as lorentz]

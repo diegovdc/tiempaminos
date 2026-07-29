@@ -1,4 +1,5 @@
 (ns tieminos.habitat.extended-sections.hacia-un-nuevo-universo.scratch.amp-trigger
+  {:clj-kondo/ignore true}
   (:require
    [overtone.core :as o]
    [overtone.osc :refer [osc-debug]]

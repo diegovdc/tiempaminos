@@ -133,7 +133,7 @@
                            (str
                             (-> (force timestamp_) (str/split #" ") second) " "
                             (str/upper-case (first (name level)))  " "
-                            "[" (cond-> (or ?ns-str ?file "?") short-ns? short-ns) ":" (or ?line "?") "] \n     "))
+                            "[" (cond-> (or ?ns-str ?file "?") short-ns? short-ns) ":" (or ?line "?") "] \n"))
          (force msg_)
          "\n"
          (when-let [err ?err]

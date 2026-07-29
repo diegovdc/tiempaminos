@@ -1,8 +1,8 @@
 (ns tieminos.habitat.synths.granular
+  {:clj-kondo/ignore true}
   (:require
    [overtone.core :as o]
-   [tieminos.habitat.recording :refer [norm-amp]]
-   [tieminos.habitat.recording :as rec]
+   [tieminos.habitat.recording :as rec :refer [norm-amp]]
    [tieminos.overtone-extensions :as oe]
    [tieminos.sc-utils.synths.v1 :refer [lfo lfo-kr]]
    [tieminos.utils :refer [rrange]]))
