@@ -18,6 +18,9 @@
           index (* 2 (inc i))]
       (send-osc-msg (str "/presets/guitar/labels/" index) (or (:name preset) "")))))
 
+(comment
+  (set-guitar-preset-labels!))
+
 (defn update-guitar-preset-fx-knobs!
   [preset modified-params]
   (let [{:keys [controls default-config]} preset
@@ -29,15 +32,16 @@
       (let [{:keys [param name]} (nth controls i nil)
             index (* i 3)
             {:keys [touch-osc/value-label touch-osc/value]} (get modified-params param)
-            {:keys [inv-mapping]} (get ctls-by-param param)
+            {:keys [inv-mapping label-mapping]
+             :or {label-mapping str}} (get ctls-by-param param)
             default-value (get default-config param)
             touch-osc-default-value (when inv-mapping (inv-mapping default-value))
             ;; TODO: hide controls if param is `nil` (instead of the following)
             ctl-value (float (if-not param 0
                                      (or value touch-osc-default-value 0.5)))
             value-label* (if-not param ""
-                                 (str (or value-label
-                                          (str default-value "*"))))]
+                                 (or value-label
+                                     (str (label-mapping default-value) "*")))]
         (send-osc-msg (str "/guitar-fx-params/control/" (+ 1 index))
                       ctl-value)
         (send-osc-msg (str "/guitar-fx-params/param-label/" (+ 2 index))

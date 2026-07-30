@@ -47,6 +47,21 @@
 
   (bardo.live-state/get-gusano-data))
 
+;;;;;;;;;;;;;;;;;;;;;
+;; Guitar Processes
+;;;;;;;;;;;;;;;;;;;;;
+
+(comment
+  ;; get current preset params
+  (->> (bardo.live-state/get-processor-active-preset-data!)
+       :preset
+       bardo.live-state/get-preset-modified-params!
+       vals
+       (mapv (fn [{:keys [synth/param synth/value]}]
+               [param value]))
+       (sort-by first)
+       (into {})))
+
 ;;;;;;;;;;;;;;;;;;
 ;; State
 ;;;;;;;;;;;;;;;;;;

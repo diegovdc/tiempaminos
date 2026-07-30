@@ -1,6 +1,10 @@
 (ns tieminos.habitat.extended-sections.tunel-cuantico-bardo.synths.processors
   (:require
+   [clojure.math :refer [round]]
+   [clojure.math.combinatorics :as combo]
+   [erv.utils.core :refer [round2]]
    [overtone.core :as o]
+   [taoensso.timbre :as timbre]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.async-events :as bardo.comms]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.config :as bardo.config]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.synths.guitar-processes :refer [amp-follower
@@ -105,18 +109,68 @@
 ;;    the will be dynamically filled in.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defn mapping
+(defn ratio-range
+  [factors range-min range-max]
+  (->> (combo/combinations factors 2)
+       (mapcat (fn [[a b]] [(/ a b) (/ b a)]))
+       (filter #(and (>= % range-min) (<= % range-max)))
+       set
+       sort))
+#_(ratio-range (range 1 8) 1/4 4)
+
+(defn quantized-nth
+  "Assuming a 0 to 1 range, and a list, quantize any value to the closest index of the list and return the element"
+  [n coll]
+  (let [n* (-> n (min 1) (max 0))
+        max-index (dec (count coll))]
+    (when-not (= n n*) (timbre/warn "Out of range value defaulting to: " n* {:input n}))
+    (nth coll (round (* n* max-index)))))
+
+#_(quantized-nth 0.54 (ratio-range (range 1 8) 1/4 4))
+
+(defn default-label-mapping
+  [n]
+  (->> n (round2 2) str))
+
+(defn id-mapping
+  "Assuming a value between 0 and 1 returns the value"
+  []
+  {:mapping identity
+   :inv-mapping identity
+   :label-mapping default-label-mapping})
+
+(defn quantized-mapping
+  "Given a collection returns a mapping and inv-mapping functions.
+  The mapping function maps a number between 0 and 1 to an index in the collection.
+  The inv-mapping function maps an element of the collection to a number between 0 and 1"
+  [coll]
+  (let [max-index (dec (count coll))
+        inv-mapping (reduce
+                     (fn [m [i n]]
+                       (assoc m n (/ i max-index)))
+                     {}
+                     (map-indexed vector coll))]
+    {:mapping #(quantized-nth % coll)
+     :inv-mapping inv-mapping
+     :label-mapping str}))
+
+(defn lin-mapping
   [type in-min in-max out-min out-max]
   (case type
     :linlin {:mapping #(linlin* in-min in-max out-min out-max %)
-             :inv-mapping #(linlin* out-min out-max in-min in-max %)}
+             :inv-mapping #(linlin* out-min out-max in-min in-max %)
+             :label-mapping default-label-mapping}
     :linexp {:mapping #(linexp* in-min in-max out-min out-max %)
-             :inv-mapping #(explin* out-min out-max in-min in-max %)}))
-
-((:mapping (mapping :linlin 0 1 1 2)) 0)
-((:inv-mapping (mapping :linlin 0 1 1 2)) 1)
+             :inv-mapping #(explin* out-min out-max in-min in-max %)
+             :label-mapping default-label-mapping}))
 
 (def presets-config
+  "Preset configurations.
+
+  The `:controls` vector serves as an interface with the UI and configure IO with it. Specifically each map must have mapping and inv-mapping functions.
+    The `mapping` function converts a value from the interface (between 0 and 1) and returns a value used by a synth. This value will also appear in the interface.
+    The `inv-mapping` function must convert back from the synth value and into a number used in the interface control's position, that is a number between 0 and 1. This is mostly used for initialization of the interface control.
+    A   `label-mapping` function is optional and will ne used to convert the inv-mapping value into a string used for the label in the UI."
   [{:name "RandPanaz"
     :input :guitar-clean
     :synth processor
@@ -126,9 +180,9 @@
                         (outs {:out-offset (bardo.config/get-bh-bus :guitar-clean)})
                         (rand-panaz {:pan-width 3
                                      :pan-rate 1}))
-    :controls [(merge {:param :amp :name "Amp"} (mapping :linlin 0 1, 0 2))
-               (merge {:param :pan-width :name "PanWi"} (mapping :linlin 0 1, 1.2 4))
-               (merge {:param :pan-rate :name "PanRt"} (mapping :linexp 0 1, 0.1 5))]}
+    :controls [(merge {:param :amp :name "Amp"} (lin-mapping :linlin 0 1, 0 2))
+               (merge {:param :pan-width :name "PanWi"} (lin-mapping :linlin 0 1, 1.2 4))
+               (merge {:param :pan-rate :name "PanRt"} (lin-mapping :linexp 0 1, 0.1 5))]}
    {:name "DirtyCb"
     :input :guitar-clean
     :synth mod-multifx
@@ -143,9 +197,9 @@
                         (outs {:out-offset (bardo.config/get-bh-bus :guitar-clean)})
                         (rand-panaz {:pan-width 4
                                      :pan-rate 0.5}))
-    :controls [(merge {:param :amp :name "Amp"} (mapping :linlin 0 1, 0 4))
-               (merge {:param :pan-width :name "PanWi"} (mapping :linlin 0 1, 1.2 4))
-               (merge {:param :pan-rate :name "PanRt"} (mapping :linexp 0 1, 0.1 5))]}
+    :controls [(merge {:param :amp :name "Amp"} (lin-mapping :linlin 0 1, 0 4))
+               (merge {:param :pan-width :name "PanWi"} (lin-mapping :linlin 0 1, 1.2 4))
+               (merge {:param :pan-rate :name "PanRt"} (lin-mapping :linexp 0 1, 0.1 5))]}
    {:name "Sided1/5 Cb1/4"
     :input :guitar-clean
     :synth mod-multifx
@@ -169,9 +223,55 @@
                         (rand-panaz {:pan-width 4
                                      :pan-rate 0.5}))
 
-    :controls [(merge {:param :amp :name "Amp"} (mapping :linlin 0 1, 0 16))
-               (merge {:param :pan-width :name "PanWi"} (mapping :linlin 0 1, 1.2 4))
-               (merge {:param :pan-rate :name "PanRt"} (mapping :linexp 0 1, 0.1 5))]}])
+    :controls [(merge {:param :amp :name "Amp"} (lin-mapping :linlin 0 1, 0 32))
+               (merge {:param :pan-width :name "PanWi"} (lin-mapping :linlin 0 1, 1.2 4))
+               (merge {:param :pan-rate :name "PanRt"} (lin-mapping :linexp 0 1, 0.1 5))
+               (merge {:param :fm-dry-wet :name "FMDryWet"} (id-mapping))
+               (merge {:param :fm-ratio :name "FMRatio"} (quantized-mapping (ratio-range (range 1 8) 1/8 8)))
+               (merge {:param :comb-dry-wet :name "CombDryWet"} (id-mapping))
+               (merge {:param :comb-ratio :name "/CombRatio"} (quantized-mapping (ratio-range (range 1 8) 1/4 4)))
+               (merge {:param :comb-dcy :name "CombDecay"} (lin-mapping :linlin 0 1, 0.05 0.9))]}
+   ;; WIP - see todo below
+   {:name "Sided Subtle" ;; derived from: "Sided1/5 Cb1/4"
+    :input :guitar-clean
+    :synth mod-multifx
+    :default-config (-> {:pitch-follower-freq 1
+                         :pitch-follower-median 1
+                         :a 5
+                         :r 5
+                         :lpf 2000
+                         :amp 16
+                         :hpf 300}
+                        (amp-follower)
+                        (sided-fm {:fm-ratio 1/5
+                                   :fm-dry-wet 0.4
+                                   :fm-dry-sig-amp 2})
+                        (comb {:comb-dry-wet 1
+                               :comb-ratio 1/4
+                               :comb-dcy 0.1
+                               :comb-freq-lag 2})
+                        (mono-in {:in 20})
+                        (outs {:out-offset (bardo.config/get-bh-bus :guitar-clean)})
+                        (rand-panaz {:pan-width 4
+                                     :pan-rate 0.5})
+                        ;; TODO: incorporate more cleanly
+                        (merge {:amp 32.0,
+                                :comb-dcy 0.9,
+                                :comb-dry-wet 0.47169495,
+                                :comb-ratio 2,
+                                :fm-dry-wet 0.97358304,
+                                :fm-ratio 3,
+                                :pan-rate 2.4159750094040486,
+                                :pan-width 2.364386713504791}))
+
+    :controls [(merge {:param :amp :name "Amp"} (lin-mapping :linlin 0 1, 0 32))
+               (merge {:param :pan-width :name "PanWi"} (lin-mapping :linlin 0 1, 1.2 4))
+               (merge {:param :pan-rate :name "PanRt"} (lin-mapping :linexp 0 1, 0.1 5))
+               (merge {:param :fm-dry-wet :name "FMDryWet"} (id-mapping))
+               (merge {:param :fm-ratio :name "FMRatio"} (quantized-mapping (ratio-range (range 1 8) 1/8 8)))
+               (merge {:param :comb-dry-wet :name "CombDryWet"} (id-mapping))
+               (merge {:param :comb-ratio :name "/CombRatio"} (quantized-mapping (ratio-range (range 1 8) 1/4 4)))
+               (merge {:param :comb-dcy :name "CombDecay"} (lin-mapping :linlin 0 1, 0.05 0.9))]}])
 
 (defn start-synth!
   "Starts a synth and returns the instance."
@@ -195,10 +295,11 @@
     (cb-interpolate
      {:id id
       :dur-ms 5000
-      :tick-ms 100
+      :tick-ms 50
       :init-val init-val
       :target-val value
       :cb (fn [{:keys [val]}]
+            #_(timbre/info param val)
             (o/ctl synth param val))})))
 
 (defn- init-preset-manager!
