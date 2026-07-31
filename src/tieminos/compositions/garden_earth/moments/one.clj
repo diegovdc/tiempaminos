@@ -34,8 +34,7 @@
 
 (defn simple-pattern
   [pattern pitch-class scale]
-  ;; just for the UI's benefit
-  (swap! live-state assoc :arp/pattern-str (str (into [] pattern)))
+  (swap! live-state assoc :arp/pattern-str (str (into [] pattern))) ;; just for the UI's benefit
   (map #(interval-from-pitch-class2 scale pitch-class %)
        pattern))
 
@@ -57,6 +56,8 @@
                    :converge? false}))
 
 (def arp-patterns
+  "`:fn` is a function that takes a pitch-class and a scale as arguments and should return a sequence of ratios.
+  The `pitch-class` is the one with which the sample was tagged."
   [;; S.0
    [{:name (str [0 2])
      :fn #(make-repeat-cell [0 2] %1 %2 {:max-len 15})}
@@ -90,6 +91,7 @@
     [1 "1)4 of 3)6 1.5-3.7.9.11"]]])
 
 (declare make-harmony)
+
 (defn update-harmonizer-harmony
   [{:keys [harmonizer/harmony-index section] :as state}]
   (let [index (inc (or harmony-index 0))
@@ -104,6 +106,7 @@
            :harmonizer/harmony-index index
            :harmonizer/harmony harmony
            :harmonizer/harmony-str (str (into [] harmony) " - " subcps-name* " on " pitch-class " " set*))))
+
 (defn update-arp-pattern
   [{:keys [arp/pattern-index section] :as state}]
   (let [index (inc (or pattern-index 0))

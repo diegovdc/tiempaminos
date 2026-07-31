@@ -351,6 +351,29 @@ When writting macros this ~ns~ gives access to the ugen operators
 #+BEGIN_SRC clojure
 [overtone.sc.ugen-collide-list :as oc]
 #+END_SRC
+* Audio inputs
+To initialize an audio input for use as a source in other synths.
+
+This API ensures that ~o/in~ can be used on other synths without needing to think about if the input is an ~o/sound-in~ input (used for interface level inputs) or an ~o/in~ input (for SC audio buses). 
+
+#+begin_src clojure
+(require '[tieminos.sc-utils.groups.v1 :as groups]
+         '[tieminos.sc-utils.inputs :as sci])
+
+;; Initialize input.
+;; NOTE: the input will die if `o/stop` is called.
+(sci/init-input! {:id :guitar ;; used to refer to this value by `sci/get-bus`
+                 :group (groups/early) ;; optional but recommended, otherwise `init-input` will call `groups/init-groups!` on it's own. Although the early groups are probably the only option we want.
+                 :in 0 ;; the actual input. See the server meters to find the actual number.
+                 })
+
+;; for testing that the input is working
+(sci/direct-out {:group (groups/late) ;; NOTE: a group lower down the node tree must always be used
+                 :bus (sci/get-bus :guitar) ;; get the bus
+                 })
+
+
+#+end_src
 * Harmonic Experience
 A tool for singing inspired by W. A. Mathieu's /The Harmonic Experience/.
 ** Basic usage
@@ -439,7 +462,11 @@ The default lattice goes to the 23-limit. It doesn't have coordinates higher tha
                         :lattice-config {:coords coords }
                         :out (hexp.utils/out 7)})
 #+end_src
-
+* Linter
+To a file:
+#+begin_src bash
+ clojure -M:kondo --lint /path/to/file.clj
+#+end_src
 
 
 * License

@@ -1,17 +1,15 @@
-(ns tieminos.habitat.extended-sections.tunel-cuantico-bardo.scratch.guitar-processes
+(ns tieminos.habitat.extended-sections.tunel-cuantico-bardo.synths.guitar-processes
   (:require
    [overtone.core :as o]
    [overtone.sc.ugen-collide-list :as oc]
    [tieminos.blackhole :as bh]
-   [tieminos.habitat.extended-sections.tunel-cuantico-bardo.synths.samplers :refer [+outs1
-                                                                                    random-panaz]]
+   [tieminos.habitat.extended-sections.tunel-cuantico-bardo.synths.samplers :refer [random-panaz]]
+   [tieminos.habitat.extended-sections.tunel-cuantico-bardo.synths.utils :refer [outs]]
    [tieminos.habitat.routing :refer [inputs]]
    [tieminos.overtone-extensions :as oe]
    [tieminos.sc-utils.groups.v1 :as groups]
    [tieminos.sc-utils.inputs :as sci]
-   [tieminos.sc-utils.synths.template-synth.v0 :refer [defplug
-                                                       get-variant-data
-                                                       make-synth-fn]]))
+   [tieminos.sc-utils.synths.template-synth.v0 :refer [defplug make-synth-fn]]))
 
 (comment
 
@@ -70,6 +68,7 @@
 ;;;;;;;;;;;;;;;;;;
 ;; * NOTES
 ;;;;;;;;;;;;;;;;;;
+#_:clj-kondo/ignore
 (comment
 
   ;; first
@@ -98,7 +97,7 @@
          (o/sin-osc-fb (* 2 amp*))
          (* (o/lag2 (* 4 amp*) 1))))
 
-;; filter with amp; to define if this is the right spot
+  ;; filter with amp; to define if this is the right spot
   (o/moog-ladder (o/clip (* 9 freq) 20 10000) 0.8)
   (* 2)
 
@@ -199,13 +198,16 @@
    :comb-ratio 4 ;; two octaves above
    :comb-dcy 0.3
    :comb-max-delay-time 1
+   :comb-dry-wet 1
    :ugen/comb (fn [sig freq]
-                (-> sig
-                    (o/comb-l
-                     comb-max-delay-time
-                     (* (/ 1 (o/lag2 freq comb-freq-lag) comb-ratio))
-                     comb-dcy)
-                    maybe-mix))})
+                (dry-wet comb-dry-wet
+                         sig
+                         (-> sig
+                             (o/comb-l
+                              comb-max-delay-time
+                              (* (/ 1 (o/lag2 freq comb-freq-lag) comb-ratio))
+                              comb-dcy)
+                             maybe-mix)))})
 
 (defplug pitch-shifter
   {:ps-window 0.2
@@ -213,7 +215,6 @@
    :ugen/pitch-shifter (fn [sig freq]
                          (-> sig
                              (o/pitch-shift  ps-window ps-ratio)
-                             #_(o/mix)
                              maybe-mix))})
 
 (defplug amp-follower
@@ -233,7 +234,7 @@
 (defplug mono-in
   {:in 0
    :ugen/in (fn [] (o/in in 1))})
-
+#_:clj-kondo/ignore
 (comment
   (+ (* 2 sig)
      (-> (*  (o/range-lin  (*  sig) (* freq ratio) (* freq (/ 1 ratio))))
@@ -249,7 +250,7 @@
   (list 'quote body))
 
 (make-synth-fn
- 'cosillos
+ 'mod-multifx
  (-> {:in 0
       :hpf 600
       :lpf 20000
@@ -259,6 +260,9 @@
       :a 3
       :r 5
       :gate 1
+      :rev-mix 0.5
+      :rev-room 0.7
+      :rev-damp 0.5
       :out 0}
      (mono-in)
      (dirty-fm)
@@ -267,7 +271,7 @@
      (pitch-shifter)
      (no-amp-follower)
      (random-panaz)
-     (+outs1))
+     (outs))
 
  '(let [sig (:ugen/in)
 
@@ -283,80 +287,60 @@
         ;; NOTE: this should not be `nil` as it will return the signal as the amp tracker value
         ;;    use `no-amp-follower` (which returns false) plugin if that is the case.
         tracked-amp (:ugen/amp-follower sig)]
+    #_(o/poll:ar (o/impulse 0.5) #_(o/dc) freq #_has-freq?)
     (-> sig
         (:ugen/fm freq tracked-amp) ;; `:fm-ratio` is very useful speciallly with trad-fm and sided-fm ; dirty-fm requires a higher ratio like 10+
         (:ugen/filter freq)
         (o/distort)
         (:ugen/comb freq)
+        (:ugen/pitch-shifter freq)
         (o/hpf (max 20 hpf))
         (o/lpf (max 20 lpf))
-        (:ugen/pitch-shifter freq)
         (o/leak-dc)
         (:ugen/pan)
-        (o/free-verb 0.5 0.7)
-        (* amp (o/env-gen (o/asr a 1 r)
-                          :gate gate
-                          :action o/FREE))
+        (o/free-verb rev-mix rev-room rev-damp)
+        (* amp
+           #_(o/env-gen (o/asr 0.01 1 5)
+                        :gate (o/lag has-freq? 5))
+           (o/env-gen (o/asr a 1 r)
+                      :gate gate
+                      :action o/FREE))
         (:ugen/outs))))
 
-#_(get-variant-data cosillos {})
+#_(get-variant-data mod-multifx {})
 
 (comment
   (sci/init-input! {:id :guitar
                     :in 0})
 
-  (cosillos (-> {:group (groups/late)
-                 :in (:bus (sci/init-input! {:id :guitar
-                                             :in 20}))
-                 :fm-ratio 4
-                 :fm-dry-sig-amp 8
-                 :pitch-follower-freq 10
-                 :ugen/pitch-shifter nil
-                 :amp 4
-                 :out-offset (bh/bus 14)
-                 :outs [0 1]}
-                (pan2)
-                (sound-in {:in 20})))
-  (o/stop)
+  (do (o/kill t)
+      (def t (mod-multifx (-> {:group (groups/late)
+                               :pitch-follower-freq 1
+                               :pitch-follower-median 1
+                               :a 5
+                               :lpf 2000
+                               ;; :ugen/pitch-shifter nil
+                               ;; :ugen/comb nil
+                               :amp 16
+                               ;; :rev-room 0.8
+                               :hpf 300}
+                              (amp-follower)
+                              (sided-fm {:fm-ratio 1/5
+                                         :fm-dry-wet 0.4
+                                         :fm-dry-sig-amp 2})
+                              (comb {:comb-dry-wet 1
+                                     :comb-ratio 1/4 #_[1 2 7/2]
+                                     :comb-dcy 0.1
+                                     :comb-freq-lag 2})
+                              (pan2)
+                              (outs {:out-offset (bh/bus 14)
+                                     :outs [0 1]})
+                              (sound-in {:in 20})))))
   (def t (sci/direct-out {:bus (sci/get-bus :guitar)}))
   (o/kill t))
 
-(comment
-  (defmacro maquote
-    [body]
-    (list 'quote body))
-  (macroexpand-1 '(maquote (o/sin-osc)))
 
-  (defplug amp-follower
-    {:ugen/amp-follower (fn [sig] (o/amplitude sig))})
 
-  (make-synth-fn
-   'cosillos
-   {:in 0
-    :pitch-follower-freq 1
-    :fm-ratio 10
-    :out 0}
 
-   (maquote
-    (let [sig (o/in in 1)
-          [freq _has-freq?] (o/pitch sig :exec-freq pitch-follower-freq)
-          amp* (:ugen/amp-follower sig)]
-      #_(o/poll:ar (o/impulse 0.5) (o/pitch sig) has-freq?)
-      #_(o/out out (-> (o/range-lin sig (* freq 2) (* freq -2))
-                       o/sin-osc))
-      (o/out out (-> #_sig
-                  (+ sig
-                     (-> (o/range-lin sig (* freq fm-ratio) (* freq -1 fm-ratio))
-                         o/sin-osc
-                         (* amp*)))
-                     #_(o/moog-ladder (o/clip (* 5 freq) 20 10000) 0.5)
-                     (o/comb-l 1 (* (/ 1 (o/lag2 freq 0.01)) 1/4) 0.3)
-                     (o/hpf 600)
-                     (o/pitch-shift 0.2 [1 3/2 7/4])
-                     (o/mix)
-                     (o/free-verb 0.5 0.7)
-                     (o/pan2)
-                     (o/leak-dc)
-                     #_(* 8)))))))
 
 

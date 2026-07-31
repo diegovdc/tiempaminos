@@ -19,8 +19,10 @@
     :as bardo.osc-helpers]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.rec
     :as bardo.rec]
+   [tieminos.habitat.extended-sections.tunel-cuantico-bardo.synths.processors :as bardo.signal-processor]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.synths.samplers
     :refer [play-synth]]
+   [tieminos.habitat.extended-sections.tunel-cuantico-bardo.touch-osc :as bardo.touch-osc]
    [tieminos.habitat.groups :as groups]
    [tieminos.habitat.recording :as rec]
    [tieminos.habitat.routing :refer [inputs main-returns]]
@@ -553,16 +555,55 @@
   []
   (bardo.gusano/stop))
 
+;;;;;;;;;;;;;;;;;;
+;; * Processors
+;; (Live input)
+;;;;;;;;;;;;;;;;;;
+
+(defn update-processor-preset-label-info!
+  [{:keys [label-index active-preset]}]
+  (let [labels (mapv :name bardo.signal-processor/presets-config)
+        label (wrap-at label-index labels)]
+    (bardo.osc-helpers/send-osc-msg "/presets/guitar/preset-label" label)
+    (bardo.osc-helpers/send-osc-msg "/presets/guitar/activate-button-group-visible"
+                                    (str (not= label (:name active-preset))))))
+
+(defn activate-processor-preset!
+  [{:keys [preset-index]}]
+  (let [preset (wrap-at preset-index bardo.signal-processor/presets-config)
+        config (bardo.live-state/get-processor-latest-config! preset)
+        active-preset* (bardo.live-state/get-processor-active-preset-data!)
+        new-synth (bardo.signal-processor/start-synth! preset config)]
+    (when active-preset*
+      (bardo.signal-processor/stop-synth! (:synth active-preset*)))
+    (bardo.live-state/set-processor-active-preset! preset new-synth)
+
+    (update-processor-preset-label-info! {:label-index preset-index
+                                          :active-preset preset})
+
+    (bardo.touch-osc/update-guitar-preset-fx-knobs! preset
+                                                    (bardo.live-state/get-preset-modified-params! preset))
+    (bardo.live-state/processor-update-ui! preset config)))
+
+(defn on-processor-synth-param-change!
+  [{:keys [touch-osc/param-index
+           touch-osc/value-label
+           synth/value
+           synth/param]}]
+  ;; For impl reasons on TouchOSC UI, we need to map the indexes in mod3, because document tree is a sequence of knob/param-name/param-value
+  (let [active-preset (bardo.live-state/get-processor-active-preset-data!)
+        value-label-index (-> param-index (* 3) (+ 3))]
+    (bardo.osc-helpers/send-osc-msg (str "/guitar-fx-params/value-label/" value-label-index)
+                                    value-label)
+    (bardo.signal-processor/ctl-synth! active-preset param value)))
 ;;;;;;;;;;;;;;;;;
 ;; Event Handlers
 ;;;;;;;;;;;;;;;;;
 
 (comment
   (timbre/set-level! :debug)
-  (timbre/set-level! :info)
-  (event-handler {:type :play-synth
-                  :data {:synth :test
-                         :params {:freq (rrange 100 300)}}}))
+  (timbre/set-level! :info))
+
 (defn event-handler
   [{:as _event
     :keys [type data]}]
@@ -576,8 +617,13 @@
     :stop-recording (stop-recording data)
     :bardo.event/delete-bank-bufs (bardo.rec/delete-bank-bufs data)
     :bardo.event/bufs-counted (bardo.osc/update-bufs-count data)
+    :bardo.processor/activate-preset (activate-processor-preset! data)
+    :bardo.processor/on-preset-label-index-change (update-processor-preset-label-info! data)
+    :bardo.processor/on-synth-param-change (on-processor-synth-param-change! data)
+    :bardo.processor/toggle-processor-preset-buttons-view (bardo.touch-osc/toggle-processor-preset-buttons-view! data)
     ;; event for dev purpuses
-    :dev/trigger-clouds-event (do ;; data {:bank int}
+    :dev/trigger-clouds-event (do
                                 (bardo.live-state/toggle-active-bank! :milo (:bank data) true)
-                                (clouds-on-event :milo {:data {:index 0}}))
+                                (clouds-on-event :milo false {:data {:index 0}}))
     (timbre/error "[event-handler] No matching clause for `:type`:" type)))
+

@@ -31,9 +31,12 @@
 
 (comment
   (keys @bardo.live-state/live-state)
-  (-> @bardo.live-state/live-state)
+  (-> @bardo.live-state/live-state :processors :guitar)
+  ;; preset configs keys are weird
+  (->> @bardo.live-state/live-state :processors :guitar :preset-configs)
+  (->> @bardo.live-state/live-state :processors :guitar :preset-configs keys (map :name))
   (-> @bardo.live-state/live-state :rec)
-  (bardo.live-state/get-player-data :milo 0 :harmonic-active-voices)
+  (bardo.live-state/get-player-data :milo 0)
   (bardo.live-state/get-player-data :diego 0 :harmonic-active-voices)
   (-> (bardo.live-state/get-player-data :diego)
       :refrains)
@@ -43,6 +46,21 @@
   (bardo.live-state/get-player-data :diego :refrains)
 
   (bardo.live-state/get-gusano-data))
+
+;;;;;;;;;;;;;;;;;;;;;
+;; Guitar Processes
+;;;;;;;;;;;;;;;;;;;;;
+
+(comment
+  ;; get current preset params
+  (->> (bardo.live-state/get-processor-active-preset-data!)
+       :preset
+       bardo.live-state/get-preset-modified-params!
+       vals
+       (mapv (fn [{:keys [synth/param synth/value]}]
+               [param value]))
+       (sort-by first)
+       (into {})))
 
 ;;;;;;;;;;;;;;;;;;
 ;; State
@@ -79,15 +97,20 @@
       (->> @bufs
            vals
            #_(map #(-> % :rec/meta :input-name))
-           (filter #(-> % :rec/meta :input-name #{"mic-2-bus"}))
+           (filter #(-> % :rec/meta :input-name #{"mic-1-bus" "mic-2-bus"}))
            #_(map :rec/meta)))
     (->> bufs*
-         (map :rec/meta)))
+         (filter #(-> % :rec/meta :subsection (= 0)))))
 
   (o/defsynth bufy
     [buf 0
      amp 1]
     (o/out 0 (* amp (o/play-buf 1 buf :action o/FREE))))
+
+  (def b (bufy (->> bufs*
+                    (filter #(-> % :rec/meta :subsection (= 0)))
+                    first)))
+  (o/kill b)
 
   (o/defsynth inputy
     [in 0

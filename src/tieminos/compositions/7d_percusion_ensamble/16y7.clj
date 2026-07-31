@@ -1,4 +1,5 @@
-(ns tieminos.compositions.7d-percusion-ensamble.16y7)
+(ns tieminos.compositions.7d-percusion-ensamble.16y7
+  {:clj-kondo/ignore true})
 
 (comment
   (ref-rain

@@ -147,7 +147,7 @@
        (into {})))
 
 (def eik-ratios
-  "Eikosany scale grouped-by note name (pitch class name)"
+  "Eikosany scale grouped-by ratio"
   (->> (eik :scale)
        (group-by #(-> % :bounded-ratio))
        (map (juxt key (comp first val)))

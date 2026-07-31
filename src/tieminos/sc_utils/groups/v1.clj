@@ -13,15 +13,16 @@
 (defn output-rec [] [:tail (:output-rec @groups)])
 
 (defn init-groups! []
-  (let [main (o/group "get-on-the-bus main")
-        early (o/group :head main)
-        mid (o/group :after early)
-        late (o/group :after mid)
-        fx (o/group "fx" :after late)
-        post-fx (o/group "post-fx" :after fx)
-        output-rec (o/group "output-rec" :after late)]
-    (if (seq @groups)
-      (timbre/warn "sc-utils.groups.v1 already initialized")
+  (if (seq @groups)
+    (timbre/warn "sc-utils.groups.v1 already initialized")
+    (let [main (o/group "get-on-the-bus main")
+          early (o/group :head main)
+          mid (o/group :after early)
+          late (o/group :after mid)
+          fx (o/group "fx" :after late)
+          post-fx (o/group "post-fx" :after fx)
+          output-rec (o/group "output-rec" :after late)]
+      (timbre/info "Initializing groups")
       (reset! groups
               {:main main
                :early early

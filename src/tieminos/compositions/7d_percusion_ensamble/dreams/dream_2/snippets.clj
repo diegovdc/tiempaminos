@@ -1,4 +1,5 @@
-(ns tieminos.compositions.7d-percusion-ensamble.dreams.dream-2.snippets)
+(ns tieminos.compositions.7d-percusion-ensamble.dreams.dream-2.snippets
+  {:clj-kondo/ignore true})
 
 (comment
   ;; one

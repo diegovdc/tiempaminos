@@ -48,13 +48,17 @@
            amp
            out
            print-info?
-           on-note-play]
+           on-note-play
+           a
+           r]
     :or {root (midi->cps 60)
          durs (choose 5 8 10)
          periods (choose 1/2 1 2)
          lattice? true
          print-info? true
          amp 1
+         a [6]
+         r [6]
          out 0
          on-note-play (fn [_data] nil)}}]
 
@@ -71,8 +75,8 @@
                            (take 2)))
             interval* (apply interval (sort < @last-interval))
             freq (* root (mseq index periods) (:bounded-ratio note))
-            a 6
-            r 6]
+            a (mseq index a)
+            r (mseq index r)]
         (when print-info?
           (timbre/info :note
                        (:ratio note)

@@ -15,7 +15,9 @@
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.gusanos.harmony
     :refer [gusano-harmonic-seqs gusano-harmonies]]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.osc-helpers
-    :as bardo.osc-helpers]
+    :as bardo.osc-helpers :refer [osc-bool]]
+   [tieminos.habitat.extended-sections.tunel-cuantico-bardo.synths.processors-utils
+    :refer [input->in&outs&group]]
    [tieminos.habitat.osc :as habitat-osc]
    [tieminos.math.utils :refer [linexp* linlin]]
    [tieminos.osc.reaper :as reaper]
@@ -51,8 +53,106 @@
   []
   (swap! live-state assoc :system/recording? false))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; * Processors
+;; Live input processors
+;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; NOTE this code assumes only the guitar input.
+(defn get-preset-modified-params!
+  [preset]
+  (get-in @live-state [:processors :guitar :preset-params preset]))
+
+(defn get-processor-latest-config! [preset]
+  (let [modified-params (->> (get-preset-modified-params! preset)
+                             vals
+                             (reduce (fn [m {:keys [synth/param synth/value]}]
+                                       (assoc m param value))
+                                     {}))
+        {:keys [input default-config]} preset
+        io-config (input->in&outs&group input)]
+    (merge default-config io-config modified-params)))
+
+(defn get-processor-active-preset-data!
+  []
+  (-> @live-state :processors :guitar :active-preset))
+
+(defn set-processor-active-preset!
+  [preset synth]
+  (swap! live-state assoc-in [:processors :guitar :active-preset] {:preset preset :synth synth}))
+
+(def ^:private processor-preset-index-path
+  [:processors :guitar :preset-label-index])
+
+(defn set-processor-preset-label-index!
+  "Sets a new preset-label-index by increasing or decreasing it."
+  [next?]
+  (let [index (-> (swap! live-state update-in processor-preset-index-path (fnil (if next? inc dec) -1))
+                  (get-in processor-preset-index-path))
+        {:keys [preset]} (get-processor-active-preset-data!)]
+    (bardo.comms/dispatch {:type :bardo.processor/on-preset-label-index-change
+                           :data {:active-preset preset
+                                  :label-index index}})))
+
+(defn set-processor-preset-label-index2!
+  "Sets a new preset-label-index to a specific number"
+  [index]
+  (let [{:keys [preset]} (get-processor-active-preset-data!)]
+    (swap! live-state assoc-in processor-preset-index-path index)
+    (bardo.comms/dispatch {:type :bardo.processor/on-preset-label-index-change
+                           :data {:active-preset preset
+                                  :label-index index}})))
+
+(defn activate-processor-preset!
+  ([] (activate-processor-preset! (get-in @live-state processor-preset-index-path)))
+  ([index]
+   (bardo.comms/dispatch {:type :bardo.processor/activate-preset
+                          :data {:preset-index index}})))
+
+(defn set-processor-param-value!
+  [param-index value]
+  (let [{:keys [preset]} (get-processor-active-preset-data!)
+        {:keys [param mapping label-mapping]
+         :or {label-mapping #(round2 2 %)}
+         :as param-data} (-> preset
+                             :controls
+                             (nth param-index nil))
+        synth-value (mapping value)
+        data {:touch-osc/param-index param-index
+              :touch-osc/value value
+              :touch-osc/value-label (str (label-mapping synth-value))
+              :synth/param param
+              :synth/value synth-value}]
+    (if-not param-data
+      (timbre/warn "Unknown param-index")
+      (do (swap! live-state assoc-in
+                 [:processors :guitar :preset-params preset param]
+                 data)
+          (bardo.comms/dispatch {:type :bardo.processor/on-synth-param-change
+                                 :data data})))))
+
+(comment
+  (get-processor-active-preset-data!)
+  (-> (get-processor-active-preset-data!)
+      :preset
+      :controls
+      first)
+  (-> @live-state
+      (get-in [:processors :guitar]))
+  (-> @live-state
+      (get-in [:processors :guitar])
+      keys))
+(defn processor-update-ui!
+  [preset config]
+  (timbre/warn "TODO: implement preset UI"))
+
+(comment
+  (bardo.osc-helpers/send-osc-msg "/presets/guitar/activate-button-group-visible"
+                                  (str false)))
+
 ;;;;;;;;;;;;;;;;;;
 ;; * Synth
+;; Sample synths
 ;;;;;;;;;;;;;;;;;;
 
 (defn synth-bank-path
@@ -292,8 +392,6 @@
 
     ;; touch osc params
     (set-touchosc-params synth-data)))
-
-(defn osc-bool [bool] (int (if bool 1 0)))
 
 (comment
   (get-in @live-state (synth-bank-path :milo 0)))
