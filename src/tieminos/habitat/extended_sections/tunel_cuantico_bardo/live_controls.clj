@@ -17,6 +17,7 @@
     :as bardo.osc]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.osc-helpers
     :as bardo.osc-helpers]
+   [tieminos.habitat.extended-sections.tunel-cuantico-bardo.re-affect :as bardo.ræ]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.rec
     :as bardo.rec]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.synths.processors :as bardo.signal-processor]
@@ -558,6 +559,7 @@
 ;;;;;;;;;;;;;;;;;;
 ;; * Processors
 ;; (Live input)
+;; TODO:using re-affect, eventually moveto bardo.signal-processor
 ;;;;;;;;;;;;;;;;;;
 
 (defn update-processor-preset-label-info!
@@ -581,8 +583,11 @@
     (update-processor-preset-label-info! {:label-index preset-index
                                           :active-preset preset})
 
-    (bardo.touch-osc/update-guitar-preset-fx-knobs! preset
-                                                    (bardo.live-state/get-preset-modified-params! preset))
+    (bardo.ræ/dispatch
+     {::bardo.touch-osc/update-guitar-preset-fx-knobs
+      {:preset preset
+       :modified-params (bardo.live-state/get-preset-modified-params! preset)}})
+
     (bardo.live-state/processor-update-ui! preset config)))
 
 (defn on-processor-synth-param-change!

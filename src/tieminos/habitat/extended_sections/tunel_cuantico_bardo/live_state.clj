@@ -18,6 +18,7 @@
     :as bardo.osc-helpers :refer [osc-bool]]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.synths.processors-utils
     :refer [input->in&outs&group]]
+   [tieminos.habitat.extended-sections.tunel-cuantico-bardo.re-affect :as bardo.ræ]
    [tieminos.habitat.osc :as habitat-osc]
    [tieminos.math.utils :refer [linexp* linlin]]
    [tieminos.osc.reaper :as reaper]
@@ -25,7 +26,7 @@
 
 (defonce touch-osc-state (atom {}))
 
-(defonce live-state (atom {}))
+(def live-state bardo.ræ/db)
 
 (defn init! [data]
   (reset! live-state

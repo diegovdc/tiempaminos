@@ -16,7 +16,10 @@
         io.github.diegovdc/erv {:git/url "https://github.com/diegovdc/erv.git"
                                 :sha "f4a08e5ca0ed04752156a8e51d8c5e069f6821f5"
                                 ;; :tag "0.0.7"
-                                }#_{:local/root "../erv" :deps/manifest :deps}
+                                } #_{:local/root "../erv" :deps/manifest :deps}
+        io.github.diegovdc/re-affect #_{:git/url "https://github.com/diegovdc/re-affect.git"
+                                        :sha "e7f59fd13fbc83f9951a2a0dffbb953d9526bf3f"}
+        {:local/root "../../../code/re-affect" :deps/manifest :deps}
         com.taoensso/timbre {:mvn/version "4.10.0"}
         incanter/incanter {:mvn/version "1.9.3"}
         ;; The next two fix the erroneous call to a the bounccastle dep by incanter

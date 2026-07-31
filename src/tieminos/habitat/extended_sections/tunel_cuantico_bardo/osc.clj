@@ -6,7 +6,6 @@
    [clojure.string :as str]
    [erv.utils.core :refer [round2]]
    [overtone.osc :as osc]
-   [tieminos.habitat.extended-sections.tunel-cuantico-bardo.async-events :as bardo.comms]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.config
     :as bardo.config]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.live-state
@@ -33,6 +32,7 @@
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.osc-router :as osc-router :refer [osc-router]]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.presets
     :as bardo.presets]
+   [tieminos.habitat.extended-sections.tunel-cuantico-bardo.re-affect :as bardo.ræ]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.synth-management
     :refer [stop-long-running-synths!]]
    [tieminos.habitat.osc :as habitat-osc]
@@ -40,7 +40,8 @@
    [tieminos.osc.reaper :as reaper :refer [reaeq-freq->lin]]
    [tieminos.utils
     :refer
-    [cb-interpolate stop-all-interpolators! str->int]]))
+    [cb-interpolate stop-all-interpolators! str->int]]
+   [tieminos.habitat.extended-sections.tunel-cuantico-bardo.touch-osc :as-alias bardo.tosc]))
 
 (comment
   (require '[tieminos.network-utils :refer [get-local-host]])
@@ -484,8 +485,10 @@
    "/presets/guitar/next-label-btn" (when (press? args) (set-processor-preset-label-index! true))
    "/presets/guitar/prev-label-btn" (when (press? args) (set-processor-preset-label-index! false))
    "/presets/guitar/activate-preset-btn" (when (press? args) (activate-processor-preset!))
-   "/presets/guitar/toggle-preset-buttons-view-btn" (bardo.comms/dispatch {:type :bardo.processor/toggle-processor-preset-buttons-view
-                                                                           :data {:visible? (press? args)}})
+   "/presets/guitar/toggle-preset-buttons-view-btn" (bardo.ræ/dispatch
+                                                     {::bardo.tosc/toggle-visibility
+                                                      {:path "/presets/guitar/preset-buttons-visible"
+                                                       :visible? (press? args)}})
 
    "/presets/guitar/buttons/:index" (when (press? args)
                                        ;; Because the way touch osc works (non-generative UI)

@@ -3,6 +3,7 @@
   (:require
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.osc-helpers :refer [osc-bool
                                                                                 send-osc-msg]]
+   [tieminos.habitat.extended-sections.tunel-cuantico-bardo.re-affect :refer [reg-event-fx reg-fx]]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.synths.processors :as bardo.signal-processor]))
 
 (defn set-guitar-preset-labels!
@@ -49,9 +50,24 @@
         (send-osc-msg (str "/guitar-fx-params/value-label/" (+ 3 index))
                       value-label*)))))
 
-(defn toggle-processor-preset-buttons-view!
-  [{:keys [visible?]}]
-  (send-osc-msg "/presets/guitar/preset-buttons-visible" (osc-bool visible?)))
+(reg-event-fx
+ ::update-guitar-preset-fx-knobs
+ (fn [_ data]
+   {:fx {::update-guitar-preset-fx-knobs data}}))
+
+(reg-fx
+ ::update-guitar-preset-fx-knobs
+ (fn [_ {:keys [preset modified-params]}]
+   (update-guitar-preset-fx-knobs! preset modified-params)))
+
+(reg-event-fx
+ ::toggle-visibility
+ (fn [_ {:keys [path visible?]}]
+   {:fx {::toggle-visibility {:path path :visible? visible?}}}))
+(reg-fx
+ ::toggle-visibility
+ (fn [_ {:keys [path visible?]}]
+   (send-osc-msg path (osc-bool visible?))))
 
 (comment
   (send-osc-msg "/presets/guitar/preset-buttons-visible" (osc-bool true))
