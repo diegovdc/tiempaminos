@@ -2,8 +2,8 @@
   (:require
    [clojure.string :as str]
    [overtone.core :as o]
-   [tieminos.compositions.garden-earth.base :as ge-base :refer [scale-freqs-ranges]]
-   [tieminos.utils :refer [hz->ms]]))
+   [taoensso.timbre :as timbre]
+   [tieminos.compositions.garden-earth.base :as ge-base :refer [scale-freqs-ranges]]))
 
 (defn lfo [freq min* max*]
   (o/lin-lin (o/lf-noise1 freq) -1 1 min* max*))
@@ -12,13 +12,15 @@
   (o/lin-lin:kr (o/lf-noise1:kr freq) -1 1 min* max*))
 
 (do
-  (o/defsynth pan-verb [in 0 out 0
-                        a 0.25 s 1 r 0.5
-                        amp 1
-                        mix-min 0.2 mix 0.5
-                        room-min 0.5 room 0.5
-                        damp-min 0 damp 0.5
-                        pan-min -1 pan 1]
+  (o/defsynth pan-verb
+    [in 0 out 0
+     a 0.25 s 1 r 0.5
+     amp 1
+     mix-min 0.2 mix 0.5
+     room-min 0.5 room 0.5
+     damp-min 0 damp 0.5
+     pan-min -1 pan 1
+     gate 1]
     (let [input (o/sound-in in)]
       (o/out out
              (->> (range 1)
@@ -31,7 +33,8 @@
                                           (lfo (rand 2) room-min room)
                                           (lfo (rand) damp-min damp))
                              (o/pan2 (lfo (rand) pan-min pan))
-                             (* amp  (o/env-gen (o/env-asr a s r))))))
+                             (* amp  (o/env-gen (o/env-asr a s r)
+                                                :gate gate)))))
                   o/mix))))
   #_(o/stop)
   (comment
@@ -52,16 +55,16 @@
            in 0
            pitch-path "/receive-pitch"
            analyzer-amp 1}}]
-  (println "SIG ANALIZER Bus:" in "amp:" analyzer-amp)
+  (timbre/info "Signal analyzer intialized" {:bus in :amp  analyzer-amp})
   ((o/synth
     (let [input  (* analyzer-amp (o/sound-in in))]
       (o/send-reply (o/impulse freq) pitch-path
-                    [(o/lag2 (o/pitch:kr input) 0.1) ;; smooth out signal
+                    [(o/lag2 (o/pitch:kr input) 0.2) ;; smooth out signal
                      (o/amplitude:kr input)]
                     in)))))
 
 (defn run-receive-pitch
-  "Gets pitches from `sound-in` 0 in almost real time
+  "Gets pitches from `pitch-path` in almost real time
   and `conj`es the data into`freq-history.
   NOTE: `run-get-signal-pitches` must be running`"
   [& {:keys [pitch-path
@@ -69,7 +72,7 @@
              scale-freqs-ranges]
       :or {pitch-path "/receive-pitch"
            scale-freqs-ranges scale-freqs-ranges}}]
-  (println "scale-freqs-ranges" scale-freqs-ranges)
+  #_(println "scale-freqs-ranges" scale-freqs-ranges)
   (o/on-event pitch-path
               (fn [data]
                 (let [[_node-id input-bus freq freq?* amp] (-> data :args)
@@ -94,10 +97,9 @@
            scale-freqs-ranges scale-freqs-ranges
            pitch-path "/receive-pitch"
            analyzer-amp 1}}]
-  {:receive-pitch-handler
-   (run-receive-pitch :pitch-path pitch-path
-                      :on-receive-pitch on-receive-pitch
-                      :scale-freqs-ranges scale-freqs-ranges)
+  {:receive-pitch-handler (run-receive-pitch :pitch-path pitch-path
+                                             :on-receive-pitch on-receive-pitch
+                                             :scale-freqs-ranges scale-freqs-ranges)
    :get-signal-pitches-synth (run-get-signal-pitches
                               :in in
                               :analyzer-amp analyzer-amp

@@ -123,7 +123,7 @@
           level-color (case level
                         :error    :red
                         :warn     :yellow
-                        :info     :white
+                        :info     :green
                         :debug    :blue
                         :trace    :magenta
                         :white)]
@@ -134,7 +134,7 @@
                             (-> (force timestamp_) (str/split #" ") second) " "
                             (str/upper-case (first (name level)))  " "
                             "[" (cond-> (or ?ns-str ?file "?") short-ns? short-ns) ":" (or ?line "?") "] \n"))
-         (force msg_)
+         (timbre/color-str :white (force msg_))
          "\n"
          (when-let [err ?err]
            (str "\n" (timbre/stacktrace err)))))))})
