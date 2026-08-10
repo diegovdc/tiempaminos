@@ -625,7 +625,6 @@
     :bardo.processor/activate-preset (activate-processor-preset! data)
     :bardo.processor/on-preset-label-index-change (update-processor-preset-label-info! data)
     :bardo.processor/on-synth-param-change (on-processor-synth-param-change! data)
-    :bardo.processor/toggle-processor-preset-buttons-view (bardo.touch-osc/toggle-processor-preset-buttons-view! data)
     ;; event for dev purpuses
     :dev/trigger-clouds-event (do
                                 (bardo.live-state/toggle-active-bank! :milo (:bank data) true)

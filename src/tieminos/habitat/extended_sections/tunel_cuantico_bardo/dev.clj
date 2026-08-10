@@ -30,6 +30,7 @@
 ;;;;;;;;;;;;;;;;;;
 
 (comment
+  (-> @bardo.live-state/live-state)
   (keys @bardo.live-state/live-state)
   (-> @bardo.live-state/live-state :processors :guitar)
   ;; preset configs keys are weird

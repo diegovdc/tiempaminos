@@ -13,5 +13,5 @@
   (reg-sub :milo0/amp [:algo-2.2.9-clouds :milo 0 :amp])
   (reg-sub-fx :milo0/amp
               :milo0/amp.subfx
-              (fn [_ data]
+              (fn [_cofx data]
                 (println data))))

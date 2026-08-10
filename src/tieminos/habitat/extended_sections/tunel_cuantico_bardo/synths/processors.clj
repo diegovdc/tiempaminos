@@ -271,7 +271,8 @@
                (merge {:param :fm-ratio :name "FMRatio"} (quantized-mapping (ratio-range (range 1 8) 1/8 8)))
                (merge {:param :comb-dry-wet :name "CombDryWet"} (id-mapping))
                (merge {:param :comb-ratio :name "/CombRatio"} (quantized-mapping (ratio-range (range 1 8) 1/4 4)))
-               (merge {:param :comb-dcy :name "CombDecay"} (lin-mapping :linlin 0 1, 0.05 0.9))]}])
+               (merge {:param :comb-dcy :name "CombDecay"} (lin-mapping :linlin 0 1, 0.05 0.9))
+               (merge {:param :comb-freq-lag :name "CombLag"} (lin-mapping :linlin 0 1, 0.01 3))]}])
 
 (defn start-synth!
   "Starts a synth and returns the instance."
