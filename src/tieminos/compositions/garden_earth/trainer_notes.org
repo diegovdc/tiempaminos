@@ -13,3 +13,38 @@ Variando la amplitud (pero =pp= en general) se pueden generar destellos multifó
    2 3 |   2 3(p):: 
    2 3 | 1 2 3(p):: trino
 #+end_src
+
+* 3)4 1.7.9.11
+** =D+24= -> a =C+20=
+Durante el paso, cerrar embocadura y luego abrir (ascender a =C+20=)
+No claro, barrido
+Glissado
+#+begin_src 
+1 2 3 | 1 2 3p
+1o2 3 | 1 2 3p
+ o2 3 | 1 2 3p
+ o(3) | 1 2 3
+#+end_src
+**  =E+55= -> =C+20=
+Durante el paso, cerrar embocadura y luego abrir (ascender a =C+20=)
+*** A
+Transicionar muy rápido (barrido)
+Glissado
+#+begin_src
+1 2 3 | 1 
+1 2   | 1 
+1     | 1 
+ o    | 1 2 
+ o    | 1 2 3
+#+end_src
+
+*** B
+Barrido
+->dim->cresc
+Glissado
+#+begin_src
+1 2 3 | 1 
+1o2 3 | 1 2 
+ o2 3 | 1 2 3
+ o(3) | 1 2 3
+#+end_src

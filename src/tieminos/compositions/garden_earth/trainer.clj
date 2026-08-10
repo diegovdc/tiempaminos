@@ -100,6 +100,12 @@
                           :degree)))
      subcps*)))
 
+(defn- filter-by-pitch-class
+  [pitch-class-names eik-scale]
+  (let [pc-set* (set pitch-class-names)]
+    (filter #(-> % :pitch :class pc-set*)
+            eik-scale)))
+
 (comment
 
   (def root 440)
@@ -117,12 +123,16 @@
   (hexp.trainer/trainer
    {:root root
     :scale (:scale eik)
-    :degrees (->> (make-subcps "1)4 of 3)6 5.9-1.3.7.11")
+    :degrees (->> (make-subcps
+                   #_"1)4 of 3)6 5.9-1.3.7.11"
+                   #_"1)4 of 3)6 1.5-3.7.9.11"
+                   "3)4 of 3)6 1.7.9.11")
+                  #_(filter-by-pitch-class #{"D+24"})
                   (map :degree))
     :print-info? false
     :a {6 3, 10 1}
     :r {6 3, 10 1}
-    :periods [2]
+     ;; :periods [2]
     :on-note-play
     (fn [{:keys [_last-interval note interval _freq]}]
       (println :interval
@@ -143,8 +153,9 @@
 
   (def scale-index 7)
 
-  (def cps "1)4 of 3)6 5.9-1.3.7.11")
-  #_(def cps "3)4 of 3)6 1.3.7.11")
+  (def cps
+    #_"1)4 of 3)6 5.9-1.3.7.11"
+    "1)4 of 3)6 1.5-3.7.9.11")
 
   (scale/print-scale-intervals! (subcps cps)
                                 :unit :ratios)
