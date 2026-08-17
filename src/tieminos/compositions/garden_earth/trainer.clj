@@ -11,9 +11,14 @@
             ref-rain subcps]]
    [tieminos.compositions.garden-earth.synths.general
     :refer [tuning-monitor]]
+   [tieminos.compositions.garden-earth.web.ajax :refer [post-fingering2]]
    [tieminos.harmonic-experience.lattice :as hexp.lattice]
    [tieminos.harmonic-experience.trainer :as hexp.trainer]
-   [tieminos.utils :refer [rrange]]
+   [tieminos.harmonic-experience.utils :as hexp.utils]
+   [tieminos.midi.core :refer [get-exquis!]]
+   [tieminos.seq-utils.core :refer [choose]]
+   [tieminos.seq-utils.utils :refer [repcat]]
+   [tieminos.utils :refer [map-subscale-degs rrange]]
    [time-time.dynacan.players.gen-poly :as gp]))
 
 (def *1oo4
@@ -108,10 +113,73 @@
 
 (comment
 
+  ;; TODO: move to erv lib
+  (defn subset-from-degs
+    "Make a subset of a scale from vector of degrees"
+    [scale degs]
+    (mapv (fn [deg] (nth scale deg))
+          degs))
+
+  (-> eik)
+  (map-subscale-degs 20 [0] 1)
+
+  (subset-from-degs (:scale eik)
+                    (map :degree (make-subcps "2)4 of 3)6 7-1.3.9.11")))
+
+  (comment
+    (require '[tieminos.compositions.garden-earth.base :refer [eik]]
+             '[erv.cps.core :as cps])
+    (map (comp :class :pitch) (subcps "3)4 of 3)6 1.7.9.11"))
+    (-> eik :subcps
+        (get "3)5 of 3)6 1.5.7.9.11")
+        cps/+all-subcps
+        :subcps
+        keys
+        sort)
+
+    (->> ["2)4 of 3)6 1-3.7.9.11" ;; probar
+          "2)4 of 3)6 11-1.3.7.9" ;; se ve fácil y sencilla de escuchar, pero casi tradicional
+          "2)4 of 3)6 3-1.7.9.11"
+          "2)4 of 3)6 7-1.3.9.11" ;; se ve difícil pero interesante
+          "2)4 of 3)6 9-1.3.7.11"]
+         (map subcps)
+         (map #(map (juxt (comp sort :set) (comp :class :pitch)) %))))
+
   (def root 440)
+  (def subcps* (make-subcps
+                #_"1)4 of 3)6 5.9-1.3.7.11"
+                #_"1)4 of 3)6 1.5-3.7.9.11"
+                #_"3)4 of 3)6 1.7.9.11" ;; usar
+                #_"2)4 of 3)6 7-1.3.9.11" ;; usar, brillante-reflejante, buenas pentatónicas, pero difícil
+                "2)4 of 3)6 9-1.5.7.11"))
+
+  (->> subcps* #_(map (juxt :set (comp :name :pitch))))
+  (repcat [10 (choose 0 1)]
+          [10 (choose 0 1 5)]
+          [5 (choose  1)]
+          [5 (choose  1)]
+          [10 (choose  1 3)]
+          [10 (choose  1 3 4)]
+          [20 (choose  2 3 4)])
+
+  (->> (repcat [10 [0 1]]
+               [10 [0 1 5]]
+               [5 [1]]
+               [10 [1 3]]
+               [10 [1 3 4]]
+               [20 [2 3 4]])
+       (map (partial map #(:degree (nth subcps* %))))
+       (mapv #(apply choose %)))
+
+  (hexp.utils/set-output-mode! :reaper)
   (hexp.lattice/setup-kb
    {:root root
     :scale (:scale eik)
+    ;; :midi-kb (get-exquis!)
+    :kb-degs (map :degree subcps*)
+    :synth-config {:amp 0.7
+                   :a 0.1
+                   :out (hexp.utils/out 26)}
     :lattice-config {:width 1440
                      :height 900
                      :ratio->node-name (->> eik
@@ -123,25 +191,45 @@
   (hexp.trainer/trainer
    {:root root
     :scale (:scale eik)
-    :degrees (->> (make-subcps
-                   #_"1)4 of 3)6 5.9-1.3.7.11"
-                   #_"1)4 of 3)6 1.5-3.7.9.11"
-                   "3)4 of 3)6 1.7.9.11")
-                  #_(filter-by-pitch-class #{"D+24"})
-                  (map :degree))
+    :degrees (->> (repcat [10 [0 1]]
+                          [10 [0 1 5]]
+                          [5 [1]]
+                          [10 [1 3]]
+                          [7 [1 3 4]]
+                          [7 [2 3 4]]
+                          [5 [2]]
+                          [10 [2 1]])
+                  (map (partial map #(:degree (nth subcps* %))))
+                  (mapv #(apply choose %)))
+    #_(->> subcps*
+           #_(filter-by-pitch-class #{"G#+73"})
+           (map :degree)
+           (apply choose))
+    :tempo 60
     :print-info? false
-    :a {6 3, 10 1}
-    :r {6 3, 10 1}
-     ;; :periods [2]
-    :on-note-play
-    (fn [{:keys [_last-interval note interval _freq]}]
-      (println :interval
-               interval
-               (int (conv/ratio->cents interval))
-               "\n")
-      (println (pitch-class->pr-fingering
-                (-> note :pitch :class))
-               "\n\n"))})
+    :a {9 3, 12 1}
+    :r {9 3, 12 1}
+    :periods {1 5, 2 1, 1/2 3 1/4 2}
+    :on-note-play (let [pcs (atom ())]
+                    (fn [{:keys [_last-interval note interval _freq]}]
+                      #_(println :interval
+                                 interval
+                                 (int (conv/ratio->cents interval)))
+                      (let [pc (str
+                                (pitch-class->pr-fingering
+                                 (-> note :pitch :class))
+                                "\n"
+                                (str "  interval " interval " " (int (conv/ratio->cents interval))
+                                     "c\n\n"))]
+                        (println pc)
+                        (swap! pcs conj pc))
+                      (try (post-fingering2 (take 3 @pcs))
+                           (catch Exception _ nil))))
+    :synth/params-fn (fn [{:keys [freq]}]
+                       {:pan (rrange -1 1)
+                        :amp (rrange 0.3 0.6)
+                        :lpf-freq freq})
+    :out (hexp.utils/out 26)})
 
   (hexp.trainer/stop))
 

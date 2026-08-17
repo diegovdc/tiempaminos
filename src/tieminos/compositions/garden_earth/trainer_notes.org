@@ -1,4 +1,8 @@
 
+* Acordes interesantes
+** C#+71 D+24 G#+73 C+20
+1 12/11 3/2 66/32
+*** TODO investigar voicing
 * Paso de G+88 a A+92 (y viceversa) :G88:A92:
 #+begin_src 
    2 3 |   2 3(p):: A+92

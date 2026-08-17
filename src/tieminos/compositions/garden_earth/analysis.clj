@@ -45,7 +45,7 @@
   (sort (keys (find-supersets #{#{7 3 9}
                                 #{3 11 9}})))
   (sort (keys (find-supersets
-               (set (map :set (subcps "1)4 of 3)6 1.11-3.5.7.9"))))))
+               (set (map :set (subcps "3)4 of 3)6 1.7.9.11"))))))
   (sort (keys (find-supersets
                (set (map :set (subcps "2)4 of 3)6 5-1.3.9.11"))))))
   (sort (keys (find-supersets
@@ -88,8 +88,9 @@
     ;; TODO: convert into test
   (find-subcps-intersections
    "1)4 of 3)6 1.3-5.7.9.11" #{"2)4"})
-  (find-subcps-intersections
-   "2)4 of 3)6 11-1.5.7.9" #{"2)4"}))
+  (->> (find-subcps-intersections
+        "3)4 of 3)6 1.7.9.11" #{"2)4"})
+       (map first)))
 
 (comment
   ;; projections (transpositions/stellations)

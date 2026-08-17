@@ -16,6 +16,10 @@
   (post "/garden-earth/tuning/fingering"
         (pitch-class->pr-fingering pitch-class)))
 
+(defn post-fingering2
+  [s]
+  (post "/garden-earth/tuning/fingering" s))
+
 (defn post-note-tuning
   [data]
   (post "/garden-earth/tuning/note-tuning" data))

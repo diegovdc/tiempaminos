@@ -31,7 +31,7 @@
                           :root root
                           :scale scale
                           :midi-kb (get-exquis!)
-                          :out (hexp.utils/out 7)})
+                          :synth-config {:out (hexp.utils/out 7)}})
 
   (hexp.trainer/trainer {:scale scale
                          :root (midi->cps 60)
