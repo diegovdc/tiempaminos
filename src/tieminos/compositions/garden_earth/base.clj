@@ -227,10 +227,10 @@
            transp (scale/transpose-by (:bounding-period target) period)]
        (* transp (utils/interval (ratio note)
                                  (ratio target))))))
-  (comment)
-  (interval-from-note (subcps "1)4 of 3)6 1.3-5.7.9.11")
-                      (nth (:scale eik) 0)
-                      4))
+  (comment
+    (interval-from-note (subcps "1)4 of 3)6 1.3-5.7.9.11")
+                        (nth (:scale eik) 0)
+                        4)))
 
 (defn pc-index [scale pitch-class]
   (.indexOf (map (comp :class :pitch) scale) pitch-class))

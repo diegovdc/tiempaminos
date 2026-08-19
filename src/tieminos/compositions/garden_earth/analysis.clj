@@ -2,6 +2,7 @@
   (:require
    [clojure.set :as set]
    [clojure.string :as str]
+   [erv.cps.core :as cps]
    [erv.scale.core :as scale]
    [erv.utils.conversions :as conv]
    [erv.utils.core :as utils]
@@ -45,7 +46,7 @@
   (sort (keys (find-supersets #{#{7 3 9}
                                 #{3 11 9}})))
   (sort (keys (find-supersets
-               (set (map :set (subcps "3)4 of 3)6 1.7.9.11"))))))
+               (set (map :set (subcps "3)4 of 3)6 1.3.5.9"))))))
   (sort (keys (find-supersets
                (set (map :set (subcps "2)4 of 3)6 5-1.3.9.11"))))))
   (sort (keys (find-supersets
@@ -85,12 +86,21 @@
          reverse)))
 
 (comment
-    ;; TODO: convert into test
+  ;; TODO: convert into test
   (find-subcps-intersections
    "1)4 of 3)6 1.3-5.7.9.11" #{"2)4"})
-  (->> (find-subcps-intersections
-        "3)4 of 3)6 1.7.9.11" #{"2)4"})
-       (map first)))
+
+  (let [i1 (into {} (find-subcps-intersections "3)5 of 3)6 1.5.7.9.11" #{"2)4"}))
+        i2 (into {} (find-subcps-intersections
+                     "3)5 of 3)6 1.3.5.7.9" #{"2)4"}))
+        sub-i (set/intersection (->> i1 (map first) set)
+                                (->> i1 (map first) set))]
+    (->> sub-i
+         (map
+          (fn [x] (let [is [(map first (i1 x))
+                            (map first (i2 x))]]
+                    [x (count (set (apply concat is))) is])))
+         (sort-by second))))
 
 (comment
   ;; projections (transpositions/stellations)
@@ -148,3 +158,17 @@
          reverse
          (map #(str/join "," %))
          (str/join "\n"))))
+
+(defn subcps-of-subcps
+  ;; FIXME: this returns subcps with the wrong name in the of part i.e. instead of "of 3)6" it may return "of 3)5"
+  [subcps-name]
+  (-> eik :subcps
+      (get subcps-name)
+      cps/+all-subcps
+      :subcps
+      keys
+      sort))
+
+(comment
+  (subcps "2)3 of 3)6 3-5.7.9")
+  (subcps-of-subcps "2)4 of 3)6 9-1.5.7.11"))
