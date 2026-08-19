@@ -42,10 +42,18 @@
 ;; * Config
 ;;;;;;;;;;;;;;;;;;
 
-(def outputs
-  {:main-synth (bh/bus 20)
-   :arp (bh/bus 22)
-   :harmonizer (bh/bus 24)})
+(def ^:private outputs*
+  "BH outputs"
+  {:main-synth 20
+   :arp 22
+   :harmonizer 24
+   :nubosidades 26})
+
+(defn outputs
+  [k]
+  (if-let [out (outputs* k)]
+    (bh/bus out)
+    (throw (ex-info  "Unknown output" {:key k}))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; * Re-affect/State init
@@ -446,7 +454,7 @@
   (toggle-ps-freeze {:db {}} {:chord-size 2}))
 
 ;;;;;;;;;;;;;;;;;;
-;; * El camino a través de la foresta: Sections
+;; * Sections: El camino a través de la foresta
 ;;;;;;;;;;;;;;;;;;
 
 ;;  
@@ -487,54 +495,13 @@
 ;;    - poco a poco más ps-freeze
 ;; ** 5. fin
 ;;    - bajar el fader del micro
+
 (defn- html-list
   [strs]
   (->> strs
        (map (fn [x] [:li.text-5xl x]))
        (concat [:ul])
        vec))
-
-#_(def ^:private s0-preinicio
-    [:div [:h1 "0. Preinicio - fader abajo"]])
-
-#_(def ^:private s1-nubosidad-del-bosque
-    [:div [:h1 "1. Nubosidad del bosque"]
-     [:h2 "A. Invocación sentida/o"]
-     (html-list ["eólicos"
-                 "melódico, reverberante"
-                 "cresciendo energía hasta transición"])
-     [:h2 "B. Transición"
-      (html-list ["unos cuantos arpegios al final y 1 freeze largo y denso"])]])
-
-#_(def ^:private s2-lianas-tejidos
-    [:div [:h1 "2.Lianas (redes-tejidos del bosque)"]
-     [:h2 "A. Seres"]
-     (html-list ["insectos: clicks y ruidos vocales"
-                 "aves: tonos breves, de pronto arp"
-                 "aire/hojas: eólicos y silbidos"])
-     [:h2 "B. Primeras luminiscencias"
-      (html-list ["continuar con 1"
-                  "esporádico: ps-freeze breves (ps-amp 0)"
-                  "transición: silencio? o?"])]])
-
-#_(def ^:private s3-cruce-al-cielo
-    [:div [:h1 "3. El cruce al cielo"]
-     (html-list ["(breve)"
-                 "c/armonizador: jet eólico intenso: inspirar - expirar"
-                 "...   -> respiración circular"
-                 "nube de reveración muy larga y varios ps-freeze largos ..."])])
-
-#_(def ^:private s4-colores-espejos-xapiri
-    [:div [:h1 "4. Colores y espejos de los xapiri"]
-     [:h2 "A. Inicio"]
-     (html-list ["dentro del la nube (decayendo)"
-                 "melódico, menos rev"
-                 "...  frecuente con armonizador (buscar acorde, quizá 1.3.5?)"])
-     [:h2 "B. Danzaorquesta de los xapiri"]
-     (html-list ["arpegiador" "poco a poco más ps-freeze"])])
-
-#_(def ^:private s5-fin
-    [:div [:h1 "5. Fin"] (html-list ["baja el fader del micro"])])
 
 (def default-arp-config
   {:cps ["3)5 of 3)6 1.3.7.9.11"]
@@ -574,11 +541,11 @@
                              [3 "3)4 of 3)6 1.3.5.9"]]}
     :ps-freeze {:freeze? 1
                 :chord-size 6
-                :params {:a 3
-                         :r 15
-                         :rev-mix 1
-                         :freeze-ratios [1 2 1/2 1/4 4 7]
-                         :freezed-amp 20}}}
+                :synth/params {:a 3
+                               :r 15
+                               :rev-mix 1
+                               :freeze-ratios [1 2 1/2 1/4 4 7]
+                               :freezed-amp 20}}}
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;
    ;; S2
@@ -589,9 +556,13 @@
                         [:span "aves: tonos breves, de pronto " [:b.text-amber-400  "arp 2|1 trem"]]
                         [:span "aire/hojas: " [:b.text-purple-700 "eólicos"] " y silbidos"]])
             [:h2.overline.text-rose-300.pt-4 "B. Primeras luminiscencias"]
-            (html-list ["continuar con 1"
+            (html-list ["continuar con A"
                         [:span [:b.text-emerald-300 "ps-freeze"]  [:small " breves (ps-amp 0) " [:u " esporádico "]]]
                         [:span [:b.text-lime-300 "armonizador"]  [:small " díadas " [:u "muy esporádico "]]]
+                        " si ~C: transición: silencio? o?"])
+            [:h2.overline.text-rose-300.pt-4 "C. más luminiscencias"]
+            (html-list ["cresciendo con AyB"
+                        "microXflauta(wt+silbidos+clicks)"
                         "transición: silencio? o?"])]
     :arp {:cps ["3)4 of 3)6 1.3.5.9"
                 "3)4 of 3)6 3.5.7.9"]
@@ -603,7 +574,7 @@
                              [1 "1)2 of 3)6 5.9-3.7"]]}
     :ps-freeze {:freeze? 1
                 :chord-size 3
-                :params {:ps-amp 0}}}
+                :synth/params {:ps-amp 0}}}
 
    ;; PT 2 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; 
 
@@ -641,7 +612,7 @@
                         ".~.~.~> respiración circular"])
             [:h2.overline.text-rose-300.pt-4 "B. Transición"]
             (html-list [[:span [:b.text-purple-700 "nube "] "de reveración muy larga y varios" [:b.text-emerald-300 " ps-freeze "]
-                         [:small "a:<=1.2 | r:7-15" ""]]
+                         [:small "a:.2-.5 | r:15-26" ""]]
                         [:span "jugar con la intersección armónica " [:b.text-amber-400 "(Arp)"]]])]
     :arp {:cps ["2)4 of 3)6 7-3.5.9.11"
                 "2)4 of 3)6 9-1.3.7.11"]
@@ -652,12 +623,12 @@
     :nubosidades {:params {:a 10 :amp 1.5 :r 20}}
     :ps-freeze (fn [] {:freeze? 1
                        :chord-size 2
-                       :params {:a (rrand 0.2 1.2)
-                                :r (rrand 7.0 15)
-                                :rev-mix 1
-                                :freeze-ratios (->> [1 2 1/2 1/4 4 7 8 1/8]
-                                                    shuffle
-                                                    (take (rrand 3 8)))}})}
+                       :synth/params {:a (rrand 0.2 0.5)
+                                      :r (rrand 15.0 26)
+                                      :rev-mix 1
+                                      :freeze-ratios (->> [1 2 1/2 1/4 4 7 8 1/8]
+                                                          shuffle
+                                                          (take (rrand 3 8)))}})}
 
 ;;;;;;;;;;;;;;;; 
    ;; S4
@@ -802,11 +773,11 @@
             {::start-harmonizer {}})})))
 
 (def ^:private main-synth-default-params
-  {:amp 4
-   :min-mix 0.3 :mix 1
-   :min-room 0.7 :room 1
-   :damp-min 0.3 :damp 0.7
-   :pan-min -0.5 :pan 0.5})
+  {:amp 8
+   :min-mix 0.5 :mix 1
+   :min-room 0.8 :room 1
+   :damp-min 0.3 :damp 0.5
+   :pan-min -0.8 :pan 0.8})
 
 (reg-event-fx
  ::start-main-synth
@@ -849,7 +820,7 @@
      {:db (assoc db :synth/signal-analyzer sy*)})))
 
 (defn- toggle-ps-freeze
-  [{:keys [db]} {:keys [off? chord-size ps-periods synth-params freeze?]
+  [{:keys [db]} {:keys [off? chord-size ps-periods synth/params freeze?]
                  ;; `ps-periods` is a vector used by `gen-reflejos-voicing`: it will randomly pick a period for each voice
                  :or {chord-size 3
                       ps-periods [1 1/2 2]}}]
@@ -865,7 +836,7 @@
         (when (and harmony voicing)
           (timbre/info "Starting ps-freeze")
           {:db (update-in db (prev-harmony-path current-pc chord-size) (fnil conj #{}) harmony)
-           :fx {::start-ps-freeze (assoc synth-params :ps-ratios voicing)}})))))
+           :fx {::start-ps-freeze (assoc params :ps-ratios voicing)}})))))
 
 (reg-event-fx ::toggle-ps-freeze #'toggle-ps-freeze)
 
@@ -908,7 +879,7 @@
 (reg-event-db
  ::confirm-init
  (fn [db _]
-   (assoc db ::initialized? true)))
+   (assoc db :ræ.one/initialized? true)))
 
 (comment
   (-> @live-state))
@@ -965,6 +936,7 @@
 
 (reg-fx ::start-ps-freeze
         (fn [_ synth-params]
+          (timbre/info "ps-freeze" synth-params)
           (let [synth (ps-freeze (merge {:in (bh/bus 3)
                                          :amp 64
                                          :ps-amp 0.5
@@ -977,10 +949,12 @@
 (reg-fx ::start-nubosidades
         (fn [_ synth-params]
           (let [synth1 (nuboso (merge {:in (ge.route/fl-i1 :bus)
-                                       :out (outputs :main-synth)}
+                                       :amp 4
+                                       :out (outputs :nubosidades)}
                                       synth-params))
                 synth2 (nuboso2 (merge {:in (ge.route/fl-i1 :bus)
-                                        :out (outputs :main-synth)}
+                                        :amp 4
+                                        :out (outputs :nubosidades)}
                                        synth-params))]
             (dispatch {::on-nubosidades-start [synth1 synth2]}))))
 
@@ -992,7 +966,7 @@
 
 (reg-fx ::fade-main-bus
         (fn [{:keys [db]} {:keys [level]}]
-          (when (::intialized? db)
+          (when (:ræ.one/initialized? db)
             (timbre/debug "Setting main bus level to: " level)
             (cb-interpolate
              {:id ::fade-main-bus
@@ -1002,7 +976,8 @@
               :target-val level
               :cb (fn [data]
                     (reaper/set-vol 1 (:val data)))}))))
-
+(comment
+  (-> @live-state))
 (defn params-from-m-or-f
   "Takes a map or a function, if a map returning function, call it, else return the map."
   ([params] (params-from-m-or-f params {}))
@@ -1174,12 +1149,16 @@
   ;;           or better yet:
   ;;    TODO: send arp to nubosidades (for the first section)
   ;; TODO: #A check small interface
-  ;; TODO: check initialization errors
+  ;; DONE: check initialization errors
+  ;; TODO: danzaorquesta: latido (ooxx|Xooo|xxXo)
+  ;; TODO: diferentes duraciones de los eventos del arp en las diversas secciones
+  ;; TODO: rec on/off
+  ;; TODO: unificar params the rev en un solo lugar
   )
-
 (comment
   ;; init
   (ræ/get-state ::db)
+  (bh/set-interface! :minifuse)
   (dispatch {::init {:midi? false}})
   (dispatch {::fade-main-bus {:level reaper/zero-db}})
 

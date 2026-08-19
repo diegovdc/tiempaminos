@@ -25,14 +25,16 @@
       (o/out out
              (->> (range 1)
                   (map (fn [_]
-                         (-> input
-                             (o/bpf (lfo 4 40 8000)
-                                    (lfo 4 0.1 1))
-                             (+ (* 0.5 input))
-                             (o/free-verb (lfo (rand 0.5) mix-min mix)
-                                          (lfo (rand 2) room-min room)
-                                          (lfo (rand) damp-min damp))
-                             (o/pan2 (lfo (rand) pan-min pan))
+                         (-> (+ (-> input
+                                    (o/bpf (lfo 1 40 8000) (lfo 1 0.1 0.6))
+                                    (o/pan2 (lfo (o/rand 0.1 1) pan-min pan)))
+                                (-> input
+                                    (o/pan2 (lfo (o/rand 0.1 1) pan-min pan))
+                                    (* 0.8)))
+                             (o/free-verb (lfo (o/rand 0.1 0.5) mix-min mix)
+                                          (lfo (o/rand 0.1 2) room-min room)
+                                          (lfo (o/rand 0.1 1) damp-min damp))
+
                              (* amp  (o/env-gen (o/env-asr a s r)
                                                 :gate gate)))))
                   o/mix))))

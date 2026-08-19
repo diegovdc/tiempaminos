@@ -1,7 +1,8 @@
 //https://doc.sccode.org/Reference/EmacsEditor.html
 
+
 (
-var ioDevice = ServerOptions.inDevices.asSet.findMatch("18i20+BH64");
+var ioDevice = ServerOptions.inDevices.asSet.findMatch(thisProcess.argv[0] ?? "18i20+BH64");
 
 // if I wanted to configure this in the future via the command line I can get the argv from thisProcess.argv
 
