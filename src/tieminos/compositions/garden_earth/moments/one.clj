@@ -87,9 +87,9 @@
 
 (defn simple-pattern*
   "Partially apply simple-pattern with pattern"
-  [pattern]
+  [pattern-fn]
   (fn [pitch-class scale]
-    (simple-pattern pattern pitch-class scale)))
+    (simple-pattern (pattern-fn) pitch-class scale)))
 
 (defn negate-seq [coll] (map #(* -1 %) coll))
 
@@ -120,65 +120,69 @@
 ;; `:fn` is a function that takes a `pitch-class` and a `scale` as arguments and should return a sequence of ratios.
 ;; The `pitch-class` is the one with which the sample was tagged."
 ;;;;;;;;;;;;;;;;;;
-
+(defn set-pattern [pattern]
+  (swap! live-state assoc :arp/pattern-str (str (into [] pattern)))
+  pattern)
 (def arp-pat*default-asc-or-desc
   {:name "↑ | ↓"
-   :fn default-interval-seq-fn})
+   :fn (comp set-pattern default-interval-seq-fn)})
 
 (def arp-pat*asc-or-desc-lg
   {:name "↑ | ↓ Lg"
-   :fn (fn [pitch-class scale]
-         (let [direction (rand-nth [1 -1])]
-           (map #(interval-from-pitch-class2 scale pitch-class %)
-                (map #(* % direction)
-                     (range 0 (+ 9 (rrand 5 8)) (rrand 4 11))))))})
+   :fn (comp
+        set-pattern
+        (fn [pitch-class scale]
+          (let [direction (rand-nth [1 -1])]
+            (map #(interval-from-pitch-class2 scale pitch-class %)
+                 (map #(* % direction)
+                      (range 0 (+ 9 (rrand 10 18)) (rrand 2 4)))))))})
 
 (def arp-pat*8v-tremolo
   {:name "8v trem."
    :fn (fn [pitch-class scale]
          (let [size (count scale)
-               seq* (gen-seq (rrand 5 20)
+               seq* (gen-seq (rrand 5 10)
                              (** (shuffle [1 -1])
-                                 {size 4, (* 2 size) 3, (* 3 size) 2}))]
+                                 {size 4, (* 2 size) 3, (* 3 size) 1}))]
            (timbre/debug "8v tremolo" seq*)
            (simple-pattern seq* pitch-class scale)))})
 
 (def arp-pat*tremolo
   {:name "2|1 trem."
-   :fn (simple-pattern* (gen-seq (rrand 5 15)
-                                 (++ (** (weighted {6 3, 5 4, 4 4, 3 3, 2 2, 1 1})
-                                         (rand-nth [-1 1]))
-                                     (** (rand-nth [-1 1])
-                                         [0 (weighted {2 2, 1 1})]))))})
+   :fn (simple-pattern* #(gen-seq (rrand 5 15)
+                                  (++ (** (weighted {6 3, 5 4, 4 4, 3 3, 2 2, 1 1})
+                                          (rand-nth [-1 1]))
+                                      (** (rand-nth [-1 1])
+                                          [0 (weighted {2 2, 1 1})]))))})
 
 (def arp-pat*div-conv
   {:name "<|> 1-5"
    :fn (simple-pattern*
-        (make-seq-range {:len (rrand 4 15)
-                         :interval (rrand 1 5)
-                         :down? (rand-nth [true false])
-                         :converge-offset -2
-                         :converge? (rand-nth [:div :conv])}))})
+        #(make-seq-range {:len (rrand 4 15)
+                          :interval (rrand 1 5)
+                          :down? (rand-nth [true false])
+                          :converge-offset -2
+                          :converge? (rand-nth [:div :conv])}))})
 
 (def arp-pat*div-conv-lg
   {:name "<|> 6-10"
    :fn (simple-pattern*
-        (make-seq-range {:len (rrand 4 15)
-                         :interval (rrand 6 10)
-                         :down? (rand-nth [true false])
-                         :converge-offset -2
-                         :converge? (rand-nth [:div :conv])}))})
+        #(make-seq-range {:len (rrand 4 15)
+                          :interval (rrand 6 10)
+                          :down? (rand-nth [true false])
+                          :converge-offset -2
+                          :converge? (rand-nth [:div :conv])}))})
 
 (def arp-pat*seq031-2
   {:name "seq031-2"
-   :fn (simple-pattern* (gen-seq (rrand 5 9)
-                                 (++ [0 3 1 -2]
-                                     (apply lin :id/seq031-2
-                                            (repcat [6 0]
-                                                    [6 [3 4]]
-                                                    [3 [3 0 4]]
-                                                    [6 [0 3 0 4 1]]
-                                                    [4 [1]])))))})
+   :fn (simple-pattern* #(gen-seq (rrand 5 9)
+                                  (++ [0 3 1 -2]
+                                      (apply lin :id/seq031-2
+                                             (repcat [6 0]
+                                                     [6 [3 4]]
+                                                     [3 [3 0 4]]
+                                                     [6 [0 3 0 4 1]]
+                                                     [4 [1]])))))})
 
 (comment
 
@@ -235,8 +239,8 @@
         scale (subcps subcps-name)]
     {:arp/cps-index  index
      :arp/subcps-name subcps-name
-     :arp/harmony-strs [(str/replace subcps-name #"of 3\)6" "")
-                        (str/join " " (map (comp :class :pitch) scale))]
+     :arp/harmony-strs {:cps-name (str/replace subcps-name #"of 3\)6" "")
+                        :notes (str/join " " (map (comp :class :pitch) scale))}
      :arp/scale scale}))
 
 (comment
@@ -302,7 +306,7 @@
   (gp/stop ::arp-rain))
 
 (defn start-sample-arp!
-  []
+  [arp-fn-params]
   (timbre/info :starting-arp)
   (ref-rain :id ::arp-rain
             :durs [5 3 8 2 1 5]
@@ -318,9 +322,11 @@
                                  :in (ge.route/fl-i1 :bus)
                                  :play-fn #_(partial #'arp-reponse-1 {:scale scale
                                                                       :out (bh 0)})
-                                 (partial #'arp-reponse-2 {:scale scale
-                                                           :interval-seq-fn (or pattern-fn default-interval-seq-fn)
-                                                           :out (outputs :arp)})}))))))
+                                 (partial #'arp-reponse-2
+                                          (merge {:scale scale
+                                                  :interval-seq-fn (or pattern-fn default-interval-seq-fn)
+                                                  :out (outputs :arp)}
+                                                 arp-fn-params))}))))))
 (defn make-repeat-cell
   [pattern-cell
    pitch-class
@@ -363,7 +369,10 @@
         set* (->> root :set sort (str/join ".") (#(str "{" % "}")))]
     {:harmonizer/harmony-index index
      :harmonizer/harmony harmony
-     :harmonizer/harmony-str (str (into [] harmony) " - " subcps-name* " on " pitch-class " " set*)}))
+     :harmonizer/harmony-str {:harmony (str (into [] harmony))
+                              :subcps-name subcps-name*
+                              :pitch-class pitch-class
+                              :set set*}}))
 
 (comment
   (get-section-data (:section @live-state))
@@ -509,14 +518,25 @@
 
 (def default-harmonizer-config
   {:harmonies [[0 "3)4 of 3)6 1.3.5.9"]]})
-
+(comment
+  (dispatch {::change-section {:inc? false}})
+  (dispatch {::change-section {:inc? true}}))
 (def sections
   ;; FIXME: default configs are necessary to prevent app from breaking
 
   ;; PT 1 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; 
-  [{:notes [:div [:h1.text-cyan-400.text-mist-400 "0. Preinicio - fader abajo"]]
+  [{:notes [:div [:h1.text-cyan-400.text-mist-400 "0. Preinicio"]
+            (html-list [[:span.text-red-600 "fader abajo"]
+                        [:b.text-red-500.text-6xl "FS 2: Fade in main bus"]
+                        [:b.text-orange-500.text-6xl "FS A: Inicia grabación"]])]
     :arp default-arp-config
-    :harmonizer default-harmonizer-config}
+    :harmonizer default-harmonizer-config
+    :midi-events {1 (fn []
+                      (dispatch  {::start-recording true
+                                  ::log "Starting rec"}))
+                  5 (fn []
+                      (dispatch {::fade-main-bus {:level reaper/zero-db}
+                                 ::log "Fading in main bus"}))}}
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;; 
    ;; S1
@@ -534,7 +554,11 @@
                 "3)5 of 3)6 1.3.5.7.9"]
           :patterns [arp-pat*8v-tremolo
                      arp-pat*tremolo
-                     arp-pat*seq031-2]}
+                     arp-pat*seq031-2]
+          :arp-fn/params {:env-min-dur 4
+                          :env-max-dur 10
+                          :amp-min (o/db->amp -9)
+                          :amp-max (o/db->amp -4)}}
     :harmonizer {:harmonies [[0 "3)4 of 3)6 1.3.5.9"]
                              [1 "3)4 of 3)6 1.3.5.9"]
                              [2 "3)4 of 3)6 1.3.5.9"]
@@ -544,8 +568,8 @@
                 :synth/params {:a 3
                                :r 15
                                :rev-mix 1
-                               :freeze-ratios [1 2 1/2 1/4 4 7]
-                               :freezed-amp 20}}}
+                               :freeze-ratios [1 2 1/2 1/4]
+                               :freezed-amp 10}}}
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;
    ;; S2
@@ -633,12 +657,12 @@
 ;;;;;;;;;;;;;;;; 
    ;; S4
    ;; NOTE: now in dekany (D2): 3)5 1.5.7.9.11
-   {:notes [:div [:h1.text-cyan-400 "4. Colores y espejos de los xapiri"]
+   {:notes [:div [:h1.text-cyan-400 "4. Colores y espejos"]
             [:h2.overline.text-rose-300.pt-4 "A. Inicio"]
             (html-list [[:small "dentro del la nube (decayendo)"]
                         "melódico, menos rev"
                         [:span "...  frecuente con " [:b.text-lime-300 "armonizador"] [:span.text-sm " (buscar acorde, quizá 1.3.5?)"]]])
-            [:h2.overline.text-rose-300.pt-4 "B. Danzaorquesta de los xapiri"]
+            [:h2.overline.text-rose-300.pt-4 "B. Danzaorquesta"]
             (html-list [[:b.text-amber-400 "arpegiador " [:small "varios 3)4"]]
                         [:span "poco a poco más " [:b.text-emerald-300 "ps-freeze"]
                          " y " [:b.text-lime-300 "armonizador "] [:small [:u "simultáneos"]]]])]
@@ -667,9 +691,16 @@
 ;;;;;;;;;;;;
    ;; S5 (Fin)
    {:notes [:div [:h1.text-cyan-400 "5. Fin"]
-            (html-list ["baja el fader del micro"])]
+            (html-list ["FS 2: baja el fader del micro"
+                        "FS A: Apaga grabación"])]
     :arp default-arp-config
-    :harmonizer default-harmonizer-config}])
+    :harmonizer default-harmonizer-config
+    :midi-events {1 (fn []
+                      (dispatch  {::stop-recording true
+                                  ::log "Stoping rec"}))
+                  5 (fn []
+                      (dispatch {::fade-main-bus {:level 0}
+                                 ::log "Fading out main bus"}))}}])
 ;; => #'tieminos.compositions.garden-earth.moments.one/sections
 
 (->> (concat (subcps "2)4 of 3)6 7-3.5.9.11")
@@ -756,12 +787,12 @@
 
 (reg-event-fx
  ::toggle-sample-arp
- (fn [{:keys [db]} _]
+ (fn [{:keys [db]} arp-fn-params]
    (let [on? (:arp.refrain/on? db)]
      {:db (assoc db :arp.refrain/on? (not on?))
       :fx (if on?
             {::stop-sample-arp {}}
-            {::start-sample-arp {}})})))
+            {::start-sample-arp arp-fn-params})})))
 
 (reg-event-fx
  ::toggle-harmonizer
@@ -773,7 +804,7 @@
             {::start-harmonizer {}})})))
 
 (def ^:private main-synth-default-params
-  {:amp 8
+  {:amp 4
    :min-mix 0.5 :mix 1
    :min-room 0.8 :room 1
    :damp-min 0.3 :damp 0.5
@@ -840,46 +871,62 @@
 
 (reg-event-fx ::toggle-ps-freeze #'toggle-ps-freeze)
 
-(reg-event-db
- ::on-ps-freeze-start
- (fn [db synth]
-   (timbre/info "Star(t)ed: ps-freeze ")
-   (assoc db :synth/ps-freeze synth)))
+(reg-event-db ::on-ps-freeze-start
+              (fn [db synth]
+                (timbre/info "Star(t)ed: ps-freeze ")
+                (assoc db :synth/ps-freeze synth)))
 
-(reg-event-db
- ::on-synth-stop
- (fn [db {:keys [db-synth-key]}]
-   (when db-synth-key
-     (timbre/debug "Dissoc'ing synth key:" db-synth-key)
-     (dissoc db db-synth-key))))
+(reg-event-db ::on-synth-stop
+              (fn [db {:keys [db-synth-key]}]
+                (when db-synth-key
+                  (timbre/debug "Dissoc'ing synth key:" db-synth-key)
+                  (dissoc db db-synth-key))))
 
-(reg-event-fx
- ::toggle-nubosidades
- (fn [{:keys [db]} {:keys [params]}]
-   (let [synths (:synth/nubosidades db)]
-     (if (some o/node-active? synths)
-       {:fx (map-indexed (fn [i synth]
-                           [::stop-synth {:synth synth
-                                          :db-synth-key (when (= i (dec (count synths)))
-                                                          :synth/nubosidades)}])
-                         synths)}
-       {:fx {::start-nubosidades params}}))))
+(reg-event-fx ::toggle-nubosidades
+              (fn [{:keys [db]} {:keys [params]}]
+                (let [synths (:synth/nubosidades db)]
+                  (if (some o/node-active? synths)
+                    {:fx (map-indexed (fn [i synth]
+                                        [::stop-synth {:synth synth
+                                                       :db-synth-key (when (= i (dec (count synths)))
+                                                                       :synth/nubosidades)}])
+                                      synths)}
+                    {:fx {::start-nubosidades params}}))))
 
-(reg-event-db
- ::on-nubosidades-start
- (fn [db synths]
-   (timbre/info "Started: nubosidades synths ")
-   (assoc db :synth/nubosidades synths)))
+(reg-event-db ::on-nubosidades-start
+              (fn [db synths]
+                (timbre/info "Started: nubosidades synths ")
+                (assoc db :synth/nubosidades synths)))
 
-(reg-event-fx
- ::fade-main-bus
- (fn [_ {:keys [level]}]
-   {:fx {::fade-main-bus {:level level}}}))
+(reg-event-fx ::fade-main-bus
+              (fn [_ {:keys [level]}]
+                {:fx {::fade-main-bus {:level level}}}))
 
-(reg-event-db
- ::confirm-init
- (fn [db _]
-   (assoc db :ræ.one/initialized? true)))
+(reg-event-db ::confirm-init
+              (fn [db _]
+                (assoc db :ræ.one/initialized? true)))
+
+(reg-event-fx ::start-recording
+              (fn [{:keys [db]} _]
+                (when-not (:recording? db)
+                  {:db (assoc db :recording? true)
+                   :fx [[::start-recording]]})))
+
+(reg-event-fx ::stop-recording
+              (fn [{:keys [db]} _]
+                {:db (dissoc db :recording?)
+                 :fx [[::stop-recording]]}))
+
+(reg-event-fx ::log
+              (fn [_ s] {:fx {::log s}}))
+
+(reg-event-db ::set-fingerings
+              (fn [db fingerings]
+                (assoc db :fingerings fingerings)))
+
+(reg-event-fx ::post-fingerings
+              (fn [_ fingerings]
+                {:fx {::post-fingerings.fx fingerings}}))
 
 (comment
   (-> @live-state))
@@ -887,7 +934,7 @@
 ;;;;;;;;;;;;;;;;;;
 ;; * FX
 ;;;;;;;;;;;;;;;;;;
-
+(declare start-fingerings-refrain)
 (reg-fx ::init.fx
         (fn [_ _]
           (timbre/info "(Re)initializing")
@@ -898,6 +945,7 @@
           (add-watch live-state ::post-live-state
                      (fn [_key _ref _old-value new-value]
                        (post-live-state* new-value)))
+          (start-fingerings-refrain)
           (dispatch [[::confirm-init]
                      [::start-main-synth]
                      [::start-signal-analyzer]])))
@@ -920,7 +968,7 @@
 
 (reg-fx ::stop-sample-arp (fn [_ _] (stop-sample-arp!)))
 
-(reg-fx ::start-sample-arp (fn [_ _] (start-sample-arp!)))
+(reg-fx ::start-sample-arp (fn [_ arp-fn-params] (start-sample-arp! arp-fn-params)))
 
 (reg-fx ::stop-harmonizer (fn [_ _] (stop-harmonizer!)))
 
@@ -938,9 +986,9 @@
         (fn [_ synth-params]
           (timbre/info "ps-freeze" synth-params)
           (let [synth (ps-freeze (merge {:in (bh/bus 3)
-                                         :amp 64
-                                         :ps-amp 0.5
-                                         :freezed-amp 16
+                                         :amp (o/db->amp 39)
+                                         :ps-amp  (o/db->amp -4)
+                                         :freezed-amp (o/db->amp 27)
                                          :r 5
                                          :out (outputs :harmonizer)}
                                         synth-params))]
@@ -987,6 +1035,21 @@
          params)
        defaults)))
 
+(defn section-midi-event
+  [note section-data default-fn]
+  (if-let [f (get-in section-data [:section/midi-events note])]
+    (f)
+    (default-fn)))
+
+(comment
+  (dispatch {::change-section {:inc? false}})
+  (dispatch {::change-section {:inc? true}})
+  (let [note 1]
+    (section-midi-event
+     note
+     (get-subval ::section-data)
+     #(timbre/warn "Not defined, note:" note))))
+
 (reg-fx
  ::init-midi.fx
  (fn [_ _]
@@ -1000,18 +1063,23 @@
                    (cond
                      (= 0 note) (dispatch {::toggle-nubosidades (params-from-m-or-f
                                                                  (get-subval ::section-nubosidades-config))})
-                     (= 1 note) (timbre/warn "Not defined, note:" note)
+                     (= 1 note) (section-midi-event note
+                                                    (get-subval ::section-data)
+                                                    #(timbre/warn "Not defined, note:" note))
 
-                     ;; set section
+                       ;; set section
                      (= 2 note) (dispatch {::change-section {:inc? false}})
                      (= 3 note) (dispatch {::change-section {:inc? true}})
 
-                     ;; arp
-                     (= 4 note) (dispatch {::toggle-sample-arp {}})
-                     (= 5 note) (dispatch {::inc-arp-cps-index {}})
-                     (= 6 note) (dispatch {::inc-arp-pattern-index {}})
+                       ;; arp
+                     (= 4 note) (dispatch {::toggle-sample-arp (params-from-m-or-f
+                                                                (get-subval ::section-arp-fn-config))})
+                     (= 5 note) (section-midi-event note
+                                                    (get-subval ::section-data)
+                                                    #(dispatch {::inc-arp-pattern-index {}}))
+                     (= 6 note) (dispatch {::inc-arp-cps-index {}})
 
-                     ;; harmonizer
+                       ;; harmonizer
                      (= 7 note) (dispatch {::toggle-harmonizer {}})
                      (= 8 note) (dispatch {::inc-harmonizer-harmony-index {}})
                      (= 9 note) (dispatch {::toggle-ps-freeze (params-from-m-or-f
@@ -1030,8 +1098,17 @@
 
 (reg-fx ::post-fingerings.fx
         (fn [_ fingerings]
-          (post-fingering2 (str/join "\n" fingerings))))
+          (post-fingering2 (str/join "\n\n" fingerings))))
 
+(reg-fx ::start-recording
+        (fn [_ _] (reaper/rec)))
+
+(reg-fx ::stop-recording
+        (fn [_ _] (reaper/stop)))
+
+(reg-fx ::set-fingerings.fx
+        (fn [_ fingerings]
+          (dispatch {::set-fingerings fingerings})))
 ;;;;;;;;;;;;;;;;;;
 ;; * Subs
 ;;;;;;;;;;;;;;;;;;
@@ -1051,11 +1128,11 @@
 (reg-sub ::arp-cps-data
          #'arp-cps-data-sub
          (merge post-live-state-fx
-                {::post-fingerings (fn [_ {:keys [arp/scale]}]
-                                     {::post-fingerings.fx (mapv (comp
-                                                                  pitch-class->pr-fingering
-                                                                  :class :pitch)
-                                                                 scale)})}))
+                {::set-fingerings (fn [_ {:keys [arp/scale]}]
+                                    {::set-fingerings.fx (mapv (comp
+                                                                pitch-class->pr-fingering
+                                                                :class :pitch)
+                                                               scale)})}))
 
 (defn arp-pattern-data-sub
   [{:keys [arp/pattern-index section] :as _db}]
@@ -1079,21 +1156,23 @@
 
 (defn section-data-sub
   [{:keys [section] :as _db}]
-  {:section/index section
-   :section/notes (:notes (get-section-data section))})
+  (let [data (get-section-data section)]
+    {:section/index section
+     :section/notes (:notes data)
+     :section/midi-events (:midi-events data)}))
 
 (reg-sub ::section-data
          #'section-data-sub
          (merge
           post-live-state-fx
-          {::fade-main-bus
-           (fn [_ {:keys [section/index]}]
-             (let [level (if (or (zero? index)
-                                 (= (dec (count sections)) index))
-                           (do (timbre/info "Fading out main bus")
-                               0)
-                           reaper/zero-db)]
-               {::fade-main-bus {:level level}}))}
+          #_{::fade-main-bus
+             (fn [_ {:keys [section/index]}]
+               (let [level (if (or (zero? index)
+                                   (= (dec (count sections)) index))
+                             (do (timbre/info "Fading out main bus")
+                                 0)
+                             reaper/zero-db)]
+                 {::fade-main-bus {:level level}}))}
           {::log (fn [_ {:keys [section/index]}]
                    {::log (str "Now on section: " index)})}))
 
@@ -1108,6 +1187,15 @@
   (-> section get-section-data :nubosidades))
 
 (reg-sub ::section-nubosidades-config #'section-nubosidades-config-sub)
+
+(defn section-arp-fn-config-sub
+  [{:keys [section] :as _db}]
+  (-> section get-section-data :arp :arp-fn/params))
+(section-arp-fn-config-sub {:section 2})
+(reg-sub ::section-arp-fn-config #'section-arp-fn-config-sub)
+
+(reg-sub ::fingerings
+         (fn [db] (:fingerings db)))
 
 ;;;;;;;;;;;;;;;;;;
 ;; * UI
@@ -1128,10 +1216,23 @@
                        (merge (get-subval ::arp-cps-data)
                               {:arp/pattern (:arp/pattern-name (get-subval ::arp-pattern-data))}
                               (get-subval ::harmonizer-data)
-                              (get-subval ::section-data)))))
+                              (-> (get-subval ::section-data)
+                                  (dissoc :section/midi-events))))))
 
 (comment
   (post-live-state* @live-state))
+
+;;;;;;;;;;;;;;;;;;
+;; ** Fingerings
+;;;;;;;;;;;;;;;;;;
+
+(defn start-fingerings-refrain []
+  (ref-rain
+   :id ::post-fingerings
+   :durs [5]
+   :on-event (on-event
+              (when-let [fs (get-subval ::fingerings)]
+                (dispatch {::post-fingerings [(rand-nth fs)]})))))
 
 (comment
   ;; DONE: fill in form
@@ -1141,7 +1242,7 @@
   ;; DONE: improve arp patterns
   ;; DONE: harmonizer chords
   ;; DONE: UI for nubosidades and ps-freeze
-  ;; TODO: probar que todo funcione
+  ;; DONE: probar que todo funcione
   ;; TODO: check ps-freeze levels
   ;; TODO: check nubosidades levels
   ;; TODO: pass params to arp like levels curve, main amp, sound dur
@@ -1149,17 +1250,21 @@
   ;;           or better yet:
   ;;    TODO: send arp to nubosidades (for the first section)
   ;; TODO: #A check small interface
+  ;;    TODO: optimize space for small interface
   ;; DONE: check initialization errors
   ;; TODO: danzaorquesta: latido (ooxx|Xooo|xxXo)
   ;; TODO: diferentes duraciones de los eventos del arp en las diversas secciones
   ;; TODO: rec on/off
   ;; TODO: unificar params the rev en un solo lugar
+  ;; TODO: improve pan-verb synthdef so that two signals are panned independently instead of one
+  ;; TODO: review ps-freeze usage of moog-ladder (perhaps a dry wet or some sort of control for the high cut)
   )
 (comment
   ;; init
   (ræ/get-state ::db)
   (bh/set-interface! :minifuse)
-  (dispatch {::init {:midi? false}})
+  (dispatch {::init {:midi? true}})
+  (dispatch {::fade-main-bus {:level 0}})
   (dispatch {::fade-main-bus {:level reaper/zero-db}})
 
   ;; sections
@@ -1187,6 +1292,16 @@
   (dispatch {::stop-main-synth {}})
   (dispatch {::ctl-synth {:synth-k :synth/main
                           :params main-synth-default-params}})
+  (dispatch {::ctl-synth {:synth-k :synth/main
+                          :params {:pan-min -0.8,
+                                   :damp-min 0.3,
+                                   :pan 0.8,
+                                   :amp 4,
+                                   :damp 0.5,
+                                   :min-room 0.8,
+                                   :room 1,
+                                   :mix 0.3,
+                                   :min-mix 0.5}}})
 
   (post-live-state* @live-state))
 

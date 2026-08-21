@@ -29,39 +29,42 @@
       :r 5
       :gate 1
       :freeze-gate 0
+      :freeze-a 3
       :rev-mix 0.7
       :rev-room 1
       :out 0})
  '(let [spread-ps (fn [sig ratios]
-                    (->> (o/pitch-shift sig  0.1 #_(/ ratios 2) ratios)
+                    (->> (o/pitch-shift sig  0.5 #_(/ ratios 2) ratios)
                          maybe-wrap-in-vec
                          (map (fn [sig*] (-> sig*
-                                             (* (lfo-kr (o/rand 2 8) (o/rand 0.1 0.6) 1))
-                                             (o/pan2  (lfo-kr (o/rand 1 8) -1 1)))))
+                                             (* (lfo-kr (o/rand 0.3 0.7) (o/rand 0.1 0.3) (o/rand  0.5 1)))
+                                             (o/pan2  (lfo-kr (o/rand 0.3 0.7) -1 1)))))
                          maybe-mix))
         sig (-> (o/sound-in in)
                 (spread-ps ps-ratios)
                 (o/mix))
         chain (o/fft (o/local-buf (pow 2 14))
                      (* (o/delay-l sig 0.5 0.5)
-                        (o/env-gen (o/asr 0.1 1 0.2)
+                        (o/env-gen (o/asr 0.2 1 0.2)
                                    :gate gate)))
 
         freezig (-> chain
                     (o/pv-mag-freeze freeze-gate)
-                    (o/ifft))
+                    (o/ifft :winsize 1))
         freezig* (spread-ps freezig freeze-ratios)
-        freezig** (* freezig*
+        freezig** (* (-> freezig*
+                         (o/moog-ladder 2000 0.5))
                      freezed-amp
-                     (lfo-kr (o/rand 0.2 1) 0.8 1)
-                     (o/env-gen (o/asr 3 1 0.1 2)
+                     (lfo-kr (o/rand 0.3 0.7) 0.5 1)
+
+                     (o/env-gen (o/asr freeze-a 1 0.1 2)
                                 :gate freeze-gate))
         sig* (* sig (o/env-gen (o/asr 0.1 1 2)
                                :gate gate))]
     (o/out out (* amp
                   (-> (+ (* ps-amp  sig*)  freezig**)
                       (o/free-verb rev-mix rev-room))
-                  (o/env-gen (o/asr a 1 r 0.5)
+                  (o/env-gen (o/asr a 1 r 2)
                              :gate gate
                              :action o/FREE)))))
 
