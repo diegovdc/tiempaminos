@@ -1234,6 +1234,9 @@
               (when-let [fs (get-subval ::fingerings)]
                 (dispatch {::post-fingerings [(rand-nth fs)]})))))
 
+(defn stop-fingerings-refrain []
+  (gp/stop ::post-fingerings))
+
 (comment
   ;; DONE: fill in form
   ;; DONE: figure out scales
@@ -1252,7 +1255,7 @@
   ;; TODO: #A check small interface
   ;;    TODO: optimize space for small interface
   ;; DONE: check initialization errors
-  ;; TODO: danzaorquesta: latido (ooxx|Xooo|xxXo)
+  ;; WAIT: danzaorquesta: latido (ooxx|Xooo|xxXo)
   ;; TODO: diferentes duraciones de los eventos del arp en las diversas secciones
   ;; TODO: rec on/off
   ;; TODO: unificar params the rev en un solo lugar
@@ -1303,7 +1306,8 @@
                                    :mix 0.3,
                                    :min-mix 0.5}}})
 
-  (post-live-state* @live-state))
+  (post-live-state* @live-state)
+  (stop-fingerings-refrain))
 
 (comment
   (-> @live-state)
