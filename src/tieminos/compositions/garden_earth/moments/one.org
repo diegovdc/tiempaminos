@@ -1,6 +1,10 @@
 #+TITLE: El camino a través de la foresta
 #+STARTUP: show2levels
 
+* Performance
+** Configuración
+*** Reverb
+Se puede usar =reverb-configs= para configurar la amplitud del =rev-mix= y =rev-room= de los diferentes sintetizadores.
 * Por hacer
 ** DONE fill in form
 ** DONE figure out scales

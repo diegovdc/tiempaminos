@@ -57,6 +57,25 @@
     (bh/bus out)
     (throw (ex-info  "Unknown output" {:key k}))))
 
+(defonce reverb-configs
+  (atom {:main-synth {:mix-mul 1 :room-mul 1}
+         :harmonizer {:mix-mul 1 :room-mul 1}
+         :ps-freeze {:mix-mul 1 :room-mul 1}
+         :nubosidades {:mix-mul 1 :room-mul 1}
+         :nubosidades2 {:mix-mul 1 :room-mul 1}}))
+
+(defn rev-mix-mul [k]
+  (if-let [x (get-in @reverb-configs [k :mix-mul])]
+    x
+    (do (timbre/warn "Unknown rev-mix-mul key, defaulting to 1" {:key k})
+        1)))
+
+(defn rev-room-mul [k]
+  (if-let [x (get-in @reverb-configs [k :room-mul])]
+    x
+    (do (timbre/warn "Unknown rev-room-mul key, defaulting to 1" {:key k})
+        1)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; * Re-affect/State init
 ;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -381,17 +400,17 @@
   (harmonizer-data-sub @live-state))
 
 (defn start-harmonizer! []
-  (timbre/info "(re)starting-harmonizer")
   (if-let [ratios (:harmonizer/harmony (get-subval ::harmonizer-data))]
-    (do
-      (println ratios)
+    (let [rev-mix (* (rev-mix-mul :harmonizer) 0.5)
+          rev-room (* (rev-room-mul :harmonizer) 3)]
+      (timbre/info "(re)starting-harmonizer" ratios)
       (ndef/ndef
        ::harmonizer
        (-> (o/sound-in (ge.route/fl-i1 :in))
            #_(o/delay-l 1 1)
            (o/pitch-shift 0.1 ratios)
            ((fn [sig] (if (> (count ratios) 1) (o/mix sig) sig)))
-           (o/free-verb 0.5 3)
+           (o/free-verb rev-mix rev-room)
            (o/pan2)
            (* 8))
        {:out (outputs :harmonizer)}))
@@ -807,8 +826,10 @@
 
 (def ^:private main-synth-default-params
   {:amp 4
-   :min-mix 0.5 :mix 1
-   :min-room 0.8 :room 1
+   :min-mix (* (rev-mix-mul :main-synth) 0.3)
+   :mix (* (rev-mix-mul :main-synth) 0.5)
+   :min-room (* (rev-room-mul :main-synth) 0.8)
+   :room (* (rev-room-mul :main-synth) 1)
    :damp-min 0.3 :damp 0.5
    :pan-min -0.8 :pan 0.8})
 
@@ -987,25 +1008,37 @@
 (reg-fx ::start-ps-freeze
         (fn [_ synth-params]
           (timbre/info "ps-freeze" synth-params)
-          (let [synth (ps-freeze (merge {:in (bh/bus 3)
-                                         :amp (o/db->amp 39)
-                                         :ps-amp  (o/db->amp -4)
-                                         :freezed-amp (o/db->amp 27)
-                                         :r 5
-                                         :out (outputs :harmonizer)}
-                                        synth-params))]
+          (let [synth (ps-freeze (-> {:in (bh/bus 3)
+                                      :amp (o/db->amp 39)
+                                      :ps-amp  (o/db->amp -4)
+                                      :freezed-amp (o/db->amp 27)
+                                      :rev-mix 0.7
+                                      :rev-room 1
+                                      :r 5
+                                      :out (outputs :harmonizer)}
+                                     (merge synth-params)
+                                     (update :rev-room * (rev-room-mul :ps-freeze))
+                                     (update :rev-mix * (rev-mix-mul :ps-freeze))))]
             (dispatch {::on-ps-freeze-start synth}))))
 
 (reg-fx ::start-nubosidades
         (fn [_ synth-params]
-          (let [synth1 (nuboso (merge {:in (ge.route/fl-i1 :bus)
-                                       :amp 4
-                                       :out (outputs :nubosidades)}
-                                      synth-params))
-                synth2 (nuboso2 (merge {:in (ge.route/fl-i1 :bus)
-                                        :amp 4
-                                        :out (outputs :nubosidades)}
-                                       synth-params))]
+          (let [synth1 (nuboso (-> {:in (ge.route/fl-i1 :bus)
+                                    :amp 4
+                                    :rev-room 1
+                                    :rev-mix 1
+                                    :out (outputs :nubosidades)}
+                                   (merge synth-params)
+                                   (update :rev-room * (rev-room-mul :nubosidades))
+                                   (update :rev-mix * (rev-mix-mul :nubosidades))))
+                synth2 (nuboso2 (-> {:in (ge.route/fl-i1 :bus)
+                                     :amp 4
+                                     :rev-room 1.3
+                                     :rev-mix 1
+                                     :out (outputs :nubosidades)}
+                                    (merge synth-params)
+                                    (update :rev-room * (rev-room-mul :nubosidades2))
+                                    (update :rev-mix * (rev-mix-mul :nubosidades2))))]
             (dispatch {::on-nubosidades-start [synth1 synth2]}))))
 
 (reg-fx ::stop-nubosidades
@@ -1239,8 +1272,9 @@
 (defn stop-fingerings-refrain []
   (gp/stop ::post-fingerings))
 
-(comment)
-
+;;;;;;;;;;;;;;;;;;
+;; * Controls API
+;;;;;;;;;;;;;;;;;;
 (comment
   ;; init
   (ræ/get-state ::db)
@@ -1274,23 +1308,40 @@
   (dispatch {::stop-main-synth {}})
   (dispatch {::ctl-synth {:synth-k :synth/main
                           :params main-synth-default-params}})
-  (dispatch {::ctl-synth {:synth-k :synth/main
-                          :params {:pan-min -0.8,
-                                   :damp-min 0.3,
-                                   :pan 0.8,
-                                   :amp 4,
-                                   :damp 0.5,
-                                   :min-room 0.8,
-                                   :room 1,
-                                   :mix 0.3,
-                                   :min-mix 0.5}}})
+  (dispatch {::ctl-synth
+             {:synth-k :synth/main
+              :params {:amp 4
+                       :min-mix (* (rev-mix-mul :main-synth) 0.3)
+                       :mix (* (rev-mix-mul :main-synth) 0.5)
+                       :min-room (* (rev-room-mul :main-synth) 0.8)
+                       :room (* (rev-room-mul :main-synth) 1)
+                       :damp-min 0.3 :damp 0.5
+                       :pan-min -0.8 :pan 0.8}}})
 
   (post-live-state* @live-state)
   (stop-fingerings-refrain))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; * Reverb Config
+;; for easily adapting reverb to different venues
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(comment
+  (->> @reverb-configs)
+  (reset!
+   reverb-configs
+    ;; NOTE: be careful not to delete any key      
+   {:main-synth {:mix-mul 1 :room-mul 1}
+    :harmonizer {:mix-mul 1 :room-mul 1}
+    :ps-freeze {:mix-mul 1 :room-mul 1}
+    :nubosidades {:mix-mul 1 :room-mul 1}
+    :nubosidades2 {:mix-mul 1 :room-mul 1}}))
+
+;;;;;;;;;;;;;;;;;;
+;; * Misc 
+;;;;;;;;;;;;;;;;;;
 (comment
   (-> @live-state)
-  (->> @live-state)
+
   (o/stop)
 
   (-> freq-history)
