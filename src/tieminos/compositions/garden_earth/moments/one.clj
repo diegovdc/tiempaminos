@@ -1,6 +1,8 @@
 (ns tieminos.compositions.garden-earth.moments.one
   "First piece or section from garden earth.
-  Audio routing assumes the use of `garden-earth/one.rpp`"
+  Audio routing assumes the use of `garden-earth/one.rpp`
+
+  Update 08-2026: aka `El camino a través de la foresta`"
   (:require
    [clojure.core.async :as a]
    [clojure.data.generators :refer [weighted]]
@@ -1237,31 +1239,8 @@
 (defn stop-fingerings-refrain []
   (gp/stop ::post-fingerings))
 
-(comment
-  ;; DONE: fill in form
-  ;; DONE: figure out scales
-  ;; DONE: connect ps-freeze to Pacer
-  ;; DONE: nubosidad synth to pacer
-  ;; DONE: improve arp patterns
-  ;; DONE: harmonizer chords
-  ;; DONE: UI for nubosidades and ps-freeze
-  ;; DONE: probar que todo funcione
-  ;; TODO: check ps-freeze levels
-  ;; TODO: check nubosidades levels
-  ;; TODO: pass params to arp like levels curve, main amp, sound dur
-  ;;       ... and if possible a filter
-  ;;           or better yet:
-  ;;    TODO: send arp to nubosidades (for the first section)
-  ;; TODO: #A check small interface
-  ;;    TODO: optimize space for small interface
-  ;; DONE: check initialization errors
-  ;; WAIT: danzaorquesta: latido (ooxx|Xooo|xxXo)
-  ;; TODO: diferentes duraciones de los eventos del arp en las diversas secciones
-  ;; TODO: rec on/off
-  ;; TODO: unificar params the rev en un solo lugar
-  ;; TODO: improve pan-verb synthdef so that two signals are panned independently instead of one
-  ;; TODO: review ps-freeze usage of moog-ladder (perhaps a dry wet or some sort of control for the high cut)
-  )
+(comment)
+
 (comment
   ;; init
   (ræ/get-state ::db)

@@ -1,0 +1,47 @@
+#+TITLE: El camino a través de la foresta
+#+STARTUP: show2levels
+
+* Por hacer
+** DONE fill in form
+** DONE figure out scales
+** DONE connect ps-freeze to Pacer
+** DONE nubosidad synth to pacer
+** DONE improve arp patterns
+** DONE harmonizer chords
+** DONE UI for nubosidades and ps-freeze
+** DONE probar que todo funcione
+** TODO [#B] check ps-freeze levels
+** TODO [#B] check nubosidades levels
+** TODO [#C] pass params to arp like levels curve, main amp, sound dur
+**       ... and if possible a filter
+**           or better yet
+** TODO [#C] send arp to nubosidades (for the first section)
+** DONE #A check small interface
+CLOSED: [2026-08-22 Sat 08:32]
+*** DONE optimize space for small interface
+CLOSED: [2026-08-22 Sat 08:32]
+** DONE check initialization errors
+** WAIT danzaorquesta latido (ooxx|Xooo|xxXo)
+** TODO [#C] diferentes duraciones de los eventos del arp en las diversas secciones
+** DONE rec on/off
+CLOSED: [2026-08-22 Sat 08:32]
+** DONE [#A] unificar params the rev en un solo lugar
+CLOSED: [2026-08-22 Sat 09:00]
+*** NOPE Reverb principal en REAPER
+Ese no parece buena idea centralizarlo
+CLOSED: [2026-08-22 Sat 08:36]
+*** DONE Reverb de =nubosidades=
+CLOSED: [2026-08-22 Sat 08:56]
+Éste es muy tímbrico y genera polifonía así que hay que tener cuidado con bajarlo
+*** DONE Reverb de =main-synth=
+CLOSED: [2026-08-22 Sat 08:56]
+Éste sí se puede bajar, con menos problema, aunque ayuda prolongando el sonido
+*** DONE Reverb del ps-freeze
+CLOSED: [2026-08-22 Sat 08:56]
+Es más breve, tal vez no importa tanto
+*** DONE Reverb del armonizador
+CLOSED: [2026-08-22 Sat 08:59]
+Igual es de un uso breve y tímbrico
+** TODO [#C] improve pan-verb synthdef so that two signals are panned independently instead of one
+** TODO [#B] review ps-freeze usage of moog-ladder (perhaps a dry wet or some sort of control for the high cut)
+** TODO [#C] Record pacer midi events
