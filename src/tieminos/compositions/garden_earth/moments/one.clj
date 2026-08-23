@@ -549,7 +549,7 @@
   [{:notes [:div [:h1.text-cyan-400.text-mist-400 "0. Preinicio"]
             (html-list [[:span.text-red-600 "fader abajo"]
                         [:b.text-red-500.text-6xl "FS 2: Fade in main bus"]
-                        [:b.text-orange-500.text-6xl "FS A: Inicia grabación"]])]
+                        [:b.text-orange-500.text-6xl "FS B: Inicia grabación"]])]
     :arp default-arp-config
     :harmonizer default-harmonizer-config
     :midi-events {1 (fn []
@@ -713,7 +713,7 @@
    ;; S5 (Fin)
    {:notes [:div [:h1.text-cyan-400 "5. Fin"]
             (html-list ["FS 2: baja el fader del micro"
-                        "FS A: Apaga grabación"])]
+                        "FS B: Apaga grabación"])]
     :arp default-arp-config
     :harmonizer default-harmonizer-config
     :midi-events {1 (fn []
@@ -922,8 +922,9 @@
                 (assoc db :synth/nubosidades synths)))
 
 (reg-event-fx ::fade-main-bus
-              (fn [_ {:keys [level]}]
-                {:fx {::fade-main-bus {:level level}}}))
+              (fn [{:keys [db]} {:keys [level]}]
+                {:db (assoc db :main-bus-level level)
+                 :fx {::fade-main-bus {:level level}}}))
 
 (reg-event-db ::confirm-init
               (fn [db _]
