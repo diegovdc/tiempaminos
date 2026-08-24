@@ -33,7 +33,7 @@
    [tieminos.osc.reaper :as reaper]
    [tieminos.sc-utils.ndef.v1 :as ndef]
    [tieminos.sc-utils.recording.v1 :as sc.rec.v1]
-   [tieminos.seq-utils.core :refer [** ++ gen-seq lin mseq]]
+   [tieminos.seq-utils.core :refer [** ++ choose gen-seq lin mseq]]
    [tieminos.seq-utils.utils :refer [repcat]]
    [tieminos.tierra-mar.v1.nubosidad-lorentziana :refer [nuboso nuboso2]]
    [tieminos.utils :refer [cb-interpolate wrap-at]]
@@ -49,7 +49,8 @@
   {:main-synth 20
    :arp 22
    :harmonizer 24
-   :nubosidades 26})
+   :nubosidades 26
+   :ps-freeze 28})
 
 (defn outputs
   [k]
@@ -171,7 +172,10 @@
 (def arp-pat*tremolo
   {:name "2|1 trem."
    :fn (simple-pattern* #(gen-seq (rrand 5 15)
-                                  (++ (** (weighted {6 3, 5 4, 4 4, 3 3, 2 2, 1 1})
+                                  (++ (concat (repeat (rrand 1 10) 0)) (range 0 100 (rrand 1 3))
+                                      (** {0 3 1 1 2 1 3 1}
+                                          (choose -1 1))
+                                      (** (weighted {8 3, 6 3, 5 4, 4 4, 3 3, 2 2, 1 1})
                                           (rand-nth [-1 1]))
                                       (** (rand-nth [-1 1])
                                           [0 (weighted {2 2, 1 1})]))))})
@@ -400,7 +404,7 @@
   (harmonizer-data-sub @live-state))
 
 (defn start-harmonizer! []
-  (if-let [ratios (:harmonizer/harmony (get-subval ::harmonizer-data))]
+  (if-let [ratios (into [] (:harmonizer/harmony (get-subval ::harmonizer-data)))]
     (let [rev-mix (* (rev-mix-mul :harmonizer) 0.5)
           rev-room (* (rev-room-mul :harmonizer) 3)]
       (timbre/info "(re)starting-harmonizer" ratios)
@@ -549,15 +553,15 @@
   [{:notes [:div [:h1.text-cyan-400.text-mist-400 "0. Preinicio"]
             (html-list [[:span.text-red-600 "fader abajo"]
                         [:b.text-red-500.text-6xl "FS 2: Fade in main bus"]
-                        [:b.text-orange-500.text-6xl "FS B: Inicia grabación"]])]
+                        [:b.text-orange-500.text-6xl "FS B: Inicia grabación"]
+                        [:b.text-orange-300.text-6xl "FS C: Inicia Reloj"]])]
     :arp default-arp-config
     :harmonizer default-harmonizer-config
-    :midi-events {1 (fn []
-                      (dispatch  {::start-recording true
-                                  ::log "Starting rec"}))
-                  5 (fn []
-                      (dispatch {::fade-main-bus {:level reaper/zero-db}
-                                 ::log "Fading in main bus"}))}}
+    :midi-events {1 (fn [] (dispatch  {::start-recording true
+                                       ::log "Starting rec"}))
+                  2 (fn [] (dispatch  {::set-start-time {}}))
+                  5 (fn [] (dispatch {::fade-main-bus {:level reaper/zero-db}
+                                      ::log "Fading in main bus"}))}}
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;; 
    ;; S1
@@ -576,15 +580,49 @@
           :patterns [arp-pat*8v-tremolo
                      arp-pat*tremolo
                      arp-pat*seq031-2]
-          :arp-fn/params {:env-min-dur 4
-                          :env-max-dur 10
-                          :amp-min (o/db->amp -9)
-                          :amp-max (o/db->amp -4)}}
+          :arp-fn/params (fn [] {:env-min-dur (rrand 1.0 2)
+                                 :env-max-dur (rrand 3.0 5)
+                                 :amp-min (o/db->amp -12)
+                                 :amp-max (o/db->amp (rrand -9.0 -5))})}
     :harmonizer {:harmonies [[0 "3)4 of 3)6 1.3.5.9"]
                              [1 "3)4 of 3)6 1.3.5.9"]
                              [2 "3)4 of 3)6 1.3.5.9"]
                              [3 "3)4 of 3)6 1.3.5.9"]]}
-    :ps-freeze {:freeze? 1
+    :ps-freeze (fn [] {:freeze? (> (rand) 0.2)
+                       :chord-size (rrand 3 7)
+                       :synth/params {:a 0.1
+                                      :r (rrand 2.0 5)
+                                      :rev-mix 1
+                                      :amp (o/db->amp 26)
+                                      :freeze-ratios [1 2 4]
+                                      :freezed-amp 3}})}
+
+;;;;;;;;;;;;;;;;;;;;;;;;;; 
+   ;; S1B
+   ;; NOTE: initial dekany (D1): "3)5 1.3.5.7.9"
+   {:notes [:div [:h1.text-cyan-400 [:u "1B. "] "Nubosidad del bosque"]
+            [:h2.overline.text-rose-300.pt-4 "A. Invocación sentida/o"]
+            (html-list [[:b.text-purple-700 "Nubosidades"]
+                        "eólicos"
+                        "melódico, reverberante"
+                        "cresciendo energía hasta transición"])
+            [:h2.overline.text-rose-300.pt-4 [:u "B. Transición"]]
+            (html-list [[:span "unos cuantos " [:b.text-amber-400 "arpegios"] " al final"]
+                        [:b.text-green-400 "terminar con 1 freeze largo y denso (c/dekany)"]])]
+    :arp {:cps ["3)4 of 3)6 1.3.5.9"
+                "3)5 of 3)6 1.3.5.7.9"]
+          :patterns [arp-pat*8v-tremolo
+                     arp-pat*tremolo
+                     arp-pat*seq031-2]
+          :arp-fn/params (fn [] {:env-min-dur (rrand 1.0 2)
+                                 :env-max-dur (rrand 3.0 5)
+                                 :amp-min (o/db->amp -12)
+                                 :amp-max (o/db->amp (rrand -9.0 -5))})}
+    :harmonizer {:harmonies [[0 "3)4 of 3)6 1.3.5.9"]
+                             [1 "3)4 of 3)6 1.3.5.9"]
+                             [2 "3)4 of 3)6 1.3.5.9"]
+                             [3 "3)4 of 3)6 1.3.5.9"]]}
+    :ps-freeze {:freeze? true
                 :chord-size 6
                 :synth/params {:a 3
                                :r 15
@@ -617,9 +655,11 @@
                              [1 "1)2 of 3)6 3.5-7.9"]
                              [0 "1)2 of 3)6 5.9-3.7"]
                              [1 "1)2 of 3)6 5.9-3.7"]]}
-    :ps-freeze {:freeze? 1
-                :chord-size 3
-                :synth/params {:ps-amp 0}}}
+    :ps-freeze (fn [] (let [freeze? (rand-nth [true false])]
+                        {:freeze? freeze?
+                         :chord-size (rrand 2 5)
+                         :synth/params (cond-> {}
+                                         (not freeze?) (assoc :ps-amp 0))}))}
 
    ;; PT 2 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; 
 
@@ -666,8 +706,8 @@
                      arp-pat*div-conv]}
     :harmonizer default-harmonizer-config
     :nubosidades {:params {:a 10 :amp 1.5 :r 20}}
-    :ps-freeze (fn [] {:freeze? 1
-                       :chord-size 2
+    :ps-freeze (fn [] {:freeze? (> (rand) 0.3)
+                       :chord-size 6
                        :synth/params {:a (rrand 0.2 0.5)
                                       :r (rrand 15.0 26)
                                       :rev-mix 1
@@ -708,7 +748,17 @@
                                    "1)3 of 3)6 5.9-1.7.11"
                                    "1)3 of 3)6 7.11-1.5.9"
                                    "1)3 of 3)6 7.9-1.5.11"
-                                   "1)3 of 3)6 9.11-1.5.7"])}}
+                                   "1)3 of 3)6 9.11-1.5.7"])}
+    :ps-freeze (fn [] {:freeze? (> (rand) 0.6)
+                       :chord-size (rrand 2 5)
+                       :synth/params {:freeze-a (rrand 0.3 3)
+                                      :freeze-ratios (weighted {[1 2] 5
+                                                                [1/8] 1
+                                                                [1/4] 1
+                                                                [3] 1
+                                                                [2] 1
+                                                                [4] 1
+                                                                [8] 1})}})}
 ;;;;;;;;;;;;
    ;; S5 (Fin)
    {:notes [:div [:h1.text-cyan-400 "5. Fin"]
@@ -877,10 +927,11 @@
   [{:keys [db]} {:keys [off? chord-size ps-periods synth/params freeze?]
                  ;; `ps-periods` is a vector used by `gen-reflejos-voicing`: it will randomly pick a period for each voice
                  :or {chord-size 3
+                      freeze? 1
                       ps-periods [1 1/2 2]}}]
   (let [synth (:synth/ps-freeze db)]
     (if (or synth off?)
-      (do (timbre/info "Stopping ps-freeze")
+      (do (timbre/info "Stopping ps-freeze" freeze?)
           {:db (dissoc db :synth/ps-freeze)
            :fx [(when freeze? [::ctl-synth {:synth synth :params {:freeze-gate 1}}])
                 [::stop-synth {:synth synth}]]})
@@ -952,6 +1003,10 @@
               (fn [_ fingerings]
                 {:fx {::post-fingerings.fx fingerings}}))
 
+(reg-event-db ::set-start-time
+              (fn [db _]
+                (assoc db :start-time (o/now))))
+
 (comment
   (-> @live-state))
 
@@ -976,7 +1031,7 @@
 
 (defn stop-synth
   [_ {:keys [db-synth-key synth]}]
-  (timbre/info "Stopping synth:" synth)
+  (timbre/info "Stopping synth:" ((juxt :synth :id) synth))
   (when (o/node-active? synth)
     (o/ctl synth :gate 0))
   (when db-synth-key
@@ -1010,13 +1065,13 @@
         (fn [_ synth-params]
           (timbre/info "ps-freeze" synth-params)
           (let [synth (ps-freeze (-> {:in (bh/bus 3)
-                                      :amp (o/db->amp 39)
+                                      :amp (o/db->amp 33)
                                       :ps-amp  (o/db->amp -4)
                                       :freezed-amp (o/db->amp 27)
                                       :rev-mix 0.7
                                       :rev-room 1
                                       :r 5
-                                      :out (outputs :harmonizer)}
+                                      :out (outputs :ps-freeze)}
                                      (merge synth-params)
                                      (update :rev-room * (rev-room-mul :ps-freeze))
                                      (update :rev-mix * (rev-mix-mul :ps-freeze))))]
@@ -1025,7 +1080,7 @@
 (reg-fx ::start-nubosidades
         (fn [_ synth-params]
           (let [synth1 (nuboso (-> {:in (ge.route/fl-i1 :bus)
-                                    :amp 4
+                                    :amp (o/db->amp 3)
                                     :rev-room 1
                                     :rev-mix 1
                                     :out (outputs :nubosidades)}
@@ -1033,9 +1088,10 @@
                                    (update :rev-room * (rev-room-mul :nubosidades))
                                    (update :rev-mix * (rev-mix-mul :nubosidades))))
                 synth2 (nuboso2 (-> {:in (ge.route/fl-i1 :bus)
-                                     :amp 4
+                                     :amp (o/db->amp 3)
                                      :rev-room 1.3
                                      :rev-mix 1
+                                     :sub-min-amp (o/db->amp -3)
                                      :out (outputs :nubosidades)}
                                     (merge synth-params)
                                     (update :rev-room * (rev-room-mul :nubosidades2))
@@ -1060,16 +1116,18 @@
               :target-val level
               :cb (fn [data]
                     (reaper/set-vol 1 (:val data)))}))))
+
 (comment
   (-> @live-state))
 (defn params-from-m-or-f
   "Takes a map or a function, if a map returning function, call it, else return the map."
   ([params] (params-from-m-or-f params {}))
   ([params defaults]
-   (or (if (fn? params)
-         (params)
-         params)
-       defaults)))
+   (timbre/spy :debug "SYNTH PARAMS"
+               (or (if (fn? params)
+                     (params)
+                     params)
+                   defaults))))
 
 (defn section-midi-event
   [note section-data default-fn]
@@ -1103,11 +1161,14 @@
                                                     (get-subval ::section-data)
                                                     #(timbre/warn "Not defined, note:" note))
 
-                       ;; set section
-                     (= 2 note) (dispatch {::change-section {:inc? false}})
+                     ;; set section
+                     (= 2 note) (section-midi-event note
+                                                    (get-subval ::section-data)
+                                                    #(dispatch {::change-section {:inc? false}}))
+
                      (= 3 note) (dispatch {::change-section {:inc? true}})
 
-                       ;; arp
+                     ;; arp
                      (= 4 note) (dispatch {::toggle-sample-arp (params-from-m-or-f
                                                                 (get-subval ::section-arp-fn-config))})
                      (= 5 note) (section-midi-event note
@@ -1115,7 +1176,7 @@
                                                     #(dispatch {::inc-arp-pattern-index {}}))
                      (= 6 note) (dispatch {::inc-arp-cps-index {}})
 
-                       ;; harmonizer
+                     ;; harmonizer
                      (= 7 note) (dispatch {::toggle-harmonizer {}})
                      (= 8 note) (dispatch {::inc-harmonizer-harmony-index {}})
                      (= 9 note) (dispatch {::toggle-ps-freeze (params-from-m-or-f
@@ -1145,6 +1206,7 @@
 (reg-fx ::set-fingerings.fx
         (fn [_ fingerings]
           (dispatch {::set-fingerings fingerings})))
+
 ;;;;;;;;;;;;;;;;;;
 ;; * Subs
 ;;;;;;;;;;;;;;;;;;
@@ -1227,11 +1289,10 @@
 (defn section-arp-fn-config-sub
   [{:keys [section] :as _db}]
   (-> section get-section-data :arp :arp-fn/params))
-(section-arp-fn-config-sub {:section 2})
+
 (reg-sub ::section-arp-fn-config #'section-arp-fn-config-sub)
 
-(reg-sub ::fingerings
-         (fn [db] (:fingerings db)))
+(reg-sub ::fingerings (fn [db] (:fingerings db)))
 
 ;;;;;;;;;;;;;;;;;;
 ;; * UI

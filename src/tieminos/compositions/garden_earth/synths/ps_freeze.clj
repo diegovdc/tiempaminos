@@ -16,7 +16,7 @@
   (if (sequential? sig)
     sig
     [sig]))
-#_(ns-unmap *ns* 'ps-freeze)
+
 (make-synth-fn
  'ps-freeze
  (-> {:in 0
@@ -41,30 +41,31 @@
                                              (o/pan2  (lfo-kr (o/rand 0.3 0.7) -1 1)))))
                          maybe-mix))
         sig (-> (o/sound-in in)
-                (spread-ps ps-ratios)
-                (o/mix))
+                (spread-ps ps-ratios))
         chain (o/fft (o/local-buf (pow 2 14))
-                     (* (o/delay-l sig 0.5 0.5)
-                        (o/env-gen (o/asr 0.2 1 0.2)
-                                   :gate gate)))
+                     (-> sig
+                         (o/delay-l 0.5 0.5)
+                         (* (o/env-gen (o/asr 0.2 1 0.2)
+                                       :gate gate))))
 
         freezig (-> chain
                     (o/pv-mag-freeze freeze-gate)
-                    (o/ifft :winsize 1))
+                    (o/ifft))
         freezig* (spread-ps freezig freeze-ratios)
-        freezig** (* (-> freezig*
-                         (o/moog-ladder 2000 0.5))
-                     freezed-amp
-                     (lfo-kr (o/rand 0.3 0.7) 0.5 1)
+        freezig**  (-> freezig*
+                       (o/moog-ladder 1000 0.3)
+                       (o/free-verb 1 1)
+                       (* freezed-amp
+                          (lfo-kr (o/rand 0.3 0.7) 0.5 1)
 
-                     (o/env-gen (o/asr freeze-a 1 0.1 2)
-                                :gate freeze-gate))
+                          (o/env-gen (o/adsr freeze-a 3 0.7 0.1 2)
+                                     :gate freeze-gate)))
         sig* (* sig (o/env-gen (o/asr 0.1 1 2)
                                :gate gate))]
     (o/out out (* amp
-                  (-> (+ (* ps-amp  sig*)  freezig**)
+                  (-> (+ (* ps-amp  sig*) freezig**)
                       (o/free-verb rev-mix rev-room))
-                  (o/env-gen (o/asr a 1 r 2)
+                  (o/env-gen (o/asr a 1 r 3)
                              :gate gate
                              :action o/FREE)))))
 
