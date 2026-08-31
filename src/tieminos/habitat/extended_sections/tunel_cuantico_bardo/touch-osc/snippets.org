@@ -1,4 +1,5 @@
 * Visibility
+Reacts to a message where the first argument is a boolean (actually a float either 1 or 0).
 #+begin_src lua
 function onReceiveOSC(message, connections)
   local arg1 = message[2][1]
@@ -9,6 +10,7 @@ end
 #+end_src
 
 * Color
+Reacts to a message where the first argument is a color string such as ="FF0000FF"= (red).
 #+begin_src lua
 function onReceiveOSC(message, connections)
   local arguments = message[2]

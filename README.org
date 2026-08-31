@@ -1,5 +1,5 @@
 #+title: Tieminos
-#+startup: outline
+#+startup: contents
 
 
 * Introduction
@@ -56,6 +56,42 @@ Mainly uses ~Supercollider~ via ~Overtone~, my microtonality library [[https://g
          :z (fn [synth val]
               (o/ctl synth :amp (linexp* 0 127 0.1 1 val)))})
   
+#+end_src
+* OSC Controllers
+** Knobs One
+A 12 knobs template with customizable labels, visibility and two action types (=REAPER= track volume and MIDI CC). Uses =knobs-one.tosc=.
+The =client= port needs to be set in the =TouchOSC= app pointing to the local machine IP.
+#+begin_src clojure
+(require '[tieminos.osc-controllers.knobs-one :as knobs-one])
+
+(knobs-one/init!
+  {:port 7777                          ;; default value
+   :clients [["127.0.0.1" 7778]        ;; default value
+             ["192.168.0.101" 7777]]
+   :midi-sink (midi/midi-out "Bus 1") ;; default value
+   ;; maximum 12 knobs, only the defined knobs will be visibile
+   :ctls [{:label "T1Vol" ;; If action = `:track-vol`, then defaults to "T<track>Vol"
+           ;; can be a keyword or a hex color string (see the `get-color` fn),
+           ;; as of now the color keywords are: :volume :surge :myth :plasmonic :six-sines
+           :color :volume 
+           :visible? true ;; defaults to true
+           :action {:type :track-vol
+                    :dur-ms 5000 ;; interpolation duration, defaults to 5000
+                    :track 1}}
+          {:action {:type :track-vol :track 2}
+           :color :volume}
+          {:action {:type :track-vol :track 3}
+           :color :volume}
+          {:action {:type :track-vol :track 4}
+           :color :volume}
+          {:label "MixGain" ;; If action = `:midi-cc`, then defaults to "CC<cc>"
+           :color :surge
+           :action {:type :midi-cc
+                    :dur-ms 5000   ;; interpolation duration, defaults to 5000
+                    :cc 16         ;; 16-32 are good MIDI CC numbers
+                    :chan 0        ;; defaults to 0
+                    :default-val 0.6}}]})
+
 #+end_src
 * =seq-utils=
 ** =mseq= and associated functions
