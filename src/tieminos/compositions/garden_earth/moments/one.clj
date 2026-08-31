@@ -2,7 +2,7 @@
   "First piece or section from garden earth.
   Audio routing assumes the use of `garden-earth/one.rpp`
 
-  Update 08-2026: aka `El camino a través de la foresta`"
+  Update 08-2026: aka `El camino a través de la floresta`"
   (:require
    [clojure.core.async :as a]
    [clojure.data.generators :refer [weighted]]
@@ -484,8 +484,7 @@
   (map
    #(gen-reflejos-ps-freeze-data {} 2 [1 2] %)
    (keys eik-pitch-classes))
-  (-> @live-state)
-  (toggle-ps-freeze {:db {}} {:chord-size 2}))
+  (-> @live-state))
 
 ;;;;;;;;;;;;;;;;;;
 ;; * Sections: El camino a través de la foresta
@@ -923,27 +922,48 @@
                  (:get-signal-pitches-synth (start-signal-analyzer! (ge.route/fl-i1 :in)))))]
      {:db (assoc db :synth/signal-analyzer sy*)})))
 
-(defn- toggle-ps-freeze
-  [{:keys [db]} {:keys [off? chord-size ps-periods synth/params freeze?]
-                 ;; `ps-periods` is a vector used by `gen-reflejos-voicing`: it will randomly pick a period for each voice
-                 :or {chord-size 3
-                      freeze? 1
-                      ps-periods [1 1/2 2]}}]
+(defn- start-ps-freeze
+  [{:keys [db]}
+   {:keys [chord-size ps-periods synth/params]
+    ;; `ps-periods` is a vector used by `gen-reflejos-voicing`: it will randomly pick a period for each voice
+    :or {chord-size 3
+         ps-periods [1 1/2 2]}}]
   (let [synth (:synth/ps-freeze db)]
-    (if (or synth off?)
+    (if synth
+      (timbre/warn "ps-freeze already running")
+      (let [current-pc (:pitch-class (first @freq-history))
+            {:keys [harmony voicing]} (gen-reflejos-ps-freeze-data db chord-size ps-periods current-pc)]
+        (timbre/debug :start-ps-freeze current-pc harmony voicing)
+        (if-not (and harmony voicing)
+          (timbre/warn "No pitch-class, harmony or voicing (maybe start the signal/frequency analyzer):"
+                       {:pitch-class current-pc :harmony harmony :voicing voicing})
+          (let [params* (assoc params :ps-ratios voicing)]
+            (timbre/info "Starting ps-freeze")
+            {:db (update-in db (prev-harmony-path current-pc chord-size) (fnil conj #{}) harmony)
+             :fx {::start-ps-freeze params*}}))))))
+
+(defn- stop-ps-freeze
+  [{:keys [db]}
+   {:keys [freeze?]
+    ;; `ps-periods` is a vector used by `gen-reflejos-voicing`: it will randomly pick a period for each voice
+    :or {freeze? 1}}]
+  (let [synth (:synth/ps-freeze db)]
+    (if-not synth
+      (timbre/warn "No ps-freeze running")
       (do  (timbre/info "Stopping ps-freeze" freeze?)
            {:db (dissoc db :synth/ps-freeze)
             :fx [(when freeze? [::ctl-synth {:synth synth :params {:freeze-gate 1}}])
-                 [::stop-synth {:synth synth}]]})
-      (let [current-pc (:pitch-class (first @freq-history))
-            {:keys [harmony voicing]} (gen-reflejos-ps-freeze-data db chord-size ps-periods current-pc)]
-        (timbre/debug :toggle-ps-freeze.start current-pc harmony voicing)
-        (when (and harmony voicing)
-          (timbre/info "Starting ps-freeze")
-          {:db (update-in db (prev-harmony-path current-pc chord-size) (fnil conj #{}) harmony)
-           :fx {::start-ps-freeze (assoc params :ps-ratios voicing)}})))))
+                 [::stop-synth {:synth synth}]]}))))
 
-(reg-event-fx ::toggle-ps-freeze #'toggle-ps-freeze)
+(comment
+  (-> @live-state)
+  (swap! freq-history conj {:pitch-class "A+92"})
+  (dispatch {::start-ps-freeze {:synth/params {:ps-amp 1}}})
+  (dispatch {::stop-ps-freeze {}}))
+
+(reg-event-fx ::start-ps-freeze #'start-ps-freeze)
+
+(reg-event-fx ::stop-ps-freeze #'stop-ps-freeze)
 
 (reg-event-db ::on-ps-freeze-start
               (fn [db synth]
@@ -1179,14 +1199,14 @@
                      ;; harmonizer
                      (= 7 note) (dispatch {::toggle-harmonizer {}})
                      (= 8 note) (dispatch {::inc-harmonizer-harmony-index {}})
-                     (= 9 note) (dispatch {::toggle-ps-freeze (params-from-m-or-f
-                                                               (get-subval ::section-ps-freeze-config))}))
+                     (= 9 note) (dispatch {::start-ps-freeze (params-from-m-or-f
+                                                              (get-subval ::section-ps-freeze-config))}))
                    (catch Exception e (timbre/error e))))
       :note-off (fn [{:keys [note]}]
                   (cond
                     (= 9 note) (dispatch
-                                {::toggle-ps-freeze (params-from-m-or-f
-                                                     (get-subval ::section-ps-freeze-config))}))))
+                                {::stop-ps-freeze (params-from-m-or-f
+                                                   (get-subval ::section-ps-freeze-config))}))))
      (catch Exception e (timbre/error (.getMessage e))))))
 
 (reg-fx ::log
@@ -1341,7 +1361,7 @@
   ;; init
   (ræ/get-state ::db)
   (bh/set-interface! :minifuse)
-  (dispatch {::init {:midi? true}})
+  (dispatch {::init {:midi? false}})
   (dispatch {::fade-main-bus {:level 0}})
   (dispatch {::fade-main-bus {:level reaper/zero-db}})
 
@@ -1360,7 +1380,8 @@
   (dispatch {::toggle-harmonizer {}})
 
   ;; ps-freeze
-  (dispatch {::toggle-ps-freeze {}})
+  (dispatch {::start-ps-freeze {}})
+  (dispatch {::stop-ps-freeze {}})
 
   ;; nubosidades
   (dispatch {::toggle-nubosidades {}})
