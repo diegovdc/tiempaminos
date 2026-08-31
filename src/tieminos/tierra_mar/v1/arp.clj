@@ -5,7 +5,7 @@
    [tieminos.compositions.garden-earth.base
     :refer [interval-from-pitch-class2]]
    [tieminos.compositions.garden-earth.fl-grain-1.sample-arp
-    :refer [arp arp-reponse-2 default-interval-seq-fn]]
+    :refer [arp arp-reponse-2]]
    [tieminos.compositions.garden-earth.routing :as ge.route]
    [tieminos.sc-utils.recording.v1 :as sc.rec.v1]
    [tieminos.tierra-mar.v1.state :as tm.state :refer [state]]

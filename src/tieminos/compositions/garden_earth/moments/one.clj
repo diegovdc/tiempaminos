@@ -931,10 +931,10 @@
                       ps-periods [1 1/2 2]}}]
   (let [synth (:synth/ps-freeze db)]
     (if (or synth off?)
-      (do (timbre/info "Stopping ps-freeze" freeze?)
-          {:db (dissoc db :synth/ps-freeze)
-           :fx [(when freeze? [::ctl-synth {:synth synth :params {:freeze-gate 1}}])
-                [::stop-synth {:synth synth}]]})
+      (do  (timbre/info "Stopping ps-freeze" freeze?)
+           {:db (dissoc db :synth/ps-freeze)
+            :fx [(when freeze? [::ctl-synth {:synth synth :params {:freeze-gate 1}}])
+                 [::stop-synth {:synth synth}]]})
       (let [current-pc (:pitch-class (first @freq-history))
             {:keys [harmony voicing]} (gen-reflejos-ps-freeze-data db chord-size ps-periods current-pc)]
         (timbre/debug :toggle-ps-freeze.start current-pc harmony voicing)

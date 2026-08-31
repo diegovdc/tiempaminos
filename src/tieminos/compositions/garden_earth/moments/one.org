@@ -6,10 +6,14 @@
 *** Reverb
 Se puede usar =reverb-configs= para configurar la amplitud del =rev-mix= y =rev-room= de los diferentes sintetizadores.
 * Por hacer
+** TODO [#A] Considerar usar =ps-freeze= durante toda la obra
+- además del que se controla con el pie
+- cf. la grabación del concierto
 ** DONE [#A] Niveles del micro
 CLOSED: [2026-08-23 Sun 10:46]
 - Agregar compresor, para nivelar picos, particularmente que el efecto de proximidad no genere tanto crecimiento en la amplitud
-** TODO [#A] check ps-freeze levels
+** DONE [#A] check ps-freeze levels
+CLOSED: [2026-08-30 Sun 18:14]
 - Se sienten un poco altos en este momento, especialmente cuando se sostiene mucho tiempo el pedal.
 - Darle variedad a la amp del freeze, en general bajar
 ** DONE [#A] check nubosidades levels
@@ -21,8 +25,8 @@ CLOSED: [2026-08-23 Sun 10:46]
 - También se sienten un poco altos
 ** DONE [#A] Separar harmonizer de ps-freeze en REAPER
 CLOSED: [2026-08-22 Sat 22:32]
-** TODO [#A] Fade de nubes y freeze en =Cruce al cielo=  parece muy breve
-** TODO [#A] Fade de nubes y freeze en ==Nubosidades==  parece muy breve
+** TODO [#A] Fade de nubes y freeze en =Cruce al cielo= parece muy breve
+** TODO [#A] Fade de nubes y freeze en =Nubosidades= parece muy breve
 ** TODO [#C] pass params to arp like levels curve, main amp, sound dur
 ** TODO [#C] send arp to nubosidades (for the first section)
 ** TODO [#C] diferentes duraciones de los eventos del arp en las diversas secciones
