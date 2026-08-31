@@ -1,5 +1,5 @@
 #+title: Tieminos
-#+startup: overview
+#+startup: outline
 
 
 * Introduction
@@ -156,7 +156,6 @@ For usage within a ~ref-rain~ this macro provides a better interface (omitting t
 
 (rain2/stop ::rainseq-example)
 #+end_src
-
 
 * Legato sustainer
 Sustain a note or notes until they change. Useful within a loop (refrain) to prevent a note from being retriggered every time.
@@ -345,7 +344,26 @@ Notice that in the example above the =env-levels= and =env-durs= parameters are 
           (env2 {:attack 1})))
 #+end_src
 
+** Synth development
+The =tieminos.sc-utils.dev= namespace provides functions to simplify testing synthdefs.
+#+begin_src clojure
+(require '[tieminos.sc-utils.dev :as sc.dev]
+         '[overtone.core :as o])
 
+(o/defsynth sini
+  [freq 200
+   amp 0.5
+   out 0]
+  (o/out out (* amp (o/pan2 (o/sin-osc 200)))))
+
+(sc.dev/track :synth-id (sini)) ;; every time `sc.dev/track` is called the associated synth will be killed or gated (if a `gate` param is present) and a new instance will be created
+
+(sc.dev/get-synth :synth-id) ;; get the synth's instance (e.g. for `o/ctl` calls
+
+(sc.dev/stop :synth-id) ;; stop the synth
+
+(sc.dev/stop-all) ;; stop all synths added by `sc.dev/track`
+#+end_src
 ** Tips
 When writting macros this ~ns~ gives access to the ugen operators
 #+BEGIN_SRC clojure
