@@ -120,5 +120,5 @@
 
 (defn stop []
   (gp/stop ::trainer)
-  (timbre/info "Stoping trainer")
+  (timbre/info "Stopping trainer")
   (remove-all-played-ratios (get-lattice-atom!)))

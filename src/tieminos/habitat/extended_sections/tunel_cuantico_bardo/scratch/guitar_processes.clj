@@ -3,8 +3,7 @@
    [overtone.core :as o]
    [overtone.sc.ugen-collide-list :as oc]
    [tieminos.blackhole :as bh]
-   [tieminos.habitat.extended-sections.tunel-cuantico-bardo.synths.samplers :refer [+outs1
-                                                                                    random-panaz]]
+   [tieminos.habitat.extended-sections.tunel-cuantico-bardo.synths.samplers :refer [random-panaz]]
    [tieminos.habitat.routing :refer [inputs]]
    [tieminos.overtone-extensions :as oe]
    [tieminos.sc-utils.groups.v1 :as groups]
@@ -65,298 +64,296 @@
     (def t (posty {:in (-> @inputs :guitar :bus)
                    :out (bh/bus 14)})))
 
-  (o/ctl t :pitch-follower-freq 0.00001))
+  (o/ctl t :pitch-follower-freq 0.00001)
 
 ;;;;;;;;;;;;;;;;;;
-;; * NOTES
+  ;; * NOTES
 ;;;;;;;;;;;;;;;;;;
-(comment
+  (comment
 
-  ;; first
+    ;; first
 
-  (let [sig (o/in in 1)
+    (let [sig (o/in in 1)
 
-        ;; :exec-freq can be useful for rhtymic/glitchy stuff... in fact almost certainly there will be glitches... condsider using `latch` to control the pitch changes in some of the synth variations, as a freeze.
-        ;; :median controls the amount of variation/glitchyness so also very useful, 1 will work well for the original exploration with FM#2 + comb + hpf
-        [freq has-freq?] (o/pitch sig :min-freq pitch-follower-freq :exec-freq pitch-follower-freq :median 1)
+          ;; :exec-freq can be useful for rhtymic/glitchy stuff... in fact almost certainly there will be glitches... condsider using `latch` to control the pitch changes in some of the synth variations, as a freeze.
+          ;; :median controls the amount of variation/glitchyness so also very useful, 1 will work well for the original exploration with FM#2 + comb + hpf
+          [freq has-freq?] (o/pitch sig :min-freq pitch-follower-freq :exec-freq pitch-follower-freq :median 1)
 
-        ;; this is useful most of the time, but for the original variation, if this is not used it will work very nicely 
-        amp* (o/amplitude sig)
+          ;; this is useful most of the time, but for the original variation, if this is not used it will work very nicely 
+          amp* (o/amplitude sig)
 
-        ;; Very useful speciallly with FM #0 and #1; FM #2 requires a higher ratio like 10+
-        ratio 2/9]
-    #_...)
+          ;; Very useful speciallly with FM #0 and #1; FM #2 requires a higher ratio like 10+
+          ratio 2/9]
+      #_...)
 
-  ;; * Main sig
-  ;; add dry/wet
-  (+ (* 2 sig)
-     (-> (*  (o/range-lin  (*  sig) (* freq ratio) (* freq (/ 1 ratio))))
-         ;; other variations:
-         ;; 1. (o/range-lin  (*  sig) (* freq ratio) freq) ;; this one makes it one sided, kind of harmonious
-         ;; 2. (o/range-lin  (*  sig) (* freq ratio) (* freq -1 ratio))  ;; this was is very noisy, and creates lots of low frequencies but sounds good with the comb config below (include the hpf:600 filter)
-         ;; 3. (* 1 has-freq? sig (o/saw (* 7/4 freq))) ;; The RM version at the top
-         (o/sin-osc-fb (* 2 amp*))
-         (* (o/lag2 (* 4 amp*) 1))))
+    ;; * Main sig
+    ;; add dry/wet
+    (+ (* 2 sig)
+       (-> (*  (o/range-lin  (*  sig) (* freq ratio) (* freq (/ 1 ratio))))
+           ;; other variations:
+           ;; 1. (o/range-lin  (*  sig) (* freq ratio) freq) ;; this one makes it one sided, kind of harmonious
+           ;; 2. (o/range-lin  (*  sig) (* freq ratio) (* freq -1 ratio))  ;; this was is very noisy, and creates lots of low frequencies but sounds good with the comb config below (include the hpf:600 filter)
+           ;; 3. (* 1 has-freq? sig (o/saw (* 7/4 freq))) ;; The RM version at the top
+           (o/sin-osc-fb (* 2 amp*))
+           (* (o/lag2 (* 4 amp*) 1))))
 
-;; filter with amp; to define if this is the right spot
-  (o/moog-ladder (o/clip (* 9 freq) 20 10000) 0.8)
-  (* 2)
+    ;; filter with amp; to define if this is the right spot
+    (o/moog-ladder (o/clip (* 9 freq) 20 10000) 0.8)
+    (* 2)
 
-  ;; distort to blend in
-  (o/distort)
+    ;; distort to blend in
+    (o/distort)
 
-  ;; comb, this is kind of cool
-  (o/comb-l 1 (* (/ 1 (o/lag2 freq 0.01))
-                 1/4 ;; two octaves above, would be nice to support a vector for harmony
-                 )
-            0.3)
+    ;; comb, this is kind of cool
+    (o/comb-l 1 (* (/ 1 (o/lag2 freq 0.01))
+                   1/4 ;; two octaves above, would be nice to support a vector for harmony
+                   )
+              0.3)
 
-  ;; filter... maybe a lpf also? this should be a filter section
-  (o/hpf 600)
+    ;; filter... maybe a lpf also? this should be a filter section
+    (o/hpf 600)
 
-  ;; ps section; add dry/wet... this works well with FM #2 plus the comb
-  (o/pitch-shift 0.2 [1 3/2 7/4])
-  (o/mix)
+    ;; ps section; add dry/wet... this works well with FM #2 plus the comb
+    (o/pitch-shift 0.2 [1 3/2 7/4])
+    (o/mix)
 
-  ;; rev of course, but post panner, it would be more interesting... but maybe later.
-  (o/free-verb 0.5 0.7)
+    ;; rev of course, but post panner, it would be more interesting... but maybe later.
+    (o/free-verb 0.5 0.7)
 
-  ;; end
-  (o/leak-dc)
-  (o/pan2) ;; of course other panning options should be used...
-  ;; TODO: if the panner is at the begining the we could have some multifx thing going on... but probably later.
-  )
+    ;; end
+    (o/leak-dc)
+    (o/pan2) ;; of course other panning options should be used...
+    ;; TODO: if the panner is at the begining the we could have some multifx thing going on... but probably later.
+    )
 
 ;;;;;;;;;;;;;;;;;;
-;; * Impl
+  ;; * Impl
 ;;;;;;;;;;;;;;;;;;
 
-(defn dry-wet
-  "0 is totally dry and 1 is totatlly wet.
+  (defn dry-wet
+    "0 is totally dry and 1 is totatlly wet.
   Returns a vector of [dry wet] amps."
-  [dw% dry-sig wet-sig]
-  (let [dry-amp (oc/- 1 dw%)
-        wet-amp (oc/- 1 dry-amp)]
-    (oc/+ (oc/* dry-sig dry-amp)
-          (oc/* wet-sig wet-amp))))
+    [dw% dry-sig wet-sig]
+    (let [dry-amp (oc/- 1 dw%)
+          wet-amp (oc/- 1 dry-amp)]
+      (oc/+ (oc/* dry-sig dry-amp)
+            (oc/* wet-sig wet-amp))))
 
-(defn fm
-  [modulator tracked-amp]
-  (let [amp (if tracked-amp
-              (fn [sig] (oc/* sig (o/lag2 (oc/* (o/dc 4) tracked-amp) 1)))
-              identity)]
-    (-> modulator
-        (o/sin-osc-fb (oc/* (o/dc 2) tracked-amp))
-        amp)))
+  (defn fm
+    [modulator tracked-amp]
+    (let [amp (if tracked-amp
+                (fn [sig] (oc/* sig (o/lag2 (oc/* (o/dc 4) tracked-amp) 1)))
+                identity)]
+      (-> modulator
+          (o/sin-osc-fb (oc/* (o/dc 2) tracked-amp))
+          amp)))
 
-(defplug dirty-fm
-  {:fm-dry-wet 0.5
-   :fm-dry-sig-amp 2
-   :fm-ratio 10
-   :ugen/fm (fn [sig freq tracked-amp]
-              (dry-wet fm-dry-wet
-                       (* fm-dry-sig-amp sig)
-                       (fm (o/range-lin (* freq fm-ratio) (* freq -1 fm-ratio))
-                           tracked-amp)))})
+  (defplug dirty-fm
+    {:fm-dry-wet 0.5
+     :fm-dry-sig-amp 2
+     :fm-ratio 10
+     :ugen/fm (fn [sig freq tracked-amp]
+                (dry-wet fm-dry-wet
+                         (* fm-dry-sig-amp sig)
+                         (fm (o/range-lin (* freq fm-ratio) (* freq -1 fm-ratio))
+                             tracked-amp)))})
 
-(defplug trad-fm
-  {:fm-dry-wet 0.5
-   :fm-dry-sig-amp 2
-   :fm-ratio 2
-   :ugen/fm (fn [sig freq tracked-amp]
-              (dry-wet fm-dry-wet
-                       (* fm-dry-sig-amp sig)
-                       (fm (o/range-lin (* freq fm-ratio) (* freq (/ 1 fm-ratio)))
-                           tracked-amp)))})
+  (defplug trad-fm
+    {:fm-dry-wet 0.5
+     :fm-dry-sig-amp 2
+     :fm-ratio 2
+     :ugen/fm (fn [sig freq tracked-amp]
+                (dry-wet fm-dry-wet
+                         (* fm-dry-sig-amp sig)
+                         (fm (o/range-lin (* freq fm-ratio) (* freq (/ 1 fm-ratio)))
+                             tracked-amp)))})
 
-(defplug sided-fm
-  {:fm-dry-wet 0.5
-   :fm-dry-sig-amp 2
-   :fm-ratio 2
-   :ugen/fm (fn [sig freq tracked-amp]
-              (dry-wet fm-dry-wet
-                       (* fm-dry-sig-amp sig)
-                       (fm (o/range-lin (* freq fm-ratio) freq)
-                           tracked-amp)))})
+  (defplug sided-fm
+    {:fm-dry-wet 0.5
+     :fm-dry-sig-amp 2
+     :fm-ratio 2
+     :ugen/fm (fn [sig freq tracked-amp]
+                (dry-wet fm-dry-wet
+                         (* fm-dry-sig-amp sig)
+                         (fm (o/range-lin (* freq fm-ratio) freq)
+                             tracked-amp)))})
 
-(defplug moog-ladder
-  {:post-filter-amp 1
-   :filter-max-overtone 9
-   :filter-reso 0.5
-   :ugen/filter (fn [sig freq]
+  (defplug moog-ladder
+    {:post-filter-amp 1
+     :filter-max-overtone 9
+     :filter-reso 0.5
+     :ugen/filter (fn [sig freq]
+                    (-> sig
+                        (o/moog-ladder  (o/clip (* filter-max-overtone freq) 20 10000) filter-reso)
+                        (* post-filter-amp)))})
+
+  (defn maybe-mix
+    [sig]
+    (if (sequential? sig)
+      (o/mix sig)
+      sig))
+
+  (defplug comb
+    {:comb-freq-lag 0.01
+     :comb-ratio 4 ;; two octaves above
+     :comb-dcy 0.3
+     :comb-max-delay-time 1
+     :ugen/comb (fn [sig freq]
                   (-> sig
-                      (o/moog-ladder  (o/clip (* filter-max-overtone freq) 20 10000) filter-reso)
-                      (* post-filter-amp)))})
+                      (o/comb-l
+                       comb-max-delay-time
+                       (* (/ 1 (o/lag2 freq comb-freq-lag) comb-ratio))
+                       comb-dcy)
+                      maybe-mix))})
 
-(defn maybe-mix
-  [sig]
-  (if (sequential? sig)
-    (o/mix sig)
-    sig))
-
-(defplug comb
-  {:comb-freq-lag 0.01
-   :comb-ratio 4 ;; two octaves above
-   :comb-dcy 0.3
-   :comb-max-delay-time 1
-   :ugen/comb (fn [sig freq]
-                (-> sig
-                    (o/comb-l
-                     comb-max-delay-time
-                     (* (/ 1 (o/lag2 freq comb-freq-lag) comb-ratio))
-                     comb-dcy)
-                    maybe-mix))})
-
-(defplug pitch-shifter
-  {:ps-window 0.2
-   :ps-ratio [1 3/2 7/4]
-   :ugen/pitch-shifter (fn [sig freq]
-                         (-> sig
-                             (o/pitch-shift  ps-window ps-ratio)
-                             #_(o/mix)
-                             maybe-mix))})
-
-(defplug amp-follower
-  {:ugen/amp-follower (fn [sig] (o/amplitude sig))})
-
-(defplug no-amp-follower
-  {:ugen/amp-follower (fn [_sig] false)})
-
-(defplug pan2
-  {:pan-pos 0
-   :ugen/pan (fn [sig] (o/pan2 sig pan-pos))})
-
-(defplug sound-in
-  {:in 0
-   :ugen/in (fn [] (o/sound-in in))})
-
-(defplug mono-in
-  {:in 0
-   :ugen/in (fn [] (o/in in 1))})
-
-(comment
-  (+ (* 2 sig)
-     (-> (*  (o/range-lin  (*  sig) (* freq ratio) (* freq (/ 1 ratio))))
-         ;; other variations:
-         ;; 1. (o/range-lin  (*  sig) (* freq ratio) freq) ;; this one makes it one sided, kind of harmonious
-         ;; 2. (o/range-lin  (*  sig) (* freq ratio) (* freq -1 ratio))  ;; this was is very noisy, and creates lots of low frequencies but sounds good with the comb config below (include the hpf:600 filter)
-         ;; 3. (* 1 has-freq? sig (o/saw (* 7/4 freq))) ;; The RM version at the top
-         (o/sin-osc-fb (* 2 amp*))
-         (* (o/lag2 (* 4 amp*) 1)))))
-
-(defmacro maquote
-  [body]
-  (list 'quote body))
-
-(make-synth-fn
- 'cosillos
- (-> {:in 0
-      :hpf 600
-      :lpf 20000
-      :pitch-follower-freq 1
-      :pitch-follower-median 1
-      :amp 1
-      :a 3
-      :r 5
-      :gate 1
-      :out 0}
-     (mono-in)
-     (dirty-fm)
-     (moog-ladder)
-     (comb)
-     (pitch-shifter)
-     (no-amp-follower)
-     (random-panaz)
-     (+outs1))
-
- '(let [sig (:ugen/in)
-
-        ;; :exec-freq can be useful for rhtymic/glitchy stuff... in fact almost certainly there will be glitches... condsider using `latch` to control the pitch changes in some of the synth variations, as a freeze.
-        ;; :median controls the amount of variation/glitchyness so also very useful, 1 will work well for the original exploration with sided-fm + comb + hpf
-        [freq has-freq?] (o/pitch
-                          sig
-                          :min-freq pitch-follower-freq
-                          :exec-freq pitch-follower-freq
-                          :median pitch-follower-median)
-
-        ;; this is useful most of the time, but for the original variation, if this is not used it will work very nicely
-        ;; NOTE: this should not be `nil` as it will return the signal as the amp tracker value
-        ;;    use `no-amp-follower` (which returns false) plugin if that is the case.
-        tracked-amp (:ugen/amp-follower sig)]
-    (-> sig
-        (:ugen/fm freq tracked-amp) ;; `:fm-ratio` is very useful speciallly with trad-fm and sided-fm ; dirty-fm requires a higher ratio like 10+
-        (:ugen/filter freq)
-        (o/distort)
-        (:ugen/comb freq)
-        (o/hpf (max 20 hpf))
-        (o/lpf (max 20 lpf))
-        (:ugen/pitch-shifter freq)
-        (o/leak-dc)
-        (:ugen/pan)
-        (o/free-verb 0.5 0.7)
-        (* amp (o/env-gen (o/asr a 1 r)
-                          :gate gate
-                          :action o/FREE))
-        (:ugen/outs))))
-
-#_(get-variant-data cosillos {})
-
-(comment
-  (sci/init-input! {:id :guitar
-                    :in 0})
-
-  (cosillos (-> {:group (groups/late)
-                 :in (:bus (sci/init-input! {:id :guitar
-                                             :in 20}))
-                 :fm-ratio 4
-                 :fm-dry-sig-amp 8
-                 :pitch-follower-freq 10
-                 :ugen/pitch-shifter nil
-                 :amp 4
-                 :out-offset (bh/bus 14)
-                 :outs [0 1]}
-                (pan2)
-                (sound-in {:in 20})))
-  (o/stop)
-  (def t (sci/direct-out {:bus (sci/get-bus :guitar)}))
-  (o/kill t))
-
-(comment
-  (defmacro maquote
-    [body]
-    (list 'quote body))
-  (macroexpand-1 '(maquote (o/sin-osc)))
+  (defplug pitch-shifter
+    {:ps-window 0.2
+     :ps-ratio [1 3/2 7/4]
+     :ugen/pitch-shifter (fn [sig freq]
+                           (-> sig
+                               (o/pitch-shift  ps-window ps-ratio)
+                               #_(o/mix)
+                               maybe-mix))})
 
   (defplug amp-follower
     {:ugen/amp-follower (fn [sig] (o/amplitude sig))})
 
+  (defplug no-amp-follower
+    {:ugen/amp-follower (fn [_sig] false)})
+
+  (defplug pan2
+    {:pan-pos 0
+     :ugen/pan (fn [sig] (o/pan2 sig pan-pos))})
+
+  (defplug sound-in
+    {:in 0
+     :ugen/in (fn [] (o/sound-in in))})
+
+  (defplug mono-in
+    {:in 0
+     :ugen/in (fn [] (o/in in 1))})
+
+  (comment
+    (+ (* 2 sig)
+       (-> (*  (o/range-lin  (*  sig) (* freq ratio) (* freq (/ 1 ratio))))
+           ;; other variations:
+           ;; 1. (o/range-lin  (*  sig) (* freq ratio) freq) ;; this one makes it one sided, kind of harmonious
+           ;; 2. (o/range-lin  (*  sig) (* freq ratio) (* freq -1 ratio))  ;; this was is very noisy, and creates lots of low frequencies but sounds good with the comb config below (include the hpf:600 filter)
+           ;; 3. (* 1 has-freq? sig (o/saw (* 7/4 freq))) ;; The RM version at the top
+           (o/sin-osc-fb (* 2 amp*))
+           (* (o/lag2 (* 4 amp*) 1)))))
+
+  (defmacro maquote
+    [body]
+    (list 'quote body))
+
   (make-synth-fn
    'cosillos
-   {:in 0
-    :pitch-follower-freq 1
-    :fm-ratio 10
-    :out 0}
+   (-> {:in 0
+        :hpf 600
+        :lpf 20000
+        :pitch-follower-freq 1
+        :pitch-follower-median 1
+        :amp 1
+        :a 3
+        :r 5
+        :gate 1
+        :out 0}
+       (mono-in)
+       (dirty-fm)
+       (moog-ladder)
+       (comb)
+       (pitch-shifter)
+       (no-amp-follower)
+       (random-panaz)
+       (+outs1))
 
-   (maquote
-    (let [sig (o/in in 1)
-          [freq _has-freq?] (o/pitch sig :exec-freq pitch-follower-freq)
-          amp* (:ugen/amp-follower sig)]
-      #_(o/poll:ar (o/impulse 0.5) (o/pitch sig) has-freq?)
-      #_(o/out out (-> (o/range-lin sig (* freq 2) (* freq -2))
-                       o/sin-osc))
-      (o/out out (-> #_sig
-                  (+ sig
-                     (-> (o/range-lin sig (* freq fm-ratio) (* freq -1 fm-ratio))
-                         o/sin-osc
-                         (* amp*)))
-                     #_(o/moog-ladder (o/clip (* 5 freq) 20 10000) 0.5)
-                     (o/comb-l 1 (* (/ 1 (o/lag2 freq 0.01)) 1/4) 0.3)
-                     (o/hpf 600)
-                     (o/pitch-shift 0.2 [1 3/2 7/4])
-                     (o/mix)
-                     (o/free-verb 0.5 0.7)
-                     (o/pan2)
-                     (o/leak-dc)
-                     #_(* 8)))))))
+   '(let [sig (:ugen/in)
 
+           ;; :exec-freq can be useful for rhtymic/glitchy stuff... in fact almost certainly there will be glitches... condsider using `latch` to control the pitch changes in some of the synth variations, as a freeze.
+           ;; :median controls the amount of variation/glitchyness so also very useful, 1 will work well for the original exploration with sided-fm + comb + hpf
+          [freq has-freq?] (o/pitch
+                            sig
+                            :min-freq pitch-follower-freq
+                            :exec-freq pitch-follower-freq
+                            :median pitch-follower-median)
 
+           ;; this is useful most of the time, but for the original variation, if this is not used it will work very nicely
+           ;; NOTE: this should not be `nil` as it will return the signal as the amp tracker value
+           ;;    use `no-amp-follower` (which returns false) plugin if that is the case.
+          tracked-amp (:ugen/amp-follower sig)]
+      (-> sig
+          (:ugen/fm freq tracked-amp) ;; `:fm-ratio` is very useful speciallly with trad-fm and sided-fm ; dirty-fm requires a higher ratio like 10+
+          (:ugen/filter freq)
+          (o/distort)
+          (:ugen/comb freq)
+          (o/hpf (max 20 hpf))
+          (o/lpf (max 20 lpf))
+          (:ugen/pitch-shifter freq)
+          (o/leak-dc)
+          (:ugen/pan)
+          (o/free-verb 0.5 0.7)
+          (* amp (o/env-gen (o/asr a 1 r)
+                            :gate gate
+                            :action o/FREE))
+          (:ugen/outs))))
+
+  #_(get-variant-data cosillos {})
+
+  (comment
+    (sci/init-input! {:id :guitar
+                      :in 0})
+
+    (cosillos (-> {:group (groups/late)
+                   :in (:bus (sci/init-input! {:id :guitar
+                                               :in 20}))
+                   :fm-ratio 4
+                   :fm-dry-sig-amp 8
+                   :pitch-follower-freq 10
+                   :ugen/pitch-shifter nil
+                   :amp 4
+                   :out-offset (bh/bus 14)
+                   :outs [0 1]}
+                  (pan2)
+                  (sound-in {:in 20})))
+    (o/stop)
+    (def t (sci/direct-out {:bus (sci/get-bus :guitar)}))
+    (o/kill t))
+
+  (comment
+    (defmacro maquote
+      [body]
+      (list 'quote body))
+    (macroexpand-1 '(maquote (o/sin-osc)))
+
+    (defplug amp-follower
+      {:ugen/amp-follower (fn [sig] (o/amplitude sig))})
+
+    (make-synth-fn
+     'cosillos
+     {:in 0
+      :pitch-follower-freq 1
+      :fm-ratio 10
+      :out 0}
+
+     (maquote
+      (let [sig (o/in in 1)
+            [freq _has-freq?] (o/pitch sig :exec-freq pitch-follower-freq)
+            amp* (:ugen/amp-follower sig)]
+        #_(o/poll:ar (o/impulse 0.5) (o/pitch sig) has-freq?)
+        #_(o/out out (-> (o/range-lin sig (* freq 2) (* freq -2))
+                         o/sin-osc))
+        (o/out out (-> #_sig
+                    (+ sig
+                       (-> (o/range-lin sig (* freq fm-ratio) (* freq -1 fm-ratio))
+                           o/sin-osc
+                           (* amp*)))
+                       #_(o/moog-ladder (o/clip (* 5 freq) 20 10000) 0.5)
+                       (o/comb-l 1 (* (/ 1 (o/lag2 freq 0.01)) 1/4) 0.3)
+                       (o/hpf 600)
+                       (o/pitch-shift 0.2 [1 3/2 7/4])
+                       (o/mix)
+                       (o/free-verb 0.5 0.7)
+                       (o/pan2)
+                       (o/leak-dc)
+                       #_(* 8))))))))

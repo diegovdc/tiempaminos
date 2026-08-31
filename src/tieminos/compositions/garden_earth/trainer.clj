@@ -144,93 +144,94 @@
        (map subcps)
        (map #(map (juxt (comp sort :set) (comp :class :pitch)) %))))
 
-(def root 440)
-(def subcps* (make-subcps
-              #_"1)4 of 3)6 5.9-1.3.7.11"
-              #_"1)4 of 3)6 1.5-3.7.9.11"
-              #_"3)4 of 3)6 1.7.9.11" ;; usar
-              #_"2)4 of 3)6 7-1.3.9.11" ;; usar, brillante-reflejante, buenas pentatónicas, pero difícil
-              "2)4 of 3)6 9-1.5.7.11"))
+(comment
+  (def root 440)
+  (def subcps* (make-subcps
+                #_"1)4 of 3)6 5.9-1.3.7.11"
+                #_"1)4 of 3)6 1.5-3.7.9.11"
+                #_"3)4 of 3)6 1.7.9.11" ;; usar
+                #_"2)4 of 3)6 7-1.3.9.11" ;; usar, brillante-reflejante, buenas pentatónicas, pero difícil
+                "2)4 of 3)6 9-1.5.7.11"))
 
-(->> subcps* #_(map (juxt :set (comp :name :pitch))))
-(repcat [10 (choose 0 1)]
-        [10 (choose 0 1 5)]
-        [5 (choose  1)]
-        [5 (choose  1)]
-        [10 (choose  1 3)]
-        [10 (choose  1 3 4)]
-        [20 (choose  2 3 4)])
+  (->> subcps* #_(map (juxt :set (comp :name :pitch))))
+  (repcat [10 (choose 0 1)]
+          [10 (choose 0 1 5)]
+          [5 (choose  1)]
+          [5 (choose  1)]
+          [10 (choose  1 3)]
+          [10 (choose  1 3 4)]
+          [20 (choose  2 3 4)])
 
-(->> (repcat [10 [0 1]]
-             [10 [0 1 5]]
-             [5 [1]]
-             [10 [1 3]]
-             [10 [1 3 4]]
-             [20 [2 3 4]])
-     (map (partial map #(:degree (nth subcps* %))))
-     (mapv #(apply choose %)))
+  (->> (repcat [10 [0 1]]
+               [10 [0 1 5]]
+               [5 [1]]
+               [10 [1 3]]
+               [10 [1 3 4]]
+               [20 [2 3 4]])
+       (map (partial map #(:degree (nth subcps* %))))
+       (mapv #(apply choose %)))
 
-(hexp.utils/set-output-mode! :reaper)
-(hexp.lattice/setup-kb
- {:root root
-  :scale (:scale eik)
-   ;; :midi-kb (get-exquis!)
-  :kb-degs (map :degree subcps*)
-  :synth-config {:amp 0.7
-                 :a 0.1
-                 :out (hexp.utils/out 26)}
-  :lattice-config {:width 1440
-                   :height 900
-                   :ratio->node-name (->> eik
-                                          :scale
-                                          (reduce
-                                           (fn [m {:keys [bounded-ratio pitch]}]
-                                             (assoc m bounded-ratio (:class pitch)))
-                                           {}))}})
-(hexp.trainer/trainer
- {:root root
-  :scale (:scale eik)
-  :degrees (->> (repcat [10 [0 1]]
-                        [10 [0 1 5]]
-                        [5 [1]]
-                        [10 [1 3]]
-                        [7 [1 3 4]]
-                        [7 [2 3 4]]
-                        [5 [2]]
-                        [10 [2 1]])
-                (map (partial map #(:degree (nth subcps* %))))
-                (mapv #(apply choose %)))
-  #_(->> subcps*
-         #_(filter-by-pitch-class #{"G#+73"})
-         (map :degree)
-         (apply choose))
-  :tempo 60
-  :print-info? false
-  :a {9 3, 12 1}
-  :r {9 3, 12 1}
-  :periods {1 5, 2 1, 1/2 3 1/4 2}
-  :on-note-play (let [pcs (atom ())]
-                  (fn [{:keys [_last-interval note interval _freq]}]
-                    #_(println :interval
-                               interval
-                               (int (conv/ratio->cents interval)))
-                    (let [pc (str
-                              (pitch-class->pr-fingering
-                               (-> note :pitch :class))
-                              "\n"
-                              (str "  interval " interval " " (int (conv/ratio->cents interval))
-                                   "c\n\n"))]
-                      (println pc)
-                      (swap! pcs conj pc))
-                    (try (post-fingering2 (take 3 @pcs))
-                         (catch Exception _ nil))))
-  :synth/params-fn (fn [{:keys [freq]}]
-                     {:pan (rrange -1 1)
-                      :amp (rrange 0.3 0.6)
-                      :lpf-freq freq})
-  :out (hexp.utils/out 26)})
+  (hexp.utils/set-output-mode! :reaper)
+  (hexp.lattice/setup-kb
+   {:root root
+    :scale (:scale eik)
+     ;; :midi-kb (get-exquis!)
+    :kb-degs (map :degree subcps*)
+    :synth-config {:amp 0.7
+                   :a 0.1
+                   :out (hexp.utils/out 26)}
+    :lattice-config {:width 1440
+                     :height 900
+                     :ratio->node-name (->> eik
+                                            :scale
+                                            (reduce
+                                             (fn [m {:keys [bounded-ratio pitch]}]
+                                               (assoc m bounded-ratio (:class pitch)))
+                                             {}))}})
+  (hexp.trainer/trainer
+   {:root root
+    :scale (:scale eik)
+    :degrees (->> (repcat [10 [0 1]]
+                          [10 [0 1 5]]
+                          [5 [1]]
+                          [10 [1 3]]
+                          [7 [1 3 4]]
+                          [7 [2 3 4]]
+                          [5 [2]]
+                          [10 [2 1]])
+                  (map (partial map #(:degree (nth subcps* %))))
+                  (mapv #(apply choose %)))
+    #_(->> subcps*
+           #_(filter-by-pitch-class #{"G#+73"})
+           (map :degree)
+           (apply choose))
+    :tempo 60
+    :print-info? false
+    :a {9 3, 12 1}
+    :r {9 3, 12 1}
+    :periods {1 5, 2 1, 1/2 3 1/4 2}
+    :on-note-play (let [pcs (atom ())]
+                    (fn [{:keys [_last-interval note interval _freq]}]
+                      #_(println :interval
+                                 interval
+                                 (int (conv/ratio->cents interval)))
+                      (let [pc (str
+                                (pitch-class->pr-fingering
+                                 (-> note :pitch :class))
+                                "\n"
+                                (str "  interval " interval " " (int (conv/ratio->cents interval))
+                                     "c\n\n"))]
+                        (println pc)
+                        (swap! pcs conj pc))
+                      (try (post-fingering2 (take 3 @pcs))
+                           (catch Exception _ nil))))
+    :synth/params-fn (fn [{:keys [freq]}]
+                       {:pan (rrange -1 1)
+                        :amp (rrange 0.3 0.6)
+                        :lpf-freq freq})
+    :out (hexp.utils/out 26)})
 
-(hexp.trainer/stop)
+  (hexp.trainer/stop))
 
 (comment
   (count known-pitches)
