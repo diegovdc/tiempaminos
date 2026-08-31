@@ -16,9 +16,9 @@
     :refer [gusano-harmonic-seqs gusano-harmonies]]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.osc-helpers
     :as bardo.osc-helpers :refer [osc-bool]]
+   [tieminos.habitat.extended-sections.tunel-cuantico-bardo.re-affect :as bardo.ræ]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.synths.processors-utils
     :refer [input->in&outs&group]]
-   [tieminos.habitat.extended-sections.tunel-cuantico-bardo.re-affect :as bardo.ræ]
    [tieminos.habitat.osc :as habitat-osc]
    [tieminos.math.utils :refer [linexp* linlin]]
    [tieminos.osc.reaper :as reaper]

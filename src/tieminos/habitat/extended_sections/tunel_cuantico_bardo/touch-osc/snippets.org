@@ -7,3 +7,11 @@ function onReceiveOSC(message, connections)
   end
 end
 #+end_src
+
+* Color
+#+begin_src lua
+function onReceiveOSC(message, connections)
+  local arguments = message[2]
+  self.color = Color.fromHexString(arguments[1].value)
+end
+#+end_src
