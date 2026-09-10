@@ -28,6 +28,8 @@
   (stop id)
   (swap! test-synths assoc id synth))
 
+;; TODO: when `knobs-one` is stable add a version of `track` that can leverage `knobs-one` internally and can accept a reduced `:ctls` configuration (i.e. presupossing an `:sc-synth` type action)
+
 (defn stop-all
   []
   (doseq [[id _synth] @test-synths]
