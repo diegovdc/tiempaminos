@@ -145,7 +145,7 @@
               (fn [sig] (oc/* sig (o/lag2 (oc/* (o/dc 4) tracked-amp) 1)))
               identity)]
     (-> modulator
-        (o/sin-osc-fb (oc/* (o/dc 2) tracked-amp))
+        (o/sin-osc-fb (oc/* (o/dc 4) tracked-amp))
         amp)))
 
 (defplug dirty-fm
@@ -256,6 +256,8 @@
       :lpf 20000
       :pitch-follower-freq 1
       :pitch-follower-median 1
+      :pitch-follower-down-sample 2
+      :pitch-follower-lpf 2000
       :amp 1
       :a 3
       :r 5
@@ -278,10 +280,11 @@
         ;; :exec-freq can be useful for rhtymic/glitchy stuff... in fact almost certainly there will be glitches... condsider using `latch` to control the pitch changes in some of the synth variations, as a freeze.
         ;; :median controls the amount of variation/glitchyness so also very useful, 1 will work well for the original exploration with sided-fm + comb + hpf
         [freq has-freq?] (o/pitch
-                          sig
+                          (o/lpf sig pitch-follower-lpf)
                           :min-freq pitch-follower-freq
                           :exec-freq pitch-follower-freq
-                          :median pitch-follower-median)
+                          :median pitch-follower-median
+                          :down-sample pitch-follower-down-sample)
 
         ;; this is useful most of the time, but for the original variation, if this is not used it will work very nicely
         ;; NOTE: this should not be `nil` as it will return the signal as the amp tracker value
