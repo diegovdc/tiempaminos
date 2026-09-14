@@ -3,6 +3,18 @@
    [taoensso.timbre :as timbre]
    [tieminos.blackhole :as bh]))
 
+;;;;;;;;;;;;;;;;;;
+;; * Constants
+;;;;;;;;;;;;;;;;;;
+
+(def AVG-CPU-WARN 60)
+(def AVG-CPU-LIMIT 77)
+(def PEAK-CPU-LIMIT 85)
+
+;;;;;;;;;;;;;;;;;;
+;; * IO
+;;;;;;;;;;;;;;;;;;
+
 (def reaper-tracks*
   ;; TODO: `:guitar` and `:mic-1` and `:mic-2` keys are used for other stuff, so can't namespace them right now as with the above. Ideally they could all be namespaced.
   {:guitar 3 ;; line-in

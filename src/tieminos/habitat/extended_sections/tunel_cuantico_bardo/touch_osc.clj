@@ -1,9 +1,13 @@
 (ns tieminos.habitat.extended-sections.tunel-cuantico-bardo.touch-osc
   "TouchOSC interface specific stuff"
   (:require
+   [tieminos.habitat.extended-sections.tunel-cuantico-bardo.config :refer [AVG-CPU-LIMIT
+                                                                           AVG-CPU-WARN]]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.osc-helpers :refer [osc-bool
                                                                                 send-osc-msg]]
-   [tieminos.habitat.extended-sections.tunel-cuantico-bardo.re-affect :as bardo.ræ :refer [reg-event-fx reg-fx reg-sub]]
+   [tieminos.habitat.extended-sections.tunel-cuantico-bardo.re-affect :as bardo.ræ :refer [reg-event-fx
+                                                                                           reg-fx
+                                                                                           reg-sub]]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.synths.processors :as bardo.signal-processor]))
 
 ;;;;;;;;;;;;;;;;;;
@@ -97,8 +101,12 @@
                 (let [usage-str (format "%s/%s" (int avg-cpu) (int peak-cpu))]
                   {:db (assoc db :sc-server-status sc-server-status)
                    :fx [[::send-msg ["/cpu-usage" usage-str]]
-                        [::send-msg ["/cpu-usage-box" (cond (> avg-cpu 75) "FF0000FF"
-                                                            :else "00000000")]]]})))
+                        [::send-msg ["/cpu-usage-box" (cond
+                                                        (or (> avg-cpu AVG-CPU-LIMIT)
+                                                            (> peak-cpu AVG-CPU-LIMIT)) "FF0000FF"
+                                                        (or (> avg-cpu AVG-CPU-WARN)
+                                                            (> peak-cpu AVG-CPU-WARN)) "FFA520FF"
+                                                        :else "00000000")]]]})))
 
 (defn avg-cpu-usage-sub
   [{:keys [sc-server-status] :as _db}]
@@ -106,9 +114,17 @@
 
 (reg-sub ::avg-cpu-usage #'avg-cpu-usage-sub)
 
+(defn peak-cpu-usage-sub
+  [{:keys [sc-server-status] :as _db}]
+  (:peak-cpu sc-server-status 0))
+
+(reg-sub ::peak-cpu-usage #'peak-cpu-usage-sub)
+
 (comment
   (bardo.ræ/dispatch {::on-cpu-usage-data (overtone.core/server-status)})
-  (bardo.ræ/get-subval ::avg-cpu-usage))
+  (bardo.ræ/get-subval ::avg-cpu-usage)
+  (bardo.ræ/get-subval ::peak-cpu-usage)
+  (bardo.ræ/get-subval ::avg-cpu-warn))
 
 (defn init! []
   (set-guitar-preset-labels!))

@@ -8,6 +8,8 @@
    [tieminos.attractors.lorentz :as lorentz]
    [tieminos.habitat.extended-sections.harmonies.chords
     :refer [get-harmony rate-chord-seq]]
+   [tieminos.habitat.extended-sections.tunel-cuantico-bardo.config :refer [AVG-CPU-LIMIT
+                                                                           PEAK-CPU-LIMIT]]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.gusanos.core
     :as bardo.gusano]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.live-state
@@ -483,18 +485,28 @@
               (println i)))
   (rain.v2/stop))
 
+(defn cloud-event-should-play?
+  []
+  (or (< (bardo.ræ/get-subval ::bardo.touch-osc/avg-cpu-usage)
+         AVG-CPU-LIMIT)
+      (< (bardo.ræ/get-subval ::bardo.touch-osc/peak-cpu-usage)
+         PEAK-CPU-LIMIT)))
+
 (defn clouds-on-event
-  [player independent-bank {refrain-event-data :voice}]
+  [player bank {refrain-event-data :voice}]
   (doseq [{:keys [event/start-delay] :as data} (get-synth-data-vectors
                                                 player
-                                                independent-bank
+                                                bank
                                                 refrain-event-data)]
-    (let [f #(play-synth data)]
-      (if (> start-delay 0)
-        (clouds-delay-refrain refrain-event-data start-delay f)
-        (f)))))
+    (if-not (cloud-event-should-play?)
+      (timbre/warn "Omiting cloud event")
+      (let [f #(play-synth data)]
+        (if (> start-delay 0)
+          (clouds-delay-refrain refrain-event-data start-delay f)
+          (f))))))
 
 (comment
+
   (do ;; trigger clouds event on bank 0
     (bardo.live-state/toggle-active-bank! :milo 0 true)
     (clouds-on-event :milo {:index 0})))
@@ -550,7 +562,7 @@
 
 (defn start-gusano
   []
-  (bardo.gusano/start))
+  (bardo.gusano/start cloud-event-should-play?))
 
 (defn stop-gusano
   []
