@@ -104,7 +104,7 @@
 
 (defn start-recording
   "NOTE: `input-bus` may be `nil`. See `run-rec`."
-  [& {:keys [bufs-atom buf-key seconds msg on-end countdown input-bus bpm _progress-bar? on-rec-start print-info? _group]
+  [& {:keys [bufs-atom buf-key seconds msg on-end countdown input-bus bpm _progress-bar? on-rec-start print-info? _group on-countdown-start]
       :or {on-end (fn [_buf-key] nil)
            countdown 3
            bpm 60
@@ -122,7 +122,10 @@
               (do
                 (when  (zero? index)
                   (timbre/info (str msg ": " buf-key))
-                  (when print-info? (println "Countdown:")))
+                  (when print-info? (println "Countdown:"))
+                  (when (and (> countdown 0)
+                             (fn? on-countdown-start))
+                    (on-countdown-start countdown)))
 
                 (cond (> (- countdown index) 0)
                       (when print-info?

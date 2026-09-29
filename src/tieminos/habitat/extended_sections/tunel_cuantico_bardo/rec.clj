@@ -18,12 +18,14 @@
            rec-dur-fn
            rec-pulse
            countdown
+           on-countdown-start
            on-rec-start
            on-rec-end]
     :or {id :rec-loop3
          rec-dur-fn (fn [_] 0.5)
          rec-pulse [0.5]
          countdown 0
+         on-countdown-start (fn [_])
          on-rec-start (fn [_])
          on-rec-end (fn [_])}}]
   (ref-rain
@@ -44,7 +46,8 @@
                             :dur-s dur-s
                             :on-end on-rec-end
                             :print-info? false
-                            :countdown countdown
+                            :countdown (if (zero? index) countdown 0)
+                            :on-countdown-start on-countdown-start
                             :on-rec-start on-rec-start})))))
 
 (defn stop-rec-loop!

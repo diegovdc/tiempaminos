@@ -58,34 +58,51 @@
                                   (str val)))
 
 (defn tick-countdown
-  [rec-dur input-k]
+  [rec-dur input-k & {:keys [negative?]}]
   (let [tick 0.5]
     (rain.v2/ref-rain
      :id (make-rec-id (str (name input-k) "-countdown"))
      :durs (repeat (/ rec-dur tick) tick)
      :loop? false
      :on-event (rain.v2/on-event
-                (send-tick input-k (- rec-dur (* i tick)))))))
-
+                (send-tick input-k
+                           (cond-> (- rec-dur (* i tick))
+                             negative? (* -1)))))))
 (defn start-recording
   [{:keys [input-k]}]
   (timbre/info "starting rec on" input-k)
   (if-let [input-bus (-> @inputs input-k :bus)]
-    (bardo.rec/start-rec-loop!
-     {:id (make-rec-id input-k)
-      :input-k input-k
-      :input-bus input-bus
-      :rec-dur-fn (fn [_] (-> @live-state :rec input-k :dur))
-      :rec-pulse (fn [_] (-> @live-state :rec input-k get-rec-pulse))
-       ;; :print-info? true
-      :on-rec-start (fn [_rec-config]
-                      (swap! live-state
-                             assoc-in
-                             [:rec input-k :last-rec-timestamp]
-                             (o/now))
-                      (tick-countdown (-> @live-state :rec input-k :dur)
-                                      input-k))
-      :on-rec-end (fn [_] (send-tick input-k ""))})
+    (let [countdown 5]
+      (bardo.rec/start-rec-loop!
+       {:id (make-rec-id input-k)
+        :input-k input-k
+        :input-bus input-bus
+        :countdown countdown
+        :rec-dur-fn (fn [_] (-> @live-state :rec input-k :dur))
+        :rec-pulse (fn [{:keys [index] :as _refrain-data}]
+                     (let [rec-pulse (-> @live-state :rec input-k get-rec-pulse)]
+                       (if (and countdown
+                                (> countdown 0)
+                                (zero? index))
+                         countdown
+                         rec-pulse)))
+        ;; :print-info? true
+        :on-countdown-start (fn [countdown]
+                              (swap! live-state
+                                     assoc-in
+                                     [:rec input-k :last-rec-timestamp]
+                                     (o/now))
+                              (tick-countdown countdown
+                                              input-k
+                                              :negative? true))
+        :on-rec-start (fn [_rec-config]
+                        (swap! live-state
+                               assoc-in
+                               [:rec input-k :last-rec-timestamp]
+                               (o/now))
+                        (tick-countdown (-> @live-state :rec input-k :dur)
+                                        input-k))
+        :on-rec-end (fn [_] (send-tick input-k ""))}))
     (timbre/error "No input bus for key:" input-k)))
 
 (comment
