@@ -1,5 +1,6 @@
 (ns tieminos.harmonies.cps-patterns
-  (:require [clojure.set :as set]
+  (:require [clojure.math :refer [pow]]
+            [clojure.set :as set]
             [clojure.string :as str]
             [clojure.walk :as walk]
             [erv.cps.core :as cps]
@@ -9,25 +10,27 @@
 (def parser
   (insta/parser
    "sequence = items
-     chord = <'['> <ws>? items? <ws>? <']'>
-     items = (note | chord) (<ws> (note | chord | partial))*
+    chord = <'['> <ws>? items? <ws>? <']'>
+    items = (note | chord) (<ws> (note | chord | partial))*
 
-     partial = num-partial | dot
-     dot = '.'
-     num-partial = transp | transp period | period transp
+    partial = num-partial | dot
+    dot = <'.'> period?
+    num-partial = transp period? | period transp
 
-     note = letters
-          | letters period        | period letters
-          | letters transp        | transp letters
-          | letters period transp | letters transp period
-          | period letters transp | period transp letters
-          | transp letters period | transp period letters
+    note = side* letters side*
+    <side> = period | transp | plus | minus
+    plus  = <'+'>
+    minus = <'-'>
 
-     letters = #'[a-z]+'
-     period  = #'-?[0-9]+'
-     transp  = #'>+' | #'<+'
-     ws      = #'\\s+'"
+    letters = #'[a-z]+'
+    period  = #'[+-]?[0-9]+'
+    transp  = #'>+' | #'<+'
+    ws      = #'\\s+'"
    :start :sequence))
+
+;;;;;;;;;;;;;;;;;;
+;; * Transform
+;;;;;;;;;;;;;;;;;;
 
 (declare transform)
 
@@ -52,19 +55,35 @@
                   {:chord (items-vec it)}
                   {:chord []})
       :partial  (transform (first children))
-      :dot      {:transp 0}
+      :dot      (let [p (extract :period tree)]
+                  (cond-> {:transp 0}
+                    p (assoc :period (Integer/parseInt p))))
       :num-partial
       (let [t (extract :transp tree)
             p (extract :period tree)]
         (cond-> {:transp (transp->int t)}
           p (assoc :period (Integer/parseInt p))))
       :note
-      (let [l (extract :letters tree)
-            p (extract :period tree)
-            t (extract :transp tree)]
-        (cond-> {:set (set (map (comp keyword str) l))
-                 :period (if p (Integer/parseInt p) 0)}
-          t (assoc :transp (transp->int t)))))))
+      (let [letters-seq (filter #(= :letters (first %)) children)
+            periods     (filter #(= :period  (first %)) children)
+            transps     (filter #(= :transp  (first %)) children)
+            pluses      (filter #(= :plus    (first %)) children)
+            minuses     (filter #(= :minus   (first %)) children)]
+        (when (or (not= 1 (count letters-seq))
+                  (> (count periods) 1)
+                  (> (count transps) 1)
+                  (> (count pluses) 1)
+                  (> (count minuses) 1)
+                  (and (seq pluses) (seq minuses)))
+          (throw (ex-info "Invalid note" {:tree tree})))
+        (let [letters (second (first letters-seq))]
+          (cond-> {:set    (set (map (comp keyword str) letters))
+                   :period (if (seq periods)
+                             (Integer/parseInt (second (first periods)))
+                             0)}
+            (seq transps) (assoc :transp (transp->int (second (first transps))))
+            (seq pluses)  (assoc :position :above-prev)
+            (seq minuses) (assoc :position :below-prev)))))))
 
 (defn parse [s]
   (let [s (str/trim s)]
@@ -140,36 +159,27 @@
 ;;;;;;;;;;;;;;;;;;;
 ;; * CPS Transform
 ;;;;;;;;;;;;;;;;;;;
+(defn- calc-note-position
+  [note period]
+  (-> note :bounded-ratio (* (pow (:bounding-period note) period))))
 
-(def cps-scale (-> (cps/make 2 [1 3 5 7])
-                   :scale))
-
-(do
-  (def archiset->note
-
-    (reduce (fn [m {:keys [archi-set] :as note}]
-              (assoc m archi-set note))
-            {}
-            cps-scale))
-  (def deg->note
-
-    (reduce (fn [m {:keys [degree] :as note}]
-              (assoc m degree note))
-            {}
-            cps-scale))
-  (archiset->note
-   (-> (cps/make 2 [1 3 5 7])
-       :scale)))
-
-(def scale-transp-maps
-  {:scale cps-scale
-   :archiset->note archiset->note
-   :deg->note deg->note})
+(defn- position-note
+  [position note period prev-note-data]
+  (let [prev-note-pos (calc-note-position (:note prev-note-data) (:period prev-note-data))]
+    (loop [period period]
+      (case position
+        :above-prev (if (> (calc-note-position note period) prev-note-pos)
+                      period
+                      (recur (inc period)))
+        :below-prev (if (< (calc-note-position note period) prev-note-pos)
+                      period
+                      (recur (dec period)))
+        period))))
 
 (defn- notes->cps-notes
   [scale-transp-maps transformed-notes]
-  (mapv
-   (fn [{:keys [chord set transp period] :or {transp 0 period 0} :as data}]
+  (reduce
+   (fn [acc {:keys [chord set transp period position] :or {transp 0 period 0} :as data}]
      (if chord data
          (let [{:keys [archiset->note deg->note scale]} scale-transp-maps
                note (archiset->note set)
@@ -179,18 +189,23 @@
                                        scale-degree (mod degree (count scale))
                                        period-transp (quot degree (count scale))]
                                    [(deg->note scale-degree)
-                                    (+ period period-transp)]))]
+                                    (+ period period-transp)]))
+               prev-note-data (last acc)
+               period** (if-not prev-note-data period
+                                (position-note position note period* prev-note-data))]
            (when-not note (throw (ex-info "Unknown set:" data)))
-           (assoc data
-                  :note note*
-                  :period period*))))
+           (conj acc
+                 (assoc data
+                        :note note*
+                        :period period**)))))
+   []
    transformed-notes))
 
 (defn- note-transform
   [scale-transp-maps items-vec-data]
   (->> items-vec-data
        (reduce
-        (fn [acc {:keys [chord set transp period] :as data}]
+        (fn [acc {:keys [chord set transp period position] :as data}]
           (let [prev-note (last acc)]
             (cond
               chord (conj acc data)
@@ -202,12 +217,6 @@
                                    (update :transp + (:transp prev-note 0)))))))
         [])
        (notes->cps-notes scale-transp-maps)))
-
-(comment
-
-  (->> (cps-seq (cps/make 2 [1 3 5 7])
-                "bc > >  ")
-       (freqs 1)))
 
 (def make-scale-transp-maps
   (memoize (fn [cps]
@@ -252,7 +261,7 @@
             (:set x)))
     x))
 
-(defn rot
+(defn rotate
   [amount cps-pattern]
   {:process (partial in-walk-rotation amount)
    :pattern cps-pattern})
@@ -281,7 +290,7 @@
                                      (str/join ""))
                                 x)))))
 
-(defn freqs
+(defn ->freqs
   [root-freq {:keys [sequence cps] :as _cps-seq}]
   (->> sequence
        (walk/postwalk (fn [x] (if (:note x)
@@ -290,7 +299,6 @@
 
                                 x)))))
 
-(scale/deg->freq (:scale (cps/make 2 [1 3 5 7])) 1 0 :period 0)
 (do
   (defn- preprocess-pattern
     [scale-transp-maps cps-pattern]
@@ -315,23 +323,36 @@
       (assoc result :cps cps)))
 
   (->> (cps-seq (cps/make 2 [1 3 5 7])
-                (rot 1 "ab [bc > . cd]")
+                (rotate 1 "ab [bc > . cd]")
                 #_(prefix "a" "c b d"))
        readable)
 
-  (->> (cps-seq (cps/make 2 [1 3 5 7])
-                (rot 1 "ab [bc >1 . cd]")
-                #_(prefix "a" "c b d"))
-       (freqs 1)))
+  #_(->> (cps-seq (cps/make 2 [1 3 5 7])
+                  (rot 1 "ab [bc >1 .2 cd]")
+                  #_(prefix "a" "c b d"))
+         (freqs 1)))
+
 (parse "[bc > . cd]")
 
-;; test
-(->> (cps-seq (cps/make 2 [1 3 5 7])
-              (rot 1 "ab [bc > . cd]"))
-     :sequence
-     (walk/postwalk (fn [x] (if (:note x)
-                              (->> (:archi-set (:note x))
-                                   sort
-                                   (map name)
-                                   (str/join ""))
-                              x))))
+(comment
+  ;; test
+  (->> (cps-seq (cps/make 2 [1 3 5 7])
+                (rotate 1 "ab [bc > . cd]"))
+       :sequence
+       (walk/postwalk (fn [x] (if (:note x)
+                                (->> (:archi-set (:note x))
+                                     sort
+                                     (map name)
+                                     (str/join ""))
+                                x))))
+  (->> (cps-seq
+        (cps/make 2 [1 3 5 7]) ;; 2)4 1.3.5.7          
+        "ab ac ad")
+       (->freqs 1))
+
+  (->> (cps-seq
+        (cps/make 2 [1 3 5 7]) ;; 2)4 1.3.5.7          
+        "ab ac cb")
+       (->freqs 1)))
+
+
