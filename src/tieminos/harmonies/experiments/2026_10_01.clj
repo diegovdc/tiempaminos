@@ -28,6 +28,12 @@ A.B.C - A.C.F - A.B.F - A.E.F - B.E.F - D.E.F - B.D.E - A.D.E - A.B.D - A.C.D - 
    (str/split #"\n")
    (->> (map #(-> % (str/replace "." "")
                   (str/replace "- " "")
+                  (str/lower-case)))))
+  (->
+   "A.B.C - A.B.E - A.C.E - B.C.E - A.B.C"
+   (str/split #"\n")
+   (->> (map #(-> % (str/replace "." "")
+                  (str/replace "- " "")
                   (str/lower-case))))))
 (comment
 

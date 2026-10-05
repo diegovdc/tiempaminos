@@ -1,11 +1,13 @@
 (ns tieminos.harmonies.cps-patterns
   (:require [clojure.math :refer [pow]]
+            [clojure.math.combinatorics :as combo]
             [clojure.set :as set]
             [clojure.string :as str]
             [clojure.walk :as walk]
             [erv.cps.core :as cps]
             [erv.scale.core :as scale]
-            [instaparse.core :as insta]))
+            [instaparse.core :as insta]
+            [tieminos.utils :refer [wrap-at]]))
 
 (def parser
   (insta/parser
@@ -218,10 +220,29 @@
         [])
        (notes->cps-notes scale-transp-maps)))
 
+(defn make-shift-maps
+  [archi-factors]
+  (->> (map
+        (fn [xs ys] (->> (interleave xs ys)
+
+                         (apply hash-map)))
+        (repeat archi-factors)
+        (combo/permutations archi-factors))
+       (reduce (fn [{:keys [perms variations] :as  acc} m]
+                 (let [im (set/map-invert m)]
+                   (if (variations im)
+                     acc
+                     {:perms (conj perms m)
+                      :variations (conj variations m im)})))
+               {:perms []
+                :variations #{}})
+       :perms))
+
 (def make-scale-transp-maps
   (memoize (fn [cps]
              (let [cps-scale (:scale cps)
-                   archi-set-kws->index (->> cps :scale (mapcat :archi-set) set sort (map-indexed (fn [i k] [k i])) (into {}))]
+                   archi-set (->> cps :scale (mapcat :archi-set) set sort)
+                   shift-maps (make-shift-maps archi-set)]
                {:scale cps-scale
                 :archiset->note (reduce (fn [m {:keys [archi-set] :as note}]
                                           (assoc m archi-set note))
@@ -231,39 +252,30 @@
                                      (assoc m degree note))
                                    {}
                                    cps-scale)
-                :archi-set-kws->index archi-set-kws->index
-                :archi-set-index->kw (set/map-invert archi-set-kws->index)}))))
+                :shift-maps shift-maps}))))
 
-(let [m (make-scale-transp-maps (cps/make 2 [1 3 5 7]))]
-  (m :archi-set-kws->index))
+(defn- shift-set*
+  [{:keys [shift-maps]} shift-index set*]
+  (let [shift-map (wrap-at shift-index shift-maps)]
+    (->> set*
+         (map shift-map)
+         set)))
 
-(defn- rotate-set*
-  [{:keys [archi-set-kws->index archi-set-index->kw]} rot-amount set*]
-  (->> set*
-       (map (comp
-             archi-set-index->kw
-             #(mod (+ rot-amount %) (count archi-set-kws->index))
-             archi-set-kws->index))
-       set))
+(comment (shift-set* {:shift-maps (make-shift-maps [:a :b :c :d])} 5 #{:a :b}))
 
-(rotate-set*
- (make-scale-transp-maps (cps/make 2 [1 3 5 7]))
- 1
- #{:a :b})
-
-(defn- in-walk-rotation
-  [amount scale-transp-maps x]
+(defn- in-walk-shift
+  [shift-index scale-transp-maps x]
   (if (:set x)
     (assoc x :set
-           (rotate-set*
+           (shift-set*
             scale-transp-maps
-            amount
+            shift-index
             (:set x)))
     x))
 
-(defn rotate
-  [amount cps-pattern]
-  {:process (partial in-walk-rotation amount)
+(defn shift
+  [shift-index cps-pattern]
+  {:process (partial in-walk-shift shift-index)
    :pattern cps-pattern})
 
 (defn- in-walk-prefix
@@ -316,6 +328,7 @@
                               (if (and (vector? x) (map? (first x)))
                                 (note-transform scale-transp-maps x)
                                 x))
+          ;; _ (def pt parse-tree)
           result (walk/postwalk
                   (comp note-transform-fn
                         process)
@@ -323,7 +336,7 @@
       (assoc result :cps cps)))
 
   (->> (cps-seq (cps/make 2 [1 3 5 7])
-                (rotate 1 "ab [bc > . cd]")
+                (shift 1 "ab [bc > . cd]")
                 #_(prefix "a" "c b d"))
        readable)
 
@@ -337,7 +350,7 @@
 (comment
   ;; test
   (->> (cps-seq (cps/make 2 [1 3 5 7])
-                (rotate 1 "ab [bc > . cd]"))
+                (shift 1 "ab [bc > . cd]"))
        :sequence
        (walk/postwalk (fn [x] (if (:note x)
                                 (->> (:archi-set (:note x))
@@ -354,5 +367,6 @@
         (cps/make 2 [1 3 5 7]) ;; 2)4 1.3.5.7          
         "ab ac cb")
        (->freqs 1)))
+
 
 
