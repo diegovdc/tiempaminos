@@ -5,12 +5,29 @@
 
 (defonce groups (atom {}))
 
-(defn early [] [:head (:early @groups)])
-(defn mid [] [:head (:mid @groups)])
-(defn late [] [:head (:late @groups)])
-(defn fx [] [:tail (:fx @groups)])
-(defn post-fx [] [:tail (:post-fx @groups)])
-(defn output-rec [] [:tail (:output-rec @groups)])
+(defn early
+  ([] (early :head))
+  ([pos] [pos (:early @groups)]))
+
+(defn mid
+  ([] (mid :head))
+  ([pos] [pos (:mid @groups)]))
+
+(defn late
+  ([] (late :head))
+  ([pos] [pos (:late @groups)]))
+
+(defn fx
+  ([] (fx :tail))
+  ([pos] [pos (:fx @groups)]))
+
+(defn post-fx
+  ([] (post-fx :tail))
+  ([pos] [pos (:post-fx @groups)]))
+
+(defn output-rec
+  ([] (output-rec :tail))
+  ([pos] [pos (:output-rec @groups)]))
 
 (defn init-groups! []
   (if (seq @groups)
@@ -33,5 +50,6 @@
                :output-rec output-rec}))))
 
 (comment
+  (reset! groups {})
   (init-groups!))
 
