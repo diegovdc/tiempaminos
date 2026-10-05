@@ -8,7 +8,8 @@
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.re-affect :as bardo.ræ :refer [reg-event-fx
                                                                                            reg-fx
                                                                                            reg-sub]]
-   [tieminos.habitat.extended-sections.tunel-cuantico-bardo.synths.processors :as bardo.signal-processor]))
+   [tieminos.habitat.extended-sections.tunel-cuantico-bardo.synths.processors :as bardo.signal-processor]
+   [taoensso.timbre :as timbre]))
 
 ;;;;;;;;;;;;;;;;;;
 ;; * General
@@ -54,12 +55,17 @@
     (doseq [i (range 20)]
       ;; Due to impl simplicity reasons in TouchOSC, the document tree has the following mod3 structure knob/param-label/value-label. Succesive controls have this order.
       ;; Therefore the correct indexes need to be mapped to this format (TouchOsc index base is 1))
-      (let [{:keys [param name]} (nth controls i nil)
+      (let [ctl (nth controls i nil)
+            {:keys [param name]} ctl
             index (* i 3)
             {:keys [touch-osc/value-label touch-osc/value]} (get modified-params param)
             {:keys [inv-mapping label-mapping]
              :or {label-mapping str}} (get ctls-by-param param)
             default-value (get default-config param)
+            _ (when (and ctl (nil? default-value))
+                (throw (ex-info "Default value not found in config" {:fn 'update-guitar-preset-fx-knobs!
+                                                                     :ctl ctl
+                                                                     :param param})))
             touch-osc-default-value (when inv-mapping (inv-mapping default-value))
             ;; TODO: hide controls if param is `nil` (instead of the following)
             ctl-value (float (if-not param 0

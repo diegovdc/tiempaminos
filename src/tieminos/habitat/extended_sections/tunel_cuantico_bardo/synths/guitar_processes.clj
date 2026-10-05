@@ -152,11 +152,12 @@
   {:fm-dry-wet 0.5
    :fm-dry-sig-amp 2
    :fm-ratio 10
+   :fm-amp 1
    :ugen/fm (fn [sig freq tracked-amp]
               (dry-wet fm-dry-wet
                        (* fm-dry-sig-amp sig)
-                       (fm (o/range-lin (* freq fm-ratio) (* freq -1 fm-ratio))
-                           tracked-amp)))})
+                       (* fm-amp (fm (o/range-lin (* freq fm-ratio) (* freq -1 fm-ratio))
+                                     tracked-amp))))})
 
 (defplug trad-fm
   {:fm-dry-wet 0.5
@@ -172,11 +173,12 @@
   {:fm-dry-wet 0.5
    :fm-dry-sig-amp 2
    :fm-ratio 2
+   :fm-amp 1
    :ugen/fm (fn [sig freq tracked-amp]
               (dry-wet fm-dry-wet
                        (* fm-dry-sig-amp sig)
-                       (fm (o/range-lin (* freq fm-ratio) freq)
-                           tracked-amp)))})
+                       (* fm-amp (fm (o/range-lin (* freq fm-ratio) freq)
+                                     tracked-amp))))})
 
 (defplug moog-ladder
   {:post-filter-amp 1
@@ -265,6 +267,7 @@
       :rev-mix 0.5
       :rev-room 0.7
       :rev-damp 0.5
+      :clean-amp 1
       :out 0}
      (mono-in)
      (dirty-fm)
@@ -300,6 +303,7 @@
         (o/hpf (max 20 hpf))
         (o/lpf (max 20 lpf))
         (o/leak-dc)
+        (+ (* 0.2 clean-amp sig))
         (:ugen/pan)
         (o/free-verb rev-mix rev-room rev-damp)
         (* amp

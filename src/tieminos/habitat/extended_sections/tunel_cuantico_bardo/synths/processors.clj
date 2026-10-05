@@ -162,7 +162,14 @@
              :label-mapping default-label-mapping}
     :linexp {:mapping #(linexp* in-min in-max out-min out-max %)
              :inv-mapping #(explin* out-min out-max in-min in-max %)
-             :label-mapping default-label-mapping}))
+             :label-mapping default-label-mapping}
+    :db {:mapping #(->> %
+                        (linlin* in-min in-max out-min out-max)
+                        (o/db->amp))
+         :inv-mapping #(->> %
+                            (o/amp->db)
+                            (linlin* out-min out-max in-min in-max))
+         :label-mapping #(str (int (o/amp->db %)) "db")}))
 
 (def presets-config
   "Preset configurations.
@@ -190,16 +197,24 @@
                          :r 5
                          :fm-ratio 4
                          :fm-dry-sig-amp 8
+                         :fm-dry-wet 0.5
+                         :fm-amp 1
                          :pitch-follower-freq 10
                          :ugen/pitch-shifter nil
-                         :amp 4}
+                         :amp 4
+                         :clean-amp 1}
                         (mono-in {:in 20})
                         (outs {:out-offset (bardo.config/get-bh-bus :guitar-clean)})
                         (rand-panaz {:pan-width 4
                                      :pan-rate 0.5}))
-    :controls [(merge {:param :amp :name "Amp"} (lin-mapping :linlin 0 1, 0 4))
+    :controls [(merge {:param :amp :name "db"} (lin-mapping :db 0 1, -96 32))
                (merge {:param :pan-width :name "PanWi"} (lin-mapping :linlin 0 1, 1.2 4))
-               (merge {:param :pan-rate :name "PanRt"} (lin-mapping :linexp 0 1, 0.1 5))]}
+               (merge {:param :pan-rate :name "PanRt"} (lin-mapping :linexp 0 1, 0.1 5))
+               (merge {:param :fm-dry-wet :name "FMDryWet"} (id-mapping))
+               (merge {:param :fm-amp :name "FMdb"} (lin-mapping :db 0 1, -16 16))
+               (merge {:param :fm-ratio :name "FMRatio"} (quantized-mapping (ratio-range (range 1 8) 1/20 40)))
+               (merge {:param :pitch-follower-freq :name "PFfreq"} (lin-mapping :linexp 0 1, 0.1 20))
+               (merge {:param :clean-amp :name "Clean.db"} (lin-mapping :db 0 1, -24 24))]}
    {:name "Sided1/5 Cb1/4"
     :input :guitar-clean
     :synth mod-multifx
@@ -209,7 +224,9 @@
                          :r 5
                          :lpf 2000
                          :amp 16
-                         :hpf 300}
+                         :hpf 300
+                         :clean-amp 1
+                         :fm-amp 1}
                         (amp-follower)
                         (sided-fm {:fm-ratio 1/5
                                    :fm-dry-wet 0.4
@@ -223,14 +240,16 @@
                         (rand-panaz {:pan-width 4
                                      :pan-rate 0.5}))
 
-    :controls [(merge {:param :amp :name "Amp"} (lin-mapping :linlin 0 1, 0 32))
+    :controls [(merge {:param :amp :name "db"} (lin-mapping :db 0 1, -96 30))
                (merge {:param :pan-width :name "PanWi"} (lin-mapping :linlin 0 1, 1.2 4))
                (merge {:param :pan-rate :name "PanRt"} (lin-mapping :linexp 0 1, 0.1 5))
                (merge {:param :fm-dry-wet :name "FMDryWet"} (id-mapping))
+               (merge {:param :fm-amp :name "FMdb"} (lin-mapping :db 0 1, 0 16))
                (merge {:param :fm-ratio :name "FMRatio"} (quantized-mapping (ratio-range (range 1 8) 1/8 8)))
                (merge {:param :comb-dry-wet :name "CombDryWet"} (id-mapping))
                (merge {:param :comb-ratio :name "/CombRatio"} (quantized-mapping (ratio-range (range 1 8) 1/4 4)))
-               (merge {:param :comb-dcy :name "CombDecay"} (lin-mapping :linlin 0 1, 0.05 0.9))]}
+               (merge {:param :comb-dcy :name "CombDecay"} (lin-mapping :linlin 0 1, 0.05 0.9))
+               (merge {:param :clean-amp :name "Clean.db"} (lin-mapping :db 0 1, -24 24))]}
    ;; WIP - see todo below
    {:name "Sided Subtle" ;; derived from: "Sided1/5 Cb1/4"
     :input :guitar-clean
@@ -241,7 +260,9 @@
                          :r 5
                          :lpf 2000
                          :amp 16
-                         :hpf 300}
+                         :hpf 300
+                         :clean-amp 1
+                         :fm-amp 1}
                         (amp-follower)
                         (sided-fm {:fm-ratio 1/5
                                    :fm-dry-wet 0.4
@@ -264,15 +285,17 @@
                                 :pan-rate 2.4159750094040486,
                                 :pan-width 2.364386713504791}))
 
-    :controls [(merge {:param :amp :name "Amp"} (lin-mapping :linlin 0 1, 0 32))
+    :controls [(merge {:param :amp :name "db"} (lin-mapping :db 0 1, -96 30))
                (merge {:param :pan-width :name "PanWi"} (lin-mapping :linlin 0 1, 1.2 4))
                (merge {:param :pan-rate :name "PanRt"} (lin-mapping :linexp 0 1, 0.1 5))
                (merge {:param :fm-dry-wet :name "FMDryWet"} (id-mapping))
+               (merge {:param :fm-amp :name "FMdb"} (lin-mapping :db 0 1, 0 16))
                (merge {:param :fm-ratio :name "FMRatio"} (quantized-mapping (ratio-range (range 1 8) 1/8 8)))
                (merge {:param :comb-dry-wet :name "CombDryWet"} (id-mapping))
                (merge {:param :comb-ratio :name "/CombRatio"} (quantized-mapping (ratio-range (range 1 8) 1/4 4)))
                (merge {:param :comb-dcy :name "CombDecay"} (lin-mapping :linlin 0 1, 0.05 0.9))
-               (merge {:param :comb-freq-lag :name "CombLag"} (lin-mapping :linlin 0 1, 0.01 3))]}])
+               (merge {:param :comb-freq-lag :name "CombLag"} (lin-mapping :linlin 0 1, 0.01 3))
+               (merge {:param :clean-amp :name "Clean.db"} (lin-mapping :db 0 1, -24 24))]}])
 
 (defn start-synth!
   "Starts a synth and returns the instance."
