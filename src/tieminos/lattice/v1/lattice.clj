@@ -11,7 +11,7 @@
     :as _node-data}]
   (let [denom-factors* (str/join "*" (remove #(= period %) denom-factors))]
     (cond
-      (ratio->node-name ratio) (ratio->node-name ratio)
+      ratio->node-name (str (ratio->node-name ratio))
       (= :factors @text-type) (str (str/join "*" (let [ns (remove #(= period %) numer-factors)]
                                                    (if (seq ns) ns [1])))
                                    (when (seq denom-factors*)
@@ -142,6 +142,7 @@
     lattice-data))
 
 (comment
+  (reset! lattices {})
   (def lattice-atom (draw-lattice
                      {:id :my-lattice
                       :ratios [1 3/2 5/4 7/4]
