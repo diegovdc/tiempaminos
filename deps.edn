@@ -14,7 +14,7 @@
                                       :sha "65115f7812605c4a655dd2961f8efe075b91dedd"}
         #_{:local/root "../time-tiem" :deps/manifest :deps}
         io.github.diegovdc/erv {:git/url "https://github.com/diegovdc/erv.git"
-                                :sha "f4a08e5ca0ed04752156a8e51d8c5e069f6821f5"
+                                :sha "228c6e1f39f36896b207fe8a60202aef0db0782c"
                                 ;; :tag "0.0.7"
                                 } #_{:local/root "../erv" :deps/manifest :deps}
         io.github.diegovdc/re-affect #_{:git/url "https://github.com/diegovdc/re-affect.git"
