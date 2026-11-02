@@ -149,7 +149,8 @@
 
 (defn save-samples*
   "`prefix` is a unique identifier for the sample set"
-  [prefix path buffers-atom name-buf-key-fn preserve-keys]
+  [prefix path buffers-atom name-buf-key-fn preserve-keys
+   & {:keys [on-done]}]
   (let [date (java.util.Date.)
         bufs* @buffers-atom
         db (atom (edn/read-string (slurp (str path "db.edn"))))]
@@ -172,17 +173,19 @@
                   :prefix prefix
                   :buf-map-data (if preserve-keys (select-keys b preserve-keys) {})})))
       (spit (str path "db.edn") @db)
-      (timbre/info "All done!"))))
+      (timbre/info "All done!")
+      (when on-done (on-done)))))
 
 (defn save-samples
   "`preserve-keys` additional keys in the buffer map that should be saved to the db"
   [prefix
-   & {:keys [path buffers-atom name-buf-key-fn preserve-keys]
+   & {:keys [path buffers-atom name-buf-key-fn preserve-keys on-done]
       :or {path default-samples-path
            buffers-atom bufs
            name-buf-key-fn name-buf-key
            preserve-keys []}}]
-  (save-samples* prefix path buffers-atom name-buf-key-fn preserve-keys))
+  (save-samples* prefix path buffers-atom name-buf-key-fn preserve-keys
+                 {:on-done on-done}))
 
 (comment
   (save-samples :test))
@@ -206,7 +209,7 @@
                           [(:key data) (with-meta (-> (o/load-sample (:path data))
                                                       (merge (:buf-map-data data {}))
                                                       (assoc :db/sample-key (:key data)
-                                                             :db/samples-atom buffers-atom ;; ommited because it can be too big to look at
+                                                             ;; :db/samples-atom buffers-atom ;; ommited because it can be too big to look at, and causes error in repl
                                                              ))
                                          data)]))
                    (into {}))]

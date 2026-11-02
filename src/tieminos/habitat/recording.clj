@@ -62,7 +62,8 @@
 (def habitat-samples-path (str (System/getProperty "user.dir")
                                "/samples/habitat_samples/"))
 
-(defn save-samples [& {:keys [description full-keyword buffers-atom]}]
+(defn save-samples [& {:keys [path description full-keyword buffers-atom on-done]
+                       :or {path habitat-samples-path}}]
   (when-not buffers-atom
     (throw (ex-info "A buffers-atom must be passed in... perhaps try rec/bufs" {})))
   (let [prefix  (or full-keyword
@@ -72,9 +73,20 @@
                                                java.time.format.DateTimeFormatter/ISO_INSTANT))
                                   (when description (str "*" (str/replace description #" " "-"))))))]
     (rec/save-samples prefix
-                      :path habitat-samples-path
+                      :path path
                       :buffers-atom buffers-atom
-                      :preserve-keys [:analysis :amp-norm-mult])))
+                      :preserve-keys [:analysis :amp-norm-mult :rec/meta :rec/time]
+                      :on-done on-done)))
+
+(comment
+  (-> @bufs)
+  (-> @bufs
+      first
+      second
+      seq)
+  (save-samples {:description "test"
+                 :full-keyword :a/a123
+                 :buffers-atom bufs}))
 
 (defonce buf-keys-count (atom {}))
 

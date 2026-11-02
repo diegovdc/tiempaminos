@@ -22,7 +22,8 @@
    [tieminos.habitat.osc :as habitat-osc]
    [tieminos.math.utils :refer [linexp* linlin]]
    [tieminos.osc.reaper :as reaper]
-   [tieminos.utils :refer [throttle wrap-at]]))
+   [tieminos.utils :refer [throttle wrap-at]]
+   [tieminos.habitat.extended-sections.tunel-cuantico-bardo.touch-osc :as-alias bardo.tosc]))
 
 (defonce touch-osc-state (atom {}))
 
@@ -53,6 +54,17 @@
 (defn stop-recording
   []
   (swap! live-state assoc :system/recording? false))
+
+(defn set-take-version!
+  "For saving the samples"
+  [take-version]
+  (swap! live-state :take-version take-version))
+
+(bardo.ræ/reg-event-fx ::set-take-version
+  (fn [{:keys [db]} take-version]
+    {:db (assoc db :take-version take-version)
+     :fx {::bardo.tosc/send-msg ["/System/take-version"
+                                 (str "Exp. " take-version)]}}))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; * Processors

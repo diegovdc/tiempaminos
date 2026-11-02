@@ -41,7 +41,8 @@
    [tieminos.utils
     :refer
     [cb-interpolate stop-all-interpolators! str->int]]
-   [tieminos.habitat.extended-sections.tunel-cuantico-bardo.touch-osc :as-alias bardo.tosc]))
+   [tieminos.habitat.extended-sections.tunel-cuantico-bardo.touch-osc :as-alias bardo.tosc]
+   [tieminos.habitat.extended-sections.tunel-cuantico-bardo.rec :as-alias bardo.rec]))
 
 (comment
   (require '[tieminos.network-utils :refer [get-local-host]])
@@ -365,6 +366,7 @@
    "/EQ/notch-radio" (set-notch-freq (first args))
    "/System/rec-start" (when (press? args) (reaper-rec!))
    "/System/rec-stop" (when (press? args) (reaper-stop!))
+   "/System/save-samples" (when (press? args) (bardo.ræ/dispatch {::bardo.rec/save-samples {}}))
    "/System/subwoofer-master" (set-track-volume2 :subwoofer-track (first args) reaper/zero-db)
    "/System/voces-master" (set-track-volume2 :mixes-processes-2-track (first args) reaper/zero-db)
    "/gusano/2nd-voice" (set-gusano-2nd-voice (first args))

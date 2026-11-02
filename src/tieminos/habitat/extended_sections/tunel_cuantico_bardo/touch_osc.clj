@@ -16,16 +16,20 @@
 ;;;;;;;;;;;;;;;;;;
 
 (reg-event-fx ::toggle-visibility
-              (fn [_ {:keys [path visible?]}]
-                {:fx {::toggle-visibility {:path path :visible? visible?}}}))
+  (fn [_ {:keys [path visible?]}]
+    {:fx {::toggle-visibility {:path path :visible? visible?}}}))
 
 (reg-fx ::toggle-visibility
-        (fn [_ {:keys [path visible?]}]
-          (send-osc-msg path (osc-bool visible?))))
+  (fn [_ {:keys [path visible?]}]
+    (send-osc-msg path (osc-bool visible?))))
+
+(reg-event-fx ::send-msg
+  (fn [_ data]
+    {:fx {::send-msg data}}))
 
 (reg-fx ::send-msg
-        (fn [_ [path & msg]]
-          (apply send-osc-msg path msg)))
+  (fn [_ [path & msg]]
+    (apply send-osc-msg path msg)))
 
 ;;;;;;;;;;;;;;;;;;
 ;; * Guitar FX
@@ -81,14 +85,14 @@
                       value-label*)))))
 
 (reg-event-fx
- ::update-guitar-preset-fx-knobs
- (fn [_ data]
-   {:fx {::update-guitar-preset-fx-knobs data}}))
+  ::update-guitar-preset-fx-knobs
+  (fn [_ data]
+    {:fx {::update-guitar-preset-fx-knobs data}}))
 
 (reg-fx
- ::update-guitar-preset-fx-knobs
- (fn [_ {:keys [preset modified-params]}]
-   (update-guitar-preset-fx-knobs! preset modified-params)))
+  ::update-guitar-preset-fx-knobs
+  (fn [_ {:keys [preset modified-params]}]
+    (update-guitar-preset-fx-knobs! preset modified-params)))
 
 (comment
   (require '[tieminos.habitat.extended-sections.tunel-cuantico-bardo.live-state :as bardo.live-state])
@@ -102,17 +106,17 @@
 ;;;;;;;;;;;;;;;;;;
 
 (reg-event-fx ::on-cpu-usage-data
-              (fn [{:keys [db]}
-                   {:keys [avg-cpu peak-cpu] :as sc-server-status}]
-                (let [usage-str (format "%s/%s" (int avg-cpu) (int peak-cpu))]
-                  {:db (assoc db :sc-server-status sc-server-status)
-                   :fx [[::send-msg ["/cpu-usage" usage-str]]
-                        [::send-msg ["/cpu-usage-box" (cond
-                                                        (or (> avg-cpu AVG-CPU-LIMIT)
-                                                            (> peak-cpu AVG-CPU-LIMIT)) "FF0000FF"
-                                                        (or (> avg-cpu AVG-CPU-WARN)
-                                                            (> peak-cpu AVG-CPU-WARN)) "FFA520FF"
-                                                        :else "00000000")]]]})))
+  (fn [{:keys [db]}
+       {:keys [avg-cpu peak-cpu] :as sc-server-status}]
+    (let [usage-str (format "%s/%s" (int avg-cpu) (int peak-cpu))]
+      {:db (assoc db :sc-server-status sc-server-status)
+       :fx [[::send-msg ["/cpu-usage" usage-str]]
+            [::send-msg ["/cpu-usage-box" (cond
+                                            (or (> avg-cpu AVG-CPU-LIMIT)
+                                                (> peak-cpu AVG-CPU-LIMIT)) "FF0000FF"
+                                            (or (> avg-cpu AVG-CPU-WARN)
+                                                (> peak-cpu AVG-CPU-WARN)) "FFA520FF"
+                                            :else "00000000")]]]})))
 
 (defn avg-cpu-usage-sub
   [{:keys [sc-server-status] :as _db}]

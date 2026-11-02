@@ -819,21 +819,21 @@
 (declare post-live-state*)
 
 (reg-event-fx
- ::init
- (fn [_ {:keys [midi?]}]
-   {:db initial-state
-    :fx [[::init.fx]
-         (when midi? [::init-midi.fx])]}))
+  ::init
+  (fn [_ {:keys [midi?]}]
+    {:db initial-state
+     :fx [[::init.fx]
+          (when midi? [::init-midi.fx])]}))
 
 (defn- limit-section-index-range
   [i]
   (-> i (max 0) (min (dec (count sections)))))
 
 (reg-event-db
- ::change-section
- (fn [db {:keys [inc?]}]
-   (let [op (if inc? inc dec)]
-     (update db :section (comp limit-section-index-range op)))))
+  ::change-section
+  (fn [db {:keys [inc?]}]
+    (let [op (if inc? inc dec)]
+      (update db :section (comp limit-section-index-range op)))))
 
 (comment
   (dispatch {::change-section {:inc? false}})
@@ -841,37 +841,37 @@
   (-> @live-state :section))
 
 (reg-event-db
- ::inc-arp-cps-index
- (fn [db _]
-   (update db :arp/cps-index (fnil inc 0))))
+  ::inc-arp-cps-index
+  (fn [db _]
+    (update db :arp/cps-index (fnil inc 0))))
 
 (reg-event-db
- ::inc-arp-pattern-index
- (fn [db _]
-   (update db :arp/pattern-index (fnil inc 0))))
+  ::inc-arp-pattern-index
+  (fn [db _]
+    (update db :arp/pattern-index (fnil inc 0))))
 
 (reg-event-db
- ::inc-harmonizer-harmony-index
- (fn [db _]
-   (update db :harmonizer/harmony-index (fnil inc 0))))
+  ::inc-harmonizer-harmony-index
+  (fn [db _]
+    (update db :harmonizer/harmony-index (fnil inc 0))))
 
 (reg-event-fx
- ::toggle-sample-arp
- (fn [{:keys [db]} arp-fn-params]
-   (let [on? (:arp.refrain/on? db)]
-     {:db (assoc db :arp.refrain/on? (not on?))
-      :fx (if on?
-            {::stop-sample-arp {}}
-            {::start-sample-arp arp-fn-params})})))
+  ::toggle-sample-arp
+  (fn [{:keys [db]} arp-fn-params]
+    (let [on? (:arp.refrain/on? db)]
+      {:db (assoc db :arp.refrain/on? (not on?))
+       :fx (if on?
+             {::stop-sample-arp {}}
+             {::start-sample-arp arp-fn-params})})))
 
 (reg-event-fx
- ::toggle-harmonizer
- (fn [{:keys [db]} _]
-   (let [on? (:harmonizer/on? db)]
-     {:db (assoc db :harmonizer/on? (not on?))
-      :fx (if on?
-            {::stop-harmonizer {}}
-            {::start-harmonizer {}})})))
+  ::toggle-harmonizer
+  (fn [{:keys [db]} _]
+    (let [on? (:harmonizer/on? db)]
+      {:db (assoc db :harmonizer/on? (not on?))
+       :fx (if on?
+             {::stop-harmonizer {}}
+             {::start-harmonizer {}})})))
 
 (def ^:private main-synth-default-params
   {:amp 4
@@ -883,44 +883,44 @@
    :pan-min -0.8 :pan 0.8})
 
 (reg-event-fx
- ::start-main-synth
- (fn [{:keys [db]} _]
-   (let [sy (:synth/main db)
-         sy* (if (o/node-active? sy)
-               sy
-               (do
-                 (timbre/info "Starting main synth")
-                 (pan-verb (merge {:in (ge.route/fl-i1 :in)
-                                   :out (outputs :main-synth)}
-                                  main-synth-default-params))))]
-     {:db (assoc db :synth/main sy*)})))
+  ::start-main-synth
+  (fn [{:keys [db]} _]
+    (let [sy (:synth/main db)
+          sy* (if (o/node-active? sy)
+                sy
+                (do
+                  (timbre/info "Starting main synth")
+                  (pan-verb (merge {:in (ge.route/fl-i1 :in)
+                                    :out (outputs :main-synth)}
+                                   main-synth-default-params))))]
+      {:db (assoc db :synth/main sy*)})))
 
 (reg-event-fx
- ::stop-main-synth
- (fn [{:keys [db]} _]
-   (let [sy (:synth/main db)]
-     {:db (dissoc db :synth/main)
-      :fx (when (o/node-active? sy)
-            {::stop-synth {:synth sy}})})))
+  ::stop-main-synth
+  (fn [{:keys [db]} _]
+    (let [sy (:synth/main db)]
+      {:db (dissoc db :synth/main)
+       :fx (when (o/node-active? sy)
+             {::stop-synth {:synth sy}})})))
 
 (reg-event-fx
- ::ctl-synth
- (fn [{:keys [db]} {:keys [synth-k params]}]
-   (let [sy (get db synth-k)]
-     (if-not sy
-       (timbre/warn "Synth not found:" synth-k)
-       {:fx {::ctl-synth {:synth sy :params params}}}))))
+  ::ctl-synth
+  (fn [{:keys [db]} {:keys [synth-k params]}]
+    (let [sy (get db synth-k)]
+      (if-not sy
+        (timbre/warn "Synth not found:" synth-k)
+        {:fx {::ctl-synth {:synth sy :params params}}}))))
 
 (reg-event-fx
- ::start-signal-analyzer
- (fn [{:keys [db]} _]
-   (let [sy (:synth/signal-analyzer db)
-         sy* (if (o/node-active? sy)
-               sy
-               (do
-                 (timbre/info "Starting signal analyzer")
-                 (:get-signal-pitches-synth (start-signal-analyzer! (ge.route/fl-i1 :in)))))]
-     {:db (assoc db :synth/signal-analyzer sy*)})))
+  ::start-signal-analyzer
+  (fn [{:keys [db]} _]
+    (let [sy (:synth/signal-analyzer db)
+          sy* (if (o/node-active? sy)
+                sy
+                (do
+                  (timbre/info "Starting signal analyzer")
+                  (:get-signal-pitches-synth (start-signal-analyzer! (ge.route/fl-i1 :in)))))]
+      {:db (assoc db :synth/signal-analyzer sy*)})))
 
 (defn- start-ps-freeze
   [{:keys [db]}
@@ -966,66 +966,66 @@
 (reg-event-fx ::stop-ps-freeze #'stop-ps-freeze)
 
 (reg-event-db ::on-ps-freeze-start
-              (fn [db synth]
-                (timbre/info "Star(t)ed: ps-freeze ")
-                (assoc db :synth/ps-freeze synth)))
+  (fn [db synth]
+    (timbre/info "Star(t)ed: ps-freeze ")
+    (assoc db :synth/ps-freeze synth)))
 
 (reg-event-db ::on-synth-stop
-              (fn [db {:keys [db-synth-key]}]
-                (when db-synth-key
-                  (timbre/debug "Dissoc'ing synth key:" db-synth-key)
-                  (dissoc db db-synth-key))))
+  (fn [db {:keys [db-synth-key]}]
+    (when db-synth-key
+      (timbre/debug "Dissoc'ing synth key:" db-synth-key)
+      (dissoc db db-synth-key))))
 
 (reg-event-fx ::toggle-nubosidades
-              (fn [{:keys [db]} {:keys [params]}]
-                (let [synths (:synth/nubosidades db)]
-                  (if (some o/node-active? synths)
-                    {:fx (map-indexed (fn [i synth]
-                                        [::stop-synth {:synth synth
-                                                       :db-synth-key (when (= i (dec (count synths)))
-                                                                       :synth/nubosidades)}])
-                                      synths)}
-                    {:fx {::start-nubosidades params}}))))
+  (fn [{:keys [db]} {:keys [params]}]
+    (let [synths (:synth/nubosidades db)]
+      (if (some o/node-active? synths)
+        {:fx (map-indexed (fn [i synth]
+                            [::stop-synth {:synth synth
+                                           :db-synth-key (when (= i (dec (count synths)))
+                                                           :synth/nubosidades)}])
+                          synths)}
+        {:fx {::start-nubosidades params}}))))
 
 (reg-event-db ::on-nubosidades-start
-              (fn [db synths]
-                (timbre/info "Started: nubosidades synths ")
-                (assoc db :synth/nubosidades synths)))
+  (fn [db synths]
+    (timbre/info "Started: nubosidades synths ")
+    (assoc db :synth/nubosidades synths)))
 
 (reg-event-fx ::fade-main-bus
-              (fn [{:keys [db]} {:keys [level]}]
-                {:db (assoc db :main-bus-level level)
-                 :fx {::fade-main-bus {:level level}}}))
+  (fn [{:keys [db]} {:keys [level]}]
+    {:db (assoc db :main-bus-level level)
+     :fx {::fade-main-bus {:level level}}}))
 
 (reg-event-db ::confirm-init
-              (fn [db _]
-                (assoc db :ræ.one/initialized? true)))
+  (fn [db _]
+    (assoc db :ræ.one/initialized? true)))
 
 (reg-event-fx ::start-recording
-              (fn [{:keys [db]} _]
-                (when-not (:recording? db)
-                  {:db (assoc db :recording? true)
-                   :fx [[::start-recording]]})))
+  (fn [{:keys [db]} _]
+    (when-not (:recording? db)
+      {:db (assoc db :recording? true)
+       :fx [[::start-recording]]})))
 
 (reg-event-fx ::stop-recording
-              (fn [{:keys [db]} _]
-                {:db (dissoc db :recording?)
-                 :fx [[::stop-recording]]}))
+  (fn [{:keys [db]} _]
+    {:db (dissoc db :recording?)
+     :fx [[::stop-recording]]}))
 
 (reg-event-fx ::log
-              (fn [_ s] {:fx {::log s}}))
+  (fn [_ s] {:fx {::log s}}))
 
 (reg-event-db ::set-fingerings
-              (fn [db fingerings]
-                (assoc db :fingerings fingerings)))
+  (fn [db fingerings]
+    (assoc db :fingerings fingerings)))
 
 (reg-event-fx ::post-fingerings
-              (fn [_ fingerings]
-                {:fx {::post-fingerings.fx fingerings}}))
+  (fn [_ fingerings]
+    {:fx {::post-fingerings.fx fingerings}}))
 
 (reg-event-db ::set-start-time
-              (fn [db _]
-                (assoc db :start-time (o/now))))
+  (fn [db _]
+    (assoc db :start-time (o/now))))
 
 (comment
   (-> @live-state))
@@ -1035,19 +1035,19 @@
 ;;;;;;;;;;;;;;;;;;
 (declare start-fingerings-refrain)
 (reg-fx ::init.fx
-        (fn [_ _]
-          (timbre/info "(Re)initializing")
-          (when (o/server-connected?) (o/stop))
-          (gp/stop)
-          (ge.init/init!)
-          (reaper/init)
-          (add-watch live-state ::post-live-state
-                     (fn [_key _ref _old-value new-value]
-                       (post-live-state* new-value)))
-          (start-fingerings-refrain)
-          (dispatch [[::confirm-init]
-                     [::start-main-synth]
-                     [::start-signal-analyzer]])))
+  (fn [_ _]
+    (timbre/info "(Re)initializing")
+    (when (o/server-connected?) (o/stop))
+    (gp/stop)
+    (ge.init/init!)
+    (reaper/init)
+    (add-watch live-state ::post-live-state
+               (fn [_key _ref _old-value new-value]
+                 (post-live-state* new-value)))
+    (start-fingerings-refrain)
+    (dispatch [[::confirm-init]
+               [::start-main-synth]
+               [::start-signal-analyzer]])))
 
 (defn stop-synth
   [_ {:keys [db-synth-key synth]}]
@@ -1060,10 +1060,10 @@
 (reg-fx ::stop-synth #'stop-synth)
 
 (reg-fx ::ctl-synth
-        (fn [_ {:keys [synth params]}]
-          (when (o/node-active? synth)
-            (doseq [[k v] params]
-              (o/ctl synth k v)))))
+  (fn [_ {:keys [synth params]}]
+    (when (o/node-active? synth)
+      (doseq [[k v] params]
+        (o/ctl synth k v)))))
 
 (reg-fx ::stop-sample-arp (fn [_ _] (stop-sample-arp!)))
 
@@ -1074,68 +1074,68 @@
 (reg-fx ::start-harmonizer (fn [_ _] (start-harmonizer!)))
 
 (reg-fx ::post-live-state.subfx
-        (fn [{:keys [db]} _]
+  (fn [{:keys [db]} _]
           ;; sometimes the server seems to choke with two posts in quick sucession
           ;; so we delay the subs update by a little bit
-          (a/go
-            (a/<! (a/timeout 100))
-            (post-live-state* db))))
+    (a/go
+      (a/<! (a/timeout 100))
+      (post-live-state* db))))
 
 (reg-fx ::start-ps-freeze
-        (fn [_ synth-params]
-          (timbre/info "ps-freeze" synth-params)
-          (let [synth (ps-freeze (-> {:in (bh/bus 3)
-                                      :amp (o/db->amp 33)
-                                      :ps-amp  (o/db->amp -4)
-                                      :freezed-amp (o/db->amp 27)
-                                      :rev-mix 0.7
-                                      :rev-room 1
-                                      :r 5
-                                      :out (outputs :ps-freeze)}
-                                     (merge synth-params)
-                                     (update :rev-room * (rev-room-mul :ps-freeze))
-                                     (update :rev-mix * (rev-mix-mul :ps-freeze))))]
-            (dispatch {::on-ps-freeze-start synth}))))
+  (fn [_ synth-params]
+    (timbre/info "ps-freeze" synth-params)
+    (let [synth (ps-freeze (-> {:in (bh/bus 3)
+                                :amp (o/db->amp 33)
+                                :ps-amp  (o/db->amp -4)
+                                :freezed-amp (o/db->amp 27)
+                                :rev-mix 0.7
+                                :rev-room 1
+                                :r 5
+                                :out (outputs :ps-freeze)}
+                               (merge synth-params)
+                               (update :rev-room * (rev-room-mul :ps-freeze))
+                               (update :rev-mix * (rev-mix-mul :ps-freeze))))]
+      (dispatch {::on-ps-freeze-start synth}))))
 
 (reg-fx ::start-nubosidades
-        (fn [_ synth-params]
-          (let [synth1 (nuboso (-> {:in (ge.route/fl-i1 :bus)
-                                    :amp (o/db->amp 3)
-                                    :rev-room 1
-                                    :rev-mix 1
-                                    :out (outputs :nubosidades)}
-                                   (merge synth-params)
-                                   (update :rev-room * (rev-room-mul :nubosidades))
-                                   (update :rev-mix * (rev-mix-mul :nubosidades))))
-                synth2 (nuboso2 (-> {:in (ge.route/fl-i1 :bus)
-                                     :amp (o/db->amp 3)
-                                     :rev-room 1.3
-                                     :rev-mix 1
-                                     :sub-min-amp (o/db->amp -3)
-                                     :out (outputs :nubosidades)}
-                                    (merge synth-params)
-                                    (update :rev-room * (rev-room-mul :nubosidades2))
-                                    (update :rev-mix * (rev-mix-mul :nubosidades2))))]
-            (dispatch {::on-nubosidades-start [synth1 synth2]}))))
+  (fn [_ synth-params]
+    (let [synth1 (nuboso (-> {:in (ge.route/fl-i1 :bus)
+                              :amp (o/db->amp 3)
+                              :rev-room 1
+                              :rev-mix 1
+                              :out (outputs :nubosidades)}
+                             (merge synth-params)
+                             (update :rev-room * (rev-room-mul :nubosidades))
+                             (update :rev-mix * (rev-mix-mul :nubosidades))))
+          synth2 (nuboso2 (-> {:in (ge.route/fl-i1 :bus)
+                               :amp (o/db->amp 3)
+                               :rev-room 1.3
+                               :rev-mix 1
+                               :sub-min-amp (o/db->amp -3)
+                               :out (outputs :nubosidades)}
+                              (merge synth-params)
+                              (update :rev-room * (rev-room-mul :nubosidades2))
+                              (update :rev-mix * (rev-mix-mul :nubosidades2))))]
+      (dispatch {::on-nubosidades-start [synth1 synth2]}))))
 
 (reg-fx ::stop-nubosidades
-        (fn [_db synths]
-          (doseq [sy synths]
-            (stop-synth _db {:db-synth-key :synth/nubosidades
-                             :synth sy}))))
+  (fn [_db synths]
+    (doseq [sy synths]
+      (stop-synth _db {:db-synth-key :synth/nubosidades
+                       :synth sy}))))
 
 (reg-fx ::fade-main-bus
-        (fn [{:keys [db]} {:keys [level]}]
-          (when (:ræ.one/initialized? db)
-            (timbre/debug "Setting main bus level to: " level)
-            (cb-interpolate
-             {:id ::fade-main-bus
-              :dur-ms 7777
-              :tick-ms 100
-              :init-val reaper/zero-db
-              :target-val level
-              :cb (fn [data]
-                    (reaper/set-vol 1 (:val data)))}))))
+  (fn [{:keys [db]} {:keys [level]}]
+    (when (:ræ.one/initialized? db)
+      (timbre/debug "Setting main bus level to: " level)
+      (cb-interpolate
+       {:id ::fade-main-bus
+        :dur-ms 7777
+        :tick-ms 100
+        :init-val reaper/zero-db
+        :target-val level
+        :cb (fn [data]
+              (reaper/set-vol 1 (:val data)))}))))
 
 (comment
   (-> @live-state))
@@ -1165,67 +1165,67 @@
      #(timbre/warn "Not defined, note:" note))))
 
 (reg-fx
- ::init-midi.fx
- (fn [_ _]
-   (timbre/info "Initializing MIDI/Pacer")
-   (try
+  ::init-midi.fx
+  (fn [_ _]
+    (timbre/info "Initializing MIDI/Pacer")
+    (try
       ;; NOTE: using Pacer's TIEMI config
-     (midi-in-event
-      :midi-input (get-pacer!)
-      :note-on (fn [{:keys [note]}]
-                 (try
-                   (cond
-                     (= 0 note) (dispatch {::toggle-nubosidades (params-from-m-or-f
-                                                                 (get-subval ::section-nubosidades-config))})
-                     (= 1 note) (section-midi-event note
-                                                    (get-subval ::section-data)
-                                                    #(timbre/warn "Not defined, note:" note))
+      (midi-in-event
+       :midi-input (get-pacer!)
+       :note-on (fn [{:keys [note]}]
+                  (try
+                    (cond
+                      (= 0 note) (dispatch {::toggle-nubosidades (params-from-m-or-f
+                                                                  (get-subval ::section-nubosidades-config))})
+                      (= 1 note) (section-midi-event note
+                                                     (get-subval ::section-data)
+                                                     #(timbre/warn "Not defined, note:" note))
 
                      ;; set section
-                     (= 2 note) (section-midi-event note
-                                                    (get-subval ::section-data)
-                                                    #(dispatch {::change-section {:inc? false}}))
+                      (= 2 note) (section-midi-event note
+                                                     (get-subval ::section-data)
+                                                     #(dispatch {::change-section {:inc? false}}))
 
-                     (= 3 note) (dispatch {::change-section {:inc? true}})
+                      (= 3 note) (dispatch {::change-section {:inc? true}})
 
                      ;; arp
-                     (= 4 note) (dispatch {::toggle-sample-arp (params-from-m-or-f
-                                                                (get-subval ::section-arp-fn-config))})
-                     (= 5 note) (section-midi-event note
-                                                    (get-subval ::section-data)
-                                                    #(dispatch {::inc-arp-pattern-index {}}))
-                     (= 6 note) (dispatch {::inc-arp-cps-index {}})
+                      (= 4 note) (dispatch {::toggle-sample-arp (params-from-m-or-f
+                                                                 (get-subval ::section-arp-fn-config))})
+                      (= 5 note) (section-midi-event note
+                                                     (get-subval ::section-data)
+                                                     #(dispatch {::inc-arp-pattern-index {}}))
+                      (= 6 note) (dispatch {::inc-arp-cps-index {}})
 
                      ;; harmonizer
-                     (= 7 note) (dispatch {::toggle-harmonizer {}})
-                     (= 8 note) (dispatch {::inc-harmonizer-harmony-index {}})
-                     (= 9 note) (dispatch {::start-ps-freeze (params-from-m-or-f
-                                                              (get-subval ::section-ps-freeze-config))}))
-                   (catch Exception e (timbre/error e))))
-      :note-off (fn [{:keys [note]}]
-                  (cond
-                    (= 9 note) (dispatch
-                                {::stop-ps-freeze (params-from-m-or-f
-                                                   (get-subval ::section-ps-freeze-config))}))))
-     (catch Exception e (timbre/error (.getMessage e))))))
+                      (= 7 note) (dispatch {::toggle-harmonizer {}})
+                      (= 8 note) (dispatch {::inc-harmonizer-harmony-index {}})
+                      (= 9 note) (dispatch {::start-ps-freeze (params-from-m-or-f
+                                                               (get-subval ::section-ps-freeze-config))}))
+                    (catch Exception e (timbre/error e))))
+       :note-off (fn [{:keys [note]}]
+                   (cond
+                     (= 9 note) (dispatch
+                                 {::stop-ps-freeze (params-from-m-or-f
+                                                    (get-subval ::section-ps-freeze-config))}))))
+      (catch Exception e (timbre/error (.getMessage e))))))
 
 (reg-fx ::log
-        (fn [_ data]
-          (timbre/info data)))
+  (fn [_ data]
+    (timbre/info data)))
 
 (reg-fx ::post-fingerings.fx
-        (fn [_ fingerings]
-          (post-fingering2 (str/join "\n\n" fingerings))))
+  (fn [_ fingerings]
+    (post-fingering2 (str/join "\n\n" fingerings))))
 
 (reg-fx ::start-recording
-        (fn [_ _] (reaper/rec)))
+  (fn [_ _] (reaper/rec)))
 
 (reg-fx ::stop-recording
-        (fn [_ _] (reaper/stop)))
+  (fn [_ _] (reaper/stop)))
 
 (reg-fx ::set-fingerings.fx
-        (fn [_ fingerings]
-          (dispatch {::set-fingerings fingerings})))
+  (fn [_ fingerings]
+    (dispatch {::set-fingerings fingerings})))
 
 ;;;;;;;;;;;;;;;;;;
 ;; * Subs
@@ -1244,33 +1244,33 @@
   (get-arp-scale-data cps-index (get-section-data section)))
 
 (reg-sub ::arp-cps-data
-         #'arp-cps-data-sub
-         (merge post-live-state-fx
-                {::set-fingerings (fn [_ {:keys [arp/scale]}]
-                                    {::set-fingerings.fx (mapv (comp
-                                                                pitch-class->pr-fingering
-                                                                :class :pitch)
-                                                               scale)})}))
+  #'arp-cps-data-sub
+  (merge post-live-state-fx
+         {::set-fingerings (fn [_ {:keys [arp/scale]}]
+                             {::set-fingerings.fx (mapv (comp
+                                                         pitch-class->pr-fingering
+                                                         :class :pitch)
+                                                        scale)})}))
 
 (defn arp-pattern-data-sub
   [{:keys [arp/pattern-index section] :as _db}]
   (get-arp-pattern-data pattern-index (get-section-data section)))
 
 (reg-sub ::arp-pattern-data
-         #'arp-pattern-data-sub
-         post-live-state-fx)
+  #'arp-pattern-data-sub
+  post-live-state-fx)
 
 (defn harmonizer-data-sub
   [{:keys [harmonizer/harmony-index section] :as _db}]
   (get-harmonizer-data harmony-index (get-section-data section)))
 
 (reg-sub ::harmonizer-data
-         #'harmonizer-data-sub
-         (merge
-          post-live-state-fx
-          {::restart-harmonizer (fn [{:keys [db]} _]
-                                  (when (:harmonizer/on? db)
-                                    {::start-harmonizer {}}))}))
+  #'harmonizer-data-sub
+  (merge
+   post-live-state-fx
+   {::restart-harmonizer (fn [{:keys [db]} _]
+                           (when (:harmonizer/on? db)
+                             {::start-harmonizer {}}))}))
 
 (defn section-data-sub
   [{:keys [section] :as _db}]
@@ -1280,19 +1280,19 @@
      :section/midi-events (:midi-events data)}))
 
 (reg-sub ::section-data
-         #'section-data-sub
-         (merge
-          post-live-state-fx
-          #_{::fade-main-bus
-             (fn [_ {:keys [section/index]}]
-               (let [level (if (or (zero? index)
-                                   (= (dec (count sections)) index))
-                             (do (timbre/info "Fading out main bus")
-                                 0)
-                             reaper/zero-db)]
-                 {::fade-main-bus {:level level}}))}
-          {::log (fn [_ {:keys [section/index]}]
-                   {::log (str "Now on section: " index)})}))
+  #'section-data-sub
+  (merge
+   post-live-state-fx
+   #_{::fade-main-bus
+      (fn [_ {:keys [section/index]}]
+        (let [level (if (or (zero? index)
+                            (= (dec (count sections)) index))
+                      (do (timbre/info "Fading out main bus")
+                          0)
+                      reaper/zero-db)]
+          {::fade-main-bus {:level level}}))}
+   {::log (fn [_ {:keys [section/index]}]
+            {::log (str "Now on section: " index)})}))
 
 (defn section-ps-freeze-config-sub
   [{:keys [section] :as _db}]

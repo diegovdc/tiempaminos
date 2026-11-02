@@ -14,7 +14,8 @@
    [tieminos.habitat.recording :as rec]
    [tieminos.habitat.routing :as habitat.route]
    [tieminos.sc-utils.server-status :refer [start-server-status-query-loop!]]
-   [tieminos.habitat.extended-sections.tunel-cuantico-bardo.touch-osc :as-alias bardo.tosc]))
+   [tieminos.habitat.extended-sections.tunel-cuantico-bardo.touch-osc :as-alias bardo.tosc]
+   [tieminos.habitat.extended-sections.tunel-cuantico-bardo.live-state :as-alias bardo.live-state]))
 
 (defn habitat! []
   (when @habitat/habitat-initialized?
@@ -34,7 +35,7 @@
     :guitar {:width 3 :amp 1}}))
 
 (defn all!
-  []
+  [{:keys [take-version]}]
   (habitat!)
   (bardo.signal-processor/init!)
   (bardo.synth-management/periodically-clear-currently-playing-synths! (* 60 1000))
@@ -42,4 +43,5 @@
   (bardo.rec/init-bufs-watch!)
   (bardo.touch-osc/init!)
   (start-server-status-query-loop! 1000
-                                   #(bardo.ræ/dispatch {::bardo.tosc/on-cpu-usage-data %})))
+                                   #(bardo.ræ/dispatch {::bardo.tosc/on-cpu-usage-data %}))
+  (bardo.ræ/dispatch {::bardo.live-state/set-take-version take-version}))

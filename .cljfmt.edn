@@ -1,2 +1,6 @@
-{:paths ["src" "dev" "test"]  ;; exclude "dev"
- :parallel? true}
+{:paths ["src" "dev" "test"] ;; exclude "dev"
+ :parallel? true
+ :extra-indents {reg-event-fx [[:inner 0]]
+                 reg-event-db [[:inner 0]]
+                 reg-fx [[:inner 0]]
+                 reg-sub [[:inner 0]]}}

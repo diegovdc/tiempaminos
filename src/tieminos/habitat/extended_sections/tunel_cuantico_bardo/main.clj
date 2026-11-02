@@ -6,6 +6,8 @@
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.init :as bardo.init]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.live-state :as bardo.live-state]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.osc :as bardo.osc]
+   [tieminos.habitat.extended-sections.tunel-cuantico-bardo.re-affect :as bardo.ræ]
+   [tieminos.habitat.extended-sections.tunel-cuantico-bardo.rec :as-alias bardo.rec]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.scratch.main]))
 
 (comment
@@ -22,9 +24,11 @@
     ])
   (reset-default-state!)
   ;; init everything (habitat and input synths, bardo.comms) except SC, REAPER and OSC communications
-  (bardo.init/all!)
+  (bardo.init/all! {:take-version "2.3.39"})
   (bardo.osc/post-live-state-to-ui!)
-  (bardo.osc/post-live-state-to-ui! :print-instead? true))
+  (bardo.osc/post-live-state-to-ui! :print-instead? true)
+
+  (bardo.ræ/dispatch {::bardo.rec/load-samples "2.3.39"}))
 
 (defn reset-default-state!
   []
