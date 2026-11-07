@@ -1,4 +1,5 @@
 (ns tieminos.compositions.garden-earth.fl-grain-1.dot-waves
+  {:clj-kondo/ignore true}
   (:require
    [tieminos.compositions.garden-earth.base
     :refer [early-g

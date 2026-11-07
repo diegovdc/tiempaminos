@@ -175,7 +175,8 @@
   [{:keys [id buf-fn period durs amp
            amp-fn ;; optional, takes the index and returns an amp value, if present `amp` will be overriden
            d-weights d-level-weights a-weights room-weights out-bus silence-thresh
-           on-play]
+           on-play
+           should-play-fn?]
     :or {id :hacia-un-nuevo-universo-perc2
          buf-fn rand-latest-buf
          period 2.5
@@ -198,56 +199,59 @@
    :cycle-len 1
    :on-event (on-event
               (when-let [buf (buf-fn {:index index})]
-                (when-not (silence? silence-thresh buf) ;; allow us to control silences by not playing
-                  (let [chord (bardo.live-state/get-gusano-chord!)
-                        amp* (get-amp!)]
-                    (timbre/debug " Gusano rates" chord)
-                    (doseq [r chord]
-                      (let [start (rrange (rrange 0 0.1) 0.3)
-                            end (min 1 (+ start (rrange 0.05 1)))
-                            a (weighted a-weights)
-                            trig-rate (+ (get-trig-rate!)
-                                         (rrange 0 20))
-                            grain-dur (/ 1
-                                         (/ (+ (get-grain-dur!) (rand-int 20))
-                                            2))
-                            config {:group (groups/mid)
-                                    :buf buf
-                                    :a a
-                                    :d (/ (+ (/ a 2) (weighted d-weights))
-                                          2)
-                                    :r (+ (/ a 2) (weighted d-weights))
-                                    :d-level (weighted d-level-weights)
-                                    :rev-room (weighted room-weights)
-                                    :trig-rate trig-rate
-                                    :grain-dur grain-dur
-                                    :amp-lfo (rrange 0.1 0.4)
-                                    :amp-lfo-min 0.95
-                                    :lpf-max (rrange 2000 10000)
-                                    :start start
-                                    :end end
-                                    :out out-bus
-                                    :pan (rrange -1 1)}]
+                (cond
+                  (silence? silence-thresh buf) nil ;; allow us to control silences by not playing
+                  (not (should-play-fn?)) (timbre/warn "Omiting gusano event") ;; a function that may consider outside state, like cpu usage
+                  :else  (let [chord (bardo.live-state/get-gusano-chord!)
+                               amp* (get-amp!)]
+                           (timbre/debug " Gusano rates" chord)
+                           (doseq [r chord]
+                             (let [start (rrange (rrange 0 0.1) 0.3)
+                                   end (min 1 (+ start (rrange 0.05 1)))
+                                   a (weighted a-weights)
+                                   trig-rate (+ (get-trig-rate!)
+                                                (rrange 0 20))
+                                   grain-dur (/ 1
+                                                (/ (+ (get-grain-dur!) (rand-int 20))
+                                                   2))
+                                   config {:group (groups/mid)
+                                           :buf buf
+                                           :a a
+                                           :d (/ (+ (/ a 2) (weighted d-weights))
+                                                 2)
+                                           :r (+ (/ a 2) (weighted d-weights))
+                                           :d-level (weighted d-level-weights)
+                                           :rev-room (weighted room-weights)
+                                           :trig-rate trig-rate
+                                           :grain-dur grain-dur
+                                           :amp-lfo (rrange 0.1 0.4)
+                                           :amp-lfo-min 0.95
+                                           :lpf-max (rrange 2000 10000)
+                                           :start start
+                                           :end end
+                                           :out out-bus
+                                           :pan (rrange -1 1)}]
 
-                        (when on-play
-                          (on-play (assoc config
-                                          :amp amp*
-                                          :rate (float r))))
-                        (amanecer*guitar-clouds (assoc config
-                                                       :rate (float r)
-                                                       :interp (rand-nth [1 2 4])
-                                                       :amp (* amp* (rrange 0.2 1) (norm-amp buf))))
-                        (when-let [rate* (get-second-voice! index r)]
-                          (timbre/debug "Gusano second voice" (:out config))
-                          (amanecer*guitar-clouds (assoc config
-                                                         :rate rate*
-                                                         :interp 4
-                                                         :amp (* amp* (rrange 0 0.7) (norm-amp buf)))))))))))))
+                               (when on-play
+                                 (on-play (assoc config
+                                                 :amp amp*
+                                                 :rate (float r))))
+                               (amanecer*guitar-clouds (assoc config
+                                                              :rate (float r)
+                                                              :interp (rand-nth [1 2 4])
+                                                              :amp (* amp* (rrange 0.2 1) (norm-amp buf))))
+                               (when-let [rate* (get-second-voice! index r)]
+                                 (timbre/debug "Gusano second voice" (:out config))
+                                 (amanecer*guitar-clouds (assoc config
+                                                                :rate rate*
+                                                                :interp 4
+                                                                :amp (* amp* (rrange 0 0.7) (norm-amp buf)))))))))))))
 
 (def default-config
   {:on-play (fn [config] (timbre/debug "Gusano on-play:" config))
    :id ::gusano
    :out-bus (main-returns :mixed)
+   :should-play-fn? (fn [] true)
    :silence-thresh 0.0
    :buf-fn get-buf!-2
    ;; TODO make this dynamic
@@ -270,9 +274,10 @@
                (rrange 2 5) 1}})
 
 (defn start
-  []
+  [should-play-fn?]
   (timbre/info "Starting gusano")
-  (gusano default-config))
+  (gusano (assoc default-config
+                 :should-play-fn? should-play-fn?)))
 
 (comment
   (require '[tieminos.overtone-extensions :as oe])

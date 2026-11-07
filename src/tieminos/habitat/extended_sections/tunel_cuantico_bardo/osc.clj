@@ -1,5 +1,6 @@
 (ns tieminos.habitat.extended-sections.tunel-cuantico-bardo.osc
   (:require
+   [clojure.math :refer [ceil]]
    [clojure.pprint :as pprint]
    [clojure.set :as set]
    [clojure.string :as str]
@@ -9,8 +10,9 @@
     :as bardo.config]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.live-state
     :as bardo.live-state
-    :refer [delete-all-banks delete-bank inc-gusano-rate-index! live-state
-            mute-input save-touchosc-synth-param set-active-bank
+    :refer [activate-processor-preset! delete-all-banks delete-bank
+            inc-gusano-rate-index! live-state mute-input
+            save-touchosc-synth-param set-active-bank
             set-active-harmonic-voice set-active-recorded-bank set-clouds-amp
             set-clouds-env set-clouds-rhythm set-clouds-sample-lib-size
             set-filter-index set-filter-param set-gusano-2nd-voice
@@ -20,15 +22,17 @@
             set-harmonic-voice-convergence-point set-harmony
             set-independent-refrain set-next-gusano-harmonic-seq
             set-next-gusano-harmony set-panner-index set-panner-param
-            set-rev-send set-selected-bank-synth set-synth-index
-            switch-rec-durs switch-rec-pulse toggle-clouds toggle-gusano
-            toogle-rec]]
+            set-processor-param-value! set-processor-preset-label-index!
+            set-processor-preset-label-index2! set-rev-send
+            set-selected-bank-synth set-synth-index switch-rec-durs
+            switch-rec-pulse toggle-clouds toggle-gusano toogle-rec]]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.osc-helpers
     :refer [update-clients]]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.osc-helpers :as bardo.osc-helpers]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.osc-router :as osc-router :refer [osc-router]]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.presets
     :as bardo.presets]
+   [tieminos.habitat.extended-sections.tunel-cuantico-bardo.re-affect :as bardo.ræ]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.synth-management
     :refer [stop-long-running-synths!]]
    [tieminos.habitat.osc :as habitat-osc]
@@ -36,7 +40,9 @@
    [tieminos.osc.reaper :as reaper :refer [reaeq-freq->lin]]
    [tieminos.utils
     :refer
-    [cb-interpolate stop-all-interpolators! str->int]]))
+    [cb-interpolate stop-all-interpolators! str->int]]
+   [tieminos.habitat.extended-sections.tunel-cuantico-bardo.touch-osc :as-alias bardo.tosc]
+   [tieminos.habitat.extended-sections.tunel-cuantico-bardo.rec :as-alias bardo.rec]))
 
 (comment
   (require '[tieminos.network-utils :refer [get-local-host]])
@@ -360,6 +366,7 @@
    "/EQ/notch-radio" (set-notch-freq (first args))
    "/System/rec-start" (when (press? args) (reaper-rec!))
    "/System/rec-stop" (when (press? args) (reaper-stop!))
+   "/System/save-samples" (when (press? args) (bardo.ræ/dispatch {::bardo.rec/save-samples {}}))
    "/System/subwoofer-master" (set-track-volume2 :subwoofer-track (first args) reaper/zero-db)
    "/System/voces-master" (set-track-volume2 :mixes-processes-2-track (first args) reaper/zero-db)
    "/gusano/2nd-voice" (set-gusano-2nd-voice (first args))
@@ -472,10 +479,41 @@
    "/:player/toggle-gusano-bank/:index" (set-active-bank {:player player-k
                                                           :bank (-> path-params :index str->int)
                                                           :on? (== 1 (first args))})
-   "/:player/toggle-harmonic-voice/:index" (set-active-harmonic-voice
-                                            {:player player-k
-                                             :voice-index (-> path-params :index str->int)
-                                             :on? (== 1 (first args))})))
+   "/:player/toggle-harmonic-voice/:index" (do (set-active-harmonic-voice
+                                                {:player player-k
+                                                 :voice-index (-> path-params :index str->int)
+                                                 :on? (== 1 (first args))})
+                                               (save-touchosc-synth-param player-k path args))
+   "/presets/guitar/next-label-btn" (when (press? args) (set-processor-preset-label-index! true))
+   "/presets/guitar/prev-label-btn" (when (press? args) (set-processor-preset-label-index! false))
+   "/presets/guitar/activate-preset-btn" (when (press? args) (activate-processor-preset!))
+   "/presets/guitar/toggle-preset-buttons-view-btn" (bardo.ræ/dispatch
+                                                     {::bardo.tosc/toggle-visibility
+                                                      {:path "/presets/guitar/preset-buttons-visible"
+                                                       :visible? (press? args)}})
+
+   "/presets/guitar/buttons/:index" (when (press? args)
+                                       ;; Because the way touch osc works (non-generative UI)
+                                       ;; For simplicity, the UI was created by alternating btn/label in the document tree.
+                                       ;; Therefore all buttons are odd numbers and labels are even.
+                                       ;; Thus the preset index should be converted from a odd number to an index.
+                                      (let [index (-> path-params :index str->int
+                                                      (/ 2)
+                                                      ceil
+                                                      dec)]
+                                        (set-processor-preset-label-index2! index)
+                                        (activate-processor-preset! index)))
+   "/guitar-fx-params/control/:index" (let
+                                       [index (-> path-params :index str->int)
+                                            ;; Because the way touch osc works (non-generative UI)
+                                            ;; For simplicity, the UI was created by alternating knob/name/value in the document tree.
+                                            ;; Therefore all knobs are mod 3 = 0 
+                                            ;; Thus the preset index should be converted from an index into an quot 3 value
+                                        index* (quot index 3)]
+                                        (set-processor-param-value! index* (first args)))))
+
+(comment
+  (osc-router/match-by-path router "/presets/guitar/next-label-btn" '(1)))
 
 (defn osc-responder
   [{:keys [path args] :as msg}]

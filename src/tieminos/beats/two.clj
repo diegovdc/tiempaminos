@@ -1,4 +1,5 @@
 (ns tieminos.beats.two
+  {:clj-kondo/ignore true}
   (:require
    [erv.cps.core :as cps]
    [erv.scale.core :as scale]

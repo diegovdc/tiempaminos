@@ -30,6 +30,7 @@
            msg
            countdown
            on-rec-start
+           on-countdown-start
            print-info?
            group]
     :or {on-end (fn [& _args])
@@ -39,28 +40,30 @@
   (let [input-kw (-> input-bus :name keyword)]
     (if (get @recording? input-kw)
       (timbre/warn "Input bus already recording: " input-kw)
-      (do
-        (swap! recording? assoc input-kw true)
-        (start-recording
-         :bufs-atom bufs
-         :buf-key (make-buf-key! section subsection input-name)
-         :input-bus input-bus
-         :seconds dur-s
-         :msg msg
-         :print-info? print-info?
-         :on-end (fn [buf-key]
-                   (swap! recording? assoc input-kw false)
-                   (add-analysis dur-s buf-key input-bus)
-                   (add-meta buf-key section subsection input-name)
-                   (on-end buf-key))
-         :countdown countdown
-         :on-rec-start on-rec-start
-         :group group)))))
+      (start-recording
+       :bufs-atom bufs
+       :buf-key (make-buf-key! section subsection input-name)
+       :input-bus input-bus
+       :seconds dur-s
+       :msg msg
+       :print-info? print-info?
+       :on-end (fn [buf-key]
+                 (swap! recording? assoc input-kw false)
+                 (add-analysis dur-s buf-key input-bus)
+                 (add-meta buf-key section subsection input-name)
+                 (on-end buf-key))
+       :countdown countdown
+       :on-countdown-start on-countdown-start
+       :on-rec-start (fn [rec-config]
+                       (swap! recording? assoc input-kw true)
+                       (on-rec-start rec-config))
+       :group group))))
 
 (def habitat-samples-path (str (System/getProperty "user.dir")
                                "/samples/habitat_samples/"))
 
-(defn save-samples [& {:keys [description full-keyword buffers-atom]}]
+(defn save-samples [& {:keys [path description full-keyword buffers-atom on-done]
+                       :or {path habitat-samples-path}}]
   (when-not buffers-atom
     (throw (ex-info "A buffers-atom must be passed in... perhaps try rec/bufs" {})))
   (let [prefix  (or full-keyword
@@ -70,9 +73,20 @@
                                                java.time.format.DateTimeFormatter/ISO_INSTANT))
                                   (when description (str "*" (str/replace description #" " "-"))))))]
     (rec/save-samples prefix
-                      :path habitat-samples-path
+                      :path path
                       :buffers-atom buffers-atom
-                      :preserve-keys [:analysis :amp-norm-mult])))
+                      :preserve-keys [:analysis :amp-norm-mult :rec/meta :rec/time]
+                      :on-done on-done)))
+
+(comment
+  (-> @bufs)
+  (-> @bufs
+      first
+      second
+      seq)
+  (save-samples {:description "test"
+                 :full-keyword :a/a123
+                 :buffers-atom bufs}))
 
 (defonce buf-keys-count (atom {}))
 

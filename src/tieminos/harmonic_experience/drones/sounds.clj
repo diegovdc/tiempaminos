@@ -14,6 +14,9 @@
   [freq 130
    amp 1
    gate 1
+   a 5
+   s 1
+   r 5
    out 0]
   (o/out out
          (-> (map #(* (lfo (o/n-rand 0.5 1.2) 0.2 0.6)
@@ -23,7 +26,7 @@
              (o/pan2 (lfo 0.4 -0.5 0.5))
              #_(o/hpf 700)
              (#(+ % (o/bpf % (lfo 0.5 (* 2 freq) 800) 0.3)))
-             (* amp 0.7 (lfo 0.437 0.8 1) (o/env-gen (o/env-asr 5 1 5 0.1) :gate gate :action o/FREE)))))
+             (* amp 0.7 (lfo 0.437 0.8 1) (o/env-gen (o/env-asr a s r 0.1) :gate gate :action o/FREE)))))
 
 (o/defsynth harmonic
   [freq 130
@@ -44,7 +47,8 @@
              (o/pan2 #_(lfo 0.4 -0.5 0.5))
              #_(o/hpf 700)
              #_(#(+ % (o/bpf % (lfo 0.5 (* 2 freq) 800) 0.3)))
-             (* (o/lag amp 1) (o/env-gen (o/env-asr a s r curve) :gate gate :action o/FREE)))))
+             (* amp
+                (o/env-gen (o/env-asr a s r curve) :gate gate :action o/FREE)))))
 
 (o/defsynth sine
   [freq 130

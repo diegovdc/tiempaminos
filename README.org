@@ -1,5 +1,5 @@
 #+title: Tieminos
-#+startup: overview
+#+startup: contents
 
 
 * Introduction
@@ -56,6 +56,42 @@ Mainly uses ~Supercollider~ via ~Overtone~, my microtonality library [[https://g
          :z (fn [synth val]
               (o/ctl synth :amp (linexp* 0 127 0.1 1 val)))})
   
+#+end_src
+* OSC Controllers
+** Knobs One
+A 12 knobs template with customizable labels, visibility and two action types (=REAPER= track volume and MIDI CC). Uses =knobs-one.tosc=.
+The =client= port needs to be set in the =TouchOSC= app pointing to the local machine IP.
+#+begin_src clojure
+(require '[tieminos.osc-controllers.knobs-one :as knobs-one])
+
+(knobs-one/init!
+  {:port 7777                          ;; default value
+   :clients [["127.0.0.1" 7778]        ;; default value
+             ["192.168.0.101" 7777]]
+   :midi-sink (midi/midi-out "Bus 1") ;; default value
+   ;; maximum 12 knobs, only the defined knobs will be visibile
+   :ctls [{:label "T1Vol" ;; If action = `:track-vol`, then defaults to "T<track>Vol"
+           ;; can be a keyword or a hex color string (see the `get-color` fn),
+           ;; as of now the color keywords are: :volume :surge :myth :plasmonic :six-sines
+           :color :volume 
+           :visible? true ;; defaults to true
+           :action {:type :track-vol
+                    :dur-ms 5000 ;; interpolation duration, defaults to 5000
+                    :track 1}}
+          {:action {:type :track-vol :track 2}
+           :color :volume}
+          {:action {:type :track-vol :track 3}
+           :color :volume}
+          {:action {:type :track-vol :track 4}
+           :color :volume}
+          {:label "MixGain" ;; If action = `:midi-cc`, then defaults to "CC<cc>"
+           :color :surge
+           :action {:type :midi-cc
+                    :dur-ms 5000   ;; interpolation duration, defaults to 5000
+                    :cc 16         ;; 16-32 are good MIDI CC numbers
+                    :chan 0        ;; defaults to 0
+                    :default-val 0.6}}]})
+
 #+end_src
 * =seq-utils=
 ** =mseq= and associated functions
@@ -156,6 +192,169 @@ For usage within a ~ref-rain~ this macro provides a better interface (omitting t
 
 (rain2/stop ::rainseq-example)
 #+end_src
+** =evseq=
+*** Basic pattern
+A pattern represented in a string will play in sequence. Individual characters (a-z, A-Z) are matched to the corresponding function calls (as in a =case= macro).
+These functions can contain =rainseq= sequences and these will work as expected.
+The dash character (=-=) or unmatched characters are treated as silences.
+
+
+#+name: evseq-require
+#+begin_src clojure
+(require
+  '[tieminos.seq-utils.parsers.instruments-seqs-parser :refer [evseq]] 
+  '[time-time.dynacan.players.refrain.v2 :as rain.v2]
+  '[tieminos.seq-utils.core :refer [lin rainseq]]
+  '[tieminos.synths :as s])
+#+end_src
+
+#+RESULTS: evseq-require
+: nil
+
+#+name: evseq-ex-1
+#+begin_src clojure
+(rain.v2/ref-rain
+  :id :evseq/example
+  :durs [1/4]
+  :on-event (rain.v2/on-event
+              (evseq "a-bc"
+                "a" (s/low :freq (* 100 (rainseq (lin 1 9/8 5/4))))
+                "b" (s/sharp-plate :freq (* 100 (rainseq (lin 1 2 3)))))))
+#+end_src
+
+#+RESULTS: evseq-ex-1
+: (:evseq/example)
+
+
+*** Chords
+Chords are represented by characters in brackets, they will sound together.
+#+name: evseq-ex-2
+#+begin_src clojure
+(rain.v2/ref-rain
+  :id :evseq/example
+  :durs [1/4]
+  :on-event (rain.v2/on-event
+              (evseq "[ab]-"
+                "a" (s/low :freq (* 100 (rainseq (lin 1 9/8 5/4))))
+                "b" (s/sharp-plate :freq (* 100 (rainseq (lin 1 2 3)))))))
+
+#+end_src
+
+#+RESULTS: evseq-ex-2
+: (:evseq/example)
+
+*** Subsequences
+Subsequences will divide a beat evenly in a number of parts corresponding to the subpattern length.
+#+name: evseq-ex-3
+#+begin_src clojure
+;; right now it can be unpredictable as to the point where they start 
+(rain.v2/ref-rain
+  :id :evseq/example
+  :durs [1/2]
+  :on-event (rain.v2/on-event
+              (evseq "<aaa>-"
+                "a" (s/low :freq (* 100 (rainseq (lin 1 9/8 5/4))))
+                "b" (s/sharp-plate :freq (* 100 (rainseq (lin 1 2 3)))))))
+#+end_src
+
+#+RESULTS: evseq-ex-3
+: (:evseq/example)
+
+*** Ratcheted repetition.
+=*= and =/= can be used repeat an event.
+
+In it's basic usage the number to the right of the operator determines both the ratio of repetition and the number of repetitions:
+
+Accelerated ratcheted repetition.
+
+#+name: evseq-ex-4
+#+begin_src clojure
+(rain.v2/ref-rain
+  :id :evseq/example
+  :durs [1/2]
+  :on-event (rain.v2/on-event
+              (evseq "a*3-"
+                "a" (s/low :freq (* 100 (rainseq (lin 1 9/8 5/4))))
+                "b" (s/sharp-plate :freq (* 100 (rainseq (lin 1 2 3)))))))
+#+end_src
+
+#+RESULTS: evseq-ex-4
+: (:evseq/example)
+
+Decelerated ratcheted repetition.
+
+#+name: evseq-ex-4b
+#+begin_src clojure
+(rain.v2/ref-rain
+  :id :evseq/example
+  :durs [1]
+  :on-event (rain.v2/on-event
+              (evseq "a/3"
+                "a" (s/low :freq (* 100 (rainseq (lin 1 9/8 5/4))))
+                "b" (s/sharp-plate :freq (* 100 (rainseq (lin 1 2 3)))))))
+#+end_src
+
+#+RESULTS: evseq-ex-4b
+: (:evseq/example #uuid "6187ac9b-56da-492f-abd7-ad1e044b88c6" #uuid "7e5d683f-0b26-4539-8da7-18d2f8448c63")
+
+**** Advanced repetition
+But it can be configured using a parenthesis with the following params =pattern*(ratio, repeats)=.
+
+
+Here's a simple polyrhythm.
+#+name: evseq-ex-4c
+#+begin_src clojure
+(rain.v2/ref-rain
+   :id :evseq/example
+   :durs [2/3]
+   :on-event (rain.v2/on-event
+              (evseq "a*(3/2 3)-"
+                "a" (s/low :freq (* 200 (rainseq (lin 3)))))
+              (evseq "bb"
+                "b" (s/low :freq (* 200 (rainseq (lin 2)))))))
+#+end_src
+
+*** Nested patterns
+#+name: evseq-ex-5
+#+begin_src clojure
+(rain.v2/ref-rain
+  :id :evseq/example
+  :durs [1/2]
+  :on-event (rain.v2/on-event
+              (evseq "<a/3b>-[ab]-"
+                "a" (s/low :freq (* 100 (rainseq (lin 1 9/8 5/4))))
+                "b" (s/sharp-plate :freq (* 100 (rainseq (lin 1 2 3)))))))
+#+end_src
+
+A more complex example
+#+name: evseq-ex-6
+#+begin_src clojure
+(rain.v2/ref-rain
+  :id :evseq/example
+  :durs [2/3]
+  :on-event (rain.v2/on-event
+              (evseq "<ac*(1/5, 3)>*(3/2 3)-"
+                "a" (s/low :freq (* 200 3)
+                           :amp (rainseq (lin 0.5 0.8 0.5 0.9)))
+                "c" (when (#{0 1} (mod i 3))
+                      (s/low :freq (* 200 (rainseq (lin [5 5 9] [6 10 10] (lin 7 [8 11])))))))
+              (evseq "b"
+                "b" (s/low :freq (* 200 2)
+                           :amp (* 0.9 (rainseq (lin 0.5 0.8 0.5)))))))
+#+end_src
+
+#+RESULTS: evseq-ex-6
+: (#uuid "47a0ef05-1b1c-465f-8a2b-c23a62d0c465" #uuid "0019797a-e205-4002-8ae6-42ccfb9c7852" :evseq/example #uuid "fb58b717-e193-4595-9265-1579e7aa6ff4" #uuid "fe369d79-a659-47b8-b6f0-5e0939dd49d9" #uuid "f6484673-cfa5-4a94-9097-cee8ed62197c" #uuid "4adee101-eeb1-4dde-aac5-45a140723f69")
+
+
+#+name: evseq-ex-stop
+#+begin_src clojure
+(rain.v2/stop)
+#+end_src
+
+#+RESULTS: evseq-ex-stop
+: {}
+
 
 
 * Legato sustainer
@@ -345,12 +544,54 @@ Notice that in the example above the =env-levels= and =env-durs= parameters are 
           (env2 {:attack 1})))
 #+end_src
 
+** Synth development
+The =tieminos.sc-utils.dev= namespace provides functions to simplify testing synthdefs.
+#+begin_src clojure
+(require '[tieminos.sc-utils.dev :as sc.dev]
+         '[overtone.core :as o])
 
+(o/defsynth sini
+  [freq 200
+   amp 0.5
+   out 0]
+  (o/out out (* amp (o/pan2 (o/sin-osc 200)))))
+
+(sc.dev/track :synth-id (sini)) ;; every time `sc.dev/track` is called the associated synth will be killed or gated (if a `gate` param is present) and a new instance will be created
+
+(sc.dev/get-synth :synth-id) ;; get the synth's instance (e.g. for `o/ctl` calls
+
+(sc.dev/stop :synth-id) ;; stop the synth
+
+(sc.dev/stop-all) ;; stop all synths added by `sc.dev/track`
+#+end_src
 ** Tips
 When writting macros this ~ns~ gives access to the ugen operators
 #+BEGIN_SRC clojure
 [overtone.sc.ugen-collide-list :as oc]
 #+END_SRC
+* Audio inputs
+To initialize an audio input for use as a source in other synths.
+
+This API ensures that ~o/in~ can be used on other synths without needing to think about if the input is an ~o/sound-in~ input (used for interface level inputs) or an ~o/in~ input (for SC audio buses). 
+
+#+begin_src clojure
+(require '[tieminos.sc-utils.groups.v1 :as groups]
+         '[tieminos.sc-utils.inputs :as sci])
+
+;; Initialize input.
+;; NOTE: the input will die if `o/stop` is called.
+(sci/init-input! {:id :guitar ;; used to refer to this value by `sci/get-bus`
+                 :group (groups/early) ;; optional but recommended, otherwise `init-input` will call `groups/init-groups!` on it's own. Although the early groups are probably the only option we want.
+                 :in 0 ;; the actual input. See the server meters to find the actual number.
+                 })
+
+;; for testing that the input is working
+(sci/direct-out {:group (groups/late) ;; NOTE: a group lower down the node tree must always be used
+                 :bus (sci/get-bus :guitar) ;; get the bus
+                 })
+
+
+#+end_src
 * Harmonic Experience
 A tool for singing inspired by W. A. Mathieu's /The Harmonic Experience/.
 ** Basic usage
@@ -439,7 +680,11 @@ The default lattice goes to the 23-limit. It doesn't have coordinates higher tha
                         :lattice-config {:coords coords }
                         :out (hexp.utils/out 7)})
 #+end_src
-
+* Linter
+To a file:
+#+begin_src bash
+ clojure -M:kondo --lint /path/to/file.clj
+#+end_src
 
 
 * License

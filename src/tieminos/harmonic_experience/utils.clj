@@ -35,7 +35,7 @@
 
 (defn- midi->ratio&freq*
   [{:keys [ref-note root scale midi-note]}]
-  (let [ratio  (midi->ratio ref-note (scale->sorted-ratios scale) midi-note)
+  (let [ratio (midi->ratio ref-note (scale->sorted-ratios scale) midi-note)
         absolute-ratio* (absolute-ratio scale ref-note midi-note)]
     {:ratio ratio
      :absolute-ratio absolute-ratio*

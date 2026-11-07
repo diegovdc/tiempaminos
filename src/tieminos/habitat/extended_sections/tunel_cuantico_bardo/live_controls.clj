@@ -8,6 +8,8 @@
    [tieminos.attractors.lorentz :as lorentz]
    [tieminos.habitat.extended-sections.harmonies.chords
     :refer [get-harmony rate-chord-seq]]
+   [tieminos.habitat.extended-sections.tunel-cuantico-bardo.config :refer [AVG-CPU-LIMIT
+                                                                           PEAK-CPU-LIMIT]]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.gusanos.core
     :as bardo.gusano]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.live-state
@@ -17,10 +19,13 @@
     :as bardo.osc]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.osc-helpers
     :as bardo.osc-helpers]
+   [tieminos.habitat.extended-sections.tunel-cuantico-bardo.re-affect :as bardo.ræ]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.rec
     :as bardo.rec]
+   [tieminos.habitat.extended-sections.tunel-cuantico-bardo.synths.processors :as bardo.signal-processor]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.synths.samplers
     :refer [play-synth]]
+   [tieminos.habitat.extended-sections.tunel-cuantico-bardo.touch-osc :as bardo.touch-osc]
    [tieminos.habitat.groups :as groups]
    [tieminos.habitat.recording :as rec]
    [tieminos.habitat.routing :refer [inputs main-returns]]
@@ -53,34 +58,51 @@
                                   (str val)))
 
 (defn tick-countdown
-  [rec-dur input-k]
+  [rec-dur input-k & {:keys [negative?]}]
   (let [tick 0.5]
     (rain.v2/ref-rain
      :id (make-rec-id (str (name input-k) "-countdown"))
      :durs (repeat (/ rec-dur tick) tick)
      :loop? false
      :on-event (rain.v2/on-event
-                (send-tick input-k (- rec-dur (* i tick)))))))
-
+                (send-tick input-k
+                           (cond-> (- rec-dur (* i tick))
+                             negative? (* -1)))))))
 (defn start-recording
   [{:keys [input-k]}]
   (timbre/info "starting rec on" input-k)
   (if-let [input-bus (-> @inputs input-k :bus)]
-    (bardo.rec/start-rec-loop!
-     {:id (make-rec-id input-k)
-      :input-k input-k
-      :input-bus input-bus
-      :rec-dur-fn (fn [_] (-> @live-state :rec input-k :dur))
-      :rec-pulse (fn [_] (-> @live-state :rec input-k get-rec-pulse))
-       ;; :print-info? true
-      :on-rec-start (fn [_rec-config]
-                      (swap! live-state
-                             assoc-in
-                             [:rec input-k :last-rec-timestamp]
-                             (o/now))
-                      (tick-countdown (-> @live-state :rec input-k :dur)
-                                      input-k))
-      :on-rec-end (fn [_] (send-tick input-k ""))})
+    (let [countdown 5]
+      (bardo.rec/start-rec-loop!
+       {:id (make-rec-id input-k)
+        :input-k input-k
+        :input-bus input-bus
+        :countdown countdown
+        :rec-dur-fn (fn [_] (-> @live-state :rec input-k :dur))
+        :rec-pulse (fn [{:keys [index] :as _refrain-data}]
+                     (let [rec-pulse (-> @live-state :rec input-k get-rec-pulse)]
+                       (if (and countdown
+                                (> countdown 0)
+                                (zero? index))
+                         countdown
+                         rec-pulse)))
+        ;; :print-info? true
+        :on-countdown-start (fn [countdown]
+                              (swap! live-state
+                                     assoc-in
+                                     [:rec input-k :last-rec-timestamp]
+                                     (o/now))
+                              (tick-countdown countdown
+                                              input-k
+                                              :negative? true))
+        :on-rec-start (fn [_rec-config]
+                        (swap! live-state
+                               assoc-in
+                               [:rec input-k :last-rec-timestamp]
+                               (o/now))
+                        (tick-countdown (-> @live-state :rec input-k :dur)
+                                        input-k))
+        :on-rec-end (fn [_] (send-tick input-k ""))}))
     (timbre/error "No input bus for key:" input-k)))
 
 (comment
@@ -480,18 +502,28 @@
               (println i)))
   (rain.v2/stop))
 
+(defn cloud-event-should-play?
+  []
+  (or (< (bardo.ræ/get-subval ::bardo.touch-osc/avg-cpu-usage)
+         AVG-CPU-LIMIT)
+      (< (bardo.ræ/get-subval ::bardo.touch-osc/peak-cpu-usage)
+         PEAK-CPU-LIMIT)))
+
 (defn clouds-on-event
-  [player independent-bank {refrain-event-data :voice}]
+  [player bank {refrain-event-data :voice}]
   (doseq [{:keys [event/start-delay] :as data} (get-synth-data-vectors
                                                 player
-                                                independent-bank
+                                                bank
                                                 refrain-event-data)]
-    (let [f #(play-synth data)]
-      (if (> start-delay 0)
-        (clouds-delay-refrain refrain-event-data start-delay f)
-        (f)))))
+    (if-not (cloud-event-should-play?)
+      (timbre/warn "Omiting cloud event")
+      (let [f #(play-synth data)]
+        (if (> start-delay 0)
+          (clouds-delay-refrain refrain-event-data start-delay f)
+          (f))))))
 
 (comment
+
   (do ;; trigger clouds event on bank 0
     (bardo.live-state/toggle-active-bank! :milo 0 true)
     (clouds-on-event :milo {:index 0})))
@@ -547,22 +579,65 @@
 
 (defn start-gusano
   []
-  (bardo.gusano/start))
+  (bardo.gusano/start cloud-event-should-play?))
 
 (defn stop-gusano
   []
   (bardo.gusano/stop))
 
+;;;;;;;;;;;;;;;;;;
+;; * Processors
+;; (Live input)
+;; TODO:using re-affect, eventually moveto bardo.signal-processor
+;;;;;;;;;;;;;;;;;;
+
+(defn update-processor-preset-label-info!
+  [{:keys [label-index active-preset]}]
+  (let [labels (mapv :name bardo.signal-processor/presets-config)
+        label (wrap-at label-index labels)]
+    (bardo.osc-helpers/send-osc-msg "/presets/guitar/preset-label" label)
+    (bardo.osc-helpers/send-osc-msg "/presets/guitar/activate-button-group-visible"
+                                    (str (not= label (:name active-preset))))))
+
+(defn activate-processor-preset!
+  [{:keys [preset-index]}]
+  (let [preset (wrap-at preset-index bardo.signal-processor/presets-config)
+        config (bardo.live-state/get-processor-latest-config! preset)
+        active-preset* (bardo.live-state/get-processor-active-preset-data!)
+        new-synth (bardo.signal-processor/start-synth! preset config)]
+    (when active-preset*
+      (bardo.signal-processor/stop-synth! (:synth active-preset*)))
+    (bardo.live-state/set-processor-active-preset! preset new-synth)
+
+    (update-processor-preset-label-info! {:label-index preset-index
+                                          :active-preset preset})
+
+    (bardo.ræ/dispatch
+     {::bardo.touch-osc/update-guitar-preset-fx-knobs
+      {:preset preset
+       :modified-params (bardo.live-state/get-preset-modified-params! preset)}})
+
+    (bardo.live-state/processor-update-ui! preset config)))
+
+(defn on-processor-synth-param-change!
+  [{:keys [touch-osc/param-index
+           touch-osc/value-label
+           synth/value
+           synth/param]}]
+  ;; For impl reasons on TouchOSC UI, we need to map the indexes in mod3, because document tree is a sequence of knob/param-name/param-value
+  (let [active-preset (bardo.live-state/get-processor-active-preset-data!)
+        value-label-index (-> param-index (* 3) (+ 3))]
+    (bardo.osc-helpers/send-osc-msg (str "/guitar-fx-params/value-label/" value-label-index)
+                                    value-label)
+    (bardo.signal-processor/ctl-synth! active-preset param value)))
 ;;;;;;;;;;;;;;;;;
 ;; Event Handlers
 ;;;;;;;;;;;;;;;;;
 
 (comment
   (timbre/set-level! :debug)
-  (timbre/set-level! :info)
-  (event-handler {:type :play-synth
-                  :data {:synth :test
-                         :params {:freq (rrange 100 300)}}}))
+  (timbre/set-level! :info))
+
 (defn event-handler
   [{:as _event
     :keys [type data]}]
@@ -576,8 +651,12 @@
     :stop-recording (stop-recording data)
     :bardo.event/delete-bank-bufs (bardo.rec/delete-bank-bufs data)
     :bardo.event/bufs-counted (bardo.osc/update-bufs-count data)
+    :bardo.processor/activate-preset (activate-processor-preset! data)
+    :bardo.processor/on-preset-label-index-change (update-processor-preset-label-info! data)
+    :bardo.processor/on-synth-param-change (on-processor-synth-param-change! data)
     ;; event for dev purpuses
-    :dev/trigger-clouds-event (do ;; data {:bank int}
+    :dev/trigger-clouds-event (do
                                 (bardo.live-state/toggle-active-bank! :milo (:bank data) true)
-                                (clouds-on-event :milo {:data {:index 0}}))
+                                (clouds-on-event :milo false {:data {:index 0}}))
     (timbre/error "[event-handler] No matching clause for `:type`:" type)))
+

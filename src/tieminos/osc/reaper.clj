@@ -18,6 +18,10 @@
                         65432))
     @osc-client))
 
+(comment
+  (init)
+  (set-vol 1 zero-db))
+
 (defn time "Set start time at `seconds`"
   [seconds]
   (osc/osc-send @osc-client "/time" (float seconds)))

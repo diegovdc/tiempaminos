@@ -1,4 +1,5 @@
 (ns tieminos.habitat.extended-sections.hacia-un-nuevo-universo.scratch.synth-explorations
+  {:clj-kondo/ignore true}
   (:require
    [overtone.core :as o]
    [tieminos.habitat.init :refer [habitat-initialized? init!]]

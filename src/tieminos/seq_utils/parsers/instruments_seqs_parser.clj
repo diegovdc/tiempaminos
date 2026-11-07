@@ -9,9 +9,10 @@
 (def parser (insta/parser grammar))
 (comment
   (parser "a*2!2")
-  (parser "a*2")
-  (parser "ab [ab]!2 [qqq]*2")
+  (parser "a*(1, 3)")
+  (parser "ab [ab]!2 <qqq>*2")
   (parser "ab*3 [cd] ddd  e/2 e/4 e/5")
+  (post-process-parsed-seq (parser "a*(3/2 3)"))
   (post-process-parsed-seq (parser "a<a[c*2]d>"))
   (post-process-parsed-seq (parser "a<ad>")))
 
@@ -31,25 +32,52 @@
                             [:ratchet [:chord "q" "q" "q"] [:op-ratchet "*"] [:posint "2"]]])
 
 (declare build-play-fn)
+
+;; TODO move the following processing functions to the parsing phase (post-process-parsed-seq)
+(defn- dispatch-process-ratchet-data
+  [ratchet-data]
+  (first ratchet-data))
+
+(defn- process-ratio-or-posint
+  [ratio]
+  (if (= :ratio (first ratio))
+    (let [[_ [_ num] [_ denom]] ratio]
+      (/ (edn/read-string num)
+         (edn/read-string denom)))
+    (edn/read-string (second ratio))))
+
+(defmulti ^:private process-ratchet-data #'dispatch-process-ratchet-data)
+
+(defmethod process-ratchet-data :ratchet-config
+  [[_ ratio [_ times]]]
+  (let [ratio* (process-ratio-or-posint ratio)]
+    {:times (edn/read-string times)
+     :ratio ratio*}))
+
+(defmethod process-ratchet-data :posint
+  [[_ times]]
+  (let [times* (edn/read-string times)]
+    {:times times*
+     :ratio times*}))
+
 (defn- build-ratchet-play-fn
-  [rain-data [_ sub-event [_ op] [_ times]] player-fn]
+  [rain-data [_ sub-event [_ op] ratchet-data] player-fn]
   #_(println [rain-data [_ sub-event [_ op] [_ times]] player-fn])
-  (let [times* (edn/read-string times)
-        op* (if (= op "/") * /)]
-    #_(println "===========" (:dur-s rain-data) times*)
+  (let [{:keys [times ratio]} (process-ratchet-data ratchet-data)
+        op* (if (= op "/") * /)
+        durs (repeat times (op* (:dur-s rain-data) ratio))]
     (fn [] (rain.v2/ref-rain
             :id (random-uuid)
-            :durs (repeat times*
-                          (op* (:dur-s rain-data) times*))
+            :durs durs
             :loop? false
             :on-event (fn [data]
-                        ((build-play-fn data sub-event player-fn)))))))
+                        ((build-play-fn (:event data) sub-event player-fn)))))))
 
 (defn- build-subseq-play-fn
   [rain-data [_ & subevents] player-fn]
-  #_(println subevents)
   (let [durs (repeat (count subevents)
                      (/ (:dur-s rain-data) (count subevents)))]
+
     (fn []
       (rain.v2/ref-rain
        :id (random-uuid)
@@ -72,7 +100,6 @@
 
 (defn build-play-fn
   [rain-data event player-fn]
-
   (cond
     (= :ratchet (first event)) (build-ratchet-play-fn rain-data event player-fn)
     (= :subseq (first event))  (build-subseq-play-fn rain-data event player-fn)
@@ -94,7 +121,7 @@
   (let [body*      (into body nil)
         parsed-pattern (parse (eval pattern))
         events-seq (into [] (post-process-parsed-seq parsed-pattern))]
-
+    #_(println parsed-pattern)
     `(let [event# (wrap-at (:index ~'data) ~events-seq)
            player# (fn [case*] (case case*  ~@body* nil))]
        ((build-play-fn ~'data event# player#)))))
@@ -119,6 +146,14 @@
 
   (rain.v2/stop)
 
+  (rain.v2/ref-rain
+   :id :ex1
+   :durs [1]
+   :loop? false
+   :on-event (rain.v2/on-event
+              (evseq "<b>*2"
+                     "a" (s/low :freq (* 100 (rseq (lin 1 9/8 5/4))))
+                     "b" (s/sharp-plate :freq (* 100 (rseq (lin 1 2 3)))))))
   (rain.v2/ref-rain
    :id :hola
    :durs [1/4]

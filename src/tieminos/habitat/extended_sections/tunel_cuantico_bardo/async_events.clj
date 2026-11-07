@@ -44,7 +44,7 @@
   [chan-k event]
   (if-let [c (chan-k @chans)]
     (a/put! c event)
-    (timbre/error (format "There is no channel \"%s\" to dispatch event. Main need to call `init-async-coms!` first."
+    (timbre/error (format "There is no channel \"%s\" to dispatch event. `main` needs to call `init-async-coms!` first."
                           chan-k))))
 
 (defn dispatch

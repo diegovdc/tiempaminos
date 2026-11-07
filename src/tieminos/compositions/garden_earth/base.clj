@@ -147,9 +147,16 @@
        (into {})))
 
 (def eik-ratios
-  "Eikosany scale grouped-by note name (pitch class name)"
+  "Eikosany scale grouped-by ratio"
   (->> (eik :scale)
        (group-by #(-> % :bounded-ratio))
+       (map (juxt key (comp first val)))
+       (into {})))
+
+(def eik-pitch-classes
+  "Eikosany scale grouped-by ratio"
+  (->> (eik :scale)
+       (group-by #(-> % :pitch :class))
        (map (juxt key (comp first val)))
        (into {})))
 
@@ -160,6 +167,10 @@
 (defn subcps [subcps-name]
   (with-meta (+names base-freq
                      (-> eik :subcps (get subcps-name) :scale))
+    {:subcps/name subcps-name}))
+
+(defn subcps-graphs [subcps-name]
+  (with-meta (-> eik :subcps (get subcps-name) :graphs)
     {:subcps/name subcps-name}))
 
 (defn scale->fingerings [scale]
@@ -216,10 +227,10 @@
            transp (scale/transpose-by (:bounding-period target) period)]
        (* transp (utils/interval (ratio note)
                                  (ratio target))))))
-  (comment)
-  (interval-from-note (subcps "1)4 of 3)6 1.3-5.7.9.11")
-                      (nth (:scale eik) 0)
-                      4))
+  (comment
+    (interval-from-note (subcps "1)4 of 3)6 1.3-5.7.9.11")
+                        (nth (:scale eik) 0)
+                        4)))
 
 (defn pc-index [scale pitch-class]
   (.indexOf (map (comp :class :pitch) scale) pitch-class))

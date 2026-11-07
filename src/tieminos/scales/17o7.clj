@@ -1,4 +1,5 @@
 (ns tieminos.scales.17o7
+  {:clj-kondo/ignore true}
   (:require
    [clojure.edn :as edn]
    [clojure.set :as set]

@@ -8,11 +8,12 @@
    [tieminos.lattice.v1.lattice :refer [add-played-ratio
                                         remove-all-played-ratios
                                         remove-played-ratio]]
+   [tieminos.overtone-extensions :as oe]
    [tieminos.seq-utils.core :refer [choose mseq]]
    [tieminos.utils :refer [rrange]]
    [time-time.dynacan.players.gen-poly :as gp :refer [on-event ref-rain]]))
 
-(o/defsynth tuning-monitor
+(oe/defsynth tuning-monitor
   [freq 440
    a 1.5
    r 3.5
@@ -43,18 +44,25 @@
            scale
            degrees
            durs
+           tempo
            periods
            lattice?
            amp
            out
            print-info?
-           on-note-play]
+           on-note-play
+           a
+           r
+           synth/params-fn]
     :or {root (midi->cps 60)
          durs (choose 5 8 10)
+         tempo 60
          periods (choose 1/2 1 2)
          lattice? true
          print-info? true
          amp 1
+         a [6]
+         r [6]
          out 0
          on-note-play (fn [_data] nil)}}]
 
@@ -63,6 +71,7 @@
     (ref-rain
      :id ::trainer
      :durs (fn [{:keys [index]}] (mseq index durs))
+     :tempo tempo
      :on-event
      (on-event
       (let [note (nth scale (mseq i degrees))
@@ -71,8 +80,8 @@
                            (take 2)))
             interval* (apply interval (sort < @last-interval))
             freq (* root (mseq index periods) (:bounded-ratio note))
-            a 6
-            r 6]
+            a (mseq index a)
+            r (mseq index r)]
         (when print-info?
           (timbre/info :note
                        (:ratio note)
@@ -96,12 +105,13 @@
                                     lattice-atom
                                     {:ratio (:bounded-ratio note)}))))))
         (tuning-monitor
-         :freq freq
-         :a a
-         :r r
-         :pan (rrange -0.5 0.5)
-         :amp (* amp (rrange 0.4 0.8))
-         :out out)
+         (merge {:freq freq
+                 :a a
+                 :r r
+                 :pan (rrange -0.7 0.7)
+                 :amp (* amp (rrange 0.4 0.8))
+                 :out out}
+                (params-fn {:index i :freq freq})))
 
         (on-note-play {:last-interval @last-interval
                        :note note
@@ -110,5 +120,5 @@
 
 (defn stop []
   (gp/stop ::trainer)
-  (timbre/info "Starting trainer")
+  (timbre/info "Stopping trainer")
   (remove-all-played-ratios (get-lattice-atom!)))

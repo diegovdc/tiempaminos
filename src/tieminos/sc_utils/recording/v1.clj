@@ -26,7 +26,7 @@
   (let [in (o/in in-bus)
         env (o/env-gen (o/envelope [0 1 1 0]
                                    [0.01 (- seconds 0.02) 0.01]))]
-    (o/record-buf:ar (* env in) buf :action o/FREE :loop 0)))
+    (o/record-buf:ar  (* env (o/limiter in)) buf :action o/FREE :loop 0)))
 
 (defn rec-buf
   ([{:keys [bufs-atom buf-key seconds input-bus writer-fn group]
@@ -104,7 +104,7 @@
 
 (defn start-recording
   "NOTE: `input-bus` may be `nil`. See `run-rec`."
-  [& {:keys [bufs-atom buf-key seconds msg on-end countdown input-bus bpm _progress-bar? on-rec-start print-info? _group]
+  [& {:keys [bufs-atom buf-key seconds msg on-end countdown input-bus bpm _progress-bar? on-rec-start print-info? _group on-countdown-start]
       :or {on-end (fn [_buf-key] nil)
            countdown 3
            bpm 60
@@ -122,7 +122,10 @@
               (do
                 (when  (zero? index)
                   (timbre/info (str msg ": " buf-key))
-                  (when print-info? (println "Countdown:")))
+                  (when print-info? (println "Countdown:"))
+                  (when (and (> countdown 0)
+                             (fn? on-countdown-start))
+                    (on-countdown-start countdown)))
 
                 (cond (> (- countdown index) 0)
                       (when print-info?
@@ -146,40 +149,54 @@
 
 (defn save-samples*
   "`prefix` is a unique identifier for the sample set"
-  [prefix path buffers-atom name-buf-key-fn preserve-keys]
+  [prefix path buffers-atom name-buf-key-fn preserve-keys
+   & {:keys [on-done]}]
   (let [date (java.util.Date.)
         bufs* @buffers-atom
-        db (atom (edn/read-string (slurp (str path "db.edn"))))]
+        db (atom (edn/read-string (slurp (str path "db.edn"))))
+        errors (atom [])]
     (timbre/info (format "Writing %s buffers to %s with prefix %s" (count bufs*) path prefix))
     (a/go
       (doseq [[k b] bufs*]
         (let [filename (str (name prefix) "-" (name-buf-key-fn k))
               path* (str path filename ".wav")]
           (timbre/info "Writing" filename)
-          (oaf/write-audio-file-from-seq (o/buffer-read b)
-                                         path*
-                                         (:rate b)
-                                         (:n-channels b))
-          (swap! db assoc-in
-                 [prefix k]
-                 {:path path*
-                  :id (:id b)
-                  :key k
-                  :date date
-                  :prefix prefix
-                  :buf-map-data (if preserve-keys (select-keys b preserve-keys) {})})))
+          (try
+            (oaf/write-audio-file-from-seq (o/buffer-read b)
+                                           path*
+                                           (:rate b)
+                                           (:n-channels b))
+            (swap! db assoc-in
+                   [prefix k]
+                   {:path path*
+                    :id (:id b)
+                    :key k
+                    :date date
+                    :prefix prefix
+                    :buf-map-data (if preserve-keys (select-keys b preserve-keys) {})})
+            (catch Exception e (swap! errors conj {:filename filename
+                                                     ;; :buffer b
+                                                   :error (.getMessage e)})))))
       (spit (str path "db.edn") @db)
-      (timbre/info "All done!"))))
+      (if-not (seq @errors)
+        (timbre/info "All done!")
+        (do (timbre/warn "Done with errors:" (count @errors))
+            (doseq [{:keys [filename error]} @errors]
+              (println "Could not save file:" filename)
+              (println "Error: " error)
+              (println "\n"))))
+      (when on-done (on-done)))))
 
 (defn save-samples
   "`preserve-keys` additional keys in the buffer map that should be saved to the db"
   [prefix
-   & {:keys [path buffers-atom name-buf-key-fn preserve-keys]
+   & {:keys [path buffers-atom name-buf-key-fn preserve-keys on-done]
       :or {path default-samples-path
            buffers-atom bufs
            name-buf-key-fn name-buf-key
            preserve-keys []}}]
-  (save-samples* prefix path buffers-atom name-buf-key-fn preserve-keys))
+  (save-samples* prefix path buffers-atom name-buf-key-fn preserve-keys
+                 {:on-done on-done}))
 
 (comment
   (save-samples :test))
@@ -203,7 +220,7 @@
                           [(:key data) (with-meta (-> (o/load-sample (:path data))
                                                       (merge (:buf-map-data data {}))
                                                       (assoc :db/sample-key (:key data)
-                                                             :db/samples-atom buffers-atom ;; ommited because it can be too big to look at
+                                                             ;; :db/samples-atom buffers-atom ;; ommited because it can be too big to look at, and causes error in repl
                                                              ))
                                          data)]))
                    (into {}))]

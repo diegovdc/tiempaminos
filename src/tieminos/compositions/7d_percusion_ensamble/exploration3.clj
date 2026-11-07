@@ -1,4 +1,5 @@
 (ns tieminos.compositions.7d-percusion-ensamble.exploration3
+  {:clj-kondo/ignore true}
   (:require
    [clojure.data.generators :refer [weighted]]
    [tieminos.compositions.7d-percusion-ensamble.base

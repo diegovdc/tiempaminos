@@ -75,13 +75,16 @@
 (oe/defsynth nuboso
   [in 0
    out 0
+   a 2
+   r 4
    amp 1
+   lpf-freq 700
    rev-mix 1
    rev-room 1
    gate 1]
   (let [sig (->  (o/in in 1)
                  #_(o/mix)
-                 (o/moog-ladder 700 0.2)
+                 (o/moog-ladder lpf-freq 0.2)
                  (* 8))
         rev (-> sig
                 (o/free-verb rev-mix rev-room 0.7)
@@ -91,17 +94,21 @@
                   [(+ (* #_(o/db->amp 3) sig)
                       (* #_(o/db->amp -3) (first rev)))
                    (second rev)]
-                  (o/env-gen (o/adsr 2 1 1 4)
+                  (o/env-gen (o/adsr a 1 1 r)
                              :gate gate
                              :action o/FREE)))))
 (oe/defsynth nuboso2
   [in 0
    out 0
+   a 2
+   r 4
    amp 1
    rev-room1 1.3
    rev-room2 1.1
    rev-mix 1
    bpf2-amp 1
+   sub-min-amp 0.4
+   sub-max-amp 1.5
    gate 1]
   (let [sig (->  (o/in in 1)
                  #_(o/mix)
@@ -115,7 +122,7 @@
                 (* (lfo-kr 1.3 0.4 1.5)))
         rev2 (-> rev (o/pitch-shift 0.2 1/2)
                  (o/free-verb rev-mix rev-room2 0.8)
-                 (* (lfo-kr 1.4 0.4 1.5)))]
+                 (* (lfo-kr 1.4 sub-min-amp sub-max-amp)))]
 
     (o/out out (* amp
                   (o/mix [[rev rev2]
@@ -124,7 +131,7 @@
                                         (lfo-kr 1.2 0.3 0.5)
                                         1)
                               (* bpf2-amp))])
-                  (o/env-gen (o/adsr 2 1 1 4)
+                  (o/env-gen (o/adsr a 1 1 r)
                              :gate gate
                              :action o/FREE)))))
 

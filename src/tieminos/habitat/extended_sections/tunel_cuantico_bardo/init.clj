@@ -3,14 +3,19 @@
    [tieminos.habitat.extended-sections.hacia-un-nuevo-universo.main-4ch :as hunu.4ch]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.async-events :as bardo.comms]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.live-controls :as bardo.live-ctl]
+   [tieminos.habitat.extended-sections.tunel-cuantico-bardo.re-affect :as bardo.ræ]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.rec :as bardo.rec]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.synth-management :as bardo.synth-management]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.synths.processors :as bardo.signal-processor]
+   [tieminos.habitat.extended-sections.tunel-cuantico-bardo.touch-osc :as bardo.touch-osc]
    [tieminos.habitat.init :as habitat]
    [tieminos.habitat.main :as main]
    [tieminos.habitat.main-sequencer :as hseq]
    [tieminos.habitat.recording :as rec]
-   [tieminos.habitat.routing :as habitat.route]))
+   [tieminos.habitat.routing :as habitat.route]
+   [tieminos.sc-utils.server-status :refer [start-server-status-query-loop!]]
+   [tieminos.habitat.extended-sections.tunel-cuantico-bardo.touch-osc :as-alias bardo.tosc]
+   [tieminos.habitat.extended-sections.tunel-cuantico-bardo.live-state :as-alias bardo.live-state]))
 
 (defn habitat! []
   (when @habitat/habitat-initialized?
@@ -30,9 +35,13 @@
     :guitar {:width 3 :amp 1}}))
 
 (defn all!
-  []
+  [{:keys [take-version]}]
   (habitat!)
   (bardo.signal-processor/init!)
   (bardo.synth-management/periodically-clear-currently-playing-synths! (* 60 1000))
   (bardo.comms/init-async-coms! #'bardo.live-ctl/event-handler)
-  (bardo.rec/init-bufs-watch!))
+  (bardo.rec/init-bufs-watch!)
+  (bardo.touch-osc/init!)
+  (start-server-status-query-loop! 1000
+                                   #(bardo.ræ/dispatch {::bardo.tosc/on-cpu-usage-data %}))
+  (bardo.ræ/dispatch {::bardo.live-state/set-take-version take-version}))

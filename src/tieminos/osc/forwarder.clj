@@ -11,11 +11,8 @@
   (require '[erv.cps.core :as cps]
            '[clojure.set :as set]
            '[erv.utils.core :as utils]
-           '[erv.utils.core :as utils]
-           '[erv.utils.conversions :as conv]
            '[overtone.core :as o]
            '[erv-fib-synth.midi.mpe :as midi-mpe]
-           '[erv-fib-synth.synths :as synths]
            '[erv.scale.core :as scale]
            '[erv.neji.core :as neji]
            '[erv.edo.core :as edo])

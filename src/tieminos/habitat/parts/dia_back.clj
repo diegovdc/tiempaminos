@@ -1,4 +1,5 @@
 (ns tieminos.habitat.parts.dia-back
+  {:clj-kondo/ignore true}
   (:require
    [clojure.core.async :as a]
    [erv.mos.mos :as mos]

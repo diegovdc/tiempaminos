@@ -11,9 +11,10 @@
    [tieminos.harmonic-experience.drones.sounds :refer [harmonic]]
    [tieminos.harmonic-experience.utils :refer [intervals midi->ratio&freq]]
    [tieminos.lattice.v1.lattice :as lattice.v1 :refer [add-played-ratio
+                                                       remove-all-played-ratios
                                                        remove-played-ratio]]
-   [tieminos.math.utils :refer [linexp* linlin*]]
-   [tieminos.midi.core :refer [midi-in-event]]))
+   [tieminos.math.utils :refer [linexp*]]
+   [tieminos.midi.core :refer [clear-all-synths! midi-in-event]]))
 
 (defn draw [text-type width height lattice-data]
   (fn []
@@ -165,33 +166,45 @@
                    :ratio replacement)
             note)))))
 
-(defn- play-sound [ev freq out]
+(defn- play-sound [ev freq {:keys [amp out]
+                            :or {amp 1 out 0}
+                            :as _synth-config}]
+
   (let [max-vel 110
-        vel (min max-vel (:velocity ev))]
-    (timbre/debug {:freq freq :vel (:velocity ev)})
-    (harmonic freq
-              :amp (linexp* 0 max-vel 0.1 0.9 vel)
-              :a 0.1
-              :curve 2
-              :out out)))
+        vel (min max-vel (:velocity ev))
+        amp (* amp (linexp* 0 max-vel 0.1 0.9 vel))
+        a 0.1]
+    (timbre/debug {:freq freq :vel (:velocity ev) :amp amp :a a})
+    (harmonic {:freq freq
+               :amp amp
+               :a a
+               :curve 2
+               :out out})))
+
+;; TODO: move to erv lib
+(defn subset-from-degs
+  "Make a subset of a scale from vector of degrees"
+  [scale degs]
+  (mapv (fn [deg] (nth scale deg))
+        degs))
 
 (defn setup-kb
-  [{:keys [midi-kb ref-note root scale lattice? lattice-size
+  [{:keys [midi-kb kb-degs ref-note root scale lattice? lattice-size
            stroke-width note-color sound? on-note-on
            replacements
-           lattice-config out]
+           lattice-config synth-config]
     :or {ref-note 60
          root (midi->cps 60)
          lattice? true
          lattice-size 120
          stroke-width 10
          note-color [200 200 120]
-         sound? true
-         out 0}}]
+         sound? true}}]
   (let [scale* (replace-notes replacements scale)
+        kb-scale (if-not kb-degs scale* (subset-from-degs scale* kb-degs))
         get-note-data (fn [ev] (midi->ratio&freq {:ref-note ref-note
                                                   :root root
-                                                  :scale scale*
+                                                  :scale kb-scale
                                                   :midi-note (:note ev)}))
         lattice-atom (when lattice? @(draw-lattice2 (map :bounded-ratio scale*) lattice-size lattice-config))]
 
@@ -212,9 +225,16 @@
 
                     (add-played-absolute-ratio absolute-ratio)
                     (when on-note-on (on-note-on {:ratio ratio :absolute-ratio absolute-ratio}))
-                    (when sound? (play-sound ev freq out))))
+                    (when sound? (play-sound ev freq synth-config))))
+       :cc (fn [{:keys [note velocity]}]
+          ;; for some reason javax.sound.midi misses some note-off messages so...
+             (when (and (= note 21) ;; knob 1 click
+                        (= velocity 127))
+               (clear-all-synths!)
+               (reset! played-ratios #{})
+               (remove-all-played-ratios lattice-atom)))
        :mpe {:z (fn [synth val]
-                  (o/ctl synth :amp (min 1 (linexp* 20 127 0.1 1 val))))}
+                  (o/ctl synth :amp (* (:amp synth-config 1) (min 1 (linexp* 20 127 0.1 1 val)))))}
        :note-off (fn [ev]
                    (let [{:keys [ratio absolute-ratio]} (get-note-data ev)]
                      (when lattice? (remove-played-ratio lattice-atom {:ratio ratio, :group-id ::note}))

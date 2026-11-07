@@ -1,13 +1,16 @@
 (ns tieminos.habitat.extended-sections.tunel-cuantico-bardo.rec
   (:require
    [clojure.core.async :as a]
+   [clojure.java.io :as io]
    [clojure.string :as str]
    [overtone.core :as o]
    [taoensso.timbre :as timbre]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.async-events :refer [dispatch]]
    [tieminos.habitat.extended-sections.tunel-cuantico-bardo.live-state :refer [live-state]]
-   [tieminos.habitat.recording :refer [bufs rec-input]]
-   [time-time.dynacan.players.gen-poly :as gp :refer [on-event ref-rain]]))
+   [tieminos.habitat.recording :as habitat.rec :refer [bufs rec-input]]
+   [time-time.dynacan.players.gen-poly :as gp :refer [on-event ref-rain]]
+   [tieminos.habitat.extended-sections.tunel-cuantico-bardo.re-affect :as bardo.ræ]
+   [tieminos.habitat.extended-sections.tunel-cuantico-bardo.touch-osc :as-alias bardo.tosc]))
 
 (def section-name "gusano-cuantico-bardo")
 
@@ -18,12 +21,14 @@
            rec-dur-fn
            rec-pulse
            countdown
+           on-countdown-start
            on-rec-start
            on-rec-end]
     :or {id :rec-loop3
          rec-dur-fn (fn [_] 0.5)
          rec-pulse [0.5]
          countdown 0
+         on-countdown-start (fn [_])
          on-rec-start (fn [_])
          on-rec-end (fn [_])}}]
   (ref-rain
@@ -44,7 +49,8 @@
                             :dur-s dur-s
                             :on-end on-rec-end
                             :print-info? false
-                            :countdown countdown
+                            :countdown (if (zero? index) countdown 0)
+                            :on-countdown-start on-countdown-start
                             :on-rec-start on-rec-start})))))
 
 (defn stop-rec-loop!
@@ -203,3 +209,76 @@
   (add-watch bufs ::bufs #'on-bufs-change))
 (comment
   (init-bufs-watch!))
+
+;;;;;;;;;;;;;;;;;;
+;; * Save Samples
+;;;;;;;;;;;;;;;;;;
+
+(def takes-base-dir "/Users/diego/Music/diego/taller-abierto/habitat/habitat-live_v2/")
+
+(defn make-samples-dir
+  [take-version]
+  (str takes-base-dir take-version))
+
+(defn make-samples-path
+  [take-version]
+  (str (make-samples-dir take-version) "/hunu-samples/"))
+
+(defn save-samples!
+  [{:keys [take-version on-done]}]
+  (let [dir (make-samples-dir take-version)
+        directory-exists? (->> dir io/file .exists)
+        path (make-samples-path take-version)
+        db-path (str path "db.edn")]
+    (when-not directory-exists?
+      (throw (ex-info "Cannot save samples, directory doesn't exist"
+                      {:take-version take-version
+                       :dir dir})))
+
+    (io/make-parents db-path)
+    (when-not (->> db-path io/file .exists)
+      (spit db-path "{}"))
+    (habitat.rec/save-samples
+     {:path path
+      :description (str "Samples from take: " take-version)
+      :full-keyword :todos
+      :buffers-atom bufs
+      :on-done on-done})))
+(comment
+  (save-samples! {:take-version "2.3.40"}))
+
+(defn load-samples!
+  [take-version]
+  (when (seq @bufs)
+    (throw (ex-info "Won't load samples, ensure `bufs` is empty." {})))
+  (habitat.rec/load-own-samples!
+   :buffers-atom bufs
+   :samples-path (make-samples-path take-version)
+   :prefixes-set #{:todos}))
+
+(comment
+  (load-samples! "2.3.40"))
+
+(bardo.ræ/reg-event-fx ::save-samples
+  (fn [{:keys [db]} _]
+    (let [take-version (:take-version db)]
+      (when-not take-version
+        (throw (ex-info ":take-version is not set." {})))
+      {:fx {::save-samples
+            {:take-version take-version
+             :on-done (bardo.ræ/dispatch
+                       {::bardo.tosc/send-msg ["/System/samples-saved-time"
+                                               (str (java.util.Date.))]})}}})))
+(bardo.ræ/reg-event-fx ::load-samples
+  (fn [_ take-version]
+    {:fx {::load-samples take-version}}))
+
+(bardo.ræ/reg-fx ::save-samples
+  (fn [_ save-samples-config]
+    (save-samples! save-samples-config)))
+
+(bardo.ræ/reg-fx ::load-samples
+  (fn [_ take-version]
+    (load-samples! take-version)))
+
+
