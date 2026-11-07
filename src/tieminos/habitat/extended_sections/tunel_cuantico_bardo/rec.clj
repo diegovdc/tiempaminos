@@ -245,7 +245,7 @@
       :buffers-atom bufs
       :on-done on-done})))
 (comment
-  (save-samples! {:take-version "2.3.39"}))
+  (save-samples! {:take-version "2.3.40"}))
 
 (defn load-samples!
   [take-version]
@@ -254,10 +254,10 @@
   (habitat.rec/load-own-samples!
    :buffers-atom bufs
    :samples-path (make-samples-path take-version)
-   :prefixes-set #{:todos-los-samples}))
+   :prefixes-set #{:todos}))
 
 (comment
-  (load-samples! "2.3.39"))
+  (load-samples! "2.3.40"))
 
 (bardo.ræ/reg-event-fx ::save-samples
   (fn [{:keys [db]} _]

@@ -24,11 +24,11 @@
     ])
   (reset-default-state!)
   ;; init everything (habitat and input synths, bardo.comms) except SC, REAPER and OSC communications
-  (bardo.init/all! {:take-version "2.3.39"})
+  (bardo.init/all! {:take-version "2.3.40"})
   (bardo.osc/post-live-state-to-ui!)
   (bardo.osc/post-live-state-to-ui! :print-instead? true)
 
-  (bardo.ræ/dispatch {::bardo.rec/load-samples "2.3.39"}))
+  (bardo.ræ/dispatch {::bardo.rec/load-samples "2.3.40"}))
 
 (defn reset-default-state!
   []
